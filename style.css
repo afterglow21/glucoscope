@@ -243,3 +243,37 @@ canvas{
   color:#fff;
   box-shadow:0 0 0 1px rgba(46,204,113,.35);
 }
+
+
+.score-card{
+  display:none;
+}
+
+.gluco-score-mini{
+  margin-top:auto;
+  border-top:1px solid rgba(255,255,255,.08);
+  padding-top:18px;
+}
+
+.gluco-score-title{
+  font-size:17px;
+  color:#cbd5e1;
+  margin-bottom:8px;
+}
+
+.gluco-score-row{
+  display:flex;
+  align-items:baseline;
+  gap:12px;
+}
+
+.gluco-score-value{
+  font-size:30px;
+  font-weight:800;
+  color:#fff;
+}
+
+.gluco-score-reason{
+  font-size:14px;
+  color:#cbd5e1;
+}
