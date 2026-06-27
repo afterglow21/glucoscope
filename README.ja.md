@@ -150,3 +150,5 @@ AIを活用した糖尿病ライフサポートツール
 Made with ❤️ by afterglow21
 
 Powered by Nightscout
+
+Built by a person living with Type 1 Diabetes.

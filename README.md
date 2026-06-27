@@ -130,3 +130,5 @@ If this project helps you, please consider giving it a ⭐.
 Made with ❤️ by afterglow21
 
 Powered by Nightscout
+
+Built by a person living with Type 1 Diabetes.
