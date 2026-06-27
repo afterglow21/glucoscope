@@ -1,0 +1,216 @@
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:"Segoe UI","Yu Gothic UI",sans-serif;
+}
+
+body{
+  background:#101828;
+  color:#fff;
+}
+
+.dashboard{
+  width:1180px;
+  margin:25px auto;
+}
+
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  margin-bottom:20px;
+}
+
+.header h1{
+  font-size:42px;
+  margin-bottom:6px;
+}
+
+.header p,
+.last-update{
+  color:#93a4c2;
+  font-size:14px;
+}
+
+.header-right{
+  text-align:right;
+}
+
+.clock{
+  font-size:44px;
+  font-weight:bold;
+}
+
+.top-grid{
+  display:grid;
+  grid-template-columns:400px repeat(3,180px);
+  grid-template-rows:150px 150px;
+  gap:16px;
+}
+
+.card{
+  background:#202b3d;
+  border-radius:22px;
+  padding:20px;
+  box-shadow:0 6px 18px rgba(0,0,0,.25);
+}
+
+.current-card{
+  grid-row:1 / span 2;
+  display:flex;
+  flex-direction:column;
+}
+
+.label{
+  font-size:22px;
+  color:#cbd5e1;
+  margin-bottom:14px;
+}
+
+.current-main{
+  display:flex;
+  align-items:flex-end;
+  gap:14px;
+  margin-bottom:14px;
+}
+
+#glucoseValue{
+  font-size:88px;
+  font-weight:bold;
+  line-height:1;
+}
+
+.arrow{
+  font-size:72px;
+  color:#2ecc71;
+  line-height:1;
+}
+
+.unit{
+  font-size:28px;
+  color:#cbd5e1;
+  margin-left:auto;
+  margin-bottom:10px;
+}
+
+.pill-row{
+  display:inline-flex;
+  background:#2d3748;
+  padding:8px 14px;
+  border-radius:999px;
+  width:fit-content;
+  font-size:16px;
+  margin-bottom:18px;
+}
+
+.trend-box{
+  margin-top:auto;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;
+  padding:14px;
+}
+
+.trend-title{
+  font-size:17px;
+  margin-bottom:10px;
+}
+
+.trend-list{
+  display:flex;
+  justify-content:space-between;
+  font-size:13px;
+  color:#d4dbe7;
+}
+
+.metric-card{
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  overflow:hidden;
+}
+
+.metric-label{
+  font-size:19px;
+  color:#d6e2f3;
+  white-space:nowrap;
+}
+
+.metric-label span{
+  font-size:13px;
+  opacity:.7;
+}
+
+.metric-value{
+  font-size:43px;
+  font-weight:bold;
+  line-height:1.05;
+}
+
+.metric-desc{
+  font-size:13px;
+  color:#d2d8e3;
+  line-height:1.35;
+}
+
+.metric-desc small{
+  display:block;
+  margin-top:3px;
+  font-size:10px;
+  opacity:.65;
+  line-height:1.35;
+}
+
+.small-unit{
+  font-size:22px;
+  color:#b6c4d9;
+}
+
+.green .metric-value{ color:#2ecc71; }
+.yellow .metric-value{ color:#f5c542; }
+.red .metric-value{ color:#ff5d73; }
+.purple .metric-value{ color:#b784ff; }
+.pink .metric-value{ color:#ff77b7; }
+
+.chart-card{
+  margin-top:20px;
+}
+
+.chart-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:16px;
+}
+
+.chart-range{
+  color:#9fb2cf;
+  font-size:16px;
+}
+
+.chart-wrap{
+  height:320px;
+}
+
+.comment-card{
+  margin-top:20px;
+}
+
+.metric-unit-inline{
+    font-size:20px;
+    color:#b7c2d3;
+    margin-left:6px;
+    font-weight:500;
+}
+
+#comment{
+  font-size:24px;
+  line-height:1.9;
+  color:#edf2f7;
+  white-space:pre-line;
+}
+
+canvas{
+  width:100%!important;
+  height:100%!important;
+}

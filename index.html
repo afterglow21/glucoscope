@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Kazuma Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="dashboard">
+  <header class="header">
+    <div>
+      <h1>🩸 Kazuma Dashboard</h1>
+      <p>Nightscout personal glucose dashboard</p>
+    </div>
+    <div class="header-right">
+      <div id="clock" class="clock">--:--</div>
+      <div id="lastUpdate" class="last-update">最終更新: --</div>
+    </div>
+  </header>
+
+  <section class="top-grid">
+    <div class="card current-card">
+      <div class="label">現在血糖</div>
+      <div class="current-main">
+        <span id="glucoseValue">--</span>
+        <span id="glucoseArrow" class="arrow">→</span>
+        <span class="unit">mg/dL</span>
+      </div>
+      <div id="status" class="pill-row">Nightscout読み込み中...</div>
+
+      <div class="trend-box">
+        <div class="trend-title">血糖トレンド</div>
+        <div class="trend-list">
+          <span>⇈ 急上昇</span>
+          <span>↑ 上昇</span>
+          <span>→ 安定</span>
+          <span>↓ 下降</span>
+          <span>⇊ 急下降</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card metric-card green">
+      <div class="metric-label">🎯 TIR <span>(70-180)</span></div>
+      <div id="tirValue" class="metric-value">--%</div>
+      <div class="metric-desc">目標範囲内の時間<small>血糖が70〜180mg/dLだった割合</small></div>
+    </div>
+
+    <div class="card metric-card yellow">
+      <div class="metric-label">🟡 TAR <span>(&gt;180)</span></div>
+      <div id="tarValue" class="metric-value">--%</div>
+      <div class="metric-desc">高血糖の時間<small>血糖が180mg/dLを超えた割合</small></div>
+    </div>
+
+    <div class="card metric-card red">
+      <div class="metric-label">🔴 TBR <span>(&lt;70)</span></div>
+      <div id="tbrValue" class="metric-value">--%</div>
+      <div class="metric-desc">低血糖の時間<small>血糖が70mg/dL未満だった割合</small></div>
+    </div>
+
+<div class="card metric-card">
+  <div class="metric-label">📊 平均</div>
+
+  <div style="display:flex;align-items:flex-end;gap:8px;">
+    <span id="avgValue" class="metric-value">--</span>
+    <span style="font-size:22px;margin-bottom:4px;">mg/dL</span>
+  </div>
+
+  <div class="metric-desc">
+    平均血糖値
+    <small>過去24時間の平均血糖値</small>
+  </div>
+</div>
+
+    <div class="card metric-card purple">
+      <div class="metric-label">📉 CV <span>(変動係数)</span></div>
+      <div id="cvValue" class="metric-value">--%</div>
+      <div class="metric-desc">血糖のばらつき<small>低いほど安定。目標は36%未満</small></div>
+    </div>
+
+    <div class="card metric-card pink">
+      <div class="metric-label">❤️ GMI</div>
+      <div id="gmiValue" class="metric-value">--%</div>
+      <div class="metric-desc">HbA1cの目安<small>平均血糖から推定した値</small></div>
+    </div>
+  </section>
+
+  <section class="card chart-card">
+    <div class="chart-header">
+      <div class="label">📈 24時間グラフ</div>
+      <div id="chartRange" class="chart-range">--</div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="glucoseChart"></canvas>
+    </div>
+  </section>
+
+  <section class="card comment-card">
+    <div class="label">🤖 今日のひとこと</div>
+    <div id="comment">データを読み込んでいます...</div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
