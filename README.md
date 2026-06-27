@@ -2,6 +2,8 @@
 
 > **Understand today. Improve tomorrow.**
 
+Your daily companion for living with diabetes.
+
 A modern, open-source Nightscout dashboard designed to help people living with diabetes better understand their glucose data, discover daily patterns, and make informed decisions every day.
 
 GlucoScope is more than a dashboard.
@@ -126,6 +128,11 @@ Contributions, ideas, and feedback are always welcome.
 If this project helps you, please consider giving it a ⭐.
 
 ---
+
+## Screenshot
+
+![Live View](docs/screenshots/v0.2-alpha-live.png)
+
 
 Made with ❤️ by afterglow21
 

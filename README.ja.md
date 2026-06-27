@@ -147,6 +147,11 @@ AIを活用した糖尿病ライフサポートツール
 
 ---
 
+## Screenshot
+
+![Live View](docs/screenshots/v0.2-alpha-live.png)
+
+
 Made with ❤️ by afterglow21
 
 Powered by Nightscout
