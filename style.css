@@ -196,11 +196,18 @@ body{
   margin-top:20px;
 }
 
+.metric-inline{
+  display:flex;
+  align-items:flex-end;
+  gap:8px;
+}
+
 .metric-unit-inline{
-    font-size:20px;
-    color:#b7c2d3;
-    margin-left:6px;
-    font-weight:500;
+  font-size:20px;
+  color:#b7c2d3;
+  font-weight:500;
+  margin-bottom:4px;
+  white-space:nowrap;
 }
 
 #comment{
