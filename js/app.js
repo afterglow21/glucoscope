@@ -14,24 +14,6 @@ const directionMap = {
   "RATE OUT OF RANGE": "?"
 };
 
-function average(values) {
-  return values.reduce((sum, v) => sum + v, 0) / values.length;
-}
-
-function standardDeviation(values) {
-  const avg = average(values);
-  const variance = values.reduce((sum, v) => sum + Math.pow(v - avg, 2), 0) / values.length;
-  return Math.sqrt(variance);
-}
-
-function calculateGMI(avgGlucose) {
-  return 3.31 + 0.02392 * avgGlucose;
-}
-
-function pct(count, total) {
-  return ((count / total) * 100).toFixed(1);
-}
-
 function formatDateTime(date) {
   return date.toLocaleString("ja-JP", {
     year: "numeric",
@@ -206,6 +188,17 @@ async function loadDailyStats() {
     const sd = standardDeviation(values);
     const cv = ((sd / avg) * 100).toFixed(1);
     const gmi = calculateGMI(avg).toFixed(1);
+
+    const glucoScore = calculateGlucoScore({
+      tir,
+      tbr,
+      cv,
+      avg
+    });
+
+    document.getElementById("scoreValue").textContent = `${glucoScore.score}点`;
+    document.getElementById("scoreReason").textContent =
+      `${glucoScore.emoji} ${glucoScore.rank}\n${glucoScore.message}`;
 
     document.getElementById("tirValue").textContent = `${tir}%`;
     document.getElementById("tarValue").textContent = `${tar}%`;
