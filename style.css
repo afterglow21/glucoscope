@@ -221,3 +221,25 @@ canvas{
   width:100%!important;
   height:100%!important;
 }
+
+.view-tabs{
+  display:flex;
+  gap:10px;
+  margin:0 0 18px;
+}
+
+.view-tab{
+  border:1px solid rgba(255,255,255,.08);
+  background:#202b3d;
+  color:#cbd5e1;
+  padding:10px 18px;
+  border-radius:999px;
+  font-size:15px;
+  cursor:pointer;
+}
+
+.view-tab.active{
+  background:#2d3748;
+  color:#fff;
+  box-shadow:0 0 0 1px rgba(46,204,113,.35);
+}
