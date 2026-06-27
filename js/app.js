@@ -127,7 +127,6 @@ async function loadLatestGlucose() {
   const glucoseArrow = document.getElementById("glucoseArrow");
   const status = document.getElementById("status");
   const lastUpdate = document.getElementById("lastUpdate");
-
   const response = await fetch(`${NIGHTSCOUT_URL}/api/v1/entries.json?count=1`);
   const data = await response.json();
 
@@ -146,7 +145,13 @@ async function loadLatestGlucose() {
 
   status.textContent = `${minutesAgo}分前に更新 / ${latest.direction ?? "方向不明"}`;
   lastUpdate.textContent = `最終更新: ${formatDateTime(measuredAt)}`;
-
+  const currentLastUpdate = document.getElementById("currentLastUpdate");
+  if (currentLastUpdate) {
+    currentLastUpdate.textContent = measuredAt.toLocaleTimeString("ja-JP", {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
   return latest;
 }
 
@@ -198,7 +203,12 @@ async function loadDailyStats() {
 
     document.getElementById("scoreValue").textContent = `${glucoScore.score}点`;
     document.getElementById("scoreReason").textContent =
-      `${glucoScore.emoji} ${glucoScore.rank}\n${glucoScore.message}`;
+     `${glucoScore.rank} ${glucoScore.emoji}`;
+
+    const scoreMessage = document.querySelector(".score-message");
+    if (scoreMessage) {
+      scoreMessage.textContent = glucoScore.message;
+    }
 
     document.getElementById("tirValue").textContent = `${tir}%`;
     document.getElementById("tarValue").textContent = `${tar}%`;

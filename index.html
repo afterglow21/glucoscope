@@ -25,63 +25,85 @@
   <button class="view-tab">🏥 Clinic</button>
 </nav>
 
-  <section class="top-grid">
-    <div class="card current-card">
-      <div class="label">現在血糖</div>
-      <div class="current-main">
-        <span id="glucoseValue">--</span>
-        <span id="glucoseArrow" class="arrow">→</span>
-        <span class="unit">mg/dL</span>
-      </div>
+<section class="hero-grid">
+  <div class="card score-card hero-score-card">
+    <div class="score-header">
+      <div class="label">😊 GlucoScore</div>
+      <div id="scoreReason" class="score-badge">--</div>
+    </div>
+
+    <div class="score-main">
+      <span id="scoreValue" class="score-value">--点</span>
+    </div>
+
+    <div class="score-message">今日は良い流れです。</div>
+
+    <div class="score-meta">
+      <span>↗ 昨日より +4点</span>
+      <span>・</span>
+      <span>過去7日平均: 84点</span>
+    </div>
+  </div>
+
+  <div class="card current-card hero-current-card">
+    <div class="label">現在血糖</div>
+
+    <div class="current-main">
+      <span id="glucoseValue">--</span>
+      <span id="glucoseArrow" class="arrow">→</span>
+      <span class="unit">mg/dL</span>
+    </div>
+
+    <div class="current-status-row">
+      <div id="rangeStatus" class="status-pill in-range">● In Range</div>
       <div id="status" class="pill-row">Nightscout読み込み中...</div>
-      <div class="gluco-score-mini">
-        <div class="gluco-score-title">😊 GlucoScore</div>
-        <div class="gluco-score-row">
-           <span id="scoreValue" class="gluco-score-value">--点</span>
-           <span id="scoreReason" class="gluco-score-reason">データを読み込み中...</span>
-        </div>
-      </div>
     </div>
 
-    <div class="card metric-card green">
-      <div class="metric-label">🎯 TIR <span>(70-180)</span></div>
-      <div id="tirValue" class="metric-value">--%</div>
-      <div class="metric-desc">目標範囲内の時間<small>70〜180mg/dLだった割合</small></div>
-    </div>
+    <div class="smartguard-row">🛡️ SmartGuard Active</div>
+    <div class="current-small-note">最終更新: <span id="currentLastUpdate">--</span></div>
+  </div>
+</section>
 
-    <div class="card metric-card yellow">
-      <div class="metric-label">🟡 TAR <span>(&gt;180)</span></div>
-      <div id="tarValue" class="metric-value">--%</div>
-      <div class="metric-desc">高血糖の時間<small>180mg/dL超だった割合</small></div>
-    </div>
+<section class="metric-grid">
+  <div class="card metric-card green">
+    <div class="metric-label">🎯 TIR <span>(70-180)</span></div>
+    <div id="tirValue" class="metric-value">--%</div>
+    <div class="metric-desc">目標範囲内の時間<small>70〜180mg/dLだった割合</small></div>
+  </div>
 
-    <div class="card metric-card red">
-      <div class="metric-label">🔴 TBR <span>(&lt;70)</span></div>
-      <div id="tbrValue" class="metric-value">--%</div>
-      <div class="metric-desc">低血糖の時間<small>70mg/dL未満だった割合</small></div>
-    </div>
+  <div class="card metric-card yellow">
+    <div class="metric-label">🟡 TAR <span>(&gt;180)</span></div>
+    <div id="tarValue" class="metric-value">--%</div>
+    <div class="metric-desc">高血糖の時間<small>180mg/dL超だった割合</small></div>
+  </div>
 
-    <div class="card metric-card">
-      <div class="metric-label">📊 平均</div>
-      <div class="metric-inline">
-        <span id="avgValue" class="metric-value">--</span>
-        <span class="metric-unit-inline">mg/dL</span>
-      </div>
-      <div class="metric-desc">平均血糖値<small>過去24時間の平均</small></div>
-    </div>
+  <div class="card metric-card red">
+    <div class="metric-label">🔴 TBR <span>(&lt;70)</span></div>
+    <div id="tbrValue" class="metric-value">--%</div>
+    <div class="metric-desc">低血糖の時間<small>70mg/dL未満だった割合</small></div>
+  </div>
 
-    <div class="card metric-card purple">
-      <div class="metric-label">📉 CV <span>(変動係数)</span></div>
-      <div id="cvValue" class="metric-value">--%</div>
-      <div class="metric-desc">血糖のばらつき<small>目標は36%未満</small></div>
+  <div class="card metric-card">
+    <div class="metric-label">📊 平均</div>
+    <div class="metric-inline">
+      <span id="avgValue" class="metric-value">--</span>
+      <span class="metric-unit-inline">mg/dL</span>
     </div>
+    <div class="metric-desc">平均血糖値<small>過去24時間の平均</small></div>
+  </div>
 
-    <div class="card metric-card pink">
-      <div class="metric-label">❤️ GMI</div>
-      <div id="gmiValue" class="metric-value">--%</div>
-      <div class="metric-desc">HbA1cの目安<small>平均血糖から推定</small></div>
-    </div>
-  </section>
+  <div class="card metric-card purple">
+    <div class="metric-label">📉 CV <span>(変動係数)</span></div>
+    <div id="cvValue" class="metric-value">--%</div>
+    <div class="metric-desc">血糖のばらつき<small>目標は36%未満</small></div>
+  </div>
+
+  <div class="card metric-card pink">
+    <div class="metric-label">❤️ GMI</div>
+    <div id="gmiValue" class="metric-value">--%</div>
+    <div class="metric-desc">HbA1cの目安<small>平均血糖から推定</small></div>
+  </div>
+</section>
 
   <section class="card chart-card">
     <div class="chart-header">
