@@ -229,10 +229,23 @@ async function loadDailyStats() {
 
 function updateClock() {
   const now = new Date();
-  document.getElementById("clock").textContent = now.toLocaleTimeString("ja-JP", {
-    hour: "2-digit",
-    minute: "2-digit"
-  });
+
+  const clockEl = document.getElementById("clock");
+  if (clockEl) {
+    clockEl.textContent = now.toLocaleTimeString("ja-JP", {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
+
+  const clockDateEl = document.getElementById("clockDate");
+  if (clockDateEl) {
+    clockDateEl.textContent = now.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric"
+    });
+  }
 }
 
 updateClock();
