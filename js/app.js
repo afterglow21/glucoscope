@@ -14,22 +14,64 @@ const directionMap = {
   "RATE OUT OF RANGE": "?"
 };
 
-function average(values) {
-  return values.reduce((sum, v) => sum + v, 0) / values.length;
+
+function setLiveStatus(statusType, label, detail = "") {
+  const liveIndicator = document.getElementById("liveIndicator");
+  const liveLabel = document.getElementById("liveLabel");
+
+  if (!liveIndicator || !liveLabel) return;
+
+  liveIndicator.classList.remove("live-online", "live-stale", "live-error", "live-pending");
+  liveIndicator.classList.add(`live-${statusType}`);
+  liveLabel.textContent = label;
+  liveIndicator.title = detail || label;
 }
 
-function standardDeviation(values) {
-  const avg = average(values);
-  const variance = values.reduce((sum, v) => sum + Math.pow(v - avg, 2), 0) / values.length;
-  return Math.sqrt(variance);
+function updateRangeStatus(glucose) {
+  const rangeStatus = document.getElementById("rangeStatus");
+  if (!rangeStatus) return;
+
+  rangeStatus.classList.remove("in-range", "above-range", "below-range");
+
+  if (glucose < 70) {
+    rangeStatus.classList.add("below-range");
+    rangeStatus.textContent = "● Low";
+    return;
+  }
+
+  if (glucose > 180) {
+    rangeStatus.classList.add("above-range");
+    rangeStatus.textContent = "● High";
+    return;
+  }
+
+  rangeStatus.classList.add("in-range");
+  rangeStatus.textContent = "● In Range";
 }
 
-function calculateGMI(avgGlucose) {
-  return 3.31 + 0.02392 * avgGlucose;
+function formatRelativeUpdate(date) {
+  if (!date || Number.isNaN(date.getTime())) return "--";
+
+  const diffMs = Date.now() - date.getTime();
+  const diffSec = Math.max(0, Math.round(diffMs / 1000));
+  const diffMin = Math.round(diffSec / 60);
+  const diffHour = Math.round(diffMin / 60);
+
+  if (diffSec < 60) return "just now";
+  if (diffMin < 60) return `${diffMin} min ago`;
+  if (diffHour < 24) return `${diffHour} hour${diffHour === 1 ? "" : "s"} ago`;
+
+  return date.toLocaleDateString("ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  });
 }
 
-function pct(count, total) {
-  return ((count / total) * 100).toFixed(1);
+function updateHeaderUpdated(measuredAt) {
+  const headerUpdated = document.getElementById("headerUpdated");
+  if (!headerUpdated) return;
+  headerUpdated.textContent = formatRelativeUpdate(measuredAt);
 }
 
 function formatDateTime(date) {
@@ -145,26 +187,43 @@ async function loadLatestGlucose() {
   const glucoseArrow = document.getElementById("glucoseArrow");
   const status = document.getElementById("status");
   const lastUpdate = document.getElementById("lastUpdate");
-
   const response = await fetch(`${NIGHTSCOUT_URL}/api/v1/entries.json?count=1`);
   const data = await response.json();
 
   if (!data || data.length === 0) {
     status.textContent = "データが見つかりません";
+    setLiveStatus("error", "NO DATA", "Nightscoutに最新データがありません");
+    updateHeaderUpdated(null);
     return null;
   }
 
   const latest = data[0];
   glucoseValue.textContent = latest.sgv ?? "--";
   glucoseArrow.textContent = directionMap[latest.direction] ?? "→";
+  updateRangeStatus(Number(latest.sgv));
 
   const measuredAt = new Date(latest.date);
+  updateHeaderUpdated(measuredAt);
   const now = new Date();
   const minutesAgo = Math.round((now - measuredAt) / 60000);
 
   status.textContent = `${minutesAgo}分前に更新 / ${latest.direction ?? "方向不明"}`;
-  lastUpdate.textContent = `最終更新: ${formatDateTime(measuredAt)}`;
+  if (lastUpdate) {
+    lastUpdate.textContent = `最終更新: ${formatDateTime(measuredAt)}`;
+  }
 
+  if (minutesAgo >= 30) {
+    setLiveStatus("stale", "STALE", `最終データは${minutesAgo}分前です`);
+  } else {
+    setLiveStatus("online", "LIVE", `Nightscout接続中 / ${minutesAgo}分前に更新`);
+  }
+  const currentLastUpdate = document.getElementById("currentLastUpdate");
+  if (currentLastUpdate) {
+    currentLastUpdate.textContent = measuredAt.toLocaleTimeString("ja-JP", {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
   return latest;
 }
 
@@ -207,6 +266,22 @@ async function loadDailyStats() {
     const cv = ((sd / avg) * 100).toFixed(1);
     const gmi = calculateGMI(avg).toFixed(1);
 
+    const glucoScore = calculateGlucoScore({
+      tir,
+      tbr,
+      cv,
+      avg
+    });
+
+    document.getElementById("scoreValue").textContent = `${glucoScore.score}点`;
+    document.getElementById("scoreReason").textContent =
+     `${glucoScore.rank} ${glucoScore.emoji}`;
+
+    const scoreMessage = document.querySelector(".score-message");
+    if (scoreMessage) {
+      scoreMessage.textContent = glucoScore.message;
+    }
+
     document.getElementById("tirValue").textContent = `${tir}%`;
     document.getElementById("tarValue").textContent = `${tar}%`;
     document.getElementById("tbrValue").textContent = `${tbr}%`;
@@ -219,6 +294,8 @@ async function loadDailyStats() {
 
   } catch (error) {
     console.error(error);
+    setLiveStatus("error", "OFFLINE", "Nightscout接続エラー");
+    updateHeaderUpdated(null);
     document.getElementById("status").textContent = "Nightscout接続エラー";
     document.getElementById("comment").textContent = "データ取得中にエラーが出ました。Consoleを確認してみてください。";
   }
@@ -226,19 +303,59 @@ async function loadDailyStats() {
 
 function updateClock() {
   const now = new Date();
-  document.getElementById("clock").textContent = now.toLocaleTimeString("ja-JP", {
-    hour: "2-digit",
-    minute: "2-digit"
-  });
+
+  const clockEl = document.getElementById("clock");
+  if (clockEl) {
+    clockEl.textContent = now.toLocaleTimeString("ja-JP", {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
+
+  const dateEl = document.getElementById("headerDate");
+  if (dateEl) {
+    dateEl.textContent = now.toLocaleDateString("ja-JP", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      weekday: "short"
+    });
+  }
+
 }
 
 updateClock();
+setLiveStatus("pending", "CHECKING", "Nightscoutの最新データを確認中");
 loadDailyStats();
 
 setInterval(updateClock, 1000);
 setInterval(loadDailyStats, 60000);
-setInterval(()=>{
- const d=new Date();
- const dateEl=document.getElementById('headerDate');
- if(dateEl){dateEl.textContent=d.toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',weekday:'short'});}
-},1000);
+function setupViewTabs() {
+  const tabs = document.querySelectorAll(".view-tab");
+  const liveView = document.getElementById("liveView");
+  const aboutView = document.getElementById("aboutView");
+
+  function activateView(viewName) {
+    const isAbout = viewName === "about";
+
+    tabs.forEach((tab) => {
+      const tabIsAbout = tab.dataset.view === "about";
+      tab.classList.toggle("active", isAbout ? tabIsAbout : !tabIsAbout && !tab.dataset.view);
+    });
+
+    if (liveView) liveView.classList.toggle("active", !isAbout);
+    if (aboutView) aboutView.classList.toggle("active", isAbout);
+  }
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const viewName = tab.dataset.view === "about" ? "about" : "live";
+      activateView(viewName);
+      window.location.hash = viewName === "about" ? "about" : "live";
+    });
+  });
+
+  activateView(window.location.hash === "#about" ? "about" : "live");
+}
+
+setupViewTabs();

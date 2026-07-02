@@ -2,89 +2,129 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Kazuma Dashboard</title>
+  <title>GlucoScope</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="dashboard">
   <header class="header">
-    <div>
-      <h1>🩸 Kazuma Dashboard</h1>
-      <p>Nightscout personal glucose dashboard</p>
+    <div class="brand-block" aria-label="GlucoScope brand">
+      <h1><span class="brand-icon">🍀</span> GlucoScope</h1>
+      <p class="brand-kicker">Understand today.<br>Improve tomorrow.</p>
+      <p class="brand-story">Built by one of us, for all of us.<br>living with diabetes.</p>
     </div>
-    <div class="header-right">
+
+    <div class="header-center" aria-label="Live status and current time">
+      <div id="liveIndicator" class="live-indicator live-pending" title="Nightscout接続状態">
+        <span id="liveDot" class="live-dot"></span>
+        <span id="liveLabel">CHECKING</span>
+      </div>
+      <div class="last-update">Updated <span id="headerUpdated">--</span></div>
       <div id="clock" class="clock">--:--</div>
-      <div id="lastUpdate" class="last-update">最終更新: --</div>
+      <div id="headerDate" class="header-date">----</div>
+      <div class="health-bar" aria-label="Device and sync status">
+        <span>🔋 --</span>
+        <span>📶 Checking...</span>
+        <span>☁ Waiting...</span>
+      </div>
+    </div>
+
+    <div class="app-credit" aria-label="GlucoScope credit">
+      <div>v0.8.0-beta</div>
+      <div>Made with 🍀 by <span>Kazuma</span></div>
     </div>
   </header>
 
-  <section class="top-grid">
-    <div class="card current-card">
-      <div class="label">現在血糖</div>
-      <div class="current-main">
-        <span id="glucoseValue">--</span>
-        <span id="glucoseArrow" class="arrow">→</span>
-        <span class="unit">mg/dL</span>
-      </div>
+
+
+<nav class="view-tabs">
+  <button class="view-tab active">🟢 Live</button>
+  <button class="view-tab">📖 Journal</button>
+  <button class="view-tab">🏥 Clinic</button>
+  <button class="view-tab" data-view="about">✨ About</button>
+</nav>
+
+<main id="liveView" class="view-panel active">
+<section class="hero-grid">
+  <div class="card score-card hero-score-card">
+    <div class="score-header">
+      <div class="label">😊 GlucoScore</div>
+      <div id="scoreReason" class="score-badge">--</div>
+    </div>
+
+    <div class="score-main">
+      <span id="scoreValue" class="score-value">--点</span>
+    </div>
+
+    <div class="score-message">今日は良い流れです。</div>
+
+    <div class="score-meta">
+      <span>↗ 昨日より +4点</span>
+      <span>・</span>
+      <span>過去7日平均: 84点</span>
+    </div>
+  </div>
+
+  <div class="card current-card hero-current-card">
+    <div class="label current-label"><span class="drop-icon">🩸</span>現在血糖</div>
+
+    <div class="current-main">
+      <span id="glucoseValue">--</span>
+      <span id="glucoseArrow" class="arrow">→</span>
+      <span class="unit">mg/dL</span>
+    </div>
+
+    <div class="current-status-row">
+      <div id="rangeStatus" class="status-pill in-range">● In Range</div>
       <div id="status" class="pill-row">Nightscout読み込み中...</div>
-
-      <div class="trend-box">
-        <div class="trend-title">血糖トレンド</div>
-        <div class="trend-list">
-          <span>⇈ 急上昇</span>
-          <span>↑ 上昇</span>
-          <span>→ 安定</span>
-          <span>↓ 下降</span>
-          <span>⇊ 急下降</span>
-        </div>
-      </div>
     </div>
 
-    <div class="card metric-card green">
-      <div class="metric-label">🎯 TIR <span>(70-180)</span></div>
-      <div id="tirValue" class="metric-value">--%</div>
-      <div class="metric-desc">目標範囲内の時間<small>血糖が70〜180mg/dLだった割合</small></div>
-    </div>
+    <div class="smartguard-row">🛡️ SmartGuard Active</div>
+    <div class="current-small-note">最終更新: <span id="currentLastUpdate">--</span></div>
+  </div>
+</section>
 
-    <div class="card metric-card yellow">
-      <div class="metric-label">🟡 TAR <span>(&gt;180)</span></div>
-      <div id="tarValue" class="metric-value">--%</div>
-      <div class="metric-desc">高血糖の時間<small>血糖が180mg/dLを超えた割合</small></div>
-    </div>
-
-    <div class="card metric-card red">
-      <div class="metric-label">🔴 TBR <span>(&lt;70)</span></div>
-      <div id="tbrValue" class="metric-value">--%</div>
-      <div class="metric-desc">低血糖の時間<small>血糖が70mg/dL未満だった割合</small></div>
-    </div>
-
-<div class="card metric-card">
-  <div class="metric-label">📊 平均</div>
-
-  <div style="display:flex;align-items:flex-end;gap:8px;">
-    <span id="avgValue" class="metric-value">--</span>
-    <span style="font-size:22px;margin-bottom:4px;">mg/dL</span>
+<section class="metric-grid">
+  <div class="card metric-card green">
+    <div class="metric-label">🎯 TIR <span>(70-180)</span></div>
+    <div id="tirValue" class="metric-value">--%</div>
+    <div class="metric-desc">目標範囲内の時間<small>70〜180mg/dLだった割合</small></div>
   </div>
 
-  <div class="metric-desc">
-    平均血糖値
-    <small>過去24時間の平均血糖値</small>
+  <div class="card metric-card yellow">
+    <div class="metric-label">🟡 TAR <span>(&gt;180)</span></div>
+    <div id="tarValue" class="metric-value">--%</div>
+    <div class="metric-desc">高血糖の時間<small>180mg/dL超だった割合</small></div>
   </div>
-</div>
 
-    <div class="card metric-card purple">
-      <div class="metric-label">📉 CV <span>(変動係数)</span></div>
-      <div id="cvValue" class="metric-value">--%</div>
-      <div class="metric-desc">血糖のばらつき<small>低いほど安定。目標は36%未満</small></div>
-    </div>
+  <div class="card metric-card red">
+    <div class="metric-label">🔴 TBR <span>(&lt;70)</span></div>
+    <div id="tbrValue" class="metric-value">--%</div>
+    <div class="metric-desc">低血糖の時間<small>70mg/dL未満だった割合</small></div>
+  </div>
 
-    <div class="card metric-card pink">
-      <div class="metric-label">❤️ GMI</div>
-      <div id="gmiValue" class="metric-value">--%</div>
-      <div class="metric-desc">HbA1cの目安<small>平均血糖から推定した値</small></div>
+  <div class="card metric-card">
+    <div class="metric-label">📊 平均</div>
+    <div class="metric-inline">
+      <span id="avgValue" class="metric-value">--</span>
+      <span class="metric-unit-inline">mg/dL</span>
     </div>
-  </section>
+    <div class="metric-desc">平均血糖値<small>過去24時間の平均</small></div>
+  </div>
+
+  <div class="card metric-card purple">
+    <div class="metric-label">📉 CV <span>(変動係数)</span></div>
+    <div id="cvValue" class="metric-value">--%</div>
+    <div class="metric-desc">血糖のばらつき<small>目標は36%未満</small></div>
+  </div>
+
+  <div class="card metric-card pink">
+    <div class="metric-label">❤️ GMI</div>
+    <div id="gmiValue" class="metric-value">--%</div>
+    <div class="metric-desc">HbA1cの目安<small>平均血糖から推定</small></div>
+  </div>
+</section>
 
   <section class="card chart-card">
     <div class="chart-header">
@@ -100,9 +140,92 @@
     <div class="label">🤖 今日のひとこと</div>
     <div id="comment">データを読み込んでいます...</div>
   </section>
+</main>
+
+<section id="aboutView" class="view-panel about-view">
+  <div class="about-hero card">
+    <div class="about-eyebrow">About GlucoScope</div>
+    <h2>Understand today.<br>Improve tomorrow.</h2>
+    <p>Built by one of us, for all of us.<br>living with diabetes.</p>
+  </div>
+
+  <div class="about-grid">
+    <a class="about-card card" href="docs/Project_Bible/README.md" target="_blank" rel="noopener">
+      <span>🍀</span>
+      <div>
+        <h3>Project Bible</h3>
+        <p>GlucoScopeの正本。設計・思想・ロードマップの入口。</p>
+      </div>
+    </a>
+    <a class="about-card card" href="docs/Project_Bible/01_FoundersNote.md" target="_blank" rel="noopener">
+      <span>❤️</span>
+      <div>
+        <h3>Founder’s Note</h3>
+        <p>このプロジェクトが生まれた理由。</p>
+      </div>
+    </a>
+    <a class="about-card card" href="docs/Project_Bible/02_Philosophy.md" target="_blank" rel="noopener">
+      <span>🌿</span>
+      <div>
+        <h3>Philosophy</h3>
+        <p>血糖データを責めず、やさしく振り返る思想。</p>
+      </div>
+    </a>
+    <a class="about-card card" href="docs/Project_Bible/03_MissionVisionValues.md" target="_blank" rel="noopener">
+      <span>🎯</span>
+      <div>
+        <h3>Mission / Vision / Values</h3>
+        <p>GlucoScopeが目指すもの。</p>
+      </div>
+    </a>
+    <a class="about-card card" href="docs/Project_Bible/04_BrandIdentity.md" target="_blank" rel="noopener">
+      <span>🎨</span>
+      <div>
+        <h3>Brand Identity</h3>
+        <p>言葉づかい・クローバー・世界観のルール。</p>
+      </div>
+    </a>
+    <a class="about-card card" href="docs/Project_Bible/05_GlucoBible.md" target="_blank" rel="noopener">
+      <span>🤖</span>
+      <div>
+        <h3>gluco Bible</h3>
+        <p>グルコの人格・ふるまい・安全境界。</p>
+      </div>
+    </a>
+    <a class="about-card card" href="docs/Project_Bible/06_DataIntegrationPrinciples.md" target="_blank" rel="noopener">
+      <span>🔌</span>
+      <div>
+        <h3>Data Integration</h3>
+        <p>Nightscoutや将来のデータ連携方針。</p>
+      </div>
+    </a>
+    <a class="about-card card" href="docs/Project_Bible/07_MedicalAIPrinciples_TODO.md" target="_blank" rel="noopener">
+      <span>🛡️</span>
+      <div>
+        <h3>Medical & AI Principles</h3>
+        <p>次に作成する医療・AI安全原則。</p>
+      </div>
+    </a>
+    <a class="about-card card" href="docs/Project_Bible/09_Roadmap.md" target="_blank" rel="noopener">
+      <span>🗺️</span>
+      <div>
+        <h3>Roadmap</h3>
+        <p>現在の開発順序と公開準備フェーズ。</p>
+      </div>
+    </a>
+  </div>
+
+  <div class="about-footer-note">
+    v0.8.0-beta / Made with 🍀 by Kazuma
+  </div>
+</section>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="script.js"></script>
+<script src="js/api.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/chart.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>
