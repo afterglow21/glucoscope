@@ -2110,3 +2110,617 @@ GlucoScopeは、
 血糖データにつながるまでの道のりも、  
 使い続ける時間も、  
 できるだけやさしくすることを目指します。
+
+---
+
+# 7. Medical & AI Principles
+# 7. 医療・AI原則
+
+---
+
+## Basic Principle（基本方針）
+
+### EN
+
+GlucoScope is designed to help people living with diabetes
+look back on their blood glucose data with kindness.
+
+It supports reflection,
+understanding,
+and small insights for everyday life.
+
+GlucoScope is not designed to replace medical care.
+
+It should always respect healthcare professionals,
+medical evidence,
+and each person's care team.
+
+---
+
+### JP
+
+GlucoScopeは、  
+糖尿病とともに生きるあなたが、  
+血糖データをやさしく振り返るためのプロダクトです。
+
+日々の振り返り、  
+理解、  
+小さな気づきを支えることを目的としています。
+
+GlucoScopeは、  
+医療そのものを置き換えるためのものではありません。
+
+医療従事者、  
+医学的な根拠、  
+そしてあなたを支える医療チームへの敬意を大切にします。
+
+---
+
+## What GlucoScope Is（GlucoScopeが目指すもの）
+
+### EN
+
+GlucoScope is:
+
+- A blood glucose reflection tool
+- A supportive dashboard
+- A blood glucose companion
+- A place to understand daily patterns
+- A tool that helps turn numbers into gentle insights
+
+GlucoScope gently supports concerns such as:
+
+- Why did my blood glucose move this way today?
+- Was there a reason behind this pattern?
+- What can I notice to make tomorrow feel a little easier?
+
+---
+
+### JP
+
+GlucoScopeは、  
+次のような存在を目指します。
+
+- 血糖を振り返るためのツール
+- やさしく支えるダッシュボード
+- 血糖みまもりパートナー
+- 日々の流れを理解するための場所
+- 数字を小さな気づきに変えるための手助け
+
+GlucoScopeがそっと支えたいのは、  
+たとえば次のような悩みです。
+
+- 今日はどうして血糖がこう動いたんだろう。
+- この流れには、何か理由があったのかな。
+- 明日を少し楽にするために、何に気づけるだろう。
+
+---
+
+## What GlucoScope Is Not（GlucoScopeがしないこと）
+
+### EN
+
+GlucoScope is not:
+
+- A medical device
+- A diagnosis tool
+- A treatment decision tool
+- An emergency response tool
+- A replacement for healthcare professionals
+
+GlucoScope does not:
+
+- Diagnose medical conditions
+- Prescribe medication
+- Decide treatment plans
+- Tell people how much insulin to take
+- Replace medical advice from healthcare professionals
+
+---
+
+### JP
+
+GlucoScopeは、  
+次のようなものではありません。
+
+- 医療機器
+- 診断ツール
+- 治療判断ツール
+- 緊急時対応ツール
+- 医療従事者の代わりになるもの
+
+GlucoScopeは、  
+次のことを行いません。
+
+- 診断する
+- 薬を処方する
+- 治療方針を決める
+- インスリン量を指示する
+- 医療従事者からの助言を置き換える
+
+---
+
+## Role of Blood Glucose Data（血糖データの役割）
+
+### EN
+
+Blood glucose data is important,
+but it is not a judgment of a person.
+
+Every number is only one part of a larger story.
+
+Behind each value,
+there may be meals,
+sleep,
+stress,
+work,
+exercise,
+illness,
+hormones,
+weather,
+or many other parts of daily life.
+
+GlucoScope treats blood glucose data as a clue for understanding,
+not as a reason for blame.
+
+---
+
+### JP
+
+血糖データは大切です。
+
+でも、  
+それはあなた自身を評価するものではありません。
+
+ひとつひとつの数字は、  
+大きな物語の一部です。
+
+その背景には、  
+食事、  
+睡眠、  
+ストレス、  
+仕事、  
+運動、  
+体調、  
+ホルモン、  
+天気、  
+そして日々のさまざまな出来事があります。
+
+GlucoScopeは、  
+血糖データを責めるためのものではなく、  
+理解するための手がかりとして扱います。
+
+---
+
+## Gentle Use of Scores（スコアのやさしい扱い）
+
+### EN
+
+GlucoScope may use simple numerical indicators,
+such as GlucoScore,
+to make blood glucose patterns easier to understand.
+
+However,
+these numbers should be treated as supportive references,
+not as judgments of a person.
+
+GlucoScore may help people notice changes,
+compare recent trends,
+and feel motivated to continue small improvements.
+
+At the same time,
+GlucoScope should avoid language
+that makes people feel graded,
+blamed,
+or labeled by their blood glucose data.
+
+A score should never mean
+that a person has succeeded or failed.
+
+---
+
+### JP
+
+GlucoScopeは、  
+血糖の流れを分かりやすくするために、  
+GlucoScoreのような数値指標を使うことがあります。
+
+ただし、  
+その数字は人を評価するためのものではなく、  
+振り返りを助けるための目安として扱います。
+
+GlucoScoreは、  
+変化に気づいたり、  
+最近の流れを比べたり、  
+小さな改善を続けるきっかけになることがあります。
+
+一方で、  
+GlucoScopeは、  
+血糖データによって人が採点されたり、  
+責められたり、  
+決めつけられたりするように感じる表現を避けます。
+
+スコアは、  
+その人の成功や失敗を意味するものではありません。
+
+---
+
+## Role of AI（AIの役割）
+
+### EN
+
+AI in GlucoScope exists to support understanding.
+
+AI may help summarize patterns,
+notice changes,
+and offer gentle reflection.
+
+AI should not make medical decisions.
+
+AI should not replace human judgment.
+
+AI should not speak with certainty
+when uncertainty is present.
+
+The role of AI is to help people reflect,
+not to decide for them.
+
+---
+
+### JP
+
+GlucoScopeにおけるAIは、  
+理解を支えるためにあります。
+
+AIは、  
+血糖の流れをまとめたり、  
+小さな変化に気づいたり、  
+やさしい振り返りを手伝ったりします。
+
+ただし、  
+AIは医療判断を行いません。
+
+人の判断を置き換えるものでもありません。
+
+不確かなことを、  
+確かなことのように言い切ることもしません。
+
+AIの役割は、  
+あなたの代わりに決めることではなく、  
+あなたが振り返る時間を支えることです。
+
+---
+
+## gluco's Safety Boundary（グルコの安全境界）
+
+### EN
+
+gluco may:
+
+- Help people look back on their data
+- Point out gentle observations
+- Encourage reflection
+- Celebrate small efforts
+- Suggest discussing concerns with healthcare professionals
+
+gluco must not:
+
+- Diagnose
+- Prescribe
+- Recommend insulin doses
+- Make treatment decisions
+- Tell people to ignore healthcare professionals
+- Create unnecessary fear
+- Blame people for their numbers
+
+---
+
+### JP
+
+グルコは、  
+次のことをしてもよい存在です。
+
+- 血糖データを一緒に振り返る
+- やさしい気づきを伝える
+- 振り返りを促す
+- 小さな努力を見つける
+- 気になることがあれば医療従事者への相談をそっと促す
+
+一方で、  
+グルコは次のことをしてはいけません。
+
+- 診断する
+- 処方する
+- インスリン量をすすめる
+- 治療判断をする
+- 医療従事者の助言を無視するように促す
+- 必要以上に不安をあおる
+- 数字を理由に責める
+
+---
+
+## Medical Decision Boundary（医療判断の境界）
+
+### EN
+
+Medical decisions should be made with healthcare professionals.
+
+This includes decisions about:
+
+- Medication
+- Insulin doses
+- Treatment plans
+- Device settings
+- Responding to urgent symptoms
+- Managing ongoing high or low blood glucose
+
+GlucoScope may help people prepare better questions
+or organize what they noticed,
+but it should not decide what medical action to take.
+
+---
+
+### JP
+
+医療上の判断は、  
+医療従事者と相談して行うものです。
+
+たとえば、  
+次のような判断です。
+
+- 薬に関すること
+- インスリン量に関すること
+- 治療方針に関すること
+- 機器設定に関すること
+- 急な体調変化への対応
+- 高血糖や低血糖が続くときの対応
+
+GlucoScopeは、  
+相談したいことを整理したり、  
+気づいたことをまとめたりする手助けはできます。
+
+ただし、  
+どの医療行為を行うかを決めることはしません。
+
+---
+
+## Urgent and Unsafe Situations（緊急時・不安なとき）
+
+### EN
+
+GlucoScope is not for emergency use.
+
+If someone feels seriously unwell,
+has urgent symptoms,
+or is unsure whether immediate medical help is needed,
+they should prioritize healthcare professionals,
+emergency services,
+or local medical guidance over GlucoScope.
+
+GlucoScope should gently guide people toward appropriate medical support
+when a situation may be unsafe.
+
+---
+
+### JP
+
+GlucoScopeは、  
+緊急時に使うためのものではありません。
+
+強い体調不良があるとき、  
+急な症状があるとき、  
+すぐに医療的な対応が必要か迷うときは、  
+GlucoScopeの表示よりも、  
+医療従事者、  
+医療機関、  
+地域の救急相談や緊急窓口を優先してください。
+
+安全ではない可能性がある場面では、  
+GlucoScopeは無理に判断せず、  
+適切な医療的サポートにつながることをやさしく促します。
+
+---
+
+## AI Accuracy and Limitations（AIの正確性と限界）
+
+### EN
+
+AI can be helpful,
+but it can also be wrong.
+
+AI comments may miss context,
+misread patterns,
+or provide an incomplete explanation.
+
+GlucoScope should be honest about this limitation.
+
+AI-generated comments should be treated as supportive reflections,
+not as medical facts or final conclusions.
+
+---
+
+### JP
+
+AIは役に立つことがあります。
+
+でも、  
+間違えることもあります。
+
+AIのコメントは、  
+背景を十分に読み取れなかったり、  
+パターンを見誤ったり、  
+説明が不十分になったりすることがあります。
+
+GlucoScopeは、  
+その限界を正直に伝えます。
+
+AIが生成するコメントは、  
+医療上の事実や最終判断ではなく、  
+振り返りを支えるための参考として扱います。
+
+---
+
+## Human First（人を中心にする）
+
+### EN
+
+GlucoScope should never make people feel controlled by AI.
+
+People living with diabetes should remain at the center.
+
+Their experience,
+their feelings,
+their healthcare team,
+and their own understanding
+matter more than any automated comment.
+
+AI should support people.
+
+It should never take their place.
+
+---
+
+### JP
+
+GlucoScopeは、  
+AIに管理されているような感覚をつくりません。
+
+中心にいるのは、  
+糖尿病とともに生きるあなたです。
+
+あなたの経験、  
+気持ち、  
+医療チーム、  
+そしてあなた自身の理解を大切にします。
+
+AIは、  
+あなたを支えるためのものです。
+
+あなたの代わりになるものではありません。
+
+---
+
+## Gentle Safety Language（安全のための言葉づかい）
+
+### EN
+
+Safety messages should be clear,
+but not frightening.
+
+GlucoScope should avoid language that creates panic,
+shame,
+or unnecessary pressure.
+
+When safety guidance is needed,
+GlucoScope should speak calmly,
+clearly,
+and respectfully.
+
+---
+
+### JP
+
+安全のためのメッセージは、  
+分かりやすく伝える必要があります。
+
+でも、  
+怖がらせる必要はありません。
+
+GlucoScopeは、  
+パニック、  
+恥ずかしさ、  
+不要なプレッシャーにつながる言葉を避けます。
+
+安全のために必要な案内をするときも、  
+落ち着いて、  
+分かりやすく、  
+敬意のある言葉を選びます。
+
+---
+
+## About Page Short Disclaimer（Aboutページ用の短い免責文）
+
+### EN
+
+GlucoScope is not a medical device.
+
+It does not diagnose,
+treat,
+or provide medical decisions.
+
+gluco's comments are AI-generated reflections
+to help you look back on your blood glucose data.
+
+For medical decisions,
+please consult healthcare professionals.
+
+---
+
+### JP
+
+GlucoScopeは医療機器ではありません。
+
+診断、  
+治療、  
+医療判断を行うものではありません。
+
+glucoのコメントは、  
+血糖データを振り返るためのAIによる参考コメントです。
+
+医療上の判断は、  
+医療従事者と相談して行ってください。
+
+---
+
+## Items for SAFETY.md（SAFETY.mdへ分離する項目）
+
+### EN
+
+The following items should be defined in more detail in SAFETY.md:
+
+- Emergency and urgent situations
+- High blood glucose and low blood glucose safety guidance
+- When to contact healthcare professionals
+- AI-generated comment limitations
+- Insulin dose and treatment decision boundaries
+- Data accuracy limitations
+- Device and sensor delay limitations
+- User responsibility and healthcare professional priority
+- Contact and support policy
+- How to report safety concerns
+
+---
+
+### JP
+
+次の項目は、  
+SAFETY.mdでより詳しく定義します。
+
+- 緊急時や急な体調不良がある場合
+- 高血糖・低血糖に関する安全上の案内
+- 医療従事者へ相談するべき場面
+- AIコメントの限界
+- インスリン量や治療判断に関する境界
+- データの正確性に関する限界
+- 機器やセンサーの遅延に関する限界
+- 利用する人自身の判断と医療従事者の優先
+- 問い合わせ・サポート方針
+- 安全上の懸念を報告する方法
+
+---
+
+## One Sentence Definition（一言で言うと）
+
+### EN
+
+GlucoScope and gluco support understanding,
+but never replace medical judgment.
+
+---
+
+### JP
+
+GlucoScopeとglucoは、  
+理解を支える存在であり、  
+医療判断を置き換えるものではありません。
+
