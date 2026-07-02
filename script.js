@@ -237,8 +237,3 @@ loadDailyStats();
 
 setInterval(updateClock, 1000);
 setInterval(loadDailyStats, 60000);
-setInterval(()=>{
- const d=new Date();
- const dateEl=document.getElementById('headerDate');
- if(dateEl){dateEl.textContent=d.toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',weekday:'short'});}
-},1000);
