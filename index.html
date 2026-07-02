@@ -143,77 +143,300 @@
 </main>
 
 <section id="aboutView" class="view-panel about-view">
-  <div class="about-hero card">
+  <div class="about-first-message card">
     <div class="about-eyebrow">About GlucoScope</div>
-    <h2>Understand today.<br>Improve tomorrow.</h2>
-    <p>Built by one of us, for all of us.<br>living with diabetes.</p>
+    <div class="about-first-grid">
+      <div class="about-first-copy about-copy-en">
+        <p class="about-section-kicker">First Message</p>
+        <h2>Understand today.<br>Improve tomorrow.</h2>
+        <p>GlucoScope is a gentle blood glucose companion for people living with diabetes.</p>
+        <p>It helps you look back on your blood glucose data without blame, notice small patterns, and understand today a little more clearly.</p>
+        <p class="about-quote">Every number has a story.<br>Every story deserves kindness.</p>
+      </div>
+      <div class="about-first-copy about-copy-jp" lang="ja">
+        <p class="about-section-kicker">最初のメッセージ</p>
+        <h2>今日を理解して、<br>明日を少しだけ良くする。</h2>
+        <p>GlucoScopeは、糖尿病とともに生きるあなたのための、やさしい血糖みまもりパートナーです。</p>
+        <p>血糖データを責めるためではなく、小さな流れに気づき、今日を少し理解しやすくするためにあります。</p>
+        <p class="about-quote">ひとつひとつの数字には、物語があります。<br>その物語には、やさしさが必要です。</p>
+      </div>
+    </div>
   </div>
 
-  <div class="about-grid">
-    <a class="about-card card" href="docs/Project_Bible/README.md" target="_blank" rel="noopener">
-      <span>🍀</span>
+  <section class="about-section card">
+    <div class="about-section-heading">
+      <span>01</span>
       <div>
-        <h3>Project Bible</h3>
-        <p>GlucoScopeの正本。設計・思想・ロードマップの入口。</p>
+        <h2>What is GlucoScope?</h2>
+        <p>GlucoScopeとは</p>
       </div>
-    </a>
-    <a class="about-card card" href="docs/Project_Bible/01_FoundersNote.md" target="_blank" rel="noopener">
-      <span>❤️</span>
+    </div>
+    <div class="about-two-column">
+      <div class="about-language-card about-copy-en">
+        <h3>EN</h3>
+        <p>GlucoScope is not just a dashboard.</p>
+        <p>It is a place to gently look back on blood glucose data, daily patterns, and the context behind each number.</p>
+        <p>Meals, sleep, stress, work, exercise, illness, and many small moments can shape blood glucose.</p>
+        <p>GlucoScope helps turn numbers into understanding, and understanding into small steps for tomorrow.</p>
+      </div>
+      <div class="about-language-card about-copy-jp" lang="ja">
+        <h3>JP</h3>
+        <p>GlucoScopeは、ただのダッシュボードではありません。</p>
+        <p>血糖データや日々の流れ、そして数字の背景にあるできごとを、やさしく振り返るための場所です。</p>
+        <p>食事、睡眠、ストレス、仕事、運動、体調、そして日々の小さな出来事が、血糖の流れに関わっていることがあります。</p>
+        <p>GlucoScopeは、数字を理解に変え、その理解を明日の小さな一歩につなげることを目指します。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="about-section card about-profile-section">
+    <div class="about-section-heading">
+      <span>02</span>
       <div>
-        <h3>Founder’s Note</h3>
-        <p>このプロジェクトが生まれた理由。</p>
+        <h2>Founder’s Note</h2>
+        <p>つくり手の想い</p>
       </div>
-    </a>
-    <a class="about-card card" href="docs/Project_Bible/02_Philosophy.md" target="_blank" rel="noopener">
-      <span>🌿</span>
+    </div>
+    <div class="about-profile-layout">
+      <aside class="about-profile-card">
+        <img src="assets/about/SNS.jpg" alt="Kazuma / kazuma.iddm Instagram icon" class="about-profile-image">
+        <div>
+          <strong>Kazuma</strong>
+          <a href="https://www.instagram.com/kazuma.iddm/?hl=ja" target="_blank" rel="noopener">@kazuma.iddm</a>
+        </div>
+      </aside>
+      <div class="about-two-column">
+        <div class="about-language-card about-copy-en">
+          <h3>EN</h3>
+          <p>GlucoScope started from something I personally wished I had.</p>
+          <p>My name is Kazuma. I am an engineer living with fulminant type 1 diabetes.</p>
+          <p>Since this illness became part of my life, blood glucose data has also become part of my everyday life.</p>
+          <p>But numbers alone do not always tell the whole story.</p>
+          <p>There are days when things go well. There are days when things do not. And there are days when blood glucose moves in ways that are simply hard to understand.</p>
+          <p>That is why I wanted to create a place where blood glucose data could be looked at with kindness, not pressure or fear.</p>
+          <p>A place that helps people understand today, and feel a little more ready for tomorrow.</p>
+          <p>That is why I started building GlucoScope.</p>
+        </div>
+        <div class="about-language-card about-copy-jp" lang="ja">
+          <h3>JP</h3>
+          <p>GlucoScopeは、僕自身が「こんな場所があったらいいな」と思ったことから始まりました。</p>
+          <p>僕はKazumaと言います。劇症1型糖尿病とともに生きるエンジニアです。</p>
+          <p>この病気になってから、血糖データは毎日の生活の一部になりました。</p>
+          <p>でも、数字だけでは、その日のすべては分かりません。</p>
+          <p>うまくいく日もあります。思うようにいかない日もあります。がんばっていても、血糖がよく分からない動きをする日もあります。</p>
+          <p>だから僕は、血糖データをプレッシャーや不安ではなく、やさしさと一緒にみつめられる場所を作りたいと思いました。</p>
+          <p>今日を理解して、明日に少しだけ向かいやすくなる場所。</p>
+          <p>それが、GlucoScopeを作り始めた理由です。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="about-section card about-gluco-section">
+    <div class="about-section-heading">
+      <span>03</span>
       <div>
-        <h3>Philosophy</h3>
-        <p>血糖データを責めず、やさしく振り返る思想。</p>
+        <h2>Meet Gluco</h2>
+        <p>マスコットAIパートナー “Gluco”</p>
       </div>
-    </a>
-    <a class="about-card card" href="docs/Project_Bible/03_MissionVisionValues.md" target="_blank" rel="noopener">
-      <span>🎯</span>
+    </div>
+    <div class="about-profile-layout about-gluco-layout">
+      <aside class="about-mascot-card">
+        <img src="assets/about/Guluco.png" alt="Gluco mascot AI partner" class="about-mascot-image">
+        <div class="about-gluco-letter">
+          <p class="about-section-kicker">gluco Message / glucoからのお手紙</p>
+          <p>I’m here with you.<br>On good days and difficult days,<br>let’s look at them gently together.</p>
+          <p lang="ja">ぼくは、そばにいるよ。<br>うまくいった日も、そうじゃない日も、<br>いっしょに見つめてみようね。</p>
+        </div>
+      </aside>
+      <div class="about-two-column">
+        <div class="about-language-card about-copy-en">
+          <h3>EN</h3>
+          <p>gluco is the official AI companion of GlucoScope.</p>
+          <p>gluco is not a doctor, not a judge, and not a strict coach.</p>
+          <p>gluco is a gentle little friend who stays beside people living with diabetes.</p>
+          <p>It helps you look back on blood glucose data, notice small patterns, and reflect on the day without blame.</p>
+          <p>gluco speaks softly, encourages small steps, and never makes medical decisions.</p>
+          <p>On good days, difficult days, and days that feel hard to understand, gluco is here to look back with you.</p>
+        </div>
+        <div class="about-language-card about-copy-jp" lang="ja">
+          <h3>JP</h3>
+          <p>gluco（グルコ）は、GlucoScopeの公式AIパートナーです。</p>
+          <p>グルコは、医師ではありません。判定する存在でもありません。厳しいコーチでもありません。</p>
+          <p>糖尿病とともに生きるあなたのそばにいる、やさしい小さなともだちです。</p>
+          <p>血糖データを一緒に振り返り、小さな流れに気づき、責めることなく一日を見つめる手助けをします。</p>
+          <p>グルコは、やさしく話し、小さな一歩を応援し、医療上の判断は行いません。</p>
+          <p>うまくいった日も、思うようにいかなかった日も、よく分からなかった日も、グルコはそばで一緒に振り返ります。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="about-section card">
+    <div class="about-section-heading">
+      <span>04</span>
       <div>
-        <h3>Mission / Vision / Values</h3>
-        <p>GlucoScopeが目指すもの。</p>
+        <h2>What You Can See</h2>
+        <p>できること</p>
       </div>
-    </a>
-    <a class="about-card card" href="docs/Project_Bible/04_BrandIdentity.md" target="_blank" rel="noopener">
-      <span>🎨</span>
+    </div>
+    <div class="about-two-column">
+      <div class="about-language-card about-copy-en">
+        <h3>EN</h3>
+        <p>GlucoScope helps you look at your blood glucose flow from several angles.</p>
+        <p>You can see your current glucose, recent trends, daily patterns, and gentle reflections from gluco, your AI companion.</p>
+        <p>GlucoScore is a simple numerical guide to help you understand the flow of the day.</p>
+        <p>It is not a grade, and it does not judge you.</p>
+        <p>It is only a small reference to help you notice changes and look back on today with kindness.</p>
+      </div>
+      <div class="about-language-card about-copy-jp" lang="ja">
+        <h3>JP</h3>
+        <p>GlucoScopeでは、血糖の流れをいくつかの角度から見ることができます。</p>
+        <p>現在の血糖、最近の傾向、日々の流れ、そしてAIパートナーであるglucoからのやさしい振り返りを見ることができます。</p>
+        <p>GlucoScoreは、その日の血糖の流れを理解しやすくするための、シンプルな数値の目安です。</p>
+        <p>点数や採点ではありません。あなたを評価するものでもありません。</p>
+        <p>変化に気づき、今日をやさしく振り返るための、小さな手がかりです。</p>
+      </div>
+    </div>
+    <div class="about-feature-grid">
+      <div class="about-mini-card"><span>🟢</span><h3>Live / ライブ</h3><p>現在の血糖と流れを確認できます。</p></div>
+      <div class="about-mini-card"><span>😊</span><h3>GlucoScore / グルコスコア</h3><p>血糖の流れを振り返るための数値の目安です。</p><code>GlucoScore<br>78<br>↗ 昨日より +4・過去7日平均: 84</code></div>
+      <div class="about-mini-card"><span>📈</span><h3>Trends / 傾向</h3><p>昨日、7日、30日などの流れを見比べられます。</p></div>
+      <div class="about-mini-card"><span>💌</span><h3>gluco Message / glucoからのお手紙</h3><p>AIパートナーであるglucoが、やさしく振り返りを手伝います。</p></div>
+    </div>
+  </section>
+
+  <section class="about-section card">
+    <div class="about-section-heading">
+      <span>05</span>
       <div>
-        <h3>Brand Identity</h3>
-        <p>言葉づかい・クローバー・世界観のルール。</p>
+        <h2>Safety & Medical Boundary</h2>
+        <p>安心して使うために</p>
       </div>
-    </a>
-    <a class="about-card card" href="docs/Project_Bible/05_GlucoBible.md" target="_blank" rel="noopener">
-      <span>🤖</span>
+    </div>
+    <div class="about-two-column">
+      <div class="about-language-card about-copy-en">
+        <h3>EN</h3>
+        <p>GlucoScope is not a medical device.</p>
+        <p>It does not diagnose, treat, or make medical decisions.</p>
+        <p>gluco’s comments are AI-generated reflections to help you look back on your blood glucose data.</p>
+        <p>They are not medical advice or final conclusions.</p>
+        <p>For medical decisions, urgent symptoms, or anything that feels unsafe, please consult healthcare professionals or appropriate medical institutions.</p>
+      </div>
+      <div class="about-language-card about-copy-jp" lang="ja">
+        <h3>JP</h3>
+        <p>GlucoScopeは医療機器ではありません。</p>
+        <p>診断、治療、医療判断を行うものではありません。</p>
+        <p>glucoのコメントは、血糖データを振り返るための、AIによる参考コメントです。</p>
+        <p>医療上の助言や、最終判断ではありません。</p>
+        <p>医療上の判断、急な症状、安全に不安があることについては、医療従事者または適切な医療機関に相談してください。</p>
+      </div>
+    </div>
+    <div class="about-link-row">
+      <a href="docs/Project_Bible/PROJECT_BIBLE_v1.0_DRAFT.md#7-medical--ai-principles" target="_blank" rel="noopener">Medical & AI Principles / 医療・AI原則</a>
+      <a href="SAFETY.md" target="_blank" rel="noopener">Safety / 安全方針</a>
+    </div>
+  </section>
+
+  <section class="about-section card">
+    <div class="about-section-heading">
+      <span>06</span>
       <div>
-        <h3>gluco Bible</h3>
-        <p>グルコの人格・ふるまい・安全境界。</p>
+        <h2>Data Integration</h2>
+        <p>血糖データとのつながり方</p>
       </div>
-    </a>
-    <a class="about-card card" href="docs/Project_Bible/06_DataIntegrationPrinciples.md" target="_blank" rel="noopener">
-      <span>🔌</span>
+    </div>
+    <div class="about-two-column">
+      <div class="about-language-card about-copy-en">
+        <h3>EN</h3>
+        <p>GlucoScope currently starts with Nightscout-format data.</p>
+        <p>This is the first realistic path for development, but GlucoScope is not meant to be limited to Nightscout forever.</p>
+        <p>In the future, GlucoScope hopes to explore more data paths, including MiniMed, Dexcom, Libre, CSV, and manual input, while considering safety, privacy, and sustainability.</p>
+        <p>The path to connect blood glucose data should also feel understandable, safe, and gentle.</p>
+      </div>
+      <div class="about-language-card about-copy-jp" lang="ja">
+        <h3>JP</h3>
+        <p>GlucoScopeは、まずNightscout形式のデータから始めています。</p>
+        <p>これは、今の開発で最も現実的な入り口です。ただし、GlucoScopeはNightscoutだけに固定するものではありません。</p>
+        <p>将来的には、MiniMed、Dexcom、Libre、CSV、手入力など、さまざまなデータのつながり方を、安全性・プライバシー・続けやすさを考えながら探っていきます。</p>
+        <p>血糖データにつながるまでの道のりも、できるだけ分かりやすく、安心できて、やさしいものにしていきます。</p>
+      </div>
+    </div>
+    <div class="about-link-row">
+      <a href="docs/Project_Bible/PROJECT_BIBLE_v1.0_DRAFT.md#6-data-integration-principles" target="_blank" rel="noopener">Data Integration Principles / データ連携方針</a>
+    </div>
+  </section>
+
+  <section class="about-section card">
+    <div class="about-section-heading">
+      <span>07</span>
       <div>
-        <h3>Data Integration</h3>
-        <p>Nightscoutや将来のデータ連携方針。</p>
+        <h2>Current Status</h2>
+        <p>現在の開発状況</p>
       </div>
-    </a>
-    <a class="about-card card" href="docs/Project_Bible/07_MedicalAIPrinciples_TODO.md" target="_blank" rel="noopener">
-      <span>🛡️</span>
+    </div>
+    <div class="about-two-column">
+      <div class="about-language-card about-copy-en">
+        <h3>EN</h3>
+        <p>GlucoScope is currently under development.</p>
+        <p>The first goal is to prepare a public demo page using Kazuma’s own blood glucose data in a way that feels safe, honest, and easy to understand.</p>
+        <p>Before sharing it more widely, GlucoScope is carefully preparing its words, design, safety principles, AI boundaries, and data connection approach.</p>
+        <p>This is still a growing project.</p>
+      </div>
+      <div class="about-language-card about-copy-jp" lang="ja">
+        <h3>JP</h3>
+        <p>GlucoScopeは現在、開発中です。</p>
+        <p>最初の目標は、Kazuma自身の血糖データを使った公開サンプルページを、安全で、正直で、分かりやすい形に整えることです。</p>
+        <p>広く見てもらう前に、言葉づかい、デザイン、安全方針、AIの境界、データ連携の考え方を、ひとつずつ丁寧に整えています。</p>
+        <p>GlucoScopeは、まだ育てている途中のプロジェクトです。</p>
+      </div>
+    </div>
+    <div class="about-status-grid">
+      <div><strong>Project Bible / プロジェクトバイブル</strong><span>作成中・更新中</span></div>
+      <div><strong>Medical & AI Principles / 医療・AI原則</strong><span>作成済み</span></div>
+      <div><strong>Safety / 安全方針</strong><span>作成済み</span></div>
+      <div><strong>Data Integration Principles / データ連携方針</strong><span>作成済み</span></div>
+      <div><strong>Privacy Notes / プライバシーノート</strong><span>準備中</span></div>
+      <div><strong>Support Policy / サポート方針</strong><span>準備中</span></div>
+    </div>
+  </section>
+
+  <section class="about-section card">
+    <div class="about-section-heading">
+      <span>08</span>
       <div>
-        <h3>Medical & AI Principles</h3>
-        <p>次に作成する医療・AI安全原則。</p>
+        <h2>Trust Pack</h2>
+        <p>ドキュメント一覧</p>
       </div>
-    </a>
-    <a class="about-card card" href="docs/Project_Bible/09_Roadmap.md" target="_blank" rel="noopener">
-      <span>🗺️</span>
-      <div>
-        <h3>Roadmap</h3>
-        <p>現在の開発順序と公開準備フェーズ。</p>
+    </div>
+    <div class="about-two-column about-trust-intro">
+      <div class="about-language-card about-copy-en">
+        <h3>EN</h3>
+        <p>For people who want to understand GlucoScope more deeply, the project documents are available below.</p>
+        <p>They explain the philosophy, language, safety principles, AI boundaries, data integration approach, and roadmap behind GlucoScope.</p>
       </div>
-    </a>
-  </div>
+      <div class="about-language-card about-copy-jp" lang="ja">
+        <h3>JP</h3>
+        <p>GlucoScopeをもっと深く知りたい人のために、プロジェクトの考え方をまとめたドキュメントを用意しています。</p>
+        <p>GlucoScopeの思想、言葉づかい、安全方針、AIの境界、データ連携、今後のロードマップを読むことができます。</p>
+      </div>
+    </div>
+    <div class="about-grid about-doc-grid">
+      <a class="about-card card" href="docs/Project_Bible/PROJECT_BIBLE_v1.0_DRAFT.md" target="_blank" rel="noopener"><span>🍀</span><div><h3>Project Bible / プロジェクトバイブル</h3><p>GlucoScopeの思想・設計・言葉づかい・ロードマップをまとめた全文です。</p></div></a>
+      <a class="about-card card" href="docs/Project_Bible/PROJECT_BIBLE_v1.0_DRAFT.md#founders-note" target="_blank" rel="noopener"><span>❤️</span><div><h3>Founder’s Note / つくり手の想い</h3><p>GlucoScopeが生まれた理由と、Kazuma自身の想いをまとめています。</p></div></a>
+      <a class="about-card card" href="docs/Project_Bible/PROJECT_BIBLE_v1.0_DRAFT.md#philosophy" target="_blank" rel="noopener"><span>🌿</span><div><h3>Philosophy / 基本思想</h3><p>血糖データを責めず、やさしく振り返るための考え方です。</p></div></a>
+      <a class="about-card card" href="docs/Project_Bible/PROJECT_BIBLE_v1.0_DRAFT.md#mission-vision--values" target="_blank" rel="noopener"><span>🎯</span><div><h3>Mission / Vision / Values / 使命・未来像・価値観</h3><p>GlucoScopeが目指す未来と、大切にする価値観です。</p></div></a>
+      <a class="about-card card" href="docs/Project_Bible/PROJECT_BIBLE_v1.0_DRAFT.md#brand-identity" target="_blank" rel="noopener"><span>🎨</span><div><h3>Brand Identity / ブランド方針</h3><p>名前、タグライン、四葉のクローバー🍀、言葉づかいの方針です。</p></div></a>
+      <a class="about-card card" href="docs/Project_Bible/PROJECT_BIBLE_v1.0_DRAFT.md#gluco-bible" target="_blank" rel="noopener"><span>🤖</span><div><h3>gluco Bible / Gluco設定書</h3><p>マスコットAIパートナー “Gluco” の性格・役割・話し方をまとめています。</p></div></a>
+      <a class="about-card card" href="docs/Project_Bible/PROJECT_BIBLE_v1.0_DRAFT.md#6-data-integration-principles" target="_blank" rel="noopener"><span>🔌</span><div><h3>Data Integration Principles / データ連携方針</h3><p>Nightscoutや将来のデータ連携についての考え方です。</p></div></a>
+      <a class="about-card card" href="docs/Project_Bible/PROJECT_BIBLE_v1.0_DRAFT.md#7-medical--ai-principles" target="_blank" rel="noopener"><span>🛡️</span><div><h3>Medical & AI Principles / 医療・AI原則</h3><p>AIと医療判断の境界、安全なふるまいについてまとめています。</p></div></a>
+      <a class="about-card card" href="SAFETY.md" target="_blank" rel="noopener"><span>🚑</span><div><h3>Safety / 安全方針</h3><p>緊急時の扱い、AIコメントの限界、データの正確性についてまとめています。</p></div></a>
+      <a class="about-card card" href="docs/Project_Bible/PROJECT_BIBLE_v1.0_DRAFT.md#roadmap" target="_blank" rel="noopener"><span>🗺️</span><div><h3>Roadmap / ロードマップ</h3><p>公開準備から今後の開発までの流れをまとめています。</p></div></a>
+      <a class="about-card card about-card-planned" href="docs/About/ABOUT_PAGE_COPY.md" target="_blank" rel="noopener"><span>🔐</span><div><h3>Privacy Notes / プライバシーノート</h3><p>血糖データや個人データの扱いについてまとめる予定です。</p></div></a>
+      <a class="about-card card about-card-planned" href="docs/About/ABOUT_PAGE_STRUCTURE.md" target="_blank" rel="noopener"><span>🤝</span><div><h3>Support Policy / サポート方針</h3><p>技術サポートと医療相談の境界についてまとめる予定です。</p></div></a>
+    </div>
+    <p class="about-future-note">PROJECT_BIBLEは、将来的に章ごとのMarkdownまたはHTMLページに分ける予定です。Aboutページからそれぞれのページへリンクし、興味を持ってくれた人が全文を読めるようにします。</p>
+  </section>
 
   <div class="about-footer-note">
     v0.8.0-beta / Made with 🍀 by Kazuma
