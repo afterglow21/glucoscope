@@ -2724,3 +2724,18 @@ GlucoScopeとglucoは、
 理解を支える存在であり、  
 医療判断を置き換えるものではありません。
 
+
+### Live UI Follow-up: GlucoScore Display
+
+- Keep the name “GlucoScore”.
+- Keep the numeric indicator.
+- Avoid explicit score-like suffixes such as 「点」.
+- Do not show labels such as 「点数」, 「採点」, 「合格」, or 「不合格」.
+- Treat GlucoScore as a gentle reference for looking back on blood glucose flow.
+- Suggested display:
+
+```text
+GlucoScore
+78
+↗ 昨日より +4・過去7日平均: 84
+
