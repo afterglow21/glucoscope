@@ -23,16 +23,11 @@
       <div class="last-update">Updated <span id="headerUpdated">--</span></div>
       <div id="clock" class="clock">--:--</div>
       <div id="headerDate" class="header-date">----</div>
-      <div class="health-bar" aria-label="Device and sync status">
-        <span>🔋 --</span>
-        <span>📶 Checking...</span>
-        <span>☁ Waiting...</span>
-      </div>
     </div>
 
-    <div class="app-credit" aria-label="GlucoScope credit">
-      <div>v0.8.0-beta</div>
-      <div>Made with 🍀 by <a href="https://www.instagram.com/kazuma.iddm/?hl=ja" target="_blank" rel="noopener noreferrer">Kazuma</a></div>
+    <div class="app-credit header-credit" aria-label="GlucoScope credit">
+      <span class="app-credit-version">v0.8.0-beta</span>
+      <span class="app-credit-line"><span class="app-credit-text">Made with</span> <span class="app-credit-clover">🍀</span> <span class="app-credit-text">by</span> <a href="https://www.instagram.com/kazuma.iddm/?hl=ja" target="_blank" rel="noopener noreferrer">Kazuma</a></span>
     </div>
   </header>
 
@@ -96,7 +91,11 @@
       <div id="status" class="pill-row">Nightscout読み込み中...</div>
     </div>
 
-    <div class="smartguard-row">🛡️ SmartGuard Active</div>
+    <div class="current-device-row" aria-label="Device and Nightscout status">
+      <div class="smartguard-row">🛡️ SmartGuard Active</div>
+      <div id="batteryStatus" class="device-pill health-muted" title="ポンプ電池" aria-label="ポンプ電池">🔋 --</div>
+      <div id="cloudStatus" class="device-pill health-muted" title="NightScout接続状況" aria-label="NightScout接続状況">☁ --</div>
+    </div>
     <div class="current-small-note"><span data-i18n-key="lastUpdatedLabel">最終更新</span>: <span id="currentLastUpdate">--</span></div>
   </div>
 </section>
@@ -148,13 +147,27 @@
         <div class="label" data-i18n-key="chartTitle">📈 24時間グラフ</div>
         <div class="chart-legend" aria-label="Chart legend">
           <span class="chart-legend-item today-line" data-i18n-key="legendToday">今日</span>
-          <span class="chart-legend-item yesterday-line" data-i18n-key="legendYesterday">昨日</span>
+          <span id="comparisonLegendItem" class="chart-legend-item yesterday-line" data-i18n-key="legendYesterday">昨日</span>
           <span class="chart-legend-item range-band" data-i18n-key="legendRange">TIR目標範囲</span>
-          <span class="chart-legend-item meal-bolus-dot" data-i18n-key="legendMealBolus">Meal Bolus</span>
-          <span class="chart-legend-item correction-bolus-dot" data-i18n-key="legendCorrectionBolus">Correction Bolus</span>
+          <span id="manualBolusLegendItem" class="chart-legend-item meal-bolus-dot" data-i18n-key="legendMealBolus">手動ボーラス</span>
+          <span id="autoBolusLegendItem" class="chart-legend-item correction-bolus-dot" data-i18n-key="legendCorrectionBolus">自動ボーラス</span>
         </div>
       </div>
-      <div id="chartRange" class="chart-range">--</div>
+      <div class="chart-actions">
+        <div class="period-switch" aria-label="Chart period">
+          <button type="button" class="period-button active" data-period="today" data-i18n-key="periodToday">今日</button>
+          <button type="button" class="period-button" data-period="yesterday" data-i18n-key="periodYesterday">昨日</button>
+          <button type="button" class="period-button" data-period="seven" data-i18n-key="periodSevenDays">7日</button>
+          <button type="button" class="period-button" data-period="thirty" data-i18n-key="periodThirtyDays">30日</button>
+          <button type="button" class="period-button" data-period="custom" data-i18n-key="periodCustom">カスタム</button>
+        </div>
+        <div id="customRangeControls" class="custom-range-controls" hidden>
+          <label><span data-i18n-key="customFromLabel">開始</span><span class="date-input-wrap"><input id="customRangeStart" type="date"><button type="button" class="date-input-icon" data-date-target="customRangeStart" aria-label="開始日のカレンダーを開く">📅</button></span></label>
+          <label><span data-i18n-key="customToLabel">終了</span><span class="date-input-wrap"><input id="customRangeEnd" type="date"><button type="button" class="date-input-icon" data-date-target="customRangeEnd" aria-label="終了日のカレンダーを開く">📅</button></span></label>
+          <button id="customRangeApply" type="button" data-i18n-key="customApplyLabel">表示</button>
+        </div>
+        <div id="chartRange" class="chart-range">--</div>
+      </div>
     </div>
     <div class="chart-wrap">
       <canvas id="glucoseChart"></canvas>
