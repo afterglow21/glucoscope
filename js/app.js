@@ -8,6 +8,10 @@ const GLUCO_LUCKY_STATE_STORAGE_KEY = "glucoscope.luckyGlucoState.v1";
 const GLUCO_VISITOR_SEED_STORAGE_KEY = "glucoscope.visitorSeed.v1";
 const GLUCO_DEBUG_FORCE_LUCKY_DATE_STORAGE_KEY = "glucoscope.debug.forceLuckyDate.v1";
 const LANGUAGE_STORAGE_KEY = "glucoscope.language.v1";
+const LIVE_PERIOD_STORAGE_KEY = "glucoscope.livePeriod.v1";
+const CUSTOM_RANGE_STORAGE_KEY = "glucoscope.customRange.v1";
+
+let currentLivePeriod = localStorage.getItem(LIVE_PERIOD_STORAGE_KEY) || "today";
 
 const GLUCO_NORMAL_MAX_ID = 50;
 const GLUCO_LUCKY_MIN_ID = 51;
@@ -133,14 +137,14 @@ const translations = {
     languageLabel: "Language",
     glucoScoreLabel: "🍀 GlucoScore",
     currentGlucoseLabel: "現在血糖",
-    chartTitle: "📈 24時間グラフ",
+    chartTitle: "📈 血糖グラフ",
     legendToday: "今日",
-    legendYesterday: "昨日",
+    legendYesterday: "昨日の重ね表示",
     legendRange: "TIR目標範囲",
-    legendMealBolus: "Meal Bolus",
-    legendCorrectionBolus: "Correction Bolus",
-    mealBolusLabel: "Meal Bolus",
-    correctionBolusLabel: "Correction Bolus",
+    legendMealBolus: "手動ボーラス",
+    legendCorrectionBolus: "自動ボーラス",
+    mealBolusLabel: "手動ボーラス",
+    correctionBolusLabel: "自動ボーラス",
     letterTitle: "✉ グルコからのお手紙",
     averageLabel: "平均",
     cvLabel: "（変動係数）",
@@ -151,11 +155,11 @@ const translations = {
     tbrDesc: "低血糖の時間",
     tbrSmall: "70mg/dL未満だった割合",
     avgDesc: "平均血糖値",
-    avgSmall: "過去24時間の平均",
+    avgSmall: "表示中の期間の平均",
     cvDesc: "血糖のばらつき",
     cvSmall: "目標は36%未満",
     gmiDesc: "HbA1cの目安",
-    gmiSmall: "平均血糖から推定",
+    gmiSmall: "表示中の平均血糖から推定",
     lastUpdatedLabel: "最終更新",
     collectionTitle: "🍀 グルコとの想い出",
     collectionLead: "毎日出会ったグルコを、ブラウザの中にそっと記録します。",
@@ -170,6 +174,31 @@ const translations = {
     shareAchievement: "称号をシェア",
     shareCopied: "シェア文をコピーしました",
     shareText: "GlucoScopeで{count}種類のグルコと出会って、称号「{title}」になりました🍀",
+    periodToday: "今日",
+    periodYesterday: "昨日",
+    periodSevenDays: "7日",
+    periodThirtyDays: "30日",
+    periodCustom: "カスタム",
+    customFromLabel: "開始",
+    customToLabel: "終了",
+    customApplyLabel: "表示",
+    selectedRangeLabel: "表示中の期間",
+    periodPreviousDay: "前日",
+    periodPreviousRange: "前期間",
+    batteryUnavailable: "🔋 --",
+    signalChecking: "📶 確認中",
+    signalLive: "📶 LIVE",
+    signalStale: "📶 更新待ち",
+    cloudConnected: "☁ 接続中",
+    cloudWaiting: "☁ 待機中",
+    cloudError: "☁ エラー",
+    sensorRemainingUnavailable: "🧪 --",
+    sensorRemainingLabel: "🧪 センサー",
+    pumpReservoirUnavailable: "💧 --",
+    pumpReservoirLabel: "💧 ポンプ",
+    iobUnavailable: "💉 --",
+    iobLabel: "💉 IOB",
+    healthLegend: "🔋 電池 / 📶 更新 / ☁ Nightscout接続",
     rangeLow: "● Low",
     rangeHigh: "● High",
     rangeIn: "● In Range",
@@ -179,7 +208,7 @@ const translations = {
     updatedMinutesAgo: "分前に更新",
     statusError: "Nightscout接続エラー",
     commentLoadingError: "データ取得中にエラーが出ました。Consoleを確認してみてください。",
-    noDailyData: "24時間分のデータが見つかりませんでした。",
+    noDailyData: "表示中の期間のデータが見つかりませんでした。",
     chartRangeSeparator: "〜",
     todayLabel: "今日",
     yesterdayLabel: "昨日",
@@ -203,14 +232,14 @@ const translations = {
     languageLabel: "Language",
     glucoScoreLabel: "🍀 GlucoScore",
     currentGlucoseLabel: "Current glucose",
-    chartTitle: "📈 24-hour chart",
+    chartTitle: "📈 Glucose chart",
     legendToday: "Today",
-    legendYesterday: "Yesterday",
+    legendYesterday: "Yesterday overlay",
     legendRange: "TIR target range",
-    legendMealBolus: "Meal Bolus",
-    legendCorrectionBolus: "Correction Bolus",
-    mealBolusLabel: "Meal Bolus",
-    correctionBolusLabel: "Correction Bolus",
+    legendMealBolus: "Manual bolus",
+    legendCorrectionBolus: "Auto bolus",
+    mealBolusLabel: "Manual bolus",
+    correctionBolusLabel: "Auto bolus",
     letterTitle: "✉ Letter from Gluco",
     averageLabel: "Average",
     cvLabel: "(coefficient of variation)",
@@ -221,11 +250,11 @@ const translations = {
     tbrDesc: "Time below range",
     tbrSmall: "Share of time below 70mg/dL",
     avgDesc: "Average glucose",
-    avgSmall: "Average over the past 24 hours",
+    avgSmall: "Average for selected range",
     cvDesc: "Glucose variability",
     cvSmall: "Target is under 36%",
     gmiDesc: "HbA1c estimate",
-    gmiSmall: "Estimated from average glucose",
+    gmiSmall: "Estimated from selected average",
     lastUpdatedLabel: "Last updated",
     collectionTitle: "🍀 Gluco Collection",
     collectionLead: "Gluco friends you meet each day are gently saved in this browser.",
@@ -240,6 +269,31 @@ const translations = {
     shareAchievement: "Share title",
     shareCopied: "Share text copied",
     shareText: "I met {count} Gluco friends in GlucoScope and earned the title: {title} 🍀",
+    periodToday: "Today",
+    periodYesterday: "Yesterday",
+    periodSevenDays: "7 days",
+    periodThirtyDays: "30 days",
+    periodCustom: "Custom",
+    customFromLabel: "From",
+    customToLabel: "To",
+    customApplyLabel: "Show",
+    selectedRangeLabel: "Selected range",
+    periodPreviousDay: "Previous day",
+    periodPreviousRange: "Previous range",
+    batteryUnavailable: "🔋 --",
+    signalChecking: "📶 Checking",
+    signalLive: "📶 LIVE",
+    signalStale: "📶 Stale",
+    cloudConnected: "☁ Connected",
+    cloudWaiting: "☁ Waiting",
+    cloudError: "☁ Error",
+    sensorRemainingUnavailable: "🧪 --",
+    sensorRemainingLabel: "🧪 Sensor",
+    pumpReservoirUnavailable: "💧 --",
+    pumpReservoirLabel: "💧 Pump",
+    iobUnavailable: "💉 --",
+    iobLabel: "💉 IOB",
+    healthLegend: "🔋 Battery / 📶 Data freshness / ☁ Nightscout",
     rangeLow: "● Low",
     rangeHigh: "● High",
     rangeIn: "● In Range",
@@ -249,7 +303,7 @@ const translations = {
     updatedMinutesAgo: "min ago",
     statusError: "Nightscout connection error",
     commentLoadingError: "Something went wrong while loading the data. Please check the console.",
-    noDailyData: "No data was found for the past 24 hours.",
+    noDailyData: "No data was found for the selected range.",
     chartRangeSeparator: "to",
     todayLabel: "Today",
     yesterdayLabel: "Yesterday",
@@ -268,6 +322,214 @@ const translations = {
 
 function t(key) {
   return translations[currentLanguage]?.[key] || translations.ja[key] || key;
+}
+
+const livePeriodOptions = {
+  today: { key: "today", days: 1, offsetDays: 0, count: 1000 },
+  yesterday: { key: "yesterday", days: 1, offsetDays: 1, count: 1000 },
+  seven: { key: "seven", days: 7, offsetDays: 0, count: 3000 },
+  thirty: { key: "thirty", days: 30, offsetDays: 0, count: 12000 },
+  custom: { key: "custom", days: 1, offsetDays: 0, count: 1000 }
+};
+
+
+function formatDateInputValue(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getLocalDayStartTime(value = Date.now()) {
+  const date = new Date(value);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0).getTime();
+}
+
+function getLocalDayEndTime(value = Date.now()) {
+  const date = new Date(value);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999).getTime();
+}
+
+
+function parseLocalDateInput(value, endOfDay = false) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = endOfDay
+    ? new Date(year, month - 1, day, 23, 59, 59, 999)
+    : new Date(year, month - 1, day, 0, 0, 0, 0);
+
+  const time = date.getTime();
+  return Number.isFinite(time) ? time : null;
+}
+
+function getDefaultCustomRangeValues(now = Date.now()) {
+  const today = new Date(now);
+  const value = formatDateInputValue(today);
+  return { startDate: value, endDate: value };
+}
+
+function readCustomRangeValues(now = Date.now()) {
+  try {
+    const stored = JSON.parse(localStorage.getItem(CUSTOM_RANGE_STORAGE_KEY) || "null");
+    if (stored?.startDate && stored?.endDate) return stored;
+  } catch (error) {
+    // Ignore broken localStorage values and use today's date instead.
+  }
+
+  return getDefaultCustomRangeValues(now);
+}
+
+function saveCustomRangeValues(values) {
+  localStorage.setItem(CUSTOM_RANGE_STORAGE_KEY, JSON.stringify(values));
+}
+
+function getFetchCountForDuration(durationMs) {
+  const estimatedFiveMinutePoints = Math.ceil(durationMs / (5 * 60 * 1000));
+  return Math.min(20000, Math.max(1000, estimatedFiveMinutePoints + 500));
+}
+
+function getCustomPeriodRange(now = Date.now()) {
+  let { startDate, endDate } = readCustomRangeValues(now);
+  let rangeStart = parseLocalDateInput(startDate, false);
+  let rangeEnd = parseLocalDateInput(endDate, true);
+
+  if (rangeStart === null || rangeEnd === null) {
+    const fallback = getDefaultCustomRangeValues(now);
+    startDate = fallback.startDate;
+    endDate = fallback.endDate;
+    rangeStart = parseLocalDateInput(startDate, false);
+    rangeEnd = parseLocalDateInput(endDate, true);
+  }
+
+  if (rangeStart > rangeEnd) {
+    [rangeStart, rangeEnd] = [rangeEnd, rangeStart];
+    [startDate, endDate] = [endDate, startDate];
+  }
+
+  const durationMs = rangeEnd - rangeStart;
+  return {
+    key: "custom",
+    startDate,
+    endDate,
+    rangeStart,
+    rangeEnd,
+    durationMs,
+    count: getFetchCountForDuration(durationMs)
+  };
+}
+
+function syncCustomRangeInputs(now = Date.now()) {
+  const controls = document.getElementById("customRangeControls");
+  const startInput = document.getElementById("customRangeStart");
+  const endInput = document.getElementById("customRangeEnd");
+  const values = readCustomRangeValues(now);
+
+  if (startInput && !startInput.value) startInput.value = values.startDate;
+  if (endInput && !endInput.value) endInput.value = values.endDate;
+  if (controls) controls.hidden = currentLivePeriod !== "custom";
+}
+
+function saveCustomRangeFromInputs() {
+  const startInput = document.getElementById("customRangeStart");
+  const endInput = document.getElementById("customRangeEnd");
+  const fallback = readCustomRangeValues();
+  const startDate = startInput?.value || fallback.startDate;
+  const endDate = endInput?.value || fallback.endDate;
+
+  saveCustomRangeValues({ startDate, endDate });
+  if (startInput) startInput.value = startDate;
+  if (endInput) endInput.value = endDate;
+}
+
+function getLivePeriodConfig(periodKey = currentLivePeriod) {
+  return livePeriodOptions[periodKey] || livePeriodOptions.today;
+}
+
+function getLivePeriodRange(periodKey = currentLivePeriod, now = Date.now()) {
+  if (periodKey === "custom") return getCustomPeriodRange(now);
+
+  const config = getLivePeriodConfig(periodKey);
+  const oneDayMs = 24 * 60 * 60 * 1000;
+
+  if (periodKey === "today" || periodKey === "yesterday") {
+    const targetTime = now - (config.offsetDays * oneDayMs);
+    const rangeStart = getLocalDayStartTime(targetTime);
+    const rangeEnd = getLocalDayEndTime(targetTime);
+
+    return {
+      ...config,
+      rangeStart,
+      rangeEnd,
+      durationMs: rangeEnd - rangeStart
+    };
+  }
+
+  const rangeEnd = now - (config.offsetDays * oneDayMs);
+  const rangeStart = rangeEnd - (config.days * oneDayMs);
+
+  return {
+    ...config,
+    rangeStart,
+    rangeEnd,
+    durationMs: rangeEnd - rangeStart
+  };
+}
+
+function getPreviousLivePeriodRange(periodRange) {
+  const oneDayMs = 24 * 60 * 60 * 1000;
+
+  if (periodRange.key === "today" || periodRange.key === "yesterday") {
+    return {
+      previousRangeStart: periodRange.rangeStart - oneDayMs,
+      previousRangeEnd: periodRange.rangeEnd - oneDayMs
+    };
+  }
+
+  return {
+    previousRangeStart: periodRange.rangeStart - periodRange.durationMs,
+    previousRangeEnd: periodRange.rangeStart
+  };
+}
+
+function updatePeriodButtons() {
+  document.querySelectorAll(".period-button").forEach((button) => {
+    const isActive = button.dataset.period === currentLivePeriod;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+
+  syncCustomRangeInputs();
+}
+
+function setupPeriodSwitch() {
+  if (!livePeriodOptions[currentLivePeriod]) currentLivePeriod = "today";
+  syncCustomRangeInputs();
+
+  document.querySelectorAll(".period-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      const nextPeriod = button.dataset.period;
+      if (!livePeriodOptions[nextPeriod] || nextPeriod === currentLivePeriod) return;
+
+      currentLivePeriod = nextPeriod;
+      if (currentLivePeriod === "custom") saveCustomRangeFromInputs();
+      localStorage.setItem(LIVE_PERIOD_STORAGE_KEY, currentLivePeriod);
+      updatePeriodButtons();
+      loadDailyStats();
+    });
+  });
+
+  const applyButton = document.getElementById("customRangeApply");
+  if (applyButton) {
+    applyButton.addEventListener("click", () => {
+      saveCustomRangeFromInputs();
+      currentLivePeriod = "custom";
+      localStorage.setItem(LIVE_PERIOD_STORAGE_KEY, currentLivePeriod);
+      updatePeriodButtons();
+      loadDailyStats();
+    });
+  }
+
+  updatePeriodButtons();
 }
 
 function getLocalDateKey(date = new Date()) {
@@ -728,6 +990,7 @@ function applyLanguage() {
     button.classList.toggle("active", button.dataset.language === currentLanguage);
   });
 
+  updatePeriodButtons();
   renderStoredDailyLetterGlucoImage();
   renderCollectionView();
 }
@@ -790,21 +1053,34 @@ function calculateSevenDayAverageGlucoScore(entries, now) {
   return Math.round(average(scores));
 }
 
-function updateScoreMetaDisplay(currentScore, yesterdayScore, sevenDayAverageScore) {
-  const yesterdayEl = document.getElementById("scoreYesterdayDelta");
+function getPreviousScoreLabel(periodKey) {
+  if (currentLanguage === "en") {
+    if (periodKey === "today") return "vs yesterday";
+    if (periodKey === "yesterday") return "vs previous day";
+    return "vs previous range";
+  }
+
+  if (periodKey === "today") return "昨日より";
+  if (periodKey === "yesterday") return "前日より";
+  return "前期間より";
+}
+
+function updateScoreMetaDisplay(currentScore, previousScore, sevenDayAverageScore, periodKey = currentLivePeriod) {
+  const previousEl = document.getElementById("scoreYesterdayDelta");
   const sevenDayEl = document.getElementById("scoreSevenDayAverage");
 
-  if (yesterdayEl) {
-    if (currentScore === null || yesterdayScore === null) {
-      yesterdayEl.textContent = currentLanguage === "en" ? "Yesterday: --" : "昨日比較: --";
+  if (previousEl) {
+    if (currentScore === null || previousScore === null) {
+      previousEl.textContent = currentLanguage === "en" ? "Previous: --" : "比較: --";
     } else {
-      const diff = Number(currentScore) - Number(yesterdayScore);
+      const diff = Number(currentScore) - Number(previousScore);
+      const label = getPreviousScoreLabel(periodKey);
       if (diff > 0) {
-        yesterdayEl.textContent = currentLanguage === "en" ? `↗ +${diff} vs yesterday` : `↗ 昨日より +${diff}`;
+        previousEl.textContent = currentLanguage === "en" ? `↗ +${diff} ${label}` : `↗ ${label} +${diff}`;
       } else if (diff < 0) {
-        yesterdayEl.textContent = currentLanguage === "en" ? `↘ ${diff} vs yesterday` : `↘ 昨日より ${diff}`;
+        previousEl.textContent = currentLanguage === "en" ? `↘ ${diff} ${label}` : `↘ ${label} ${diff}`;
       } else {
-        yesterdayEl.textContent = currentLanguage === "en" ? "→ same as yesterday" : "→ 昨日と同じ";
+        previousEl.textContent = currentLanguage === "en" ? `→ same ${label}` : `→ ${label} 同じ`;
       }
     }
   }
@@ -1027,7 +1303,17 @@ function getTreatmentCategory(treatment) {
   const carbs = Number(treatment.carbs);
   const insulin = Number(treatment.insulin);
 
-  if (text.includes("correction") || text.includes("補正")) {
+  if (text.includes("auto bolus")
+    || text.includes("autobolus")
+    || text.includes("auto correction")
+    || text.includes("autocorrection")
+    || text.includes("auto-correction")
+    || text.includes("microbolus")
+    || text.includes("smb")
+    || text.includes("smartguard")
+    || text.includes("780g")
+    || text.includes("correction")
+    || text.includes("補正")) {
     return "correctionBolus";
   }
 
@@ -1060,11 +1346,69 @@ function normalizeEntriesForChart(entries, rangeStart, shiftMs = 0) {
     .sort((a, b) => a.x - b.x);
 }
 
-function minutesToLabel(rangeStart, minutes) {
+
+function getChartBucketMinutes(periodKey, rangeDurationMs) {
+  const oneDayMs = 24 * 60 * 60 * 1000;
+
+  if (periodKey === "seven") return 30;
+  if (periodKey === "thirty") return 180;
+  if (rangeDurationMs > 21 * oneDayMs) return 180;
+  if (rangeDurationMs > 8 * oneDayMs) return 60;
+  if (rangeDurationMs > 36 * 60 * 60 * 1000) return 30;
+  return 0;
+}
+
+function aggregateChartPoints(points, bucketMinutes = 0) {
+  if (!bucketMinutes || bucketMinutes <= 0) return points;
+
+  const buckets = new Map();
+
+  points.forEach((point) => {
+    const bucketIndex = Math.floor(point.x / bucketMinutes);
+    const bucket = buckets.get(bucketIndex) || { sum: 0, count: 0, rawTime: point.rawTime };
+    bucket.sum += point.y;
+    bucket.count += 1;
+    bucket.rawTime = point.rawTime;
+    buckets.set(bucketIndex, bucket);
+  });
+
+  return [...buckets.entries()]
+    .map(([bucketIndex, bucket]) => ({
+      x: (bucketIndex * bucketMinutes) + (bucketMinutes / 2),
+      y: Math.round(bucket.sum / bucket.count),
+      rawTime: bucket.rawTime
+    }))
+    .sort((a, b) => a.x - b.x);
+}
+
+function shouldShowTreatmentEvents(periodKey, rangeDurationMs) {
+  return periodKey === "today"
+    || periodKey === "yesterday"
+    || rangeDurationMs <= 2 * 24 * 60 * 60 * 1000;
+}
+
+function minutesToLabel(rangeStart, minutes, rangeDurationMs = 24 * 60 * 60 * 1000) {
+  const locale = currentLanguage === "en" ? "en-US" : "ja-JP";
   const date = new Date(rangeStart + minutes * 60000);
-  return date.toLocaleTimeString(currentLanguage === "en" ? "en-US" : "ja-JP", {
-    hour: "2-digit",
-    minute: "2-digit"
+
+  if (rangeDurationMs <= 36 * 60 * 60 * 1000) {
+    return date.toLocaleTimeString(locale, {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
+
+  if (rangeDurationMs <= 8 * 24 * 60 * 60 * 1000) {
+    return date.toLocaleString(locale, {
+      month: "numeric",
+      day: "numeric",
+      hour: "2-digit"
+    });
+  }
+
+  return date.toLocaleDateString(locale, {
+    month: "numeric",
+    day: "numeric"
   });
 }
 
@@ -1146,83 +1490,112 @@ function drawGlucoseChart(entries, options = {}) {
   const ctx = canvas.getContext("2d");
   const rangeStart = options.rangeStart ?? Date.now() - 24 * 60 * 60 * 1000;
   const rangeEnd = options.rangeEnd ?? Date.now();
-  const oneDayMs = 24 * 60 * 60 * 1000;
+  const rangeDurationMs = Math.max(rangeEnd - rangeStart, 60 * 60000);
+  const rangeMinutes = Math.max(1, Math.floor(rangeDurationMs / 60000));
 
-  const todayPoints = normalizeEntriesForChart(entries, rangeStart);
-  const yesterdayPoints = normalizeEntriesForChart(options.yesterdayEntries || [], rangeStart, oneDayMs);
-  const treatmentPoints = normalizeTreatmentEvents(options.treatmentEvents || [], todayPoints, rangeStart, rangeEnd);
+  const chartBucketMinutes = getChartBucketMinutes(options.periodKey, rangeDurationMs);
+  const rawTodayPoints = normalizeEntriesForChart(entries, rangeStart);
+  const todayPoints = aggregateChartPoints(rawTodayPoints, chartBucketMinutes);
+  const comparisonPoints = aggregateChartPoints(
+    normalizeEntriesForChart(options.comparisonEntries || [], rangeStart, rangeDurationMs),
+    chartBucketMinutes
+  );
+  const showTreatmentEvents = shouldShowTreatmentEvents(options.periodKey, rangeDurationMs);
+  const treatmentPoints = showTreatmentEvents
+    ? normalizeTreatmentEvents(options.treatmentEvents || [], rawTodayPoints, rangeStart, rangeEnd)
+    : [];
   const mealBolusPoints = treatmentPoints.filter((point) => point.eventCategory === "mealBolus");
   const correctionBolusPoints = treatmentPoints.filter((point) => point.eventCategory === "correctionBolus");
+  const showComparison = comparisonPoints.length > 0;
+
+  const comparisonLegendItem = document.getElementById("comparisonLegendItem");
+  if (comparisonLegendItem) comparisonLegendItem.hidden = !showComparison;
+
+  const manualBolusLegendItem = document.getElementById("manualBolusLegendItem");
+  const autoBolusLegendItem = document.getElementById("autoBolusLegendItem");
+  if (manualBolusLegendItem) manualBolusLegendItem.hidden = !showTreatmentEvents;
+  if (autoBolusLegendItem) autoBolusLegendItem.hidden = !showTreatmentEvents;
 
   if (glucoseChart) glucoseChart.destroy();
 
+  const datasets = [];
+
+  if (showComparison) {
+    datasets.push({
+      label: options.comparisonLabel || t("yesterdayLabel"),
+      data: comparisonPoints,
+      borderWidth: 2,
+      borderColor: "rgba(203,213,225,.42)",
+      pointRadius: 0,
+      tension: 0.35,
+      order: 1
+    });
+  }
+
+  datasets.push({
+    label: options.primaryLabel || (options.periodKey === "today" ? t("todayLabel") : t("selectedRangeLabel")),
+    data: todayPoints,
+    borderWidth: 3,
+    borderColor: "#38bdf8",
+    pointRadius: 0,
+    tension: chartBucketMinutes ? 0.42 : 0.35,
+    segment: {
+      borderColor: (context) => getGlucoseSegmentColor(context.p0.parsed.y, context.p1.parsed.y)
+    },
+    order: 0
+  });
+
+  if (showTreatmentEvents) {
+    datasets.push(
+      {
+        label: t("mealBolusLabel"),
+        type: "scatter",
+        data: mealBolusPoints,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        pointBackgroundColor: "#fbbf24",
+        pointBorderColor: "rgba(15,23,42,.82)",
+        pointBorderWidth: 2,
+        order: -1
+      },
+      {
+        label: t("correctionBolusLabel"),
+        type: "scatter",
+        data: correctionBolusPoints,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        pointBackgroundColor: "#a78bfa",
+        pointBorderColor: "rgba(15,23,42,.82)",
+        pointBorderWidth: 2,
+        order: -1
+      }
+    );
+  }
+
+  datasets.push(
+    {
+      label: t("lowLineLabel"),
+      data: [{ x: 0, y: 70 }, { x: rangeMinutes, y: 70 }],
+      borderWidth: 1,
+      borderColor: "rgba(251,113,133,.72)",
+      borderDash: [6, 6],
+      pointRadius: 0,
+      order: 2
+    },
+    {
+      label: t("highLineLabel"),
+      data: [{ x: 0, y: 180 }, { x: rangeMinutes, y: 180 }],
+      borderWidth: 1,
+      borderColor: "rgba(245,158,11,.78)",
+      borderDash: [6, 6],
+      pointRadius: 0,
+      order: 2
+    }
+  );
+
   glucoseChart = new Chart(ctx, {
     type: "line",
-    data: {
-      datasets: [
-        {
-          label: t("yesterdayLabel"),
-          data: yesterdayPoints,
-          borderWidth: 2,
-          borderColor: "rgba(203,213,225,.42)",
-          pointRadius: 0,
-          tension: 0.35,
-          order: 1
-        },
-        {
-          label: t("todayLabel"),
-          data: todayPoints,
-          borderWidth: 3,
-          borderColor: "#38bdf8",
-          pointRadius: 0,
-          tension: 0.35,
-          segment: {
-            borderColor: (context) => getGlucoseSegmentColor(context.p0.parsed.y, context.p1.parsed.y)
-          },
-          order: 0
-        },
-        {
-          label: t("mealBolusLabel"),
-          type: "scatter",
-          data: mealBolusPoints,
-          pointRadius: 5,
-          pointHoverRadius: 7,
-          pointBackgroundColor: "#fbbf24",
-          pointBorderColor: "rgba(15,23,42,.82)",
-          pointBorderWidth: 2,
-          order: -1
-        },
-        {
-          label: t("correctionBolusLabel"),
-          type: "scatter",
-          data: correctionBolusPoints,
-          pointRadius: 5,
-          pointHoverRadius: 7,
-          pointBackgroundColor: "#a78bfa",
-          pointBorderColor: "rgba(15,23,42,.82)",
-          pointBorderWidth: 2,
-          order: -1
-        },
-        {
-          label: t("lowLineLabel"),
-          data: [{ x: 0, y: 70 }, { x: 1440, y: 70 }],
-          borderWidth: 1,
-          borderColor: "rgba(251,113,133,.72)",
-          borderDash: [6, 6],
-          pointRadius: 0,
-          order: 2
-        },
-        {
-          label: t("highLineLabel"),
-          data: [{ x: 0, y: 180 }, { x: 1440, y: 180 }],
-          borderWidth: 1,
-          borderColor: "rgba(245,158,11,.78)",
-          borderDash: [6, 6],
-          pointRadius: 0,
-          order: 2
-        }
-      ]
-    },
+    data: { datasets },
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -1233,7 +1606,7 @@ function drawGlucoseChart(entries, options = {}) {
           callbacks: {
             title: (items) => {
               if (!items.length) return "";
-              return minutesToLabel(rangeStart, items[0].parsed.x);
+              return minutesToLabel(rangeStart, items[0].parsed.x, rangeDurationMs);
             },
             label: (context) => {
               const point = context.raw || {};
@@ -1255,13 +1628,13 @@ function drawGlucoseChart(entries, options = {}) {
         x: {
           type: "linear",
           min: 0,
-          max: 1440,
+          max: rangeMinutes,
           grid: {
             color: "rgba(148,163,184,.10)"
           },
           ticks: {
-            maxTicksLimit: 8,
-            callback: (value) => minutesToLabel(rangeStart, Number(value))
+            maxTicksLimit: options.periodKey === "thirty" ? 7 : 8,
+            callback: (value) => minutesToLabel(rangeStart, Number(value), rangeDurationMs)
           }
         },
         y: {
@@ -1277,6 +1650,201 @@ function drawGlucoseChart(entries, options = {}) {
   });
 }
 
+function normalizeBatteryPercent(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return null;
+  if (number < 0) return null;
+  if (number <= 1) return Math.round(number * 100);
+  if (number <= 100) return Math.round(number);
+  return null;
+}
+
+function extractBatteryPercent(latestEntry, deviceStatus) {
+  const status = Array.isArray(deviceStatus) ? deviceStatus[0] : deviceStatus;
+  const candidates = [
+    latestEntry?.uploaderBattery,
+    latestEntry?.battery,
+    latestEntry?.pumpBattery,
+    status?.uploaderBattery,
+    status?.battery,
+    status?.pump?.battery?.percent,
+    status?.pump?.battery?.value,
+    status?.pump?.battery,
+    status?.openaps?.battery,
+    status?.openaps?.iob?.battery
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeBatteryPercent(candidate);
+    if (normalized !== null) return normalized;
+  }
+
+  return null;
+}
+
+function firstFiniteNumber(candidates) {
+  for (const candidate of candidates) {
+    if (candidate === null || candidate === undefined || candidate === "") continue;
+    const value = Number(candidate);
+    if (Number.isFinite(value)) return value;
+  }
+  return null;
+}
+
+function firstValidDate(candidates) {
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const date = new Date(candidate);
+    if (!Number.isNaN(date.getTime())) return date;
+  }
+  return null;
+}
+
+function formatRemainingDuration(totalMinutes) {
+  if (!Number.isFinite(totalMinutes) || totalMinutes < 0) return null;
+
+  const roundedMinutes = Math.round(totalMinutes);
+  const days = Math.floor(roundedMinutes / (60 * 24));
+  const hours = Math.floor((roundedMinutes % (60 * 24)) / 60);
+  const minutes = roundedMinutes % 60;
+
+  if (currentLanguage === "en") {
+    if (days > 0) return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
+    if (hours > 0) return `${hours}h`;
+    return `${minutes}m`;
+  }
+
+  if (days > 0) return hours > 0 ? `${days}日${hours}時間` : `${days}日`;
+  if (hours > 0) return `${hours}時間`;
+  return `${minutes}分`;
+}
+
+function extractSensorRemaining(deviceStatus) {
+  const status = Array.isArray(deviceStatus) ? deviceStatus[0] : deviceStatus;
+  if (!status) return null;
+
+  const explicitHours = firstFiniteNumber([
+    status.sensorHoursRemaining,
+    status.sensorRemainingHours,
+    status.sensor?.hoursRemaining,
+    status.sensor?.remainingHours,
+    status.pump?.sensor?.hoursRemaining,
+    status.pump?.sensor?.remainingHours
+  ]);
+  if (explicitHours !== null) return formatRemainingDuration(explicitHours * 60);
+
+  const explicitDays = firstFiniteNumber([
+    status.sensorDaysRemaining,
+    status.sensorRemainingDays,
+    status.sensor?.daysRemaining,
+    status.sensor?.remainingDays,
+    status.pump?.sensor?.daysRemaining,
+    status.pump?.sensor?.remainingDays
+  ]);
+  if (explicitDays !== null) return formatRemainingDuration(explicitDays * 24 * 60);
+
+  const expiryDate = firstValidDate([
+    status.sensorExpiresAt,
+    status.sensorExpiry,
+    status.sensorExpireAt,
+    status.sensor?.expiresAt,
+    status.sensor?.expires_at,
+    status.sensor?.expiry,
+    status.pump?.sensor?.expiresAt,
+    status.pump?.sensor?.expires_at,
+    status.pump?.sensor?.expiry
+  ]);
+  if (expiryDate) return formatRemainingDuration((expiryDate.getTime() - Date.now()) / 60000);
+
+  return null;
+}
+
+function extractPumpReservoir(deviceStatus) {
+  const status = Array.isArray(deviceStatus) ? deviceStatus[0] : deviceStatus;
+  if (!status) return null;
+
+  const reservoir = firstFiniteNumber([
+    status.pump?.reservoir,
+    status.pump?.reservoirAmount,
+    status.pump?.reservoir_remaining,
+    status.pump?.remainingInsulin,
+    status.reservoir,
+    status.reservoirAmount,
+    status.openaps?.pump?.reservoir,
+    status.openaps?.suggested?.reservoir
+  ]);
+
+  if (reservoir === null) return null;
+  return Number.isInteger(reservoir) ? `${reservoir}U` : `${reservoir.toFixed(1)}U`;
+}
+
+function extractIob(deviceStatus) {
+  const status = Array.isArray(deviceStatus) ? deviceStatus[0] : deviceStatus;
+  if (!status) return null;
+
+  const iob = firstFiniteNumber([
+    status.openaps?.iob?.iob,
+    status.openaps?.suggested?.iob,
+    status.iob,
+    status.pump?.iob,
+    status.pump?.activeInsulin,
+    status.activeInsulin,
+    status.bolus?.iob
+  ]);
+
+  if (iob === null) return null;
+  return `${iob.toFixed(1)}U`;
+}
+
+function setHealthItem(element, text, statusClass, title = "") {
+  if (!element) return;
+
+  element.classList.remove("health-online", "health-stale", "health-error", "health-muted");
+  if (statusClass) element.classList.add(statusClass);
+  element.textContent = text;
+  element.title = title || text;
+  element.setAttribute("aria-label", title || text);
+}
+
+function updateHealthBar(latestEntry = null, deviceStatus = null, connectionState = "waiting") {
+  const batteryEl = document.getElementById("batteryStatus");
+  const cloudEl = document.getElementById("cloudStatus");
+
+  const batteryPercent = extractBatteryPercent(latestEntry, deviceStatus);
+  if (batteryPercent === null) {
+    setHealthItem(
+      batteryEl,
+      t("batteryUnavailable"),
+      "health-muted",
+      currentLanguage === "en" ? "Pump battery" : "ポンプ電池"
+    );
+  } else {
+    const statusClass = batteryPercent <= 20 ? "health-stale" : "health-online";
+    setHealthItem(
+      batteryEl,
+      `🔋 ${batteryPercent}%`,
+      statusClass,
+      currentLanguage === "en" ? `Pump battery: ${batteryPercent}%` : `ポンプ電池: ${batteryPercent}%`
+    );
+  }
+
+  if (connectionState === "error") {
+    setHealthItem(cloudEl, t("cloudError"), "health-error", currentLanguage === "en" ? "NightScout connection status" : "NightScout接続状況");
+  } else if (connectionState === "connected") {
+    setHealthItem(cloudEl, t("cloudConnected"), "health-online", currentLanguage === "en" ? "NightScout connection status" : "NightScout接続状況");
+  } else {
+    setHealthItem(cloudEl, t("cloudWaiting"), "health-muted", currentLanguage === "en" ? "NightScout connection status" : "NightScout接続状況");
+  }
+}
+
+async function loadDeviceStatus() {
+  return fetchJson(`${NIGHTSCOUT_URL}/api/v1/devicestatus.json?count=1`, []);
+}
+
+async function fetchEntriesInRange(rangeStart, rangeEnd, count = 1000) {
+  return fetchJson(`${NIGHTSCOUT_URL}/api/v1/entries/sgv.json?find[date][$gte]=${Math.round(rangeStart)}&find[date][$lte]=${Math.round(rangeEnd)}&count=${count}`, []);
+}
+
 async function fetchJson(url, fallback = []) {
   const response = await fetch(url);
   if (!response.ok) return fallback;
@@ -1289,22 +1857,25 @@ async function loadLatestGlucose() {
   const status = document.getElementById("status");
   const lastUpdate = document.getElementById("lastUpdate");
   const response = await fetch(`${NIGHTSCOUT_URL}/api/v1/entries.json?count=2`);
+  if (!response.ok) throw new Error(`Latest glucose request failed: ${response.status}`);
+
   const data = await response.json();
 
   if (!data || data.length === 0) {
-    status.textContent = t("latestNoData");
+    if (status) status.textContent = t("latestNoData");
     updateCurrentGlucoseColor(null);
     updateGlucoseDelta(null, null);
     setLiveStatus("error", "NO DATA", t("noDataDetail"));
     updateHeaderUpdated(null);
+    updateHealthBar(null, null, "waiting");
     return null;
   }
 
   const latest = data[0];
   const previous = data[1];
 
-  glucoseValue.textContent = latest.sgv ?? "--";
-  glucoseArrow.textContent = directionMap[latest.direction] ?? "→";
+  if (glucoseValue) glucoseValue.textContent = latest.sgv ?? "--";
+  if (glucoseArrow) glucoseArrow.textContent = directionMap[latest.direction] ?? "→";
   updateRangeStatus(Number(latest.sgv));
   updateGlucoseDelta(latest.sgv, previous?.sgv);
 
@@ -1313,9 +1884,11 @@ async function loadLatestGlucose() {
   const now = new Date();
   const minutesAgo = Math.round((now - measuredAt) / 60000);
 
-  status.textContent = currentLanguage === "en"
-    ? `${minutesAgo} ${t("updatedMinutesAgo")} / ${latest.direction ?? t("latestUnknown")}`
-    : `${minutesAgo}${t("updatedMinutesAgo")} / ${latest.direction ?? t("latestUnknown")}`;
+  if (status) {
+    status.textContent = currentLanguage === "en"
+      ? `${minutesAgo} ${t("updatedMinutesAgo")} / ${latest.direction ?? t("latestUnknown")}`
+      : `${minutesAgo}${t("updatedMinutesAgo")} / ${latest.direction ?? t("latestUnknown")}`;
+  }
 
   if (lastUpdate) {
     lastUpdate.textContent = `${t("lastUpdatedLabel")}: ${formatDateTime(measuredAt)}`;
@@ -1326,6 +1899,7 @@ async function loadLatestGlucose() {
   } else {
     setLiveStatus("online", "LIVE", currentLanguage === "en" ? `Nightscout connected / ${minutesAgo} min ago` : `Nightscout接続中 / ${minutesAgo}分前に更新`);
   }
+
   const currentLastUpdate = document.getElementById("currentLastUpdate");
   if (currentLastUpdate) {
     currentLastUpdate.textContent = measuredAt.toLocaleTimeString(currentLanguage === "en" ? "en-US" : "ja-JP", {
@@ -1333,6 +1907,7 @@ async function loadLatestGlucose() {
       minute: "2-digit"
     });
   }
+
   return latest;
 }
 
@@ -1349,49 +1924,65 @@ async function loadTreatmentEvents(rangeStart, rangeEnd) {
   });
 }
 
+function updateChartRangeLabel(rangeStart, rangeEnd) {
+  const chartRange = document.getElementById("chartRange");
+  if (!chartRange) return;
+  chartRange.textContent = `${formatDateTime(new Date(rangeStart))} ${t("chartRangeSeparator")} ${formatDateTime(new Date(rangeEnd))}`;
+}
+
+function updateDisplayedMetrics({ tir, tar, tbr, avg, cv, gmi }) {
+  document.getElementById("tirValue").textContent = `${tir}%`;
+  document.getElementById("tarValue").textContent = `${tar}%`;
+  document.getElementById("tbrValue").textContent = `${tbr}%`;
+  document.getElementById("avgValue").textContent = avg;
+  document.getElementById("cvValue").textContent = `${cv}%`;
+  document.getElementById("gmiValue").textContent = `${gmi}%`;
+}
+
 async function loadDailyStats() {
   try {
     const latest = await loadLatestGlucose();
+    const deviceStatus = await loadDeviceStatus().catch(() => []);
+    updateHealthBar(latest, deviceStatus, latest ? "connected" : "waiting");
 
     const now = Date.now();
-    const oneDayMs = 24 * 60 * 60 * 1000;
-    const oneDayAgo = now - oneDayMs;
-    const yesterdayStart = oneDayAgo - oneDayMs;
-    const yesterdayEnd = now - oneDayMs;
-    const sevenDaysAgo = now - (7 * oneDayMs);
+    const periodRange = getLivePeriodRange(currentLivePeriod, now);
+    const { rangeStart, rangeEnd, durationMs } = periodRange;
+    const { previousRangeStart, previousRangeEnd } = getPreviousLivePeriodRange(periodRange);
+    const sevenDaysAgo = now - (7 * 24 * 60 * 60 * 1000);
+    const showTodayComparison = currentLivePeriod === "today";
+    const showTreatmentsForRange = shouldShowTreatmentEvents(currentLivePeriod, durationMs);
 
-    const chartRange = document.getElementById("chartRange");
-    if (chartRange) {
-      chartRange.textContent = `${formatDateTime(new Date(oneDayAgo))} ${t("chartRangeSeparator")} ${formatDateTime(new Date(now))}`;
-    }
+    updatePeriodButtons();
+    updateChartRangeLabel(rangeStart, rangeEnd);
 
-    const [entriesRaw, yesterdayEntriesRaw, sevenDayEntriesRaw, treatmentsRaw] = await Promise.all([
-      fetchJson(`${NIGHTSCOUT_URL}/api/v1/entries/sgv.json?find[date][$gte]=${oneDayAgo}&find[date][$lte]=${now}&count=1000`, []),
-      fetchJson(`${NIGHTSCOUT_URL}/api/v1/entries/sgv.json?find[date][$gte]=${yesterdayStart}&find[date][$lte]=${yesterdayEnd}&count=1000`, []),
-      fetchJson(`${NIGHTSCOUT_URL}/api/v1/entries/sgv.json?find[date][$gte]=${sevenDaysAgo}&find[date][$lte]=${now}&count=3000`, []),
-      loadTreatmentEvents(oneDayAgo, now)
+    const [entriesRaw, previousEntriesRaw, sevenDayEntriesRaw, treatmentsRaw] = await Promise.all([
+      fetchEntriesInRange(rangeStart, rangeEnd, periodRange.count),
+      fetchEntriesInRange(previousRangeStart, previousRangeEnd, Math.min(periodRange.count, 3000)),
+      fetchEntriesInRange(sevenDaysAgo, now, 3000),
+      showTreatmentsForRange ? loadTreatmentEvents(rangeStart, rangeEnd) : Promise.resolve([])
     ]);
 
     const entries = Array.isArray(entriesRaw) ? entriesRaw : [];
-    const yesterdayEntries = Array.isArray(yesterdayEntriesRaw) ? yesterdayEntriesRaw : [];
+    const previousEntries = Array.isArray(previousEntriesRaw) ? previousEntriesRaw : [];
     const sevenDayEntries = Array.isArray(sevenDayEntriesRaw) ? sevenDayEntriesRaw : [];
     const treatments = Array.isArray(treatmentsRaw) ? treatmentsRaw : [];
 
     drawGlucoseChart(entries, {
-      yesterdayEntries,
+      comparisonEntries: showTodayComparison ? previousEntries : [],
+      comparisonLabel: t("yesterdayLabel"),
+      primaryLabel: currentLivePeriod === "today" ? t("todayLabel") : t("selectedRangeLabel"),
       treatmentEvents: treatments,
-      rangeStart: oneDayAgo,
-      rangeEnd: now
+      rangeStart,
+      rangeEnd,
+      periodKey: currentLivePeriod
     });
 
-    const values = entries
-      .filter(e => e.sgv && getEntryTime(e) >= oneDayAgo)
-      .map(e => Number(e.sgv))
-      .filter((value) => Number.isFinite(value));
+    const values = getSgvValuesInRange(entries, rangeStart, rangeEnd);
 
     if (values.length === 0) {
       document.getElementById("comment").textContent = t("noDailyData");
-      updateScoreMetaDisplay(null, null, null);
+      updateScoreMetaDisplay(null, null, null, currentLivePeriod);
       return;
     }
 
@@ -1405,7 +1996,7 @@ async function loadDailyStats() {
 
     const avg = Math.round(average(values));
     const sd = standardDeviation(values);
-    const cv = ((sd / avg) * 100).toFixed(1);
+    const cv = avg > 0 ? ((sd / avg) * 100).toFixed(1) : "0.0";
     const gmi = calculateGMI(avg).toFixed(1);
 
     const glucoScore = calculateGlucoScore({
@@ -1420,26 +2011,26 @@ async function loadDailyStats() {
      `${glucoScore.rank} ${glucoScore.emoji}`;
     updateScoreGlucoImage(glucoScore.score);
 
-    const yesterdayScore = calculateGlucoScoreForEntries(yesterdayEntries, yesterdayStart, yesterdayEnd);
+    const previousScore = calculateGlucoScoreForEntries(previousEntries, previousRangeStart, previousRangeEnd);
     const sevenDayAverageScore = calculateSevenDayAverageGlucoScore(sevenDayEntries, now);
-    updateScoreMetaDisplay(glucoScore.score, yesterdayScore, sevenDayAverageScore);
-    setDailyLetterGlucoImage({
-      score: glucoScore.score,
-      tir,
-      yesterdayScore
-    });
+    updateScoreMetaDisplay(glucoScore.score, previousScore, sevenDayAverageScore, currentLivePeriod);
+
+    if (currentLivePeriod === "today") {
+      setDailyLetterGlucoImage({
+        score: glucoScore.score,
+        tir,
+        yesterdayScore: previousScore
+      });
+    } else {
+      renderStoredDailyLetterGlucoImage();
+    }
 
     const scoreMessage = document.querySelector(".score-message");
     if (scoreMessage) {
       scoreMessage.textContent = getLocalizedScoreMessage(glucoScore.score, glucoScore.message);
     }
 
-    document.getElementById("tirValue").textContent = `${tir}%`;
-    document.getElementById("tarValue").textContent = `${tar}%`;
-    document.getElementById("tbrValue").textContent = `${tbr}%`;
-    document.getElementById("avgValue").textContent = avg;
-    document.getElementById("cvValue").textContent = `${cv}%`;
-    document.getElementById("gmiValue").textContent = `${gmi}%`;
+    updateDisplayedMetrics({ tir, tar, tbr, avg, cv, gmi });
 
     document.getElementById("comment").textContent =
       makeComment(tir, tar, tbr, avg, cv, latest?.sgv ?? "--");
@@ -1447,11 +2038,12 @@ async function loadDailyStats() {
   } catch (error) {
     console.error(error);
     setLiveStatus("error", "OFFLINE", t("statusError"));
+    updateHealthBar(null, null, "error");
     updateHeaderUpdated(null);
     document.getElementById("status").textContent = t("statusError");
     updateCurrentGlucoseColor(null);
     updateGlucoseDelta(null, null);
-    updateScoreMetaDisplay(null, null, null);
+    updateScoreMetaDisplay(null, null, null, currentLivePeriod);
     document.getElementById("comment").textContent = t("commentLoadingError");
   }
 }
@@ -1621,6 +2213,32 @@ function setupCollectionShareButton() {
   });
 }
 
+function openDatePicker(input) {
+  if (!input) return;
+
+  try {
+    if (typeof input.showPicker === "function") {
+      input.showPicker();
+      return;
+    }
+  } catch (error) {
+    // Some browsers restrict showPicker; focus/click keeps the control usable.
+  }
+
+  input.focus();
+  input.click();
+}
+
+function setupDatePickerButtons() {
+  document.querySelectorAll(".date-input-icon[data-date-target]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const targetId = button.dataset.dateTarget;
+      const input = targetId ? document.getElementById(targetId) : null;
+      openDatePicker(input);
+    });
+  });
+}
+
 function setupViewTabs() {
   const tabs = document.querySelectorAll(".view-tab");
   const panels = {
@@ -1659,12 +2277,15 @@ function setupViewTabs() {
 }
 
 setupLanguageSwitch();
+setupPeriodSwitch();
 setupCollectionShareButton();
 applyLanguage();
 updateClock();
 renderStoredDailyLetterGlucoImage();
 setLiveStatus("pending", "CHECKING", "Nightscoutの最新データを確認中");
+updateHealthBar(null, null, "waiting");
 loadDailyStats();
+setupDatePickerButtons();
 setupViewTabs();
 
 setInterval(updateClock, 1000);
