@@ -32,7 +32,7 @@
 
     <div class="app-credit" aria-label="GlucoScope credit">
       <div>v0.8.0-beta</div>
-      <div>Made with 🍀 by <span>Kazuma</span></div>
+      <div>Made with 🍀 by <a href="https://www.instagram.com/kazuma.iddm/?hl=ja" target="_blank" rel="noopener noreferrer">Kazuma</a></div>
     </div>
   </header>
 
@@ -49,15 +49,19 @@
 <section class="hero-grid">
   <div class="card score-card hero-score-card">
     <div class="score-header">
-      <div class="label">😊 GlucoScore</div>
+      <div class="label">🍀 GlucoScore</div>
       <div id="scoreReason" class="score-badge">--</div>
     </div>
 
     <div class="score-main">
-      <span id="scoreValue" class="score-value">--</span>
+      <div class="score-gluco" aria-hidden="true">
+        <img id="scoreGlucoImage" src="assets/gluco/about/gluco-gentle-watch.png" alt="" class="score-gluco-image">
+      </div>
+      <div class="score-copy">
+        <span id="scoreValue" class="score-value">--</span>
+        <div class="score-message">今日は良い流れです。</div>
+      </div>
     </div>
-
-    <div class="score-message">今日は良い流れです。</div>
 
     <div class="score-meta">
       <span>↗ 昨日より +4</span>
@@ -137,8 +141,19 @@
   </section>
 
   <section class="card comment-card">
-    <div class="label">🤖 今日のひとこと</div>
-    <div id="comment">データを読み込んでいます...</div>
+    <div class="comment-card-header">
+      <div class="label">✉ グルコからのお手紙</div>
+      <div class="comment-tag">gluco message</div>
+    </div>
+    <div class="gluco-comment">
+      <div class="gluco-comment-avatar" aria-hidden="true">
+        <div id="commentGlucoNumber" class="gluco-letter-number">No. --</div>
+        <img id="commentGlucoImage" src="assets/gluco/live/gluco-live-01.png" alt="" class="gluco-comment-image">
+      </div>
+      <div class="gluco-comment-body">
+        <div id="comment">データを読み込んでいます...</div>
+      </div>
+    </div>
   </section>
 </main>
 
@@ -188,7 +203,7 @@
           <p>血糖データを責めずに一緒に振り返る、<br>やさしい小さなともだちです。</p>
           <span class="about-panel-arrow">詳しく見る →</span>
         </div>
-        <img src="assets/about/Guluco.png" alt="Gluco mascot AI partner" class="about-panel-gluco-image">
+        <img src="assets/gluco/profile/gluco.png" alt="Gluco mascot AI partner" class="about-panel-gluco-image">
       </a>
 
       <a class="about-section-panel" href="pages/about/what-you-can-see.html">

@@ -14,6 +14,203 @@ const directionMap = {
   "RATE OUT OF RANGE": "?"
 };
 
+const dailyLetterGlucoImages = [
+  "assets/gluco/live/gluco-live-01.png",
+  "assets/gluco/live/gluco-live-02.png",
+  "assets/gluco/live/gluco-live-03.png",
+  "assets/gluco/live/gluco-live-04.png",
+  "assets/gluco/live/gluco-live-05.png",
+  "assets/gluco/live/gluco-live-06.png",
+  "assets/gluco/live/gluco-live-07.png",
+  "assets/gluco/live/gluco-live-08.png",
+  "assets/gluco/live/gluco-live-09.png",
+  "assets/gluco/live/gluco-live-10.png",
+  "assets/gluco/live/gluco-live-11.png",
+  "assets/gluco/live/gluco-live-12.png",
+  "assets/gluco/live/gluco-live-13.png",
+  "assets/gluco/live/gluco-live-14.png",
+  "assets/gluco/live/gluco-live-15.png",
+  "assets/gluco/live/gluco-live-16.png",
+  "assets/gluco/live/gluco-live-17.png",
+  "assets/gluco/live/gluco-live-18.png",
+  "assets/gluco/live/gluco-live-19.png",
+  "assets/gluco/live/gluco-live-20.png",
+  "assets/gluco/live/gluco-live-21.png",
+  "assets/gluco/live/gluco-live-22.png",
+  "assets/gluco/live/gluco-live-23.png",
+  "assets/gluco/live/gluco-live-24.png",
+  "assets/gluco/live/gluco-live-25.png",
+  "assets/gluco/live/gluco-live-26.png",
+  "assets/gluco/live/gluco-live-27.png",
+  "assets/gluco/live/gluco-live-28.png",
+  "assets/gluco/live/gluco-live-29.png",
+  "assets/gluco/live/gluco-live-30.png",
+  "assets/gluco/live/gluco-live-31.png",
+  "assets/gluco/live/gluco-live-32.png",
+  "assets/gluco/live/gluco-live-33.png",
+  "assets/gluco/live/gluco-live-34.png",
+  "assets/gluco/live/gluco-live-35.png",
+  "assets/gluco/live/gluco-live-36.png",
+  "assets/gluco/live/gluco-live-37.png",
+  "assets/gluco/live/gluco-live-38.png",
+  "assets/gluco/live/gluco-live-39.png",
+  "assets/gluco/live/gluco-live-40.png",
+  "assets/gluco/live/gluco-live-41.png",
+  "assets/gluco/live/gluco-live-42.png",
+  "assets/gluco/live/gluco-live-43.png",
+  "assets/gluco/live/gluco-live-44.png",
+  "assets/gluco/live/gluco-live-45.png",
+  "assets/gluco/live/gluco-live-46.png",
+  "assets/gluco/live/gluco-live-47.png",
+  "assets/gluco/live/gluco-live-48.png",
+  "assets/gluco/live/gluco-live-49.png",
+  "assets/gluco/live/gluco-live-50.png",
+  "assets/gluco/live/gluco-live-51.png",
+  "assets/gluco/live/gluco-live-52.png",
+  "assets/gluco/live/gluco-live-53.png",
+  "assets/gluco/live/gluco-live-54.png",
+  "assets/gluco/live/gluco-live-55.png",
+  "assets/gluco/live/gluco-live-56.png",
+  "assets/gluco/live/gluco-live-57.png",
+  "assets/gluco/live/gluco-live-58.png",
+  "assets/gluco/live/gluco-live-59.png",
+  "assets/gluco/live/gluco-live-60.png",
+  "assets/gluco/live/gluco-live-61.png",
+  "assets/gluco/live/gluco-live-62.png",
+  "assets/gluco/live/gluco-live-63.png",
+  "assets/gluco/live/gluco-live-64.png",
+  "assets/gluco/live/gluco-live-65.png",
+  "assets/gluco/live/gluco-live-66.png",
+  "assets/gluco/live/gluco-live-67.png",
+  "assets/gluco/live/gluco-live-68.png",
+  "assets/gluco/live/gluco-live-69.png",
+  "assets/gluco/live/gluco-live-70.png"
+];
+
+const scoreGlucoImageByRank = {
+  excellent: "assets/gluco/about/gluco-growing.png",
+  great: "assets/gluco/about/gluco-gentle-watch.png",
+  good: "assets/gluco/about/gluco-small-notice.png",
+  fair: "assets/gluco/about/gluco-data-link.png",
+  gentle: "assets/gluco/about/gluco-safety.png"
+};
+
+function getLocalDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function hashString(value) {
+  let hash = 0;
+
+  for (let i = 0; i < value.length; i += 1) {
+    hash = ((hash << 5) - hash) + value.charCodeAt(i);
+    hash |= 0;
+  }
+
+  return Math.abs(hash);
+}
+
+function pickDailyLetterGlucoImage(date = new Date()) {
+  if (dailyLetterGlucoImages.length === 0) return "";
+
+  const imageIndex = hashString(`${getLocalDateKey(date)}:letter`) % dailyLetterGlucoImages.length;
+  return dailyLetterGlucoImages[imageIndex];
+}
+
+function getGlucoLiveNumber(imagePath) {
+  const match = imagePath.match(/gluco-live-(\d+)\.png$/);
+  if (!match) return null;
+
+  return Number(match[1]);
+}
+
+function formatGlucoLiveNumber(number) {
+  if (!number) return "No. --";
+  return `No. ${String(number).padStart(2, "0")}`;
+}
+
+function updateGlucoLetterCollection(imagePath, dateKey) {
+  const storageKey = "glucoscope.glucoCollection.v1";
+  const imageNumber = getGlucoLiveNumber(imagePath);
+
+  if (!imageNumber) {
+    return { label: "No. --", isNew: false, encounterCount: null };
+  }
+
+  try {
+    const collection = JSON.parse(localStorage.getItem(storageKey) || "{}");
+    const imageId = `gluco-live-${String(imageNumber).padStart(2, "0")}`;
+    const current = collection[imageId];
+
+    if (!current) {
+      collection[imageId] = {
+        firstSeenDate: dateKey,
+        lastSeenDate: dateKey,
+        encounterCount: 1
+      };
+      localStorage.setItem(storageKey, JSON.stringify(collection));
+      return {
+        label: `${formatGlucoLiveNumber(imageNumber)} · New!`,
+        isNew: true,
+        encounterCount: 1
+      };
+    }
+
+    if (current.lastSeenDate !== dateKey) {
+      current.lastSeenDate = dateKey;
+      current.encounterCount = Number(current.encounterCount || 1) + 1;
+      collection[imageId] = current;
+      localStorage.setItem(storageKey, JSON.stringify(collection));
+    }
+
+    return {
+      label: `${formatGlucoLiveNumber(imageNumber)} · ${current.encounterCount}回目`,
+      isNew: false,
+      encounterCount: current.encounterCount
+    };
+  } catch (error) {
+    return { label: formatGlucoLiveNumber(imageNumber), isNew: false, encounterCount: null };
+  }
+}
+
+function setDailyLetterGlucoImage() {
+  const commentImage = document.getElementById("commentGlucoImage");
+  const commentNumber = document.getElementById("commentGlucoNumber");
+
+  if (!commentImage) return;
+
+  const dateKey = getLocalDateKey();
+  const dailyImage = pickDailyLetterGlucoImage();
+
+  if (dailyImage) {
+    commentImage.src = dailyImage;
+  }
+
+  if (commentNumber && dailyImage) {
+    const collectionInfo = updateGlucoLetterCollection(dailyImage, dateKey);
+    commentNumber.textContent = collectionInfo.label;
+  }
+}
+
+function getScoreGlucoImage(score) {
+  const value = Number(score);
+
+  if (value >= 95) return scoreGlucoImageByRank.excellent;
+  if (value >= 85) return scoreGlucoImageByRank.great;
+  if (value >= 70) return scoreGlucoImageByRank.good;
+  if (value >= 50) return scoreGlucoImageByRank.fair;
+  return scoreGlucoImageByRank.gentle;
+}
+
+function updateScoreGlucoImage(score) {
+  const scoreImage = document.getElementById("scoreGlucoImage");
+  if (!scoreImage) return;
+
+  scoreImage.src = getScoreGlucoImage(score);
+}
 
 function setLiveStatus(statusType, label, detail = "") {
   const liveIndicator = document.getElementById("liveIndicator");
@@ -276,6 +473,7 @@ async function loadDailyStats() {
     document.getElementById("scoreValue").textContent = `${glucoScore.score}`;
     document.getElementById("scoreReason").textContent =
      `${glucoScore.rank} ${glucoScore.emoji}`;
+    updateScoreGlucoImage(glucoScore.score);
 
     const scoreMessage = document.querySelector(".score-message");
     if (scoreMessage) {
@@ -325,6 +523,7 @@ function updateClock() {
 }
 
 updateClock();
+setDailyLetterGlucoImage();
 setLiveStatus("pending", "CHECKING", "Nightscoutの最新データを確認中");
 loadDailyStats();
 
