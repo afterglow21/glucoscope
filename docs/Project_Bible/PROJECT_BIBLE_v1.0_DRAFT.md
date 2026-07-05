@@ -2738,4 +2738,154 @@ GlucoScopeとglucoは、
 GlucoScore
 78
 ↗ 昨日より +4・過去7日平均: 84
+```
+
+---
+
+### Live UI Follow-up: Gluco Memories & Lucky Gluco
+
+#### EN
+
+Gluco Memories is a gentle collection experience built around gluco.
+
+It should help people feel that small, kind moments can accumulate over time.
+It should not turn blood glucose data into grading, competition, or pressure.
+
+Each gluco encounter is treated as a small memory.
+These memories may be saved locally in the user's browser and shown as a personal collection.
+
+Lucky Gluco is a special encounter concept.
+It should feel like a small lucky clover arriving in the day,
+not like a medical reward or a judgment of the person.
+
+Initial image grouping:
+
+- No. 01–50: Normal Gluco
+- No. 51–70: Small Luck Lucky Gluco
+
+Lucky Gluco may appear on ordinary days too,
+but its probability may gently increase when one or more of the following conditions are met:
+
+- GlucoScore is higher
+- The user has visited GlucoScope on consecutive days
+- The user has collected 30 or more Gluco memories
+- The day is slightly more settled than yesterday
+- GlucoScore has improved significantly compared with yesterday
+- The user returns after a while
+- It is a birthday, anniversary, or seasonal event
+- TIR is 70% or higher
+- The same Normal Gluco appeared on the previous day
+- Normal Gluco has appeared for several days in a row
+
+GlucoScope should not add special logic that rewards low scores.
+This avoids creating incentives to intentionally aim for lower scores.
+
+Lucky Gluco reasons should not be shown in detail.
+Showing detailed reasons may create optimization pressure or make the experience feel like a game to be manipulated.
+
+When Lucky Gluco appears, the display may say:
+
+```text
+No. 58 Lucky Gluco!
+🍀 小さな幸運ラッキーグルコと出逢ったよ
+```
+
+Consecutive visit bonuses reset when a visit day is missed.
+Duplicate Normal Gluco and Normal-days-since-Lucky bonuses reset when Lucky Gluco appears.
+
+Gluco Memories may include local titles and optional sharing.
+Sharing should be opt-in and should not include medical data by default.
+
+Any future global ranking or shared leaderboard requires separate privacy design,
+explicit participation,
+user name handling,
+and a clear way to opt out.
+
+---
+
+#### JP
+
+グルコとの想い出は、
+グルコとの小さな出逢いを少しずつ集めていく、
+やさしいコレクション体験です。
+
+血糖データを、
+採点、競争、プレッシャーに変えるためのものではありません。
+
+グルコとの出逢いは、
+その日の小さな想い出として扱います。
+
+その想い出は、
+まずは利用する人のブラウザ内に保存し、
+個人のコレクションとして表示します。
+
+ラッキーグルコは、
+特別な出逢いのコンセプトです。
+
+医療的なご褒美や、
+その人への評価ではなく、
+四葉のクローバーのように、
+その日にそっと届く小さな幸運として扱います。
+
+初期の画像分類は、
+次のようにします。
+
+- No. 01〜50：通常グルコ
+- No. 51〜70：小さな幸運ラッキーグルコ
+
+ラッキーグルコは、
+普通の日にも出逢える可能性があります。
+
+ただし、
+次のような条件が重なるほど、
+出逢える確率をやさしく上げることができます。
+
+- GlucoScoreが高い日
+- GlucoScopeを連続して見に来た日
+- 初めて30種類以上のグルコと出逢ったあと
+- 昨日より少し整った日
+- 昨日よりGlucoScoreが大きく上がった日
+- 久しぶりに戻ってきた日
+- 誕生日、記念日、季節イベントの日
+- TIRが70%以上の日
+- 前日に同じ通常グルコと出逢った次の日
+- 通常グルコとの出逢いが続いた日
+
+GlucoScoreが低い日を狙うような特別ロジックは入れません。
+
+これは、
+低さを目指す動機をつくらないためです。
+
+ラッキーグルコが出た理由は、
+細かく表示しません。
+
+理由を詳しく出しすぎると、
+攻略や最適化のプレッシャーにつながる可能性があるためです。
+
+ラッキーグルコが出たときは、
+次のように表示します。
+
+```text
+No. 58 Lucky Gluco!
+🍀 小さな幸運ラッキーグルコと出逢ったよ
+```
+
+連続来訪のボーナスは、
+1日でも途切れたらリセットします。
+
+同じ通常グルコ翌日のボーナスや、
+通常グルコが続いたことによるボーナスは、
+ラッキーグルコが出たらリセットします。
+
+グルコとの想い出には、
+ローカル称号や任意のシェア機能を持たせることができます。
+
+シェアは利用する人が自分で選ぶものとし、
+初期状態では医療データを含めません。
+
+将来的に全体ランキングや共有ランキングを行う場合は、
+別途、プライバシー設計、
+参加同意、
+ユーザー名の扱い、
+ランキング非参加の選択肢を必ず設計します。
 
