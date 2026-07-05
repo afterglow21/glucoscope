@@ -273,7 +273,7 @@ async function loadDailyStats() {
       avg
     });
 
-    document.getElementById("scoreValue").textContent = `${glucoScore.score}点`;
+    document.getElementById("scoreValue").textContent = `${glucoScore.score}`;
     document.getElementById("scoreReason").textContent =
      `${glucoScore.rank} ${glucoScore.emoji}`;
 
