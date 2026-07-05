@@ -1,6 +1,10 @@
 const NIGHTSCOUT_URL = "https://kazuma-nightscoutweb.azurewebsites.net";
 
 let glucoseChart = null;
+let currentLanguage = localStorage.getItem("glucoscope.language.v1") || "ja";
+
+const GLUCO_COLLECTION_STORAGE_KEY = "glucoscope.glucoCollection.v1";
+const LANGUAGE_STORAGE_KEY = "glucoscope.language.v1";
 
 const directionMap = {
   DoubleUp: "⇈",
@@ -14,78 +18,80 @@ const directionMap = {
   "RATE OUT OF RANGE": "?"
 };
 
-const dailyLetterGlucoImages = [
-  "assets/gluco/live/gluco-live-01.png",
-  "assets/gluco/live/gluco-live-02.png",
-  "assets/gluco/live/gluco-live-03.png",
-  "assets/gluco/live/gluco-live-04.png",
-  "assets/gluco/live/gluco-live-05.png",
-  "assets/gluco/live/gluco-live-06.png",
-  "assets/gluco/live/gluco-live-07.png",
-  "assets/gluco/live/gluco-live-08.png",
-  "assets/gluco/live/gluco-live-09.png",
-  "assets/gluco/live/gluco-live-10.png",
-  "assets/gluco/live/gluco-live-11.png",
-  "assets/gluco/live/gluco-live-12.png",
-  "assets/gluco/live/gluco-live-13.png",
-  "assets/gluco/live/gluco-live-14.png",
-  "assets/gluco/live/gluco-live-15.png",
-  "assets/gluco/live/gluco-live-16.png",
-  "assets/gluco/live/gluco-live-17.png",
-  "assets/gluco/live/gluco-live-18.png",
-  "assets/gluco/live/gluco-live-19.png",
-  "assets/gluco/live/gluco-live-20.png",
-  "assets/gluco/live/gluco-live-21.png",
-  "assets/gluco/live/gluco-live-22.png",
-  "assets/gluco/live/gluco-live-23.png",
-  "assets/gluco/live/gluco-live-24.png",
-  "assets/gluco/live/gluco-live-25.png",
-  "assets/gluco/live/gluco-live-26.png",
-  "assets/gluco/live/gluco-live-27.png",
-  "assets/gluco/live/gluco-live-28.png",
-  "assets/gluco/live/gluco-live-29.png",
-  "assets/gluco/live/gluco-live-30.png",
-  "assets/gluco/live/gluco-live-31.png",
-  "assets/gluco/live/gluco-live-32.png",
-  "assets/gluco/live/gluco-live-33.png",
-  "assets/gluco/live/gluco-live-34.png",
-  "assets/gluco/live/gluco-live-35.png",
-  "assets/gluco/live/gluco-live-36.png",
-  "assets/gluco/live/gluco-live-37.png",
-  "assets/gluco/live/gluco-live-38.png",
-  "assets/gluco/live/gluco-live-39.png",
-  "assets/gluco/live/gluco-live-40.png",
-  "assets/gluco/live/gluco-live-41.png",
-  "assets/gluco/live/gluco-live-42.png",
-  "assets/gluco/live/gluco-live-43.png",
-  "assets/gluco/live/gluco-live-44.png",
-  "assets/gluco/live/gluco-live-45.png",
-  "assets/gluco/live/gluco-live-46.png",
-  "assets/gluco/live/gluco-live-47.png",
-  "assets/gluco/live/gluco-live-48.png",
-  "assets/gluco/live/gluco-live-49.png",
-  "assets/gluco/live/gluco-live-50.png",
-  "assets/gluco/live/gluco-live-51.png",
-  "assets/gluco/live/gluco-live-52.png",
-  "assets/gluco/live/gluco-live-53.png",
-  "assets/gluco/live/gluco-live-54.png",
-  "assets/gluco/live/gluco-live-55.png",
-  "assets/gluco/live/gluco-live-56.png",
-  "assets/gluco/live/gluco-live-57.png",
-  "assets/gluco/live/gluco-live-58.png",
-  "assets/gluco/live/gluco-live-59.png",
-  "assets/gluco/live/gluco-live-60.png",
-  "assets/gluco/live/gluco-live-61.png",
-  "assets/gluco/live/gluco-live-62.png",
-  "assets/gluco/live/gluco-live-63.png",
-  "assets/gluco/live/gluco-live-64.png",
-  "assets/gluco/live/gluco-live-65.png",
-  "assets/gluco/live/gluco-live-66.png",
-  "assets/gluco/live/gluco-live-67.png",
-  "assets/gluco/live/gluco-live-68.png",
-  "assets/gluco/live/gluco-live-69.png",
-  "assets/gluco/live/gluco-live-70.png"
+const glucoLiveItems = [
+  { id: 1, image: "assets/gluco/live/gluco-live-01.png", title: { ja: "朝ごはん", en: "Breakfast" } },
+  { id: 2, image: "assets/gluco/live/gluco-live-02.png", title: { ja: "ティータイム", en: "Tea time" } },
+  { id: 3, image: "assets/gluco/live/gluco-live-03.png", title: { ja: "ボールあそび", en: "Ball play" } },
+  { id: 4, image: "assets/gluco/live/gluco-live-04.png", title: { ja: "テニス", en: "Tennis" } },
+  { id: 5, image: "assets/gluco/live/gluco-live-05.png", title: { ja: "クローバー散歩", en: "Clover walk" } },
+  { id: 6, image: "assets/gluco/live/gluco-live-06.png", title: { ja: "雨の日のおでかけ", en: "Rainy outing" } },
+  { id: 7, image: "assets/gluco/live/gluco-live-07.png", title: { ja: "おすわり", en: "Sitting together" } },
+  { id: 8, image: "assets/gluco/live/gluco-live-08.png", title: { ja: "読書", en: "Reading" } },
+  { id: 9, image: "assets/gluco/live/gluco-live-09.png", title: { ja: "お料理", en: "Cooking" } },
+  { id: 10, image: "assets/gluco/live/gluco-live-10.png", title: { ja: "おでかけ準備", en: "Ready to go" } },
+  { id: 11, image: "assets/gluco/live/gluco-live-11.png", title: { ja: "おやすみ", en: "Good night" } },
+  { id: 12, image: "assets/gluco/live/gluco-live-12.png", title: { ja: "パジャマ", en: "Pajamas" } },
+  { id: 13, image: "assets/gluco/live/gluco-live-13.png", title: { ja: "おえかき", en: "Drawing" } },
+  { id: 14, image: "assets/gluco/live/gluco-live-14.png", title: { ja: "ガーデン", en: "Garden" } },
+  { id: 15, image: "assets/gluco/live/gluco-live-15.png", title: { ja: "音楽時間", en: "Music time" } },
+  { id: 16, image: "assets/gluco/live/gluco-live-16.png", title: { ja: "日記", en: "Journaling" } },
+  { id: 17, image: "assets/gluco/live/gluco-live-17.png", title: { ja: "ピクニック", en: "Picnic" } },
+  { id: 18, image: "assets/gluco/live/gluco-live-18.png", title: { ja: "ストレッチ", en: "Stretching" } },
+  { id: 19, image: "assets/gluco/live/gluco-live-19.png", title: { ja: "お茶会", en: "Tea party" } },
+  { id: 20, image: "assets/gluco/live/gluco-live-20.png", title: { ja: "いちごのおめかし", en: "Strawberry outfit" } },
+  { id: 21, image: "assets/gluco/live/gluco-live-21.png", title: { ja: "ほっとひと息", en: "A gentle pause" } },
+  { id: 22, image: "assets/gluco/live/gluco-live-22.png", title: { ja: "サイクリング", en: "Cycling" } },
+  { id: 23, image: "assets/gluco/live/gluco-live-23.png", title: { ja: "クローバー畑", en: "Clover field" } },
+  { id: 24, image: "assets/gluco/live/gluco-live-24.png", title: { ja: "芽吹き", en: "New sprout" } },
+  { id: 25, image: "assets/gluco/live/gluco-live-25.png", title: { ja: "星空観察", en: "Stargazing" } },
+  { id: 26, image: "assets/gluco/live/gluco-live-26.png", title: { ja: "窓辺の時間", en: "Window time" } },
+  { id: 27, image: "assets/gluco/live/gluco-live-27.png", title: { ja: "大きなクローバー", en: "Big clover" } },
+  { id: 28, image: "assets/gluco/live/gluco-live-28.png", title: { ja: "キャンプファイヤー", en: "Campfire" } },
+  { id: 29, image: "assets/gluco/live/gluco-live-29.png", title: { ja: "みどりのボール", en: "Green ball" } },
+  { id: 30, image: "assets/gluco/live/gluco-live-30.png", title: { ja: "にっこり", en: "Smile" } },
+  { id: 31, image: "assets/gluco/live/gluco-live-31.png", title: { ja: "クローバーの椅子", en: "Clover chair" } },
+  { id: 32, image: "assets/gluco/live/gluco-live-32.png", title: { ja: "花畑", en: "Flower field" } },
+  { id: 33, image: "assets/gluco/live/gluco-live-33.png", title: { ja: "プレゼント", en: "Gift" } },
+  { id: 34, image: "assets/gluco/live/gluco-live-34.png", title: { ja: "水あそび", en: "Water play" } },
+  { id: 35, image: "assets/gluco/live/gluco-live-35.png", title: { ja: "キックボード", en: "Kick scooter" } },
+  { id: 36, image: "assets/gluco/live/gluco-live-36.png", title: { ja: "しゃぼん玉", en: "Soap bubbles" } },
+  { id: 37, image: "assets/gluco/live/gluco-live-37.png", title: { ja: "雪だるま", en: "Snowman" } },
+  { id: 38, image: "assets/gluco/live/gluco-live-38.png", title: { ja: "ランタンの夜", en: "Lantern night" } },
+  { id: 39, image: "assets/gluco/live/gluco-live-39.png", title: { ja: "虹の散歩", en: "Rainbow walk" } },
+  { id: 40, image: "assets/gluco/live/gluco-live-40.png", title: { ja: "植物のお世話", en: "Plant care" } },
+  { id: 41, image: "assets/gluco/live/gluco-live-41.png", title: { ja: "望遠鏡", en: "Telescope" } },
+  { id: 42, image: "assets/gluco/live/gluco-live-42.png", title: { ja: "ギター", en: "Guitar" } },
+  { id: 43, image: "assets/gluco/live/gluco-live-43.png", title: { ja: "ぎゅっと安心", en: "A safe hug" } },
+  { id: 44, image: "assets/gluco/live/gluco-live-44.png", title: { ja: "ハイキング", en: "Hiking" } },
+  { id: 45, image: "assets/gluco/live/gluco-live-45.png", title: { ja: "ふわふわ泡", en: "Fluffy bubbles" } },
+  { id: 46, image: "assets/gluco/live/gluco-live-46.png", title: { ja: "雨上がり", en: "After the rain" } },
+  { id: 47, image: "assets/gluco/live/gluco-live-47.png", title: { ja: "収穫バスケット", en: "Harvest basket" } },
+  { id: 48, image: "assets/gluco/live/gluco-live-48.png", title: { ja: "地図をひろげて", en: "Map time" } },
+  { id: 49, image: "assets/gluco/live/gluco-live-49.png", title: { ja: "ドーナツ時間", en: "Doughnut time" } },
+  { id: 50, image: "assets/gluco/live/gluco-live-50.png", title: { ja: "キャンプ", en: "Camping" } },
+  { id: 51, image: "assets/gluco/live/gluco-live-51.png", title: { ja: "メリーゴーランド", en: "Carousel" } },
+  { id: 52, image: "assets/gluco/live/gluco-live-52.png", title: { ja: "ゴンドラ", en: "Gondola" } },
+  { id: 53, image: "assets/gluco/live/gluco-live-53.png", title: { ja: "クローバーボート", en: "Clover boat" } },
+  { id: 54, image: "assets/gluco/live/gluco-live-54.png", title: { ja: "ティーカップ", en: "Teacup" } },
+  { id: 55, image: "assets/gluco/live/gluco-live-55.png", title: { ja: "わたあめ", en: "Cotton candy" } },
+  { id: 56, image: "assets/gluco/live/gluco-live-56.png", title: { ja: "お菓子屋さん", en: "Sweet shop" } },
+  { id: 57, image: "assets/gluco/live/gluco-live-57.png", title: { ja: "テーマパーク", en: "Theme park" } },
+  { id: 58, image: "assets/gluco/live/gluco-live-58.png", title: { ja: "ナイトパレード", en: "Night parade" } },
+  { id: 59, image: "assets/gluco/live/gluco-live-59.png", title: { ja: "汽車ぽっぽ", en: "Little train" } },
+  { id: 60, image: "assets/gluco/live/gluco-live-60.png", title: { ja: "バルーン", en: "Balloon" } },
+  { id: 61, image: "assets/gluco/live/gluco-live-61.png", title: { ja: "幼稚園バッグ", en: "Kindergarten bag" } },
+  { id: 62, image: "assets/gluco/live/gluco-live-62.png", title: { ja: "工作の時間", en: "Craft time" } },
+  { id: 63, image: "assets/gluco/live/gluco-live-63.png", title: { ja: "おもちゃのお部屋", en: "Toy room" } },
+  { id: 64, image: "assets/gluco/live/gluco-live-64.png", title: { ja: "ぬいぐるみ時間", en: "Plush friends" } },
+  { id: 65, image: "assets/gluco/live/gluco-live-65.png", title: { ja: "お昼寝", en: "Nap time" } },
+  { id: 66, image: "assets/gluco/live/gluco-live-66.png", title: { ja: "お弁当", en: "Lunch box" } },
+  { id: 67, image: "assets/gluco/live/gluco-live-67.png", title: { ja: "おえかき教室", en: "Drawing class" } },
+  { id: 68, image: "assets/gluco/live/gluco-live-68.png", title: { ja: "お花畑", en: "Flower garden" } },
+  { id: 69, image: "assets/gluco/live/gluco-live-69.png", title: { ja: "すべり台", en: "Slide" } },
+  { id: 70, image: "assets/gluco/live/gluco-live-70.png", title: { ja: "公園のおでかけ", en: "Park outing" } }
 ];
+
+const dailyLetterGlucoImages = glucoLiveItems.map((item) => item.image);
 
 const scoreGlucoImageByRank = {
   excellent: "assets/gluco/about/gluco-growing.png",
@@ -94,6 +100,149 @@ const scoreGlucoImageByRank = {
   fair: "assets/gluco/about/gluco-data-link.png",
   gentle: "assets/gluco/about/gluco-safety.png"
 };
+
+const translations = {
+  ja: {
+    tabLive: "🟢 Live",
+    tabJournal: "📖 Journal",
+    tabClinic: "🏥 Clinic",
+    tabCollection: "🍀 想い出",
+    tabAbout: "✨ About",
+    languageLabel: "Language",
+    glucoScoreLabel: "🍀 GlucoScore",
+    currentGlucoseLabel: "現在血糖",
+    chartTitle: "📈 24時間グラフ",
+    legendToday: "今日",
+    legendYesterday: "昨日",
+    legendRange: "TIR目標範囲",
+    legendMealBolus: "Meal Bolus",
+    legendCorrectionBolus: "Correction Bolus",
+    mealBolusLabel: "Meal Bolus",
+    correctionBolusLabel: "Correction Bolus",
+    letterTitle: "✉ グルコからのお手紙",
+    averageLabel: "平均",
+    cvLabel: "（変動係数）",
+    tirDesc: "目標範囲内の時間",
+    tirSmall: "70〜180mg/dLだった割合",
+    tarDesc: "高血糖の時間",
+    tarSmall: "180mg/dL超だった割合",
+    tbrDesc: "低血糖の時間",
+    tbrSmall: "70mg/dL未満だった割合",
+    avgDesc: "平均血糖値",
+    avgSmall: "過去24時間の平均",
+    cvDesc: "血糖のばらつき",
+    cvSmall: "目標は36%未満",
+    gmiDesc: "HbA1cの目安",
+    gmiSmall: "平均血糖から推定",
+    lastUpdatedLabel: "最終更新",
+    collectionTitle: "🍀 グルコとの想い出",
+    collectionLead: "毎日出会ったグルコを、ブラウザの中にそっと記録します。",
+    collectionToday: "出会ったグルコが、ここに少しずつ増えていきます。",
+    collectionLocked: "まだ出会っていないGluco",
+    collectionFirstSeen: "初めて出会った日",
+    collectionTimes: "回目",
+    collectionProgress: "出会ったグルコ",
+    achievementLabel: "称号",
+    shareAchievement: "称号をシェア",
+    shareCopied: "シェア文をコピーしました",
+    shareText: "GlucoScopeで{count}種類のグルコと出会って、称号「{title}」になりました🍀",
+    rangeLow: "● Low",
+    rangeHigh: "● High",
+    rangeIn: "● In Range",
+    latestNoData: "データが見つかりません",
+    noDataDetail: "Nightscoutに最新データがありません",
+    latestUnknown: "方向不明",
+    updatedMinutesAgo: "分前に更新",
+    statusError: "Nightscout接続エラー",
+    commentLoadingError: "データ取得中にエラーが出ました。Consoleを確認してみてください。",
+    noDailyData: "24時間分のデータが見つかりませんでした。",
+    chartRangeSeparator: "〜",
+    todayLabel: "今日",
+    yesterdayLabel: "昨日",
+    glucoseLabel: "血糖値",
+    lowLineLabel: "低血糖ライン 70",
+    highLineLabel: "高血糖ライン 180",
+    deltaUnavailable: "前回更新との差分はまだ表示できません",
+    deltaTitle: "前回更新との差分",
+    scoreExcellent: "今日はかなり安定しています。",
+    scoreGreat: "今日は良い流れです。",
+    scoreGood: "今日はまずまず安定しています。",
+    scoreFair: "今日は少し整えどころがあります。",
+    scoreGentle: "今日は無理せず、明日に整えていきましょう。"
+  },
+  en: {
+    tabLive: "🟢 Live",
+    tabJournal: "📖 Journal",
+    tabClinic: "🏥 Clinic",
+    tabCollection: "🍀 Collection",
+    tabAbout: "✨ About",
+    languageLabel: "Language",
+    glucoScoreLabel: "🍀 GlucoScore",
+    currentGlucoseLabel: "Current glucose",
+    chartTitle: "📈 24-hour chart",
+    legendToday: "Today",
+    legendYesterday: "Yesterday",
+    legendRange: "TIR target range",
+    legendMealBolus: "Meal Bolus",
+    legendCorrectionBolus: "Correction Bolus",
+    mealBolusLabel: "Meal Bolus",
+    correctionBolusLabel: "Correction Bolus",
+    letterTitle: "✉ Letter from Gluco",
+    averageLabel: "Average",
+    cvLabel: "(coefficient of variation)",
+    tirDesc: "Time in target range",
+    tirSmall: "Share of time at 70–180mg/dL",
+    tarDesc: "Time above range",
+    tarSmall: "Share of time above 180mg/dL",
+    tbrDesc: "Time below range",
+    tbrSmall: "Share of time below 70mg/dL",
+    avgDesc: "Average glucose",
+    avgSmall: "Average over the past 24 hours",
+    cvDesc: "Glucose variability",
+    cvSmall: "Target is under 36%",
+    gmiDesc: "HbA1c estimate",
+    gmiSmall: "Estimated from average glucose",
+    lastUpdatedLabel: "Last updated",
+    collectionTitle: "🍀 Gluco Collection",
+    collectionLead: "Gluco friends you meet each day are gently saved in this browser.",
+    collectionToday: "Meet today’s Gluco and it will be saved here.",
+    collectionLocked: "Gluco not met yet",
+    collectionFirstSeen: "First seen",
+    collectionTimes: "time",
+    collectionProgress: "Gluco met",
+    achievementLabel: "Title",
+    shareAchievement: "Share title",
+    shareCopied: "Share text copied",
+    shareText: "I met {count} Gluco friends in GlucoScope and earned the title: {title} 🍀",
+    rangeLow: "● Low",
+    rangeHigh: "● High",
+    rangeIn: "● In Range",
+    latestNoData: "No data found",
+    noDataDetail: "No latest data was found in Nightscout",
+    latestUnknown: "Unknown direction",
+    updatedMinutesAgo: "min ago",
+    statusError: "Nightscout connection error",
+    commentLoadingError: "Something went wrong while loading the data. Please check the console.",
+    noDailyData: "No data was found for the past 24 hours.",
+    chartRangeSeparator: "to",
+    todayLabel: "Today",
+    yesterdayLabel: "Yesterday",
+    glucoseLabel: "Glucose",
+    lowLineLabel: "Low line 70",
+    highLineLabel: "High line 180",
+    deltaUnavailable: "The difference from the previous update is not available yet",
+    deltaTitle: "Difference from previous update",
+    scoreExcellent: "Today looks very steady.",
+    scoreGreat: "Today is flowing nicely.",
+    scoreGood: "Today looks fairly steady.",
+    scoreFair: "There may be a few places to review today.",
+    scoreGentle: "Take it gently today. Tomorrow is another day."
+  }
+};
+
+function t(key) {
+  return translations[currentLanguage]?.[key] || translations.ja[key] || key;
+}
 
 function getLocalDateKey(date = new Date()) {
   const year = date.getFullYear();
@@ -132,8 +281,48 @@ function formatGlucoLiveNumber(number) {
   return `No. ${String(number).padStart(2, "0")}`;
 }
 
+function getGlucoLiveItemByNumber(number) {
+  return glucoLiveItems.find((item) => item.id === Number(number));
+}
+
+function getGlucoLiveItemByPath(imagePath) {
+  const number = getGlucoLiveNumber(imagePath);
+  return getGlucoLiveItemByNumber(number);
+}
+
+function getGlucoLiveTitle(number) {
+  const item = getGlucoLiveItemByNumber(number);
+  if (!item) return currentLanguage === "en" ? "Gluco memory" : "グルコの想い出";
+  return item.title[currentLanguage] || item.title.ja;
+}
+
+function formatGlucoLiveTitle(number) {
+  return `${formatGlucoLiveNumber(number)} ${getGlucoLiveTitle(number)}`;
+}
+
+function readGlucoCollection() {
+  try {
+    return JSON.parse(localStorage.getItem(GLUCO_COLLECTION_STORAGE_KEY) || "{}");
+  } catch (error) {
+    return {};
+  }
+}
+
+function writeGlucoCollection(collection) {
+  localStorage.setItem(GLUCO_COLLECTION_STORAGE_KEY, JSON.stringify(collection));
+}
+
+function formatEncounterLabel(count) {
+  const value = Number(count || 1);
+
+  if (currentLanguage === "en") {
+    return `${value} ${value === 1 ? "time" : "times"}`;
+  }
+
+  return `${value}${t("collectionTimes")}`;
+}
+
 function updateGlucoLetterCollection(imagePath, dateKey) {
-  const storageKey = "glucoscope.glucoCollection.v1";
   const imageNumber = getGlucoLiveNumber(imagePath);
 
   if (!imageNumber) {
@@ -141,7 +330,7 @@ function updateGlucoLetterCollection(imagePath, dateKey) {
   }
 
   try {
-    const collection = JSON.parse(localStorage.getItem(storageKey) || "{}");
+    const collection = readGlucoCollection();
     const imageId = `gluco-live-${String(imageNumber).padStart(2, "0")}`;
     const current = collection[imageId];
 
@@ -149,11 +338,12 @@ function updateGlucoLetterCollection(imagePath, dateKey) {
       collection[imageId] = {
         firstSeenDate: dateKey,
         lastSeenDate: dateKey,
-        encounterCount: 1
+        encounterCount: 1,
+        imagePath
       };
-      localStorage.setItem(storageKey, JSON.stringify(collection));
+      writeGlucoCollection(collection);
       return {
-        label: `${formatGlucoLiveNumber(imageNumber)} · New!`,
+        label: `${formatGlucoLiveTitle(imageNumber)} · New!`,
         isNew: true,
         encounterCount: 1
       };
@@ -162,17 +352,18 @@ function updateGlucoLetterCollection(imagePath, dateKey) {
     if (current.lastSeenDate !== dateKey) {
       current.lastSeenDate = dateKey;
       current.encounterCount = Number(current.encounterCount || 1) + 1;
+      current.imagePath = imagePath;
       collection[imageId] = current;
-      localStorage.setItem(storageKey, JSON.stringify(collection));
+      writeGlucoCollection(collection);
     }
 
     return {
-      label: `${formatGlucoLiveNumber(imageNumber)} · ${current.encounterCount}回目`,
+      label: `${formatGlucoLiveTitle(imageNumber)} · ${formatEncounterLabel(current.encounterCount)}`,
       isNew: false,
       encounterCount: current.encounterCount
     };
   } catch (error) {
-    return { label: formatGlucoLiveNumber(imageNumber), isNew: false, encounterCount: null };
+    return { label: formatGlucoLiveTitle(imageNumber), isNew: false, encounterCount: null };
   }
 }
 
@@ -193,6 +384,8 @@ function setDailyLetterGlucoImage() {
     const collectionInfo = updateGlucoLetterCollection(dailyImage, dateKey);
     commentNumber.textContent = collectionInfo.label;
   }
+
+  renderCollectionView();
 }
 
 function getScoreGlucoImage(score) {
@@ -205,11 +398,124 @@ function getScoreGlucoImage(score) {
   return scoreGlucoImageByRank.gentle;
 }
 
+function getLocalizedScoreMessage(score, fallback = "") {
+  const value = Number(score);
+
+  if (value >= 95) return t("scoreExcellent");
+  if (value >= 85) return t("scoreGreat");
+  if (value >= 70) return t("scoreGood");
+  if (value >= 50) return t("scoreFair");
+  if (Number.isFinite(value)) return t("scoreGentle");
+  return fallback;
+}
+
 function updateScoreGlucoImage(score) {
   const scoreImage = document.getElementById("scoreGlucoImage");
   if (!scoreImage) return;
 
   scoreImage.src = getScoreGlucoImage(score);
+}
+
+function applyLanguage() {
+  document.documentElement.lang = currentLanguage === "en" ? "en" : "ja";
+
+  document.querySelectorAll("[data-i18n-key]").forEach((element) => {
+    const key = element.dataset.i18nKey;
+    element.textContent = t(key);
+  });
+
+  document.querySelectorAll(".language-button").forEach((button) => {
+    button.classList.toggle("active", button.dataset.language === currentLanguage);
+  });
+
+  setDailyLetterGlucoImage();
+  renderCollectionView();
+}
+
+function setLanguage(language) {
+  if (!translations[language]) return;
+
+  currentLanguage = language;
+  localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+  applyLanguage();
+  loadDailyStats();
+}
+
+function setupLanguageSwitch() {
+  document.querySelectorAll(".language-button").forEach((button) => {
+    button.addEventListener("click", () => setLanguage(button.dataset.language));
+  });
+}
+
+function getSgvValuesInRange(entries, rangeStart, rangeEnd) {
+  return [...entries]
+    .filter((entry) => {
+      const time = getEntryTime(entry);
+      return Number.isFinite(time) && time >= rangeStart && time <= rangeEnd;
+    })
+    .map((entry) => Number(entry.sgv))
+    .filter((value) => Number.isFinite(value));
+}
+
+function calculateGlucoScoreFromValues(values) {
+  if (!values.length) return null;
+
+  const inRange = values.filter((v) => v >= 70 && v <= 180).length;
+  const belowRange = values.filter((v) => v < 70).length;
+  const tir = pct(inRange, values.length);
+  const tbr = pct(belowRange, values.length);
+  const avg = Math.round(average(values));
+  const sd = standardDeviation(values);
+  const cv = avg > 0 ? ((sd / avg) * 100).toFixed(1) : 0;
+
+  return calculateGlucoScore({ tir, tbr, cv, avg }).score;
+}
+
+function calculateGlucoScoreForEntries(entries, rangeStart, rangeEnd) {
+  return calculateGlucoScoreFromValues(getSgvValuesInRange(entries, rangeStart, rangeEnd));
+}
+
+function calculateSevenDayAverageGlucoScore(entries, now) {
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  const scores = [];
+
+  for (let offset = 0; offset < 7; offset += 1) {
+    const rangeEnd = now - (offset * oneDayMs);
+    const rangeStart = rangeEnd - oneDayMs;
+    const score = calculateGlucoScoreForEntries(entries, rangeStart, rangeEnd);
+    if (score !== null) scores.push(score);
+  }
+
+  if (!scores.length) return null;
+  return Math.round(average(scores));
+}
+
+function updateScoreMetaDisplay(currentScore, yesterdayScore, sevenDayAverageScore) {
+  const yesterdayEl = document.getElementById("scoreYesterdayDelta");
+  const sevenDayEl = document.getElementById("scoreSevenDayAverage");
+
+  if (yesterdayEl) {
+    if (currentScore === null || yesterdayScore === null) {
+      yesterdayEl.textContent = currentLanguage === "en" ? "Yesterday: --" : "昨日比較: --";
+    } else {
+      const diff = Number(currentScore) - Number(yesterdayScore);
+      if (diff > 0) {
+        yesterdayEl.textContent = currentLanguage === "en" ? `↗ +${diff} vs yesterday` : `↗ 昨日より +${diff}`;
+      } else if (diff < 0) {
+        yesterdayEl.textContent = currentLanguage === "en" ? `↘ ${diff} vs yesterday` : `↘ 昨日より ${diff}`;
+      } else {
+        yesterdayEl.textContent = currentLanguage === "en" ? "→ same as yesterday" : "→ 昨日と同じ";
+      }
+    }
+  }
+
+  if (sevenDayEl) {
+    if (sevenDayAverageScore === null) {
+      sevenDayEl.textContent = currentLanguage === "en" ? "7-day avg: --" : "過去7日平均: --";
+    } else {
+      sevenDayEl.textContent = currentLanguage === "en" ? `7-day avg: ${sevenDayAverageScore}` : `過去7日平均: ${sevenDayAverageScore}`;
+    }
+  }
 }
 
 function setLiveStatus(statusType, label, detail = "") {
@@ -232,18 +538,18 @@ function updateRangeStatus(glucose) {
 
   if (glucose < 70) {
     rangeStatus.classList.add("below-range");
-    rangeStatus.textContent = "● Low";
+    rangeStatus.textContent = t("rangeLow");
     return;
   }
 
   if (glucose > 180) {
     rangeStatus.classList.add("above-range");
-    rangeStatus.textContent = "● High";
+    rangeStatus.textContent = t("rangeHigh");
     return;
   }
 
   rangeStatus.classList.add("in-range");
-  rangeStatus.textContent = "● In Range";
+  rangeStatus.textContent = t("rangeIn");
 }
 
 function formatGlucoseDelta(latestValue, previousValue) {
@@ -277,9 +583,9 @@ function updateGlucoseDelta(latestValue, previousValue) {
   }
 
   if (deltaText === "--") {
-    deltaEl.title = "前回更新との差分はまだ表示できません";
+    deltaEl.title = t("deltaUnavailable");
   } else {
-    deltaEl.title = `前回更新との差分: ${deltaText} mg/dL`;
+    deltaEl.title = `${t("deltaTitle")}: ${deltaText} mg/dL`;
   }
 }
 
@@ -291,11 +597,15 @@ function formatRelativeUpdate(date) {
   const diffMin = Math.round(diffSec / 60);
   const diffHour = Math.round(diffMin / 60);
 
-  if (diffSec < 60) return "just now";
-  if (diffMin < 60) return `${diffMin} min ago`;
-  if (diffHour < 24) return `${diffHour} hour${diffHour === 1 ? "" : "s"} ago`;
+  if (diffSec < 60) return currentLanguage === "en" ? "just now" : "たった今";
+  if (diffMin < 60) return currentLanguage === "en" ? `${diffMin} min ago` : `${diffMin}分前`;
+  if (diffHour < 24) {
+    return currentLanguage === "en"
+      ? `${diffHour} hour${diffHour === 1 ? "" : "s"} ago`
+      : `${diffHour}時間前`;
+  }
 
-  return date.toLocaleDateString("ja-JP", {
+  return date.toLocaleDateString(currentLanguage === "en" ? "en-US" : "ja-JP", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit"
@@ -309,7 +619,7 @@ function updateHeaderUpdated(measuredAt) {
 }
 
 function formatDateTime(date) {
-  return date.toLocaleString("ja-JP", {
+  return date.toLocaleString(currentLanguage === "en" ? "en-US" : "ja-JP", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -319,6 +629,26 @@ function formatDateTime(date) {
 }
 
 function makeComment(tir, tar, tbr, avg, cv) {
+  if (currentLanguage === "en") {
+    if (Number(tir) >= 90 && Number(tbr) < 4 && Number(cv) < 30) {
+      return `Today looks very steady.\n\nTIR is ${tir}%, and average glucose is ${avg}mg/dL.\nThe flow looks calm with less variability 😊`;
+    }
+
+    if (Number(tbr) >= 4) {
+      return `Time below range is a little noticeable today.\n\nTBR was ${tbr}%.\nIt may be helpful to gently look back at overnight or pre-meal dips later.`;
+    }
+
+    if (Number(tar) >= 20) {
+      return `Time above range is a little higher today.\n\nTAR was ${tar}%.\nLooking at post-meal rises may give you a small clue.`;
+    }
+
+    if (Number(cv) >= 36) {
+      return `Glucose swings look a little larger today.\n\nCV was ${cv}%.\nIt may help to look back at when the ups and downs happened.`;
+    }
+
+    return `Today looks fairly steady.\n\nTIR is ${tir}%.\nIt would be nice to keep this gentle flow going.`;
+  }
+
   if (Number(tir) >= 90 && Number(tbr) < 4 && Number(cv) < 30) {
     return `今日はかなり安定しています。\n\nTIRは${tir}%、平均血糖は${avg}mg/dLです。\n血糖のばらつきも少なく、とても良い流れです😊`;
   }
@@ -338,82 +668,295 @@ function makeComment(tir, tar, tbr, avg, cv) {
   return `今日はまずまず安定しています。\n\nTIRは${tir}%です。\nこのまま落ち着いた流れを保てると良さそうです。`;
 }
 
-function drawGlucoseChart(entries) {
+function getEntryTime(entry) {
+  if (entry.date) return Number(entry.date);
+  if (entry.dateString) return new Date(entry.dateString).getTime();
+  if (entry.created_at) return new Date(entry.created_at).getTime();
+  return NaN;
+}
+
+function getTreatmentTime(treatment) {
+  if (treatment.mills) return Number(treatment.mills);
+  if (treatment.date) return Number(treatment.date);
+  if (treatment.created_at) return new Date(treatment.created_at).getTime();
+  if (treatment.timestamp) return new Date(treatment.timestamp).getTime();
+  return NaN;
+}
+
+function getTreatmentSearchText(treatment) {
+  return [
+    treatment.eventType,
+    treatment.event_type,
+    treatment.type,
+    treatment.enteredBy,
+    treatment.createdBy,
+    treatment.notes,
+    treatment.reason,
+    treatment.pumpType,
+    treatment.programmed,
+    treatment.bolusType
+  ].filter(Boolean).join(" ").toLowerCase();
+}
+
+function getTreatmentCategory(treatment) {
+  const text = getTreatmentSearchText(treatment);
+  const carbs = Number(treatment.carbs);
+  const insulin = Number(treatment.insulin);
+
+  if (text.includes("correction") || text.includes("補正")) {
+    return "correctionBolus";
+  }
+
+  if (text.includes("meal") || text.includes("carb") || text.includes("food") || text.includes("食事") || carbs > 0) {
+    return "mealBolus";
+  }
+
+  if (text.includes("bolus") || insulin > 0) {
+    return "mealBolus";
+  }
+
+  return "otherEvent";
+}
+
+function isRelevantTreatment(treatment) {
+  return getTreatmentCategory(treatment) !== "otherEvent";
+}
+
+function normalizeEntriesForChart(entries, rangeStart, shiftMs = 0) {
+  return [...entries]
+    .map((entry) => {
+      const time = getEntryTime(entry);
+      return {
+        x: (time + shiftMs - rangeStart) / 60000,
+        y: Number(entry.sgv),
+        rawTime: time
+      };
+    })
+    .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y))
+    .sort((a, b) => a.x - b.x);
+}
+
+function minutesToLabel(rangeStart, minutes) {
+  const date = new Date(rangeStart + minutes * 60000);
+  return date.toLocaleTimeString(currentLanguage === "en" ? "en-US" : "ja-JP", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function getGlucoseSegmentColor(startValue, endValue) {
+  if (startValue < 70 || endValue < 70) return "#fb7185";
+  if (startValue > 180 || endValue > 180) return "#f59e0b";
+  return "#38bdf8";
+}
+
+function findNearestGlucoseValue(points, xValue) {
+  if (!points.length) return null;
+
+  let nearest = points[0];
+  let nearestDistance = Math.abs(points[0].x - xValue);
+
+  points.forEach((point) => {
+    const distance = Math.abs(point.x - xValue);
+    if (distance < nearestDistance) {
+      nearest = point;
+      nearestDistance = distance;
+    }
+  });
+
+  if (nearestDistance > 45) return null;
+  return nearest.y;
+}
+
+function normalizeTreatmentEvents(treatments, todayPoints, rangeStart, rangeEnd) {
+  return treatments
+    .filter(isRelevantTreatment)
+    .map((treatment) => {
+      const time = getTreatmentTime(treatment);
+      const x = (time - rangeStart) / 60000;
+      const y = findNearestGlucoseValue(todayPoints, x);
+      const eventCategory = getTreatmentCategory(treatment);
+      const fallbackLabel = eventCategory === "correctionBolus" ? t("correctionBolusLabel") : t("mealBolusLabel");
+      return {
+        x,
+        y: y ?? 70,
+        eventType: treatment.eventType || treatment.event_type || fallbackLabel,
+        eventCategory,
+        insulin: treatment.insulin,
+        carbs: treatment.carbs,
+        rawTime: time
+      };
+    })
+    .filter((point) => Number.isFinite(point.x) && point.x >= 0 && point.x <= ((rangeEnd - rangeStart) / 60000));
+}
+
+const glucoseRangeBackgroundPlugin = {
+  id: "glucoseRangeBackground",
+  beforeDatasetsDraw(chart) {
+    const { ctx, chartArea, scales } = chart;
+    const yScale = scales.y;
+    if (!chartArea || !yScale) return;
+
+    const drawBand = (fromValue, toValue, color) => {
+      const y1 = yScale.getPixelForValue(fromValue);
+      const y2 = yScale.getPixelForValue(toValue);
+      const top = Math.min(y1, y2);
+      const height = Math.abs(y2 - y1);
+
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.fillRect(chartArea.left, top, chartArea.right - chartArea.left, height);
+      ctx.restore();
+    };
+
+    drawBand(yScale.max, 180, "rgba(245,158,11,.075)");
+    drawBand(180, 70, "rgba(46,204,113,.105)");
+    drawBand(70, yScale.min, "rgba(251,113,133,.085)");
+  }
+};
+
+function drawGlucoseChart(entries, options = {}) {
   const canvas = document.getElementById("glucoseChart");
   if (!canvas) return;
 
   const ctx = canvas.getContext("2d");
+  const rangeStart = options.rangeStart ?? Date.now() - 24 * 60 * 60 * 1000;
+  const rangeEnd = options.rangeEnd ?? Date.now();
+  const oneDayMs = 24 * 60 * 60 * 1000;
 
-  const sortedEntries = [...entries]
-    .filter(e => e.sgv && e.date)
-    .sort((a, b) => a.date - b.date);
-
-  const labels = sortedEntries.map(e => {
-    const d = new Date(e.date);
-    return d.toLocaleString("ja-JP", {
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-  });
-
-  const values = sortedEntries.map(e => e.sgv);
+  const todayPoints = normalizeEntriesForChart(entries, rangeStart);
+  const yesterdayPoints = normalizeEntriesForChart(options.yesterdayEntries || [], rangeStart, oneDayMs);
+  const treatmentPoints = normalizeTreatmentEvents(options.treatmentEvents || [], todayPoints, rangeStart, rangeEnd);
+  const mealBolusPoints = treatmentPoints.filter((point) => point.eventCategory === "mealBolus");
+  const correctionBolusPoints = treatmentPoints.filter((point) => point.eventCategory === "correctionBolus");
 
   if (glucoseChart) glucoseChart.destroy();
 
   glucoseChart = new Chart(ctx, {
     type: "line",
     data: {
-      labels,
       datasets: [
         {
-          label: "血糖値",
-          data: values,
-          borderWidth: 3,
+          label: t("yesterdayLabel"),
+          data: yesterdayPoints,
+          borderWidth: 2,
+          borderColor: "rgba(203,213,225,.42)",
           pointRadius: 0,
-          tension: 0.35
+          tension: 0.35,
+          order: 1
         },
         {
-          label: "低血糖ライン 70",
-          data: values.map(() => 70),
-          borderWidth: 1,
-          borderDash: [6, 6],
-          pointRadius: 0
+          label: t("todayLabel"),
+          data: todayPoints,
+          borderWidth: 3,
+          borderColor: "#38bdf8",
+          pointRadius: 0,
+          tension: 0.35,
+          segment: {
+            borderColor: (context) => getGlucoseSegmentColor(context.p0.parsed.y, context.p1.parsed.y)
+          },
+          order: 0
         },
         {
-          label: "高血糖ライン 180",
-          data: values.map(() => 180),
+          label: t("mealBolusLabel"),
+          type: "scatter",
+          data: mealBolusPoints,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBackgroundColor: "#fbbf24",
+          pointBorderColor: "rgba(15,23,42,.82)",
+          pointBorderWidth: 2,
+          order: -1
+        },
+        {
+          label: t("correctionBolusLabel"),
+          type: "scatter",
+          data: correctionBolusPoints,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBackgroundColor: "#a78bfa",
+          pointBorderColor: "rgba(15,23,42,.82)",
+          pointBorderWidth: 2,
+          order: -1
+        },
+        {
+          label: t("lowLineLabel"),
+          data: [{ x: 0, y: 70 }, { x: 1440, y: 70 }],
           borderWidth: 1,
+          borderColor: "rgba(251,113,133,.72)",
           borderDash: [6, 6],
-          pointRadius: 0
+          pointRadius: 0,
+          order: 2
+        },
+        {
+          label: t("highLineLabel"),
+          data: [{ x: 0, y: 180 }, { x: 1440, y: 180 }],
+          borderWidth: 1,
+          borderColor: "rgba(245,158,11,.78)",
+          borderDash: [6, 6],
+          pointRadius: 0,
+          order: 2
         }
       ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      parsing: false,
       plugins: {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: context => `${context.dataset.label}: ${context.parsed.y} mg/dL`
+            title: (items) => {
+              if (!items.length) return "";
+              return minutesToLabel(rangeStart, items[0].parsed.x);
+            },
+            label: (context) => {
+              const point = context.raw || {};
+
+              if (context.dataset.label === t("mealBolusLabel") || context.dataset.label === t("correctionBolusLabel")) {
+                const pieces = [context.dataset.label];
+                if (point.eventType) pieces.push(String(point.eventType));
+                if (point.carbs) pieces.push(`${point.carbs}g carbs`);
+                if (point.insulin) pieces.push(`${point.insulin}U`);
+                return pieces.join(" / ");
+              }
+
+              return `${context.dataset.label}: ${context.parsed.y} mg/dL`;
+            }
           }
         }
       },
       scales: {
         x: {
+          type: "linear",
+          min: 0,
+          max: 1440,
+          grid: {
+            color: "rgba(148,163,184,.10)"
+          },
           ticks: {
-            maxTicksLimit: 8
+            maxTicksLimit: 8,
+            callback: (value) => minutesToLabel(rangeStart, Number(value))
           }
         },
         y: {
           min: 40,
-          max: 250
+          max: 250,
+          grid: {
+            color: "rgba(148,163,184,.10)"
+          }
         }
       }
-    }
+    },
+    plugins: [glucoseRangeBackgroundPlugin]
   });
+}
+
+async function fetchJson(url, fallback = []) {
+  const response = await fetch(url);
+  if (!response.ok) return fallback;
+  return response.json();
 }
 
 async function loadLatestGlucose() {
@@ -425,9 +968,9 @@ async function loadLatestGlucose() {
   const data = await response.json();
 
   if (!data || data.length === 0) {
-    status.textContent = "データが見つかりません";
+    status.textContent = t("latestNoData");
     updateGlucoseDelta(null, null);
-    setLiveStatus("error", "NO DATA", "Nightscoutに最新データがありません");
+    setLiveStatus("error", "NO DATA", t("noDataDetail"));
     updateHeaderUpdated(null);
     return null;
   }
@@ -445,19 +988,22 @@ async function loadLatestGlucose() {
   const now = new Date();
   const minutesAgo = Math.round((now - measuredAt) / 60000);
 
-  status.textContent = `${minutesAgo}分前に更新 / ${latest.direction ?? "方向不明"}`;
+  status.textContent = currentLanguage === "en"
+    ? `${minutesAgo} ${t("updatedMinutesAgo")} / ${latest.direction ?? t("latestUnknown")}`
+    : `${minutesAgo}${t("updatedMinutesAgo")} / ${latest.direction ?? t("latestUnknown")}`;
+
   if (lastUpdate) {
-    lastUpdate.textContent = `最終更新: ${formatDateTime(measuredAt)}`;
+    lastUpdate.textContent = `${t("lastUpdatedLabel")}: ${formatDateTime(measuredAt)}`;
   }
 
   if (minutesAgo >= 30) {
-    setLiveStatus("stale", "STALE", `最終データは${minutesAgo}分前です`);
+    setLiveStatus("stale", "STALE", currentLanguage === "en" ? `Last data is ${minutesAgo} minutes old` : `最終データは${minutesAgo}分前です`);
   } else {
-    setLiveStatus("online", "LIVE", `Nightscout接続中 / ${minutesAgo}分前に更新`);
+    setLiveStatus("online", "LIVE", currentLanguage === "en" ? `Nightscout connected / ${minutesAgo} min ago` : `Nightscout接続中 / ${minutesAgo}分前に更新`);
   }
   const currentLastUpdate = document.getElementById("currentLastUpdate");
   if (currentLastUpdate) {
-    currentLastUpdate.textContent = measuredAt.toLocaleTimeString("ja-JP", {
+    currentLastUpdate.textContent = measuredAt.toLocaleTimeString(currentLanguage === "en" ? "en-US" : "ja-JP", {
       hour: "2-digit",
       minute: "2-digit"
     });
@@ -465,29 +1011,62 @@ async function loadLatestGlucose() {
   return latest;
 }
 
+async function loadTreatmentEvents(rangeStart, rangeEnd) {
+  const startIso = encodeURIComponent(new Date(rangeStart).toISOString());
+  const url = `${NIGHTSCOUT_URL}/api/v1/treatments.json?find[created_at][$gte]=${startIso}&count=1000`;
+  const treatments = await fetchJson(url, []);
+
+  if (!Array.isArray(treatments)) return [];
+
+  return treatments.filter((treatment) => {
+    const time = getTreatmentTime(treatment);
+    return Number.isFinite(time) && time >= rangeStart && time <= rangeEnd;
+  });
+}
+
 async function loadDailyStats() {
   try {
     const latest = await loadLatestGlucose();
 
     const now = Date.now();
-    const oneDayAgo = now - 24 * 60 * 60 * 1000;
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    const oneDayAgo = now - oneDayMs;
+    const yesterdayStart = oneDayAgo - oneDayMs;
+    const yesterdayEnd = now - oneDayMs;
+    const sevenDaysAgo = now - (7 * oneDayMs);
 
-    document.getElementById("chartRange").textContent =
-      `${formatDateTime(new Date(oneDayAgo))} 〜 ${formatDateTime(new Date(now))}`;
+    const chartRange = document.getElementById("chartRange");
+    if (chartRange) {
+      chartRange.textContent = `${formatDateTime(new Date(oneDayAgo))} ${t("chartRangeSeparator")} ${formatDateTime(new Date(now))}`;
+    }
 
-    const response = await fetch(
-      `${NIGHTSCOUT_URL}/api/v1/entries/sgv.json?find[date][$gte]=${oneDayAgo}&find[date][$lte]=${now}&count=1000`
-    );
+    const [entriesRaw, yesterdayEntriesRaw, sevenDayEntriesRaw, treatmentsRaw] = await Promise.all([
+      fetchJson(`${NIGHTSCOUT_URL}/api/v1/entries/sgv.json?find[date][$gte]=${oneDayAgo}&find[date][$lte]=${now}&count=1000`, []),
+      fetchJson(`${NIGHTSCOUT_URL}/api/v1/entries/sgv.json?find[date][$gte]=${yesterdayStart}&find[date][$lte]=${yesterdayEnd}&count=1000`, []),
+      fetchJson(`${NIGHTSCOUT_URL}/api/v1/entries/sgv.json?find[date][$gte]=${sevenDaysAgo}&find[date][$lte]=${now}&count=3000`, []),
+      loadTreatmentEvents(oneDayAgo, now)
+    ]);
 
-    const entries = await response.json();
-    drawGlucoseChart(entries);
+    const entries = Array.isArray(entriesRaw) ? entriesRaw : [];
+    const yesterdayEntries = Array.isArray(yesterdayEntriesRaw) ? yesterdayEntriesRaw : [];
+    const sevenDayEntries = Array.isArray(sevenDayEntriesRaw) ? sevenDayEntriesRaw : [];
+    const treatments = Array.isArray(treatmentsRaw) ? treatmentsRaw : [];
+
+    drawGlucoseChart(entries, {
+      yesterdayEntries,
+      treatmentEvents: treatments,
+      rangeStart: oneDayAgo,
+      rangeEnd: now
+    });
 
     const values = entries
-      .filter(e => e.sgv && e.date >= oneDayAgo)
-      .map(e => e.sgv);
+      .filter(e => e.sgv && getEntryTime(e) >= oneDayAgo)
+      .map(e => Number(e.sgv))
+      .filter((value) => Number.isFinite(value));
 
     if (values.length === 0) {
-      document.getElementById("comment").textContent = "24時間分のデータが見つかりませんでした。";
+      document.getElementById("comment").textContent = t("noDailyData");
+      updateScoreMetaDisplay(null, null, null);
       return;
     }
 
@@ -516,9 +1095,13 @@ async function loadDailyStats() {
      `${glucoScore.rank} ${glucoScore.emoji}`;
     updateScoreGlucoImage(glucoScore.score);
 
+    const yesterdayScore = calculateGlucoScoreForEntries(yesterdayEntries, yesterdayStart, yesterdayEnd);
+    const sevenDayAverageScore = calculateSevenDayAverageGlucoScore(sevenDayEntries, now);
+    updateScoreMetaDisplay(glucoScore.score, yesterdayScore, sevenDayAverageScore);
+
     const scoreMessage = document.querySelector(".score-message");
     if (scoreMessage) {
-      scoreMessage.textContent = glucoScore.message;
+      scoreMessage.textContent = getLocalizedScoreMessage(glucoScore.score, glucoScore.message);
     }
 
     document.getElementById("tirValue").textContent = `${tir}%`;
@@ -533,11 +1116,12 @@ async function loadDailyStats() {
 
   } catch (error) {
     console.error(error);
-    setLiveStatus("error", "OFFLINE", "Nightscout接続エラー");
+    setLiveStatus("error", "OFFLINE", t("statusError"));
     updateHeaderUpdated(null);
-    document.getElementById("status").textContent = "Nightscout接続エラー";
+    document.getElementById("status").textContent = t("statusError");
     updateGlucoseDelta(null, null);
-    document.getElementById("comment").textContent = "データ取得中にエラーが出ました。Consoleを確認してみてください。";
+    updateScoreMetaDisplay(null, null, null);
+    document.getElementById("comment").textContent = t("commentLoadingError");
   }
 }
 
@@ -546,7 +1130,7 @@ function updateClock() {
 
   const clockEl = document.getElementById("clock");
   if (clockEl) {
-    clockEl.textContent = now.toLocaleTimeString("ja-JP", {
+    clockEl.textContent = now.toLocaleTimeString(currentLanguage === "en" ? "en-US" : "ja-JP", {
       hour: "2-digit",
       minute: "2-digit"
     });
@@ -554,49 +1138,197 @@ function updateClock() {
 
   const dateEl = document.getElementById("headerDate");
   if (dateEl) {
-    dateEl.textContent = now.toLocaleDateString("ja-JP", {
+    dateEl.textContent = now.toLocaleDateString(currentLanguage === "en" ? "en-US" : "ja-JP", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
       weekday: "short"
     });
   }
-
 }
 
-updateClock();
-setDailyLetterGlucoImage();
-setLiveStatus("pending", "CHECKING", "Nightscoutの最新データを確認中");
-loadDailyStats();
+function getCollectionAchievement(collectedCount) {
+  const achievements = [
+    { count: 70, ja: "グルコの大切な人（70枚達成！）", en: "Gluco's special person (70 collected!)" },
+    { count: 50, ja: "グルコの心の友（50枚達成！）", en: "Gluco's heart friend (50 collected!)" },
+    { count: 30, ja: "グルコと親友（30枚達成！）", en: "Best friends with Gluco (30 collected!)" },
+    { count: 10, ja: "グルコと仲良し（10枚達成！）", en: "Close with Gluco (10 collected!)" },
+    { count: 1, ja: "グルコのともだち", en: "Gluco friend" },
+    { count: 0, ja: "はじめの一歩", en: "First step" }
+  ];
 
-setInterval(updateClock, 1000);
-setInterval(loadDailyStats, 60000);
+  return achievements.find((achievement) => collectedCount >= achievement.count) || achievements[achievements.length - 1];
+}
+
+function getLocalizedAchievementTitle(achievement) {
+  return currentLanguage === "en" ? achievement.en : achievement.ja;
+}
+
+async function shareCollectionAchievement() {
+  const collection = readGlucoCollection();
+  const collectedCount = Object.keys(collection).length;
+  const achievement = getCollectionAchievement(collectedCount);
+  const title = getLocalizedAchievementTitle(achievement);
+  const shareText = t("shareText")
+    .replace("{count}", collectedCount)
+    .replace("{title}", title);
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ text: shareText });
+      return;
+    } catch (error) {
+      // User cancelled sharing; fall back to copy below if possible.
+    }
+  }
+
+  if (navigator.clipboard) {
+    await navigator.clipboard.writeText(shareText);
+    const button = document.getElementById("collectionShareButton");
+    if (button) {
+      const originalText = button.textContent;
+      button.textContent = t("shareCopied");
+      window.setTimeout(() => {
+        button.textContent = originalText;
+      }, 1600);
+    }
+  }
+}
+
+function renderCollectionView() {
+  const grid = document.getElementById("collectionGrid");
+  const progress = document.getElementById("collectionProgress");
+  const achievementEl = document.getElementById("collectionAchievement");
+  const shareButton = document.getElementById("collectionShareButton");
+  const today = document.getElementById("collectionToday");
+
+  if (!grid) return;
+
+  const collection = readGlucoCollection();
+  const collectedCount = Object.keys(collection).length;
+
+  if (progress) {
+    progress.textContent = `${collectedCount} / ${dailyLetterGlucoImages.length}`;
+    progress.title = `${t("collectionProgress")}: ${collectedCount} / ${dailyLetterGlucoImages.length}`;
+  }
+
+  const achievement = getCollectionAchievement(collectedCount);
+  const achievementTitle = getLocalizedAchievementTitle(achievement);
+
+  if (achievementEl) {
+    achievementEl.textContent = `${t("achievementLabel")}: ${achievementTitle}`;
+  }
+
+  if (shareButton) {
+    shareButton.textContent = t("shareAchievement");
+  }
+
+  if (today) {
+    today.textContent = t("collectionToday");
+  }
+
+  grid.replaceChildren();
+
+  glucoLiveItems.forEach((glucoItem) => {
+    const imagePath = glucoItem.image;
+    const number = glucoItem.id;
+    const imageId = `gluco-live-${String(number).padStart(2, "0")}`;
+    const item = document.createElement("div");
+    const collected = collection[imageId];
+
+    item.className = `collection-item ${collected ? "collected" : "locked"}`;
+
+    const imageBox = document.createElement("div");
+    imageBox.className = collected ? "collection-image-wrap" : "collection-locked";
+
+    if (collected) {
+      const img = document.createElement("img");
+      img.src = imagePath;
+      img.alt = `Gluco ${formatGlucoLiveNumber(number)}`;
+      imageBox.appendChild(img);
+    } else {
+      imageBox.textContent = "?";
+      imageBox.setAttribute("aria-label", t("collectionLocked"));
+    }
+
+    const numberEl = document.createElement("div");
+    numberEl.className = "collection-number";
+    numberEl.textContent = formatGlucoLiveTitle(number);
+
+    const meta = document.createElement("div");
+    meta.className = "collection-meta";
+
+    if (collected) {
+      const firstSeen = collected.firstSeenDate || "--";
+      const firstSeenLine = document.createElement("span");
+      firstSeenLine.textContent = `${t("collectionFirstSeen")}: ${firstSeen}`;
+      const countLine = document.createElement("span");
+      countLine.textContent = formatEncounterLabel(collected.encounterCount);
+      meta.replaceChildren(firstSeenLine, countLine);
+    } else {
+      meta.textContent = t("collectionLocked");
+    }
+
+    item.appendChild(imageBox);
+    item.appendChild(numberEl);
+    item.appendChild(meta);
+    grid.appendChild(item);
+  });
+}
+
+function setupCollectionShareButton() {
+  const shareButton = document.getElementById("collectionShareButton");
+  if (!shareButton) return;
+  shareButton.addEventListener("click", () => {
+    shareCollectionAchievement().catch((error) => console.warn("Share failed", error));
+  });
+}
+
 function setupViewTabs() {
   const tabs = document.querySelectorAll(".view-tab");
-  const liveView = document.getElementById("liveView");
-  const aboutView = document.getElementById("aboutView");
+  const panels = {
+    live: document.getElementById("liveView"),
+    about: document.getElementById("aboutView"),
+    collection: document.getElementById("collectionView")
+  };
 
   function activateView(viewName) {
-    const isAbout = viewName === "about";
+    const resolvedView = panels[viewName] ? viewName : "live";
 
     tabs.forEach((tab) => {
-      const tabIsAbout = tab.dataset.view === "about";
-      tab.classList.toggle("active", isAbout ? tabIsAbout : !tabIsAbout && !tab.dataset.view);
+      tab.classList.toggle("active", tab.dataset.view === resolvedView);
     });
 
-    if (liveView) liveView.classList.toggle("active", !isAbout);
-    if (aboutView) aboutView.classList.toggle("active", isAbout);
+    Object.entries(panels).forEach(([name, panel]) => {
+      if (panel) panel.classList.toggle("active", name === resolvedView);
+    });
+
+    if (resolvedView === "collection") {
+      renderCollectionView();
+    }
   }
 
   tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
-      const viewName = tab.dataset.view === "about" ? "about" : "live";
-      activateView(viewName);
-      window.location.hash = viewName === "about" ? "about" : "live";
+      const viewName = tab.dataset.view || "live";
+      const resolvedView = panels[viewName] ? viewName : "live";
+      activateView(resolvedView);
+      window.location.hash = resolvedView === "live" ? "live" : resolvedView;
     });
   });
 
-  activateView(window.location.hash === "#about" ? "about" : "live");
+  const initialView = window.location.hash.replace("#", "") || "live";
+  activateView(panels[initialView] ? initialView : "live");
 }
 
+setupLanguageSwitch();
+setupCollectionShareButton();
+applyLanguage();
+updateClock();
+setDailyLetterGlucoImage();
+setLiveStatus("pending", "CHECKING", "Nightscoutの最新データを確認中");
+loadDailyStats();
 setupViewTabs();
+
+setInterval(updateClock, 1000);
+setInterval(loadDailyStats, 60000);

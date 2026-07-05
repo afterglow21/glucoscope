@@ -38,18 +38,27 @@
 
 
 
-<nav class="view-tabs">
-  <button class="view-tab active">🟢 Live</button>
-  <button class="view-tab">📖 Journal</button>
-  <button class="view-tab">🏥 Clinic</button>
-  <button class="view-tab" data-view="about">✨ About</button>
-</nav>
+<div class="view-toolbar">
+  <nav class="view-tabs" aria-label="GlucoScope sections">
+    <button class="view-tab active" data-view="live" data-i18n-key="tabLive">🟢 Live</button>
+    <button class="view-tab" data-view="journal" data-i18n-key="tabJournal">📖 Journal</button>
+    <button class="view-tab" data-view="clinic" data-i18n-key="tabClinic">🏥 Clinic</button>
+    <button class="view-tab" data-view="collection" data-i18n-key="tabCollection">🍀 Collection</button>
+    <button class="view-tab" data-view="about" data-i18n-key="tabAbout">✨ About</button>
+  </nav>
+
+  <div class="language-switch" aria-label="Language switch">
+    <span data-i18n-key="languageLabel">Language</span>
+    <button type="button" class="language-button active" data-language="ja">日本語</button>
+    <button type="button" class="language-button" data-language="en">English</button>
+  </div>
+</div>
 
 <main id="liveView" class="view-panel active">
 <section class="hero-grid">
   <div class="card score-card hero-score-card">
     <div class="score-header">
-      <div class="label">🍀 GlucoScore</div>
+      <div class="label" data-i18n-key="glucoScoreLabel">🍀 GlucoScore</div>
       <div id="scoreReason" class="score-badge">--</div>
     </div>
 
@@ -64,14 +73,14 @@
     </div>
 
     <div class="score-meta">
-      <span>↗ 昨日より +4</span>
+      <span id="scoreYesterdayDelta">昨日比較を計算中...</span>
       <span>・</span>
-      <span>過去7日平均: 84</span>
+      <span id="scoreSevenDayAverage">過去7日平均: --</span>
     </div>
   </div>
 
   <div class="card current-card hero-current-card">
-    <div class="label current-label"><span class="drop-icon">🩸</span>現在血糖</div>
+    <div class="label current-label"><span class="drop-icon">🩸</span><span data-i18n-key="currentGlucoseLabel">現在血糖</span></div>
 
     <div class="current-main">
       <span class="current-value-wrap">
@@ -88,7 +97,7 @@
     </div>
 
     <div class="smartguard-row">🛡️ SmartGuard Active</div>
-    <div class="current-small-note">最終更新: <span id="currentLastUpdate">--</span></div>
+    <div class="current-small-note"><span data-i18n-key="lastUpdatedLabel">最終更新</span>: <span id="currentLastUpdate">--</span></div>
   </div>
 </section>
 
@@ -96,46 +105,55 @@
   <div class="card metric-card green">
     <div class="metric-label">🎯 TIR <span>(70-180)</span></div>
     <div id="tirValue" class="metric-value">--%</div>
-    <div class="metric-desc">目標範囲内の時間<small>70〜180mg/dLだった割合</small></div>
+    <div class="metric-desc"><span data-i18n-key="tirDesc">目標範囲内の時間</span><small data-i18n-key="tirSmall">70〜180mg/dLだった割合</small></div>
   </div>
 
   <div class="card metric-card yellow">
     <div class="metric-label">🟡 TAR <span>(&gt;180)</span></div>
     <div id="tarValue" class="metric-value">--%</div>
-    <div class="metric-desc">高血糖の時間<small>180mg/dL超だった割合</small></div>
+    <div class="metric-desc"><span data-i18n-key="tarDesc">高血糖の時間</span><small data-i18n-key="tarSmall">180mg/dL超だった割合</small></div>
   </div>
 
   <div class="card metric-card red">
     <div class="metric-label">🔴 TBR <span>(&lt;70)</span></div>
     <div id="tbrValue" class="metric-value">--%</div>
-    <div class="metric-desc">低血糖の時間<small>70mg/dL未満だった割合</small></div>
+    <div class="metric-desc"><span data-i18n-key="tbrDesc">低血糖の時間</span><small data-i18n-key="tbrSmall">70mg/dL未満だった割合</small></div>
   </div>
 
   <div class="card metric-card">
-    <div class="metric-label">📊 平均</div>
+    <div class="metric-label">📊 <span data-i18n-key="averageLabel">平均</span></div>
     <div class="metric-inline">
       <span id="avgValue" class="metric-value">--</span>
       <span class="metric-unit-inline">mg/dL</span>
     </div>
-    <div class="metric-desc">平均血糖値<small>過去24時間の平均</small></div>
+    <div class="metric-desc"><span data-i18n-key="avgDesc">平均血糖値</span><small data-i18n-key="avgSmall">過去24時間の平均</small></div>
   </div>
 
   <div class="card metric-card purple">
-    <div class="metric-label">📉 CV <span>(変動係数)</span></div>
+    <div class="metric-label">📉 CV <span data-i18n-key="cvLabel">(変動係数)</span></div>
     <div id="cvValue" class="metric-value">--%</div>
-    <div class="metric-desc">血糖のばらつき<small>目標は36%未満</small></div>
+    <div class="metric-desc"><span data-i18n-key="cvDesc">血糖のばらつき</span><small data-i18n-key="cvSmall">目標は36%未満</small></div>
   </div>
 
   <div class="card metric-card pink">
     <div class="metric-label">❤️ GMI</div>
     <div id="gmiValue" class="metric-value">--%</div>
-    <div class="metric-desc">HbA1cの目安<small>平均血糖から推定</small></div>
+    <div class="metric-desc"><span data-i18n-key="gmiDesc">HbA1cの目安</span><small data-i18n-key="gmiSmall">平均血糖から推定</small></div>
   </div>
 </section>
 
   <section class="card chart-card">
     <div class="chart-header">
-      <div class="label">📈 24時間グラフ</div>
+      <div>
+        <div class="label" data-i18n-key="chartTitle">📈 24時間グラフ</div>
+        <div class="chart-legend" aria-label="Chart legend">
+          <span class="chart-legend-item today-line" data-i18n-key="legendToday">今日</span>
+          <span class="chart-legend-item yesterday-line" data-i18n-key="legendYesterday">昨日</span>
+          <span class="chart-legend-item range-band" data-i18n-key="legendRange">TIR目標範囲</span>
+          <span class="chart-legend-item meal-bolus-dot" data-i18n-key="legendMealBolus">Meal Bolus</span>
+          <span class="chart-legend-item correction-bolus-dot" data-i18n-key="legendCorrectionBolus">Correction Bolus</span>
+        </div>
+      </div>
       <div id="chartRange" class="chart-range">--</div>
     </div>
     <div class="chart-wrap">
@@ -145,7 +163,7 @@
 
   <section class="card comment-card">
     <div class="comment-card-header">
-      <div class="label">✉ グルコからのお手紙</div>
+      <div class="label" data-i18n-key="letterTitle">✉ グルコからのお手紙</div>
       <div class="comment-tag">gluco message</div>
     </div>
     <div class="gluco-comment">
@@ -159,6 +177,26 @@
     </div>
   </section>
 </main>
+
+<section id="collectionView" class="view-panel collection-view">
+  <section class="card collection-card">
+    <div class="collection-header">
+      <div>
+        <div class="label" data-i18n-key="collectionTitle">🍀 Gluco Collection</div>
+        <p class="collection-lead" data-i18n-key="collectionLead">毎日出会ったGlucoを、ブラウザの中にそっと記録します。</p>
+      </div>
+      <div class="collection-status">
+        <div id="collectionProgress" class="collection-progress">0 / 70</div>
+        <div id="collectionAchievement" class="collection-achievement">称号: --</div>
+        <button id="collectionShareButton" type="button" class="collection-share-button">称号をシェア</button>
+      </div>
+    </div>
+    <div class="collection-summary">
+      <span id="collectionToday" data-i18n-key="collectionToday">今日のGlucoに会うと、ここに記録されます。</span>
+    </div>
+    <div id="collectionGrid" class="collection-grid" aria-live="polite"></div>
+  </section>
+</section>
 
 <section id="aboutView" class="view-panel about-view">
   <div class="about-first-message card about-first-message-brand">
