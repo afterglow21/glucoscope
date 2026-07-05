@@ -254,6 +254,22 @@ body{
   font-size:82px;
   font-weight:900;
   line-height:1;
+  color:#f8fafc;
+  transition:color .22s ease, text-shadow .22s ease;
+}
+
+#glucoseValue.glucose-high{
+  color:#facc15;
+  text-shadow:0 0 18px rgba(250,204,21,.18);
+}
+
+#glucoseValue.glucose-low{
+  color:#fb7185;
+  text-shadow:0 0 18px rgba(251,113,133,.20);
+}
+
+#glucoseValue.glucose-in-range{
+  color:#f8fafc;
 }
 
 .current-delta{
@@ -541,6 +557,38 @@ body{
     radial-gradient(circle at 50% 42%, rgba(46,204,113,.28), rgba(46,204,113,.08) 58%, transparent 74%),
     rgba(15,23,42,.20);
   border:1px solid rgba(46,204,113,.18);
+  transition:border-color .25s ease, box-shadow .25s ease, background .25s ease;
+}
+
+.gluco-comment-avatar.lucky-gluco{
+  background:
+    radial-gradient(circle at 50% 42%, rgba(250,204,21,.34), rgba(46,204,113,.12) 56%, transparent 76%),
+    linear-gradient(135deg, rgba(250,204,21,.13), rgba(46,204,113,.06)),
+    rgba(15,23,42,.22);
+  border-color:rgba(250,204,21,.78);
+  box-shadow:
+    0 0 0 1px rgba(250,204,21,.18),
+    0 18px 38px rgba(250,204,21,.16),
+    inset 0 0 0 1px rgba(255,255,255,.05);
+  animation:luckyGlucoGlow 1.9s ease-in-out infinite;
+}
+
+@keyframes luckyGlucoGlow{
+  0%, 100%{
+    border-color:rgba(250,204,21,.55);
+    box-shadow:
+      0 0 0 1px rgba(250,204,21,.14),
+      0 18px 34px rgba(250,204,21,.10),
+      inset 0 0 0 1px rgba(255,255,255,.04);
+  }
+
+  50%{
+    border-color:rgba(253,224,71,.96);
+    box-shadow:
+      0 0 0 3px rgba(250,204,21,.16),
+      0 20px 46px rgba(250,204,21,.24),
+      inset 0 0 0 1px rgba(255,255,255,.07);
+  }
 }
 
 .gluco-letter-number{
@@ -548,6 +596,7 @@ body{
   top:14px;
   left:14px;
   z-index:1;
+  max-width:calc(100% - 28px);
   padding:6px 10px;
   border-radius:999px;
   background:rgba(15,23,42,.68);
@@ -556,7 +605,45 @@ body{
   font-size:12px;
   font-weight:900;
   letter-spacing:.2px;
+  line-height:1.35;
+  white-space:normal;
   box-shadow:0 10px 18px rgba(0,0,0,.16);
+}
+
+.gluco-letter-number.lucky-gluco{
+  color:#fde68a;
+  border-color:rgba(250,204,21,.82);
+  background:rgba(69,47,5,.74);
+  text-shadow:0 0 14px rgba(250,204,21,.25);
+}
+
+.gluco-lucky-badge{
+  position:absolute;
+  left:14px;
+  right:14px;
+  bottom:14px;
+  z-index:1;
+  padding:8px 12px;
+  border-radius:18px;
+  background:rgba(69,47,5,.76);
+  border:1px solid rgba(250,204,21,.62);
+  color:#fde68a;
+  font-size:13px;
+  font-weight:900;
+  line-height:1.35;
+  text-align:center;
+  text-shadow:0 0 14px rgba(250,204,21,.24);
+  box-shadow:0 12px 22px rgba(0,0,0,.20), inset 0 0 0 1px rgba(255,255,255,.04);
+}
+
+.gluco-lucky-badge[hidden]{
+  display:none;
+}
+
+@media (prefers-reduced-motion: reduce){
+  .gluco-comment-avatar.lucky-gluco{
+    animation:none;
+  }
 }
 
 .gluco-comment-image{
@@ -1066,6 +1153,18 @@ canvas{
     rgba(15,23,42,.24);
 }
 
+.collection-item.lucky-gluco{
+  border-color:rgba(250,204,21,.16);
+}
+
+.collection-item.lucky-gluco.collected{
+  border-color:rgba(250,204,21,.34);
+  background:
+    radial-gradient(circle at 50% 24%, rgba(250,204,21,.17), transparent 50%),
+    radial-gradient(circle at 50% 62%, rgba(46,204,113,.10), transparent 54%),
+    rgba(15,23,42,.24);
+}
+
 .collection-image-wrap,
 .collection-locked{
   width:96px;
@@ -1085,6 +1184,11 @@ canvas{
   object-fit:cover;
 }
 
+.collection-item.lucky-gluco .collection-image-wrap{
+  border-color:rgba(250,204,21,.30);
+  box-shadow:0 12px 22px rgba(250,204,21,.08);
+}
+
 .collection-locked{
   color:#94a3b8;
   font-size:34px;
@@ -1098,6 +1202,18 @@ canvas{
   font-weight:900;
   text-align:center;
   line-height:1.35;
+}
+
+.collection-lucky-badge{
+  margin-top:-4px;
+  padding:4px 9px;
+  border-radius:999px;
+  background:rgba(250,204,21,.10);
+  border:1px solid rgba(250,204,21,.22);
+  color:#fde68a;
+  font-size:11px;
+  font-weight:900;
+  text-align:center;
 }
 
 .collection-meta{

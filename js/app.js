@@ -4,7 +4,27 @@ let glucoseChart = null;
 let currentLanguage = localStorage.getItem("glucoscope.language.v1") || "ja";
 
 const GLUCO_COLLECTION_STORAGE_KEY = "glucoscope.glucoCollection.v1";
+const GLUCO_LUCKY_STATE_STORAGE_KEY = "glucoscope.luckyGlucoState.v1";
+const GLUCO_VISITOR_SEED_STORAGE_KEY = "glucoscope.visitorSeed.v1";
+const GLUCO_DEBUG_FORCE_LUCKY_DATE_STORAGE_KEY = "glucoscope.debug.forceLuckyDate.v1";
 const LANGUAGE_STORAGE_KEY = "glucoscope.language.v1";
+
+const GLUCO_NORMAL_MAX_ID = 50;
+const GLUCO_LUCKY_MIN_ID = 51;
+const GLUCO_LUCKY_MAX_ID = 70;
+const LUCKY_GLUCO_BASE_RATE = 0.03;
+const LUCKY_GLUCO_MAX_RATE = 0.40;
+const LUCKY_GLUCO_SPECIAL_DATES = new Set([
+  "01-01",
+  "01-21",
+  "02-14",
+  "03-14",
+  "07-07",
+  "10-31",
+  "12-24",
+  "12-25",
+  "12-31"
+]);
 
 const directionMap = {
   DoubleUp: "⇈",
@@ -92,6 +112,8 @@ const glucoLiveItems = [
 ];
 
 const dailyLetterGlucoImages = glucoLiveItems.map((item) => item.image);
+const normalGlucoItems = glucoLiveItems.filter((item) => item.id <= GLUCO_NORMAL_MAX_ID);
+const luckyGlucoItems = glucoLiveItems.filter((item) => item.id >= GLUCO_LUCKY_MIN_ID && item.id <= GLUCO_LUCKY_MAX_ID);
 
 const scoreGlucoImageByRank = {
   excellent: "assets/gluco/about/gluco-growing.png",
@@ -142,6 +164,8 @@ const translations = {
     collectionFirstSeen: "初めて出会った日",
     collectionTimes: "回目",
     collectionProgress: "出会ったグルコ",
+    luckyGlucoBadge: "🍀 小さな幸運",
+    luckyGlucoMet: "🍀 小さな幸運ラッキーグルコと出逢ったよ",
     achievementLabel: "称号",
     shareAchievement: "称号をシェア",
     shareCopied: "シェア文をコピーしました",
@@ -210,6 +234,8 @@ const translations = {
     collectionFirstSeen: "First seen",
     collectionTimes: "time",
     collectionProgress: "Gluco met",
+    luckyGlucoBadge: "🍀 Little luck",
+    luckyGlucoMet: "🍀 You met a little Lucky Gluco today",
     achievementLabel: "Title",
     shareAchievement: "Share title",
     shareCopied: "Share text copied",
@@ -262,11 +288,248 @@ function hashString(value) {
   return Math.abs(hash);
 }
 
-function pickDailyLetterGlucoImage(date = new Date()) {
-  if (dailyLetterGlucoImages.length === 0) return "";
+function getOrCreateVisitorSeed() {
+  try {
+    const existingSeed = localStorage.getItem(GLUCO_VISITOR_SEED_STORAGE_KEY);
+    if (existingSeed) return existingSeed;
 
-  const imageIndex = hashString(`${getLocalDateKey(date)}:letter`) % dailyLetterGlucoImages.length;
-  return dailyLetterGlucoImages[imageIndex];
+    const seed = window.crypto?.randomUUID
+      ? window.crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    localStorage.setItem(GLUCO_VISITOR_SEED_STORAGE_KEY, seed);
+    return seed;
+  } catch (error) {
+    return "glucoscope-local-seed";
+  }
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function normalizedHash(value) {
+  return (hashString(value) % 10000) / 10000;
+}
+
+function isLocalDebugEnvironment() {
+  const host = window.location.hostname;
+  return window.location.protocol === "file:"
+    || host === ""
+    || host === "localhost"
+    || host === "127.0.0.1";
+}
+
+function isForceLuckyDebugRequested(dateKey) {
+  if (!isLocalDebugEnvironment()) return false;
+
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const queryForce = params.get("debugLucky") === "1" || params.get("forceLucky") === "1";
+
+    if (queryForce) {
+      localStorage.setItem(GLUCO_DEBUG_FORCE_LUCKY_DATE_STORAGE_KEY, dateKey);
+      return true;
+    }
+
+    const storedDate = localStorage.getItem(GLUCO_DEBUG_FORCE_LUCKY_DATE_STORAGE_KEY);
+    return storedDate === dateKey;
+  } catch (error) {
+    return false;
+  }
+}
+
+function dateKeyToLocalTime(dateKey) {
+  const [year, month, day] = String(dateKey).split("-").map(Number);
+  return new Date(year, (month || 1) - 1, day || 1).getTime();
+}
+
+function getDateDistanceInDays(fromDateKey, toDateKey) {
+  if (!fromDateKey || !toDateKey) return null;
+
+  const diffMs = dateKeyToLocalTime(toDateKey) - dateKeyToLocalTime(fromDateKey);
+  return Math.round(diffMs / (24 * 60 * 60 * 1000));
+}
+
+function readLuckyGlucoState() {
+  try {
+    return JSON.parse(localStorage.getItem(GLUCO_LUCKY_STATE_STORAGE_KEY) || "{}");
+  } catch (error) {
+    return {};
+  }
+}
+
+function writeLuckyGlucoState(state) {
+  try {
+    localStorage.setItem(GLUCO_LUCKY_STATE_STORAGE_KEY, JSON.stringify(state));
+  } catch (error) {
+    // Collection and lucky state are nice-to-have local memories.
+  }
+}
+
+function isLuckyGlucoNumber(number) {
+  const value = Number(number);
+  return value >= GLUCO_LUCKY_MIN_ID && value <= GLUCO_LUCKY_MAX_ID;
+}
+
+function isLuckyGlucoItem(item) {
+  return Boolean(item && isLuckyGlucoNumber(item.id));
+}
+
+function pickGlucoItemFromPool(pool, seedValue) {
+  if (!pool.length) return null;
+  return pool[hashString(seedValue) % pool.length];
+}
+
+function getSpecialDateKey(dateKey) {
+  return String(dateKey || getLocalDateKey()).slice(5);
+}
+
+function isLuckySpecialDate(dateKey, firstVisitDate) {
+  const specialDateKey = getSpecialDateKey(dateKey);
+  const firstVisitAnniversary = firstVisitDate
+    && firstVisitDate !== dateKey
+    && getSpecialDateKey(firstVisitDate) === specialDateKey;
+
+  return LUCKY_GLUCO_SPECIAL_DATES.has(specialDateKey) || Boolean(firstVisitAnniversary);
+}
+
+function getCollectedGlucoCount(collection = readGlucoCollection()) {
+  return Object.keys(collection).length;
+}
+
+function calculateLuckyGlucoChance(context, stateContext) {
+  const currentScore = Number(context?.score);
+  const tir = Number(context?.tir);
+  const yesterdayScore = Number(context?.yesterdayScore);
+  const collectedCount = Number(stateContext.collectedCount || 0);
+  const visitStreak = Number(stateContext.visitStreak || 1);
+  const normalDaysSinceLucky = Number(stateContext.normalDaysSinceLucky || 0);
+  const daysSinceLastVisit = Number(stateContext.daysSinceLastVisit || 0);
+
+  let chance = LUCKY_GLUCO_BASE_RATE;
+
+  if (Number.isFinite(currentScore) && currentScore >= 90) chance += 0.08;
+  if (Number.isFinite(tir) && tir >= 70) chance += 0.05;
+
+  if (Number.isFinite(currentScore) && Number.isFinite(yesterdayScore)) {
+    const scoreDiff = currentScore - yesterdayScore;
+    if (scoreDiff >= 10) chance += 0.08;
+    else if (scoreDiff >= 3) chance += 0.04;
+  }
+
+  chance += Math.min(Math.max(visitStreak, 1), 7) * 0.01;
+
+  if (collectedCount >= 30) {
+    chance += Math.min((collectedCount - 29) * 0.003, 0.12);
+  }
+
+  if (daysSinceLastVisit >= 3) chance += 0.06;
+  if (isLuckySpecialDate(stateContext.dateKey, stateContext.firstVisitDate)) chance += 0.10;
+  if (stateContext.duplicateNormalCarry) chance += 0.08;
+
+  chance += Math.min(Math.max(normalDaysSinceLucky, 0) * 0.02, 0.10);
+
+  return clamp(chance, LUCKY_GLUCO_BASE_RATE, LUCKY_GLUCO_MAX_RATE);
+}
+
+function getStoredDailyGlucoDecision(dateKey = getLocalDateKey()) {
+  const state = readLuckyGlucoState();
+
+  if (state.dailyDateKey !== dateKey || !state.dailyGlucoId) return null;
+
+  const item = getGlucoLiveItemByNumber(state.dailyGlucoId);
+  if (!item) return null;
+
+  return {
+    item,
+    imagePath: item.image,
+    isLucky: isLuckyGlucoItem(item),
+    chance: Number(state.lastLuckyChance || 0),
+    isPreview: false
+  };
+}
+
+function getPreviewDailyGlucoDecision(dateKey = getLocalDateKey()) {
+  const seed = getOrCreateVisitorSeed();
+  const item = pickGlucoItemFromPool(normalGlucoItems, `${dateKey}:preview:${seed}`);
+
+  if (!item) return null;
+
+  return {
+    item,
+    imagePath: item.image,
+    isLucky: false,
+    chance: 0,
+    isPreview: true
+  };
+}
+
+function getOrCreateDailyGlucoDecision(context = {}, date = new Date()) {
+  const dateKey = getLocalDateKey(date);
+  const forceLuckyDebug = isForceLuckyDebugRequested(dateKey);
+  const storedDecision = getStoredDailyGlucoDecision(dateKey);
+  if (storedDecision && !forceLuckyDebug) return storedDecision;
+
+  const state = readLuckyGlucoState();
+  const seed = getOrCreateVisitorSeed();
+  const collection = readGlucoCollection();
+  const previousVisitDate = state.lastVisitDate;
+  const daysSinceLastVisit = getDateDistanceInDays(previousVisitDate, dateKey);
+  const isConsecutiveVisit = daysSinceLastVisit === 1;
+  const isSameDayVisit = daysSinceLastVisit === 0;
+  const visitStreak = isSameDayVisit
+    ? Number(state.visitStreak || 1)
+    : isConsecutiveVisit
+      ? Number(state.visitStreak || 0) + 1
+      : 1;
+  const firstVisitDate = state.firstVisitDate || dateKey;
+  const stateContext = {
+    dateKey,
+    firstVisitDate,
+    visitStreak,
+    daysSinceLastVisit: Number.isFinite(daysSinceLastVisit) ? daysSinceLastVisit : 0,
+    collectedCount: getCollectedGlucoCount(collection),
+    duplicateNormalCarry: Boolean(state.duplicateNormalCarry),
+    normalDaysSinceLucky: Number(state.normalDaysSinceLucky || 0)
+  };
+  const luckyChance = calculateLuckyGlucoChance(context, stateContext);
+  const luckyRoll = normalizedHash(`${dateKey}:lucky-roll:${seed}`);
+  const shouldPickLucky = luckyGlucoItems.length > 0 && (forceLuckyDebug || luckyRoll < luckyChance);
+  const pool = shouldPickLucky ? luckyGlucoItems : normalGlucoItems;
+  const item = pickGlucoItemFromPool(pool, `${dateKey}:${shouldPickLucky ? "lucky" : "normal"}:${seed}`);
+
+  if (!item) return getPreviewDailyGlucoDecision(dateKey);
+
+  const previousNormalGlucoId = Number(state.lastNormalGlucoId);
+  const isLucky = isLuckyGlucoItem(item);
+  const isDuplicateNormal = !isLucky && previousNormalGlucoId === Number(item.id);
+
+  const nextState = {
+    ...state,
+    firstVisitDate,
+    lastVisitDate: dateKey,
+    visitStreak,
+    dailyDateKey: dateKey,
+    dailyGlucoId: item.id,
+    lastSelectedGlucoId: item.id,
+    lastSelectedWasLucky: isLucky,
+    lastLuckyChance: forceLuckyDebug ? 1 : Number(luckyChance.toFixed(4)),
+    debugForcedLucky: forceLuckyDebug,
+    duplicateNormalCarry: isLucky ? false : isDuplicateNormal,
+    normalDaysSinceLucky: isLucky ? 0 : Number(state.normalDaysSinceLucky || 0) + 1,
+    lastNormalGlucoId: isLucky ? state.lastNormalGlucoId : item.id,
+    lastLuckyDate: isLucky ? dateKey : state.lastLuckyDate
+  };
+
+  writeLuckyGlucoState(nextState);
+
+  return {
+    item,
+    imagePath: item.image,
+    isLucky,
+    chance: forceLuckyDebug ? 1 : luckyChance,
+    isPreview: false
+  };
 }
 
 function getGlucoLiveNumber(imagePath) {
@@ -300,6 +563,10 @@ function formatGlucoLiveTitle(number) {
   return `${formatGlucoLiveNumber(number)} ${getGlucoLiveTitle(number)}`;
 }
 
+function formatLuckyGlucoDailyTitle(number) {
+  return `${formatGlucoLiveNumber(number)} Lucky Gluco! ${getGlucoLiveTitle(number)}`;
+}
+
 function readGlucoCollection() {
   try {
     return JSON.parse(localStorage.getItem(GLUCO_COLLECTION_STORAGE_KEY) || "{}");
@@ -322,30 +589,33 @@ function formatEncounterLabel(count) {
   return `${value}${t("collectionTimes")}`;
 }
 
-function updateGlucoLetterCollection(imagePath, dateKey) {
+function updateGlucoLetterCollection(imagePath, dateKey, options = {}) {
   const imageNumber = getGlucoLiveNumber(imagePath);
 
   if (!imageNumber) {
-    return { label: "No. --", isNew: false, encounterCount: null };
+    return { label: "No. --", isNew: false, encounterCount: null, isLucky: false };
   }
 
   try {
     const collection = readGlucoCollection();
     const imageId = `gluco-live-${String(imageNumber).padStart(2, "0")}`;
     const current = collection[imageId];
+    const isLucky = Boolean(options.isLucky ?? isLuckyGlucoNumber(imageNumber));
 
     if (!current) {
       collection[imageId] = {
         firstSeenDate: dateKey,
         lastSeenDate: dateKey,
         encounterCount: 1,
-        imagePath
+        imagePath,
+        isLucky
       };
       writeGlucoCollection(collection);
       return {
         label: `${formatGlucoLiveTitle(imageNumber)} · New!`,
         isNew: true,
-        encounterCount: 1
+        encounterCount: 1,
+        isLucky
       };
     }
 
@@ -353,6 +623,7 @@ function updateGlucoLetterCollection(imagePath, dateKey) {
       current.lastSeenDate = dateKey;
       current.encounterCount = Number(current.encounterCount || 1) + 1;
       current.imagePath = imagePath;
+      current.isLucky = isLucky;
       collection[imageId] = current;
       writeGlucoCollection(collection);
     }
@@ -360,32 +631,61 @@ function updateGlucoLetterCollection(imagePath, dateKey) {
     return {
       label: `${formatGlucoLiveTitle(imageNumber)} · ${formatEncounterLabel(current.encounterCount)}`,
       isNew: false,
-      encounterCount: current.encounterCount
+      encounterCount: current.encounterCount,
+      isLucky
     };
   } catch (error) {
-    return { label: formatGlucoLiveTitle(imageNumber), isNew: false, encounterCount: null };
+    return { label: formatGlucoLiveTitle(imageNumber), isNew: false, encounterCount: null, isLucky: isLuckyGlucoNumber(imageNumber) };
   }
 }
 
-function setDailyLetterGlucoImage() {
+function renderDailyGlucoDecision(decision, dateKey = getLocalDateKey()) {
   const commentImage = document.getElementById("commentGlucoImage");
   const commentNumber = document.getElementById("commentGlucoNumber");
+  const commentAvatar = document.querySelector(".gluco-comment-avatar");
+  const luckyBadge = document.getElementById("commentGlucoLuckyBadge");
 
-  if (!commentImage) return;
+  if (!commentImage || !decision?.imagePath) return;
 
-  const dateKey = getLocalDateKey();
-  const dailyImage = pickDailyLetterGlucoImage();
+  const imageNumber = getGlucoLiveNumber(decision.imagePath);
+  const isLucky = Boolean(decision.isLucky);
+  commentImage.src = decision.imagePath;
+  commentImage.alt = isLucky
+    ? `${formatGlucoLiveNumber(imageNumber)} Lucky Gluco`
+    : `Gluco ${formatGlucoLiveTitle(imageNumber)}`;
 
-  if (dailyImage) {
-    commentImage.src = dailyImage;
+  if (commentAvatar) {
+    commentAvatar.classList.toggle("lucky-gluco", isLucky);
   }
 
-  if (commentNumber && dailyImage) {
-    const collectionInfo = updateGlucoLetterCollection(dailyImage, dateKey);
-    commentNumber.textContent = collectionInfo.label;
+  if (commentNumber) {
+    const collectionInfo = decision.isPreview
+      ? { label: formatGlucoLiveTitle(imageNumber), isLucky }
+      : updateGlucoLetterCollection(decision.imagePath, dateKey, { isLucky });
+    commentNumber.textContent = isLucky ? formatLuckyGlucoDailyTitle(imageNumber) : collectionInfo.label;
+    commentNumber.classList.toggle("lucky-gluco", isLucky);
+  }
+
+  if (luckyBadge) {
+    luckyBadge.textContent = t("luckyGlucoMet");
+    luckyBadge.hidden = !isLucky;
   }
 
   renderCollectionView();
+}
+
+function setDailyLetterGlucoImage(context = null) {
+  const dateKey = getLocalDateKey();
+  const decision = context
+    ? getOrCreateDailyGlucoDecision(context)
+    : getStoredDailyGlucoDecision(dateKey) || getPreviewDailyGlucoDecision(dateKey);
+
+  renderDailyGlucoDecision(decision, dateKey);
+}
+
+function renderStoredDailyLetterGlucoImage() {
+  const dateKey = getLocalDateKey();
+  renderDailyGlucoDecision(getStoredDailyGlucoDecision(dateKey) || getPreviewDailyGlucoDecision(dateKey), dateKey);
 }
 
 function getScoreGlucoImage(score) {
@@ -428,7 +728,7 @@ function applyLanguage() {
     button.classList.toggle("active", button.dataset.language === currentLanguage);
   });
 
-  setDailyLetterGlucoImage();
+  renderStoredDailyLetterGlucoImage();
   renderCollectionView();
 }
 
@@ -530,7 +830,31 @@ function setLiveStatus(statusType, label, detail = "") {
   liveIndicator.title = detail || label;
 }
 
+function updateCurrentGlucoseColor(glucose) {
+  const glucoseValue = document.getElementById("glucoseValue");
+  if (!glucoseValue) return;
+
+  const value = Number(glucose);
+  glucoseValue.classList.remove("glucose-high", "glucose-low", "glucose-in-range");
+
+  if (!Number.isFinite(value)) return;
+
+  if (value >= 180) {
+    glucoseValue.classList.add("glucose-high");
+    return;
+  }
+
+  if (value <= 69) {
+    glucoseValue.classList.add("glucose-low");
+    return;
+  }
+
+  glucoseValue.classList.add("glucose-in-range");
+}
+
 function updateRangeStatus(glucose) {
+  updateCurrentGlucoseColor(glucose);
+
   const rangeStatus = document.getElementById("rangeStatus");
   if (!rangeStatus) return;
 
@@ -969,6 +1293,7 @@ async function loadLatestGlucose() {
 
   if (!data || data.length === 0) {
     status.textContent = t("latestNoData");
+    updateCurrentGlucoseColor(null);
     updateGlucoseDelta(null, null);
     setLiveStatus("error", "NO DATA", t("noDataDetail"));
     updateHeaderUpdated(null);
@@ -1098,6 +1423,11 @@ async function loadDailyStats() {
     const yesterdayScore = calculateGlucoScoreForEntries(yesterdayEntries, yesterdayStart, yesterdayEnd);
     const sevenDayAverageScore = calculateSevenDayAverageGlucoScore(sevenDayEntries, now);
     updateScoreMetaDisplay(glucoScore.score, yesterdayScore, sevenDayAverageScore);
+    setDailyLetterGlucoImage({
+      score: glucoScore.score,
+      tir,
+      yesterdayScore
+    });
 
     const scoreMessage = document.querySelector(".score-message");
     if (scoreMessage) {
@@ -1119,6 +1449,7 @@ async function loadDailyStats() {
     setLiveStatus("error", "OFFLINE", t("statusError"));
     updateHeaderUpdated(null);
     document.getElementById("status").textContent = t("statusError");
+    updateCurrentGlucoseColor(null);
     updateGlucoseDelta(null, null);
     updateScoreMetaDisplay(null, null, null);
     document.getElementById("comment").textContent = t("commentLoadingError");
@@ -1236,7 +1567,8 @@ function renderCollectionView() {
     const item = document.createElement("div");
     const collected = collection[imageId];
 
-    item.className = `collection-item ${collected ? "collected" : "locked"}`;
+    const isLucky = isLuckyGlucoItem(glucoItem);
+    item.className = `collection-item ${collected ? "collected" : "locked"} ${isLucky ? "lucky-gluco" : "normal-gluco"}`;
 
     const imageBox = document.createElement("div");
     imageBox.className = collected ? "collection-image-wrap" : "collection-locked";
@@ -1255,6 +1587,10 @@ function renderCollectionView() {
     numberEl.className = "collection-number";
     numberEl.textContent = formatGlucoLiveTitle(number);
 
+    const luckyBadge = document.createElement("div");
+    luckyBadge.className = "collection-lucky-badge";
+    luckyBadge.textContent = t("luckyGlucoBadge");
+
     const meta = document.createElement("div");
     meta.className = "collection-meta";
 
@@ -1271,6 +1607,7 @@ function renderCollectionView() {
 
     item.appendChild(imageBox);
     item.appendChild(numberEl);
+    if (isLucky) item.appendChild(luckyBadge);
     item.appendChild(meta);
     grid.appendChild(item);
   });
@@ -1325,7 +1662,7 @@ setupLanguageSwitch();
 setupCollectionShareButton();
 applyLanguage();
 updateClock();
-setDailyLetterGlucoImage();
+renderStoredDailyLetterGlucoImage();
 setLiveStatus("pending", "CHECKING", "Nightscoutの最新データを確認中");
 loadDailyStats();
 setupViewTabs();
