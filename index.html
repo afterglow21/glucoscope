@@ -74,7 +74,10 @@
     <div class="label current-label"><span class="drop-icon">🩸</span>現在血糖</div>
 
     <div class="current-main">
-      <span id="glucoseValue">--</span>
+      <span class="current-value-wrap">
+        <span id="glucoseValue">--</span>
+        <span id="glucoseDelta" class="current-delta" aria-label="前回更新との差分">--</span>
+      </span>
       <span id="glucoseArrow" class="arrow">→</span>
       <span class="unit">mg/dL</span>
     </div>

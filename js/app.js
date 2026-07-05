@@ -246,6 +246,43 @@ function updateRangeStatus(glucose) {
   rangeStatus.textContent = "● In Range";
 }
 
+function formatGlucoseDelta(latestValue, previousValue) {
+  const latest = Number(latestValue);
+  const previous = Number(previousValue);
+
+  if (!Number.isFinite(latest) || !Number.isFinite(previous)) return "--";
+
+  const diff = latest - previous;
+
+  if (diff > 0) return `+${diff}`;
+  if (diff < 0) return `${diff}`;
+  return "±0";
+}
+
+function updateGlucoseDelta(latestValue, previousValue) {
+  const deltaEl = document.getElementById("glucoseDelta");
+  if (!deltaEl) return;
+
+  const deltaText = formatGlucoseDelta(latestValue, previousValue);
+  deltaEl.textContent = deltaText;
+
+  deltaEl.classList.remove("delta-up", "delta-down", "delta-flat");
+
+  if (deltaText.startsWith("+")) {
+    deltaEl.classList.add("delta-up");
+  } else if (deltaText.startsWith("-")) {
+    deltaEl.classList.add("delta-down");
+  } else {
+    deltaEl.classList.add("delta-flat");
+  }
+
+  if (deltaText === "--") {
+    deltaEl.title = "前回更新との差分はまだ表示できません";
+  } else {
+    deltaEl.title = `前回更新との差分: ${deltaText} mg/dL`;
+  }
+}
+
 function formatRelativeUpdate(date) {
   if (!date || Number.isNaN(date.getTime())) return "--";
 
@@ -384,20 +421,24 @@ async function loadLatestGlucose() {
   const glucoseArrow = document.getElementById("glucoseArrow");
   const status = document.getElementById("status");
   const lastUpdate = document.getElementById("lastUpdate");
-  const response = await fetch(`${NIGHTSCOUT_URL}/api/v1/entries.json?count=1`);
+  const response = await fetch(`${NIGHTSCOUT_URL}/api/v1/entries.json?count=2`);
   const data = await response.json();
 
   if (!data || data.length === 0) {
     status.textContent = "データが見つかりません";
+    updateGlucoseDelta(null, null);
     setLiveStatus("error", "NO DATA", "Nightscoutに最新データがありません");
     updateHeaderUpdated(null);
     return null;
   }
 
   const latest = data[0];
+  const previous = data[1];
+
   glucoseValue.textContent = latest.sgv ?? "--";
   glucoseArrow.textContent = directionMap[latest.direction] ?? "→";
   updateRangeStatus(Number(latest.sgv));
+  updateGlucoseDelta(latest.sgv, previous?.sgv);
 
   const measuredAt = new Date(latest.date);
   updateHeaderUpdated(measuredAt);
@@ -495,6 +536,7 @@ async function loadDailyStats() {
     setLiveStatus("error", "OFFLINE", "Nightscout接続エラー");
     updateHeaderUpdated(null);
     document.getElementById("status").textContent = "Nightscout接続エラー";
+    updateGlucoseDelta(null, null);
     document.getElementById("comment").textContent = "データ取得中にエラーが出ました。Consoleを確認してみてください。";
   }
 }

@@ -186,13 +186,17 @@ body{
   display:flex;
   align-items:center;
   justify-content:center;
+  border-radius:50%;
+  overflow:hidden;
+  background:radial-gradient(circle at 50% 45%, rgba(46,204,113,.18), rgba(46,204,113,.08) 68%, rgba(46,204,113,.03) 100%);
+  border:1px solid rgba(46,204,113,.14);
+  box-shadow:0 14px 24px rgba(0,0,0,.16);
 }
 
 .score-gluco-image{
   width:132px;
   height:132px;
-  object-fit:contain;
-  filter:drop-shadow(0 12px 18px rgba(0,0,0,.20));
+  object-fit:cover;
 }
 
 .current-main{
@@ -203,10 +207,48 @@ body{
   margin-bottom:24px;
 }
 
+.current-value-wrap{
+  position:relative;
+  display:inline-flex;
+  align-items:flex-end;
+}
+
 #glucoseValue{
   font-size:82px;
   font-weight:900;
   line-height:1;
+}
+
+.current-delta{
+  position:absolute;
+  top:-8px;
+  right:-50px;
+  min-width:44px;
+  padding:4px 8px;
+  border-radius:999px;
+  background:rgba(15,23,42,.38);
+  border:1px solid rgba(255,255,255,.08);
+  color:#cbd5e1;
+  font-size:18px;
+  font-weight:900;
+  line-height:1;
+  text-align:center;
+  letter-spacing:.2px;
+  white-space:nowrap;
+}
+
+.current-delta.delta-up{
+  color:#facc15;
+  border-color:rgba(250,204,21,.22);
+}
+
+.current-delta.delta-down{
+  color:#7dd3fc;
+  border-color:rgba(125,211,252,.22);
+}
+
+.current-delta.delta-flat{
+  color:#cbd5e1;
 }
 
 .arrow{
@@ -493,6 +535,17 @@ body{
   .score-gluco-image{
     width:92px;
     height:92px;
+    object-fit:cover;
+  }
+}
+
+@media (max-width: 720px){
+  .current-delta{
+    top:-6px;
+    right:-42px;
+    min-width:38px;
+    font-size:15px;
+    padding:4px 7px;
   }
 }
 
