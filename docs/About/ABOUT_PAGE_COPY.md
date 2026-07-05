@@ -269,7 +269,7 @@ Use the gluco image in this section.
 
 このセクションでは、glucoの画像を使う。
 
-- Image: `Guluco.png`
+- Image: `assets/gluco/profile/gluco.png`
 
 ---
 
