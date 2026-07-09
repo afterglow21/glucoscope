@@ -1,2 +1,4 @@
 workers/gluco-letter-worker/node_modules/
 workers/gluco-letter-worker/.wrangler/
+workers/gluco-letter-worker/.dev.vars*
+workers/gluco-letter-worker/.env*
