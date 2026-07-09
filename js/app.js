@@ -1319,6 +1319,15 @@ function setAiLetterPanelStatus(statusKey, statusType = "", detailText = "") {
   status.textContent = detailText ? `${t(statusKey)} ${detailText}` : t(statusKey);
 }
 
+function setAiLetterPanelMessage(message, statusType = "") {
+  const status = document.getElementById("aiLetterStatus");
+  if (!status) return;
+
+  status.classList.remove("success", "error");
+  if (statusType) status.classList.add(statusType);
+  status.textContent = message;
+}
+
 function showAiLetterResult(letter) {
   const result = document.getElementById("aiLetterResult");
   if (!result) return;
@@ -1619,8 +1628,13 @@ async function handleAiLetterRequest() {
     );
   } catch (error) {
     console.error("AI letter prototype call failed", error);
-    const errorStatusKey = getAiLetterErrorStatusKey(error.aiLetterData);
-    setAiLetterPanelStatus(errorStatusKey, "error");
+    const workerMessage = error.aiLetterData?.userMessage;
+    if (workerMessage) {
+      setAiLetterPanelMessage(workerMessage, "error");
+    } else {
+      const errorStatusKey = getAiLetterErrorStatusKey(error.aiLetterData);
+      setAiLetterPanelStatus(errorStatusKey, "error");
+    }
   } finally {
     aiLetterRequestInFlight = false;
     updateAiLetterControls(null, "", { preserveAiStatus: true });

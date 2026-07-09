@@ -95,6 +95,7 @@ Default prototype limits:
 
 - AI enabled: true
 - Daily new generation limit: 3
+- Slot generation limit: 1 per morning / afternoon / night letter
 - Monthly budget target: 1,000 JPY
 - Warning threshold: 800 JPY
 - Stop threshold: 950 JPY
@@ -105,6 +106,7 @@ Environment variables that can be set later in Cloudflare:
 ```text
 AI_ENABLED=true
 AI_DAILY_GENERATION_LIMIT=3
+AI_SLOT_GENERATION_LIMIT=1
 AI_MONTHLY_BUDGET_JPY=1000
 AI_WARNING_BUDGET_JPY=800
 AI_STOP_BUDGET_JPY=950
@@ -140,3 +142,34 @@ Debug examples for local testing:
 ```
 
 Future production usage should replace the in-memory state with Cloudflare KV or D1.
+
+
+## Slot-based guard
+
+The public demo target is:
+
+```text
+morning: 1 new letter
+afternoon: 1 new letter
+night: 1 new letter
+total: 3 new letters per day
+```
+
+This keeps the wording flexible while still protecting cost.
+
+For a future user page, the same structure can be expanded by changing:
+
+```text
+AI_SLOT_GENERATION_LIMIT=3
+AI_DAILY_GENERATION_LIMIT=9
+```
+
+The frontend sends the active slot in `summary.slot`, and the Worker counts new generations by slot.
+
+Current prototype slots:
+
+- `morning`
+- `afternoon`
+- `night`
+
+`cached` responses do not count as new generations.

@@ -357,3 +357,70 @@ Production should store counters such as:
 - Turnstile failure count
 
 No personal health data should be stored in usage counters.
+
+
+---
+
+## 12. Slot-based Generation Guard
+
+The Worker should treat AI letters as time-based letters rather than a single undifferentiated daily counter.
+
+Public demo target:
+
+```text
+morning: 1 new letter
+afternoon: 1 new letter
+night: 1 new letter
+total: 3 new letters per day
+```
+
+Future user page target:
+
+```text
+morning: up to 3 new letters
+afternoon: up to 3 new letters
+night: up to 3 new letters
+total: up to 9 new letters per day
+```
+
+The frontend sends:
+
+```json
+{
+  "summary": {
+    "slot": "afternoon",
+    "slotLabel": "昼のお手紙"
+  }
+}
+```
+
+The Worker tracks:
+
+```json
+{
+  "dailySlotGenerationCounts": {
+    "morning": 1,
+    "afternoon": 1,
+    "night": 0,
+    "unknown": 0
+  }
+}
+```
+
+If a slot reaches its limit, the Worker returns:
+
+```json
+{
+  "ok": false,
+  "status": "error",
+  "code": "rate_limited",
+  "userMessage": "今日の新しい昼のお手紙は上限に達しました。表示中のお手紙はそのまま読めます。ChatGPTコピー機能も使えます🍀",
+  "details": {
+    "reason": "slot"
+  }
+}
+```
+
+The frontend should prefer `userMessage` when present, because it can include the active slot label.
+
+The visible letter should not disappear when a guard error is returned.

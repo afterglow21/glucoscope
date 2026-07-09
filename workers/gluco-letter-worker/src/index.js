@@ -1,8 +1,10 @@
 const CONTRACT_VERSION = "gluco-ai-letter-worker-response-v0.1";
+const LETTER_SLOT_KEYS = ["morning", "afternoon", "night"];
 
 const DEFAULT_GUARD_CONFIG = {
   aiEnabled: true,
   dailyGenerationLimit: 3,
+  slotGenerationLimit: 1,
   monthlyBudgetJpy: 1000,
   warningBudgetJpy: 800,
   stopBudgetJpy: 950,
@@ -75,6 +77,7 @@ function readGuardConfig(env = {}) {
   return {
     aiEnabled: readBoolean(env.AI_ENABLED, DEFAULT_GUARD_CONFIG.aiEnabled),
     dailyGenerationLimit: Math.max(0, Math.floor(readNumber(env.AI_DAILY_GENERATION_LIMIT, DEFAULT_GUARD_CONFIG.dailyGenerationLimit))),
+    slotGenerationLimit: Math.max(0, Math.floor(readNumber(env.AI_SLOT_GENERATION_LIMIT, DEFAULT_GUARD_CONFIG.slotGenerationLimit))),
     monthlyBudgetJpy,
     warningBudgetJpy,
     stopBudgetJpy,
@@ -96,6 +99,36 @@ function getMonthKey(date = new Date(), timezoneOffsetHours = 9) {
   return getShiftedDate(date, timezoneOffsetHours).toISOString().slice(0, 7);
 }
 
+function createEmptySlotCounts() {
+  return {
+    morning: 0,
+    afternoon: 0,
+    night: 0,
+    unknown: 0
+  };
+}
+
+function normalizeSlot(slot) {
+  return LETTER_SLOT_KEYS.includes(slot) ? slot : "unknown";
+}
+
+function getSlotLabel(summary = {}, language = "ja") {
+  if (summary.slotLabel) return summary.slotLabel;
+
+  const slot = normalizeSlot(summary.slot);
+  if (language === "en") {
+    if (slot === "morning") return "morning letter";
+    if (slot === "afternoon") return "afternoon letter";
+    if (slot === "night") return "night letter";
+    return "current letter";
+  }
+
+  if (slot === "morning") return "朝のお手紙";
+  if (slot === "afternoon") return "昼のお手紙";
+  if (slot === "night") return "夜のお手紙";
+  return "今のお手紙";
+}
+
 function createUsageState(now = new Date(), config = DEFAULT_GUARD_CONFIG) {
   return {
     kind: "prototype-memory",
@@ -105,6 +138,9 @@ function createUsageState(now = new Date(), config = DEFAULT_GUARD_CONFIG) {
     dailyGenerationCount: 0,
     dailyCacheHitCount: 0,
     dailyRateLimitedCount: 0,
+    dailySlotGenerationCounts: createEmptySlotCounts(),
+    dailySlotCacheHitCounts: createEmptySlotCounts(),
+    dailySlotRateLimitedCounts: createEmptySlotCounts(),
     monthlyGenerationCount: 0,
     monthlyCacheHitCount: 0,
     monthlyBudgetBlockedCount: 0,
@@ -117,6 +153,21 @@ function createUsageState(now = new Date(), config = DEFAULT_GUARD_CONFIG) {
   };
 }
 
+function ensureSlotCounters(state) {
+  state.dailySlotGenerationCounts = {
+    ...createEmptySlotCounts(),
+    ...(state.dailySlotGenerationCounts || {})
+  };
+  state.dailySlotCacheHitCounts = {
+    ...createEmptySlotCounts(),
+    ...(state.dailySlotCacheHitCounts || {})
+  };
+  state.dailySlotRateLimitedCounts = {
+    ...createEmptySlotCounts(),
+    ...(state.dailySlotRateLimitedCounts || {})
+  };
+}
+
 function getUsageState(config, now = new Date()) {
   const dayKey = getDayKey(now, config.timezoneOffsetHours);
   const monthKey = getMonthKey(now, config.timezoneOffsetHours);
@@ -125,11 +176,16 @@ function getUsageState(config, now = new Date()) {
     prototypeUsageState = createUsageState(now, config);
   }
 
+  ensureSlotCounters(prototypeUsageState);
+
   if (prototypeUsageState.dayKey !== dayKey) {
     prototypeUsageState.dayKey = dayKey;
     prototypeUsageState.dailyGenerationCount = 0;
     prototypeUsageState.dailyCacheHitCount = 0;
     prototypeUsageState.dailyRateLimitedCount = 0;
+    prototypeUsageState.dailySlotGenerationCounts = createEmptySlotCounts();
+    prototypeUsageState.dailySlotCacheHitCounts = createEmptySlotCounts();
+    prototypeUsageState.dailySlotRateLimitedCounts = createEmptySlotCounts();
   }
 
   return prototypeUsageState;
@@ -142,6 +198,7 @@ function cloneUsageState(state) {
 function applyDebugUsageOverrides(state, payload = {}) {
   const debug = payload?.debug || {};
   const nextState = cloneUsageState(state);
+  ensureSlotCounters(nextState);
 
   if (Number.isFinite(Number(debug.mockDailyGenerationCount))) {
     nextState.dailyGenerationCount = Number(debug.mockDailyGenerationCount);
@@ -161,6 +218,11 @@ function applyDebugUsageOverrides(state, payload = {}) {
 
   if (Number.isFinite(Number(debug.mockOutputTokens))) {
     nextState.outputTokens = Number(debug.mockOutputTokens);
+  }
+
+  const mockSlot = normalizeSlot(debug.mockSlot || payload?.summary?.slot);
+  if (Number.isFinite(Number(debug.mockSlotGenerationCount))) {
+    nextState.dailySlotGenerationCounts[mockSlot] = Number(debug.mockSlotGenerationCount);
   }
 
   return nextState;
@@ -198,7 +260,7 @@ function getPrototypeStatus(payload = {}) {
 function buildPrototypeLetter(summary = {}) {
   const language = summary.language === "en" ? "en" : "ja";
   const metrics = summary.metrics || {};
-  const slotLabel = summary.slotLabel || (language === "en" ? "current letter" : "今のお手紙");
+  const slotLabel = getSlotLabel(summary, language);
   const rangeLabel = summary.rangeLabel || "--";
   const tir = metrics.tir ?? "--";
   const avg = metrics.averageGlucose ?? "--";
@@ -222,7 +284,10 @@ TIRは${tir}%、平均血糖は${avg}mg/dL、GlucoScoreは${score}だったよ�
 血糖はあなたを責める数字じゃなくて、今日を理解して明日を少し楽にするための手がかりだよ。`;
 }
 
-function buildUsagePayload({ state, requestUsage, config }) {
+function buildUsagePayload({ state, requestUsage, config, summary = {} }) {
+  ensureSlotCounters(state);
+
+  const slotKey = normalizeSlot(summary.slot);
   const monthlyEstimatedCostJpy = Number(state.estimatedCostJpy.toFixed(4));
   const budgetUsageRate = config.monthlyBudgetJpy > 0
     ? Number((monthlyEstimatedCostJpy / config.monthlyBudgetJpy * 100).toFixed(2))
@@ -236,6 +301,14 @@ function buildUsagePayload({ state, requestUsage, config }) {
     totalOutputTokens: state.outputTokens,
     dailyGenerationCount: state.dailyGenerationCount,
     dailyCacheHitCount: state.dailyCacheHitCount,
+    dailySlotGenerationCounts: state.dailySlotGenerationCounts,
+    dailySlotCacheHitCounts: state.dailySlotCacheHitCounts,
+    activeSlot: {
+      key: slotKey,
+      label: getSlotLabel(summary, summary.language === "en" ? "en" : "ja"),
+      generationCount: state.dailySlotGenerationCounts[slotKey] || 0,
+      cacheHitCount: state.dailySlotCacheHitCounts[slotKey] || 0
+    },
     monthlyGenerationCount: state.monthlyGenerationCount,
     monthlyCacheHitCount: state.monthlyCacheHitCount,
     monthlyEstimatedCostJpy,
@@ -248,20 +321,37 @@ function buildUsagePayload({ state, requestUsage, config }) {
   };
 }
 
-function buildGuardPayload({ state, config, budgetBlocked = false }) {
+function buildGuardPayload({ state, config, budgetBlocked = false, summary = {} }) {
+  ensureSlotCounters(state);
+
+  const slotKey = normalizeSlot(summary.slot);
+  const slotGenerationCount = state.dailySlotGenerationCounts[slotKey] || 0;
   const monthlyEstimatedCostJpy = Number(state.estimatedCostJpy.toFixed(4));
   const budgetWarning = monthlyEstimatedCostJpy >= config.warningBudgetJpy;
   const dailyGenerationRemaining = Math.max(0, config.dailyGenerationLimit - state.dailyGenerationCount);
+  const slotGenerationRemaining = Math.max(0, config.slotGenerationLimit - slotGenerationCount);
+  const totalRateLimited = state.dailyGenerationCount >= config.dailyGenerationLimit;
+  const slotRateLimited = slotGenerationCount >= config.slotGenerationLimit;
 
   return {
     turnstileRequired: false,
     turnstileVerified: false,
-    rateLimited: state.dailyGenerationCount >= config.dailyGenerationLimit,
+    rateLimited: totalRateLimited || slotRateLimited,
+    totalRateLimited,
+    slotRateLimited,
     budgetBlocked,
     budgetWarning,
     aiEnabled: config.aiEnabled,
     dailyGenerationLimit: config.dailyGenerationLimit,
     dailyGenerationRemaining,
+    slotGenerationLimit: config.slotGenerationLimit,
+    slotGenerationRemaining,
+    activeSlot: {
+      key: slotKey,
+      label: getSlotLabel(summary, summary.language === "en" ? "en" : "ja"),
+      generationCount: slotGenerationCount
+    },
+    dailySlotGenerationCounts: state.dailySlotGenerationCounts,
     monthlyBudgetJpy: config.monthlyBudgetJpy,
     warningBudgetJpy: config.warningBudgetJpy,
     stopBudgetJpy: config.stopBudgetJpy,
@@ -286,19 +376,21 @@ function buildSuccessPayload({ summary, payload, status, usageState, requestUsag
       cached,
       cacheKey: cached ? buildPrototypeCacheKey(summary) : null,
       slot: {
-        key: summary.slot || "unknown",
-        label: summary.slotLabel || ""
+        key: normalizeSlot(summary.slot),
+        label: getSlotLabel(summary, summary.language === "en" ? "en" : "ja")
       }
     },
     usage: buildUsagePayload({
       state: usageState,
       requestUsage,
-      config
+      config,
+      summary
     }),
     guard: buildGuardPayload({
       state: usageState,
       config,
-      budgetBlocked: false
+      budgetBlocked: false,
+      summary
     })
   };
 }
@@ -307,25 +399,49 @@ function buildPrototypeCacheKey(summary = {}) {
   return [
     summary.pageMode || "unknown-page",
     summary.period || "unknown-period",
-    summary.slot || "unknown-letter",
+    normalizeSlot(summary.slot),
     summary.rangeLabel || "unknown-range"
   ].join(":");
 }
 
-function buildGuardError(status, { usageState, config, payload }) {
+function buildRateLimitedUserMessage({ summary = {}, reason = "total" }) {
+  const language = summary.language === "en" ? "en" : "ja";
+  const slotLabel = getSlotLabel(summary, language);
+
+  if (language === "en") {
+    if (reason === "slot") {
+      return `Today's new ${slotLabel} has reached its limit. The letter on screen stays available, and the ChatGPT copy feature still works 🍀`;
+    }
+
+    return "Today's new AI letters have reached the limit. The letter on screen stays available, and the ChatGPT copy feature still works 🍀";
+  }
+
+  if (reason === "slot") {
+    return `今日の新しい${slotLabel}は上限に達しました。表示中のお手紙はそのまま読めます。ChatGPTコピー機能も使えます🍀`;
+  }
+
+  return "今日の新しいAIお手紙は上限に達しました。表示中のお手紙はそのまま読めます。ChatGPTコピー機能も使えます🍀";
+}
+
+function buildGuardError(status, { usageState, config, payload, summary = {}, reason = "manual" }) {
+  ensureSlotCounters(usageState);
+  const slotKey = normalizeSlot(summary.slot);
+
   if (status === "rate_limited") {
     usageState.dailyRateLimitedCount += 1;
+    usageState.dailySlotRateLimitedCounts[slotKey] = (usageState.dailySlotRateLimitedCounts[slotKey] || 0) + 1;
     usageState.updatedAt = new Date().toISOString();
 
     return {
       code: "rate_limited",
-      message: "Daily AI generation limit reached.",
-      userMessage: "今日のAI分析は上限に近づいています。前回のお手紙やChatGPTコピー機能は使えます🍀",
+      message: reason === "slot" ? "Daily AI generation limit reached for this slot." : "Daily AI generation limit reached.",
+      userMessage: buildRateLimitedUserMessage({ summary, reason }),
       retryable: false,
       status: 429,
       details: {
-        usage: buildUsagePayload({ state: usageState, requestUsage: emptyRequestUsage(), config }),
-        guard: buildGuardPayload({ state: usageState, config, budgetBlocked: false }),
+        reason,
+        usage: buildUsagePayload({ state: usageState, requestUsage: emptyRequestUsage(), config, summary }),
+        guard: buildGuardPayload({ state: usageState, config, budgetBlocked: false, summary }),
         clientMode: getClientMode(payload)
       }
     };
@@ -342,8 +458,8 @@ function buildGuardError(status, { usageState, config, payload }) {
       retryable: false,
       status: 402,
       details: {
-        usage: buildUsagePayload({ state: usageState, requestUsage: emptyRequestUsage(), config }),
-        guard: buildGuardPayload({ state: usageState, config, budgetBlocked: true }),
+        usage: buildUsagePayload({ state: usageState, requestUsage: emptyRequestUsage(), config, summary }),
+        guard: buildGuardPayload({ state: usageState, config, budgetBlocked: true, summary }),
         clientMode: getClientMode(payload)
       }
     };
@@ -360,8 +476,8 @@ function buildGuardError(status, { usageState, config, payload }) {
       retryable: false,
       status: 503,
       details: {
-        usage: buildUsagePayload({ state: usageState, requestUsage: emptyRequestUsage(), config }),
-        guard: buildGuardPayload({ state: usageState, config, budgetBlocked: false }),
+        usage: buildUsagePayload({ state: usageState, requestUsage: emptyRequestUsage(), config, summary }),
+        guard: buildGuardPayload({ state: usageState, config, budgetBlocked: false, summary }),
         clientMode: getClientMode(payload)
       }
     };
@@ -378,21 +494,33 @@ function emptyRequestUsage() {
   };
 }
 
-function shouldBlockByGuard({ status, usageState, config }) {
+function getGuardBlock({ status, usageState, config, summary = {} }) {
   if (status === "cached") return null;
-  if (!config.aiEnabled) return "ai_disabled";
-  if (usageState.estimatedCostJpy >= config.stopBudgetJpy) return "budget_stopped";
-  if (usageState.dailyGenerationCount >= config.dailyGenerationLimit) return "rate_limited";
+  if (!config.aiEnabled) return { status: "ai_disabled", reason: "ai_disabled" };
+  if (usageState.estimatedCostJpy >= config.stopBudgetJpy) return { status: "budget_stopped", reason: "budget" };
+  if (usageState.dailyGenerationCount >= config.dailyGenerationLimit) return { status: "rate_limited", reason: "total" };
+
+  const slotKey = normalizeSlot(summary.slot);
+  const slotGenerationCount = usageState.dailySlotGenerationCounts?.[slotKey] || 0;
+  if (slotGenerationCount >= config.slotGenerationLimit) {
+    return { status: "rate_limited", reason: "slot" };
+  }
+
   return null;
 }
 
-function recordSuccess({ usageState, status, requestUsage }) {
+function recordSuccess({ usageState, status, requestUsage, summary = {} }) {
+  ensureSlotCounters(usageState);
+  const slotKey = normalizeSlot(summary.slot);
+
   if (status === "cached") {
     usageState.dailyCacheHitCount += 1;
     usageState.monthlyCacheHitCount += 1;
+    usageState.dailySlotCacheHitCounts[slotKey] = (usageState.dailySlotCacheHitCounts[slotKey] || 0) + 1;
   } else {
     usageState.dailyGenerationCount += 1;
     usageState.monthlyGenerationCount += 1;
+    usageState.dailySlotGenerationCounts[slotKey] = (usageState.dailySlotGenerationCounts[slotKey] || 0) + 1;
     usageState.inputTokens += requestUsage.inputTokens;
     usageState.outputTokens += requestUsage.outputTokens;
     usageState.estimatedCostJpy = Number((usageState.estimatedCostJpy + requestUsage.estimatedCostJpy).toFixed(4));
@@ -402,6 +530,8 @@ function recordSuccess({ usageState, status, requestUsage }) {
 }
 
 function buildUsageReport({ state, config }) {
+  ensureSlotCounters(state);
+
   return {
     status: "usage",
     source: "prototype-worker",
@@ -410,7 +540,11 @@ function buildUsageReport({ state, config }) {
         dayKey: state.dayKey,
         aiGenerationCount: state.dailyGenerationCount,
         cacheHitCount: state.dailyCacheHitCount,
-        rateLimitedCount: state.dailyRateLimitedCount
+        rateLimitedCount: state.dailyRateLimitedCount,
+        slotGenerationCounts: state.dailySlotGenerationCounts,
+        slotCacheHitCounts: state.dailySlotCacheHitCounts,
+        slotRateLimitedCounts: state.dailySlotRateLimitedCounts,
+        slotGenerationLimit: config.slotGenerationLimit
       },
       month: {
         monthKey: state.monthKey,
@@ -499,7 +633,9 @@ export default {
     const forcedGuardError = buildGuardError(prototypeStatus, {
       usageState,
       config,
-      payload
+      payload,
+      summary,
+      reason: "manual"
     });
 
     if (forcedGuardError) {
@@ -507,31 +643,36 @@ export default {
       return errorResponse(errorBody, status);
     }
 
-    const guardBlock = shouldBlockByGuard({
+    const guardBlock = getGuardBlock({
       status: prototypeStatus,
       usageState: effectiveUsageState,
-      config
+      config,
+      summary
     });
 
     if (guardBlock) {
-      const guardError = buildGuardError(guardBlock, {
+      const guardError = buildGuardError(guardBlock.status, {
         usageState,
         config,
-        payload
+        payload,
+        summary,
+        reason: guardBlock.reason
       });
       const { status, ...errorBody } = guardError;
       return errorResponse(errorBody, status);
     }
 
     const letterText = buildPrototypeLetter(summary);
+    const inputTokens = estimateInputTokens(summary);
+    const outputTokens = estimateOutputTokens(letterText);
     const requestUsage = prototypeStatus === "cached"
       ? emptyRequestUsage()
       : {
-          inputTokens: estimateInputTokens(summary),
-          outputTokens: estimateOutputTokens(letterText),
+          inputTokens,
+          outputTokens,
           estimatedCostJpy: estimateCostJpy({
-            inputTokens: estimateInputTokens(summary),
-            outputTokens: estimateOutputTokens(letterText),
+            inputTokens,
+            outputTokens,
             config
           })
         };
@@ -539,7 +680,8 @@ export default {
     recordSuccess({
       usageState,
       status: prototypeStatus,
-      requestUsage
+      requestUsage,
+      summary
     });
 
     return okResponse(buildSuccessPayload({
