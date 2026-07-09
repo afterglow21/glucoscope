@@ -76,22 +76,26 @@ The public Turnstile site key may be used in the frontend later.
 - Combine with KV cache, slot guard, and budget guard.
 
 
-## Frontend Widget
+## Usage Report Note
 
-The AI Letter panel now renders a Cloudflare Turnstile widget using the public site key:
+`GET /api/gluco-letter/usage` does not verify a Turnstile token by itself.
 
-```text
-0x4AAAAAADyftbRcWQW23mEa
-```
-
-The frontend sends the resulting token as:
+For that endpoint, the report uses:
 
 ```json
 {
-  "turnstileToken": "..."
+  "turnstileVerified": null,
+  "turnstileStatus": "not_applicable_for_usage_report"
 }
 ```
 
-The token is reset after each AI Letter request because Turnstile tokens are intended for one-time server-side verification.
+Successful and failed POST verifications are counted separately:
 
-Local development can keep `TURNSTILE_REQUIRED=false` until the Worker secret is configured.
+```json
+{
+  "turnstileVerifiedCount": 1,
+  "turnstileFailedCount": 0
+}
+```
+
+This avoids confusing the usage page with the actual AI letter POST verification result.

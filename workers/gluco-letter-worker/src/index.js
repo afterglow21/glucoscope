@@ -147,6 +147,8 @@ function createUsageState(now = new Date(), config = DEFAULT_GUARD_CONFIG) {
     dailyGenerationCount: 0,
     dailyCacheHitCount: 0,
     dailyRateLimitedCount: 0,
+    dailyTurnstileVerifiedCount: 0,
+    dailyTurnstileFailedCount: 0,
     dailySlotGenerationCounts: createEmptySlotCounts(),
     dailySlotCacheHitCounts: createEmptySlotCounts(),
     dailySlotRateLimitedCounts: createEmptySlotCounts(),
@@ -154,6 +156,8 @@ function createUsageState(now = new Date(), config = DEFAULT_GUARD_CONFIG) {
     monthlyCacheHitCount: 0,
     monthlyBudgetBlockedCount: 0,
     monthlyAiDisabledCount: 0,
+    monthlyTurnstileVerifiedCount: 0,
+    monthlyTurnstileFailedCount: 0,
     inputTokens: 0,
     outputTokens: 0,
     estimatedCostJpy: 0,
@@ -192,6 +196,8 @@ function getUsageState(config, now = new Date()) {
     prototypeUsageState.dailyGenerationCount = 0;
     prototypeUsageState.dailyCacheHitCount = 0;
     prototypeUsageState.dailyRateLimitedCount = 0;
+    prototypeUsageState.dailyTurnstileVerifiedCount = 0;
+    prototypeUsageState.dailyTurnstileFailedCount = 0;
     prototypeUsageState.dailySlotGenerationCounts = createEmptySlotCounts();
     prototypeUsageState.dailySlotCacheHitCounts = createEmptySlotCounts();
     prototypeUsageState.dailySlotRateLimitedCounts = createEmptySlotCounts();
@@ -829,6 +835,20 @@ function emptyRequestUsage() {
   };
 }
 
+function recordTurnstileVerification({ usageState, config, turnstileVerification }) {
+  if (!config.turnstileRequired) return;
+
+  if (turnstileVerification?.verified) {
+    usageState.dailyTurnstileVerifiedCount = (usageState.dailyTurnstileVerifiedCount || 0) + 1;
+    usageState.monthlyTurnstileVerifiedCount = (usageState.monthlyTurnstileVerifiedCount || 0) + 1;
+  } else {
+    usageState.dailyTurnstileFailedCount = (usageState.dailyTurnstileFailedCount || 0) + 1;
+    usageState.monthlyTurnstileFailedCount = (usageState.monthlyTurnstileFailedCount || 0) + 1;
+  }
+
+  usageState.updatedAt = new Date().toISOString();
+}
+
 function getGuardBlock({ status, usageState, config, summary = {} }) {
   if (status === "cached") return null;
   if (!config.aiEnabled) return { status: "ai_disabled", reason: "ai_disabled" };
@@ -876,6 +896,8 @@ function buildUsageReport({ state, config }) {
         aiGenerationCount: state.dailyGenerationCount,
         cacheHitCount: state.dailyCacheHitCount,
         rateLimitedCount: state.dailyRateLimitedCount,
+        turnstileVerifiedCount: state.dailyTurnstileVerifiedCount || 0,
+        turnstileFailedCount: state.dailyTurnstileFailedCount || 0,
         slotGenerationCounts: state.dailySlotGenerationCounts,
         slotCacheHitCounts: state.dailySlotCacheHitCounts,
         slotRateLimitedCounts: state.dailySlotRateLimitedCounts,
@@ -887,6 +909,8 @@ function buildUsageReport({ state, config }) {
         cacheHitCount: state.monthlyCacheHitCount,
         budgetBlockedCount: state.monthlyBudgetBlockedCount,
         aiDisabledCount: state.monthlyAiDisabledCount,
+        turnstileVerifiedCount: state.monthlyTurnstileVerifiedCount || 0,
+        turnstileFailedCount: state.monthlyTurnstileFailedCount || 0,
         inputTokens: state.inputTokens,
         outputTokens: state.outputTokens,
         estimatedCostJpy: Number(state.estimatedCostJpy.toFixed(4)),
@@ -897,7 +921,10 @@ function buildUsageReport({ state, config }) {
       },
       guard: {
         turnstileRequired: config.turnstileRequired,
-        turnstileVerified: false,
+        turnstileVerified: null,
+        turnstileStatus: config.turnstileRequired ? "not_applicable_for_usage_report" : "not_required",
+        turnstileVerifiedCount: state.dailyTurnstileVerifiedCount || 0,
+        turnstileFailedCount: state.dailyTurnstileFailedCount || 0,
         rateLimited: state.dailyGenerationCount >= config.dailyGenerationLimit,
         totalRateLimited: state.dailyGenerationCount >= config.dailyGenerationLimit,
         slotRateLimited: Object.values(state.dailySlotGenerationCounts).some((count) => count >= config.slotGenerationLimit),
@@ -985,11 +1012,23 @@ export default {
     });
 
     if (config.turnstileRequired && !turnstileVerification.verified) {
+      recordTurnstileVerification({
+        usageState,
+        config,
+        turnstileVerification
+      });
+
       return errorResponse(
         buildTurnstileError(turnstileVerification),
         turnstileVerification.code === "missing_turnstile_secret" ? 500 : 403
       );
     }
+
+    recordTurnstileVerification({
+      usageState,
+      config,
+      turnstileVerification
+    });
 
     const prototypeStatus = getPrototypeStatus(payload);
     const effectiveUsageState = applyDebugUsageOverrides(usageState, payload);
