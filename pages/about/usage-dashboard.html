@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Usage Dashboard / 使われ方の見える化 | GlucoScope</title>
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body class="about-detail-body">
+  <main class="about-detail-wrap">
+    <nav class="about-detail-topbar" aria-label="About navigation">
+      <a class="about-detail-brand" href="../../index.html#about">🍀 GlucoScope</a>
+      <a class="about-detail-back" href="../../index.html#about">Aboutトップへ戻る</a>
+    </nav>
+
+    <section class="card about-detail-hero about-detail-hero-with-art">
+      <div class="about-detail-hero-copy">
+        <p class="about-section-kicker">Usage &amp; Sustainability</p>
+        <h1><span class="about-detail-title-en">Usage Dashboard</span><span class="about-detail-title-jp">使われ方の見える化</span></h1>
+        <p>GlucoScopeが安心して続いていくために、使われ方をやさしく確認する入口。</p>
+      </div>
+      <img class="about-detail-hero-art" src="../../assets/gluco/about/gluco-data-link.png" alt="データのつながりを見守るGluco">
+    </section>
+
+    <section class="about-detail-grid about-detail-language-stack">
+      <div class="card about-detail-card about-copy-jp" lang="ja">
+        <p>Usage Dashboardは、GlucoScopeの公開サンプルページがどのくらい使われているかを、開発者が落ち着いて確認するための入口です。</p>
+        <p>見る対象は、AIお手紙の呼び出し回数、保存済みキャッシュの利用、利用上限、Cloudflare Web Analyticsによるページ閲覧の全体傾向などです。</p>
+        <p>血糖値の良し悪しを評価したり、糖尿病とともに生きる人を追いかけたり、個人を責めるための分析には使いません。</p>
+      </div>
+      <div class="card about-detail-card about-copy-en">
+        <p>The Usage Dashboard is an entrance for calmly checking how the GlucoScope public demo is being used.</p>
+        <p>It may include AI letter requests, saved-cache usage, usage limits, and high-level page trends from Cloudflare Web Analytics.</p>
+        <p>It is not for judging glucose values, tracking people living with diabetes, or creating pressure. It exists to keep GlucoScope safe, sustainable, and transparent.</p>
+      </div>
+    </section>
+
+    <section class="about-detail-status-grid" aria-label="Usage dashboard entries">
+      <div class="about-detail-mini-card">
+        <div class="about-detail-mini-head">
+          <span class="about-detail-mini-icon">✉️</span>
+          <h3><span class="about-detail-mini-title-en">AI Letters</span><span class="about-detail-mini-title-jp">AIお手紙の利用</span></h3>
+        </div>
+        <p>新しいAIお手紙の生成数、保存済みキャッシュ表示、上限到達の状況を確認する予定です。</p>
+      </div>
+
+      <div class="about-detail-mini-card">
+        <div class="about-detail-mini-head">
+          <span class="about-detail-mini-icon">🍀</span>
+          <h3><span class="about-detail-mini-title-en">Cache Safety</span><span class="about-detail-mini-title-jp">保存済みキャッシュ</span></h3>
+        </div>
+        <p>同じ時間帯のお手紙を再利用し、API利用や費用を増やしすぎないための確認項目です。</p>
+      </div>
+
+      <div class="about-detail-mini-card">
+        <div class="about-detail-mini-head">
+          <span class="about-detail-mini-icon">💴</span>
+          <h3><span class="about-detail-mini-title-en">Cost Guard</span><span class="about-detail-mini-title-jp">利用上限と費用</span></h3>
+        </div>
+        <p>月間の想定利用額や停止しきい値を見て、GlucoScopeを無理なく続けられるようにします。</p>
+      </div>
+
+      <div class="about-detail-mini-card">
+        <div class="about-detail-mini-head">
+          <span class="about-detail-mini-icon">🧩</span>
+          <h3><span class="about-detail-mini-title-en">Local Worker Report</span><span class="about-detail-mini-title-jp">ローカル確認用</span></h3>
+        </div>
+        <p>開発中はWorkerの使用状況JSONをローカルで確認できます。</p>
+        <code>http://127.0.0.1:8787/api/gluco-letter/usage</code>
+      </div>
+
+      <div class="about-detail-mini-card">
+        <div class="about-detail-mini-head">
+          <span class="about-detail-mini-icon">🌐</span>
+          <h3><span class="about-detail-mini-title-en">Cloudflare Web Analytics</span><span class="about-detail-mini-title-jp">ページ閲覧の全体傾向</span></h3>
+        </div>
+        <p>公開後に導入予定。血糖値やAIお手紙本文をイベント名として送らず、ページの全体傾向を見る方針です。</p>
+      </div>
+
+      <div class="about-detail-mini-card">
+        <div class="about-detail-mini-head">
+          <span class="about-detail-mini-icon">🤝</span>
+          <h3><span class="about-detail-mini-title-en">Support &amp; Affiliate</span><span class="about-detail-mini-title-jp">応援と継続性</span></h3>
+        </div>
+        <p>Support / Affiliate方針ページとつなげ、倫理的で持続可能な続け方を検討していきます。</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

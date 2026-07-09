@@ -179,9 +179,9 @@ const translations = {
     aiLetterButtonReady: "AI分析を試す",
     aiLetterButtonCached: "保存済みの分析を表示",
     aiLetterButtonLoading: "グルコがお手紙を書いてるよ...",
-    aiLetterStatusPreparing: "Cloudflare Worker接続前なので、まだAPIは呼び出しません。",
+    aiLetterStatusPreparing: "AIお手紙の準備を確認しています。",
     aiLetterStatusLocalOnly: "",
-    aiLetterStatusWaitingForSummary: "血糖サマリーを読み込むと、AI分析テストを試せます。",
+    aiLetterStatusWaitingForSummary: "血糖サマリーを読み込むと、AIお手紙を試せます。",
     aiLetterStatusReady: "",
     aiLetterStatusSuccess: "グルコのお手紙を表示しました🍀",
     aiLetterStatusCached: "前回のグルコAIお手紙を表示しました🍀",
@@ -192,7 +192,7 @@ const translations = {
     aiLetterStatusDisabled: "AI分析はただいまお休み中です。いつものグルコのお話とChatGPTコピー機能は使えます🍀",
     aiLetterStatusTurnstileFailed: "AI分析の安全確認がうまくいきませんでした。少し時間をおいて、もう一度試してください🍀",
     aiLetterStatusTurnstileWaiting: "AI分析の安全確認を準備しています。少し待ってからもう一度試してください🍀",
-    aiLetterStatusError: "AI分析のテスト呼び出しに失敗しました。Workerが起動しているか確認してください。",
+    aiLetterStatusError: "AIお手紙を表示できませんでした。少し時間をおいて、もう一度試してください🍀",
     chatGptLetterTitle: "🤖 ChatGPTに貼って相談",
     chatGptLetterBadge: "",
     chatGptLetterLead: "集計済みサマリーだけを使って、ChatGPTに貼るための文章を作ります。",
@@ -310,9 +310,9 @@ const translations = {
     aiLetterModeSwitchTitle: "Reflection mode",
     aiLetterModeSwitchLead: "Applied to all three panels.",
     aiLetterModeLetter: "🍀 Gentle analysis",
-    aiLetterModeDeep: "📊 Detailed reflection",
+    aiLetterModeDeep: "📊 Detailed analysis",
     aiLetterModeLetterLabel: "gentle analysis",
-    aiLetterModeDeepLabel: "detailed reflection",
+    aiLetterModeDeepLabel: "detailed analysis",
     aiLetterPanelSwitchTitle: "View",
     aiLetterPanelBrowser: "Gluco story",
     aiLetterPanelAi: "AI analysis",
@@ -320,10 +320,10 @@ const translations = {
     aiLetterButtonPreparing: "AI analysis is preparing",
     aiLetterButtonReady: "Try AI analysis",
     aiLetterButtonLoading: "Gluco is writing...",
-    aiLetterStatusPreparing: "The Cloudflare Worker is not connected yet, so no API is called.",
-    aiLetterStatusLocalOnly: "Start the local Worker and add ?debugAiWorker=1 to the URL to test it.",
-    aiLetterStatusWaitingForSummary: "AI analysis test will be available after the glucose summary loads.",
-    aiLetterStatusReady: "This will call the development Worker and show the selected Gluco reflection.",
+    aiLetterStatusPreparing: "Checking whether AI letters are ready.",
+    aiLetterStatusLocalOnly: "AI letters are not available in this view yet.",
+    aiLetterStatusWaitingForSummary: "AI letters will be available after the glucose summary loads.",
+    aiLetterStatusReady: "Gluco can write using the selected reflection mode.",
     aiLetterStatusSuccess: "Gluco reflection displayed 🍀",
     aiLetterStatusCached: "Previous Gluco AI reflection displayed 🍀",
     aiLetterStatusLocalCache: "Saved Gluco AI reflection displayed 🍀",
@@ -331,7 +331,9 @@ const translations = {
     aiLetterStatusRateLimited: "Today’s new AI reflections have reached the limit. The previous reflection and ChatGPT copy handoff are still available 🍀",
     aiLetterStatusBudgetStopped: "New AI letters are paused because the monthly AI limit is near.",
     aiLetterStatusDisabled: "AI analysis is paused for now. Gluco’s everyday story and ChatGPT copy handoff are still available 🍀",
-    aiLetterStatusError: "AI analysis test call failed. Please check whether the Worker is running.",
+    aiLetterStatusTurnstileFailed: "The AI safety check did not work. Please try again later 🍀",
+    aiLetterStatusTurnstileWaiting: "Preparing the AI safety check. Please try again in a moment 🍀",
+    aiLetterStatusError: "AI letter could not be displayed. Please try again later 🍀",
     chatGptLetterTitle: "🤖 Ask ChatGPT",
     chatGptLetterBadge: "",
     chatGptLetterLead: "Create text you can paste into ChatGPT using only the summarized data.",
@@ -537,12 +539,12 @@ function injectAiLetterLayoutStyles() {
       color: #e2e8f0;
     }
 
-    .gluco-letter-mode-toggle-button:hover-button:hover {
+    .gluco-letter-mode-toggle-button:hover {
       transform: translateY(-1px);
       background: rgba(37,99,235,.26);
     }
 
-    .gluco-letter-mode-toggle-button.is-active-button.is-active {
+    .gluco-letter-mode-toggle-button.is-active {
       border-color: rgba(46,204,113,.58);
       background: rgba(46,204,113,.20);
       color: #dcfce7;

@@ -183,7 +183,7 @@
             <span id="glucoLetterModeTitle" class="gluco-letter-control-title">分析</span>
             <div class="gluco-letter-mode-toggle" role="group" aria-label="分析モード">
               <button id="aiModeLetterToggle" type="button" class="gluco-letter-mode-toggle-button" data-ai-mode-toggle="letter" onclick="window.glucoSetAiLetterMode?.('letter')">🍀 やさしい分析</button>
-              <button id="aiModeDeepToggle" type="button" class="gluco-letter-mode-toggle-button" data-ai-mode-toggle="deep" onclick="window.glucoSetAiLetterMode?.('deep')">📊 しっかり</button>
+              <button id="aiModeDeepToggle" type="button" class="gluco-letter-mode-toggle-button" data-ai-mode-toggle="deep" onclick="window.glucoSetAiLetterMode?.('deep')">📊 しっかり分析</button>
             </div>
           </div>
         </div>
@@ -211,19 +211,19 @@
               <span class="letter-section-title" data-i18n-key="aiLetterTitle">✨ AI分析 beta</span>
               <span id="aiSlotBadge" class="letter-section-badge ai-slot-badge">--</span>
             </div>
-            <p class="letter-section-lead" data-i18n-key="aiLetterLead">朝・昼・夜のスロットで、グルコがより自然なお手紙を作る予定です。</p>
+            <p class="letter-section-lead" data-i18n-key="aiLetterLead">選んだモードで、AIによる分析結果を表示します。</p>
             <button id="aiLetterButton" type="button" class="letter-primary-button" disabled data-i18n-key="aiLetterButtonPreparing">AI分析は準備中</button>
-            <div id="aiLetterStatus" class="letter-panel-status" data-i18n-key="aiLetterStatusPreparing">Cloudflare Worker接続前なので、まだAPIは呼び出しません。</div>
+            <div id="aiLetterStatus" class="letter-panel-status" data-i18n-key="aiLetterStatusPreparing">AIお手紙の準備を確認しています。</div>
           </div>
 
           <div class="letter-action-panel chatgpt-letter-panel">
             <div class="letter-panel-topline">
-              <span class="letter-section-title" data-i18n-key="chatGptLetterTitle">🤖 ChatGPTで分析</span>
+              <span class="letter-section-title" data-i18n-key="chatGptLetterTitle">🤖 ChatGPTに貼って相談</span>
               <span class="letter-section-badge" data-i18n-key="chatGptLetterBadge">コピー</span>
             </div>
-            <p class="letter-section-lead" data-i18n-key="chatGptLetterLead">集計済みサマリーだけを使って、ChatGPTに貼れるグルコ用プロンプトを作ります。</p>
+            <p class="letter-section-lead" data-i18n-key="chatGptLetterLead">集計済みサマリーだけを使って、ChatGPTに貼るための文章を作ります。</p>
             <div class="letter-button-row">
-              <button id="chatGptCopyButton" type="button" class="letter-secondary-button" data-i18n-key="chatGptCopyButton">プロンプトをコピー</button>
+              <button id="chatGptCopyButton" type="button" class="letter-secondary-button" data-i18n-key="chatGptCopyButton">ChatGPTに貼る文をコピー</button>
               <a id="chatGptOpenLink" class="letter-text-link" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" data-i18n-key="chatGptOpenLink">ChatGPTを開く</a>
             </div>
             <div id="chatGptCopyStatus" class="letter-panel-status" aria-live="polite" data-i18n-key="chatGptCopyWaiting">データ取得後にコピーできます。</div>
@@ -335,6 +335,26 @@
         <div>
           <h3><span class="about-panel-title-en">Current Status</span><span class="about-panel-title-jp">現在の開発状況</span></h3>
           <p>公開サンプルページに向けて、<br>言葉・デザイン・安全方針を整えています。</p>
+        </div>
+        <span class="about-panel-arrow">詳しく見る →</span>
+      </a>
+
+      <a class="about-section-panel" href="pages/about/developer-status.html">
+        <span class="about-panel-icon">🛠️</span>
+        <div>
+          <h3><span class="about-panel-title-en">Developer Status</span><span class="about-panel-title-jp">開発ステータス</span></h3>
+          <p>Live、AIお手紙、安全方針、公開準備の進み具合を、
+          やさしく見える形でまとめます。</p>
+        </div>
+        <span class="about-panel-arrow">詳しく見る →</span>
+      </a>
+
+      <a class="about-section-panel" href="pages/about/usage-dashboard.html">
+        <span class="about-panel-icon">📈</span>
+        <div>
+          <h3><span class="about-panel-title-en">Usage Dashboard</span><span class="about-panel-title-jp">使われ方の見える化</span></h3>
+          <p>AIお手紙の利用状況やページ閲覧の傾向を、
+          責めない・追いすぎない形で確認する入口です。</p>
         </div>
         <span class="about-panel-arrow">詳しく見る →</span>
       </a>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Developer Status / 開発ステータス | GlucoScope</title>
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body class="about-detail-body">
+  <main class="about-detail-wrap">
+    <nav class="about-detail-topbar" aria-label="About navigation">
+      <a class="about-detail-brand" href="../../index.html#about">🍀 GlucoScope</a>
+      <a class="about-detail-back" href="../../index.html#about">Aboutトップへ戻る</a>
+    </nav>
+
+    <section class="card about-detail-hero about-detail-hero-with-art">
+      <div class="about-detail-hero-copy">
+        <p class="about-section-kicker">Development</p>
+        <h1><span class="about-detail-title-en">Developer Status</span><span class="about-detail-title-jp">開発ステータス</span></h1>
+        <p>GlucoScopeを、安心して見てもらえる公開サンプルページへ育てていくための現在地。</p>
+      </div>
+      <img class="about-detail-hero-art" src="../../assets/gluco/about/gluco-growing.png" alt="育っていくGluco">
+    </section>
+
+    <section class="about-detail-grid about-detail-language-stack">
+      <div class="card about-detail-card about-copy-jp" lang="ja">
+        <p>GlucoScopeは、糖尿病とともに生きる人が、血糖データを責められることなく振り返るための血糖みまもりパートナーです。</p>
+        <p>このページでは、Liveタブ、AIお手紙、安全方針、公開準備などの進み具合を、身近な人にも伝わる形でまとめていきます。</p>
+        <p>医療判断、診断、治療判断、インスリン量や機器設定の提案は行いません。GlucoScopeは、日々の血糖マネジメントをやさしく振り返るためのサポートツールとして育てています。</p>
+      </div>
+      <div class="card about-detail-card about-copy-en">
+        <p>GlucoScope is a gentle blood glucose companion for people living with diabetes.</p>
+        <p>This page is a small development status entrance for the Live tab, AI letters, safety documents, and public demo preparation.</p>
+        <p>GlucoScope does not diagnose, make treatment decisions, suggest insulin doses, or replace healthcare professionals. It is being built as a supportive reflection tool for everyday blood glucose management.</p>
+      </div>
+    </section>
+
+    <section class="about-detail-status-grid" aria-label="Development status list">
+      <div class="about-detail-mini-card">
+        <div class="about-detail-mini-head">
+          <span class="about-detail-mini-icon">✉️</span>
+          <h3><span class="about-detail-mini-title-en">Live AI Letters</span><span class="about-detail-mini-title-jp">LiveタブAIお手紙</span></h3>
+        </div>
+        <p>3パネル常時表示、やさしい分析 / しっかり分析、保存済みキャッシュ表示まで整備中。</p>
+      </div>
+
+      <div class="about-detail-mini-card">
+        <div class="about-detail-mini-head">
+          <span class="about-detail-mini-icon">🛡️</span>
+          <h3><span class="about-detail-mini-title-en">Medical &amp; AI Principles</span><span class="about-detail-mini-title-jp">医療・AI原則</span></h3>
+        </div>
+        <p>作成済み。AIは理解を支える存在であり、医療判断を置き換えない方針を明記しています。</p>
+        <p><a href="../../docs/Project_Bible/PROJECT_BIBLE_v1.0_DRAFT.md#7-medical--ai-principles" target="_blank" rel="noopener">原則を読む →</a></p>
+      </div>
+
+      <div class="about-detail-mini-card">
+        <div class="about-detail-mini-head">
+          <span class="about-detail-mini-icon">🚑</span>
+          <h3><span class="about-detail-mini-title-en">SAFETY.md</span><span class="about-detail-mini-title-jp">安全方針</span></h3>
+        </div>
+        <p>作成済み。緊急時の扱い、AIコメントの限界、データの正確性に関する境界をまとめています。</p>
+        <p><a href="../../SAFETY.md" target="_blank" rel="noopener">SAFETY.mdを読む →</a></p>
+      </div>
+
+      <div class="about-detail-mini-card">
+        <div class="about-detail-mini-head">
+          <span class="about-detail-mini-icon">☁️</span>
+          <h3><span class="about-detail-mini-title-en">AI Worker</span><span class="about-detail-mini-title-jp">AIお手紙Worker</span></h3>
+        </div>
+        <p>Cloudflare Worker経由でAIお手紙を表示する土台を整備中。ブラウザからAPIキーを直接呼ばない設計です。</p>
+      </div>
+
+      <div class="about-detail-mini-card">
+        <div class="about-detail-mini-head">
+          <span class="about-detail-mini-icon">📈</span>
+          <h3><span class="about-detail-mini-title-en">Usage Dashboard</span><span class="about-detail-mini-title-jp">使われ方の見える化</span></h3>
+        </div>
+        <p>AIお手紙の利用状況、保存済みキャッシュ、利用上限の確認入口を準備中です。</p>
+        <p><a href="usage-dashboard.html">入口を見る →</a></p>
+      </div>
+
+      <div class="about-detail-mini-card">
+        <div class="about-detail-mini-head">
+          <span class="about-detail-mini-icon">🌐</span>
+          <h3><span class="about-detail-mini-title-en">Public Demo</span><span class="about-detail-mini-title-jp">身近な人への公開</span></h3>
+        </div>
+        <p>友人・家族にも見てもらえるように、言葉、免責、安全表示、公開導線を整えていく段階です。</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
