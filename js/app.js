@@ -162,8 +162,8 @@ const translations = {
     aiLetterStatusPreparing: "Cloudflare Worker接続前なので、まだAPIは呼び出しません。",
     aiLetterStatusLocalOnly: "開発用Workerを起動して、URLに ?debugAiWorker=1 を付けるとテストできます。",
     aiLetterStatusWaitingForSummary: "血糖サマリーを読み込むと、AI分析テストを試せます。",
-    aiLetterStatusReady: "開発用Workerに接続して、固定テストお手紙を表示します。",
-    aiLetterStatusSuccess: "テスト用のグルコAIお手紙を表示しました🍀",
+    aiLetterStatusReady: "開発用Workerに接続して、グルコのお手紙を表示します。",
+    aiLetterStatusSuccess: "グルコのお手紙を表示しました🍀",
     aiLetterStatusCached: "前回のグルコAIお手紙を表示しました🍀",
     aiLetterStatusRateLimited: "今日の新しいAIお手紙は上限に達しました。表示中のお手紙はそのまま読めます。ChatGPTコピー機能も使えます🍀",
     aiLetterStatusBudgetStopped: "今月のAI分析は利用上限に近づいたため、新しいお手紙を少しお休みしています。",
@@ -1342,6 +1342,11 @@ function showAiLetterResult(letter) {
   result.textContent = letter;
 }
 
+function hasVisibleAiLetterResult() {
+  const result = document.getElementById("aiLetterResult");
+  return Boolean(result && !result.hidden && result.textContent.trim());
+}
+
 function getAiLetterTextFromResponse(data) {
   if (!data || typeof data !== "object") return "";
 
@@ -1369,11 +1374,15 @@ function getAiLetterUsageDetailFromResponse(data) {
   const cost = Number(usage.monthlyEstimatedCostJpy);
   if (!Number.isFinite(generations) || !Number.isFinite(cost)) return "";
 
+  const isPrototypeMemory = usage.storage === "prototype-memory";
+
   if (currentLanguage === "en") {
-    return `(This month: ${generations} new / approx. ¥${cost.toFixed(2)})`;
+    const label = isPrototypeMemory ? "this Worker session" : "this month";
+    return `(${label}: ${generations} new / approx. ¥${cost.toFixed(2)})`;
   }
 
-  return `（今月: 新規${generations}回 / 約${cost.toFixed(2)}円）`;
+  const label = isPrototypeMemory ? "このWorker起動中" : "今月";
+  return `（${label}: 新規${generations}回 / 約${cost.toFixed(2)}円）`;
 }
 
 function getAiLetterErrorStatusKey(data) {
@@ -1440,7 +1449,12 @@ function updateAiLetterControls(statusKey = null, statusType = "", options = {})
   }
 
   const aiStatus = document.getElementById("aiLetterStatus");
-  if (aiStatus && !aiLetterRequestInFlight && !options.preserveAiStatus) {
+  if (
+    aiStatus
+    && !aiLetterRequestInFlight
+    && !options.preserveAiStatus
+    && !hasVisibleAiLetterResult()
+  ) {
     aiStatus.classList.remove("success", "error");
 
     if (!workerEnabled) {

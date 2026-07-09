@@ -533,6 +533,17 @@ function buildUsagePayload({ state, requestUsage, config, summary = {} }) {
   };
 }
 
+function buildSlotRemainingCounts(state, config) {
+  ensureSlotCounters(state);
+
+  return {
+    morning: Math.max(0, config.slotGenerationLimit - (state.dailySlotGenerationCounts.morning || 0)),
+    afternoon: Math.max(0, config.slotGenerationLimit - (state.dailySlotGenerationCounts.afternoon || 0)),
+    night: Math.max(0, config.slotGenerationLimit - (state.dailySlotGenerationCounts.night || 0)),
+    unknown: Math.max(0, config.slotGenerationLimit - (state.dailySlotGenerationCounts.unknown || 0))
+  };
+}
+
 function buildGuardPayload({ state, config, budgetBlocked = false, summary = {} }) {
   ensureSlotCounters(state);
 
@@ -773,11 +784,25 @@ function buildUsageReport({ state, config }) {
           ? Number((state.estimatedCostJpy / config.monthlyBudgetJpy * 100).toFixed(2))
           : 0
       },
-      guard: buildGuardPayload({
-        state,
-        config,
-        budgetBlocked: state.estimatedCostJpy >= config.stopBudgetJpy
-      }),
+      guard: {
+        turnstileRequired: false,
+        turnstileVerified: false,
+        rateLimited: state.dailyGenerationCount >= config.dailyGenerationLimit,
+        totalRateLimited: state.dailyGenerationCount >= config.dailyGenerationLimit,
+        slotRateLimited: Object.values(state.dailySlotGenerationCounts).some((count) => count >= config.slotGenerationLimit),
+        budgetBlocked: state.estimatedCostJpy >= config.stopBudgetJpy,
+        budgetWarning: state.estimatedCostJpy >= config.warningBudgetJpy,
+        aiEnabled: config.aiEnabled,
+        dailyGenerationLimit: config.dailyGenerationLimit,
+        dailyGenerationRemaining: Math.max(0, config.dailyGenerationLimit - state.dailyGenerationCount),
+        slotGenerationLimit: config.slotGenerationLimit,
+        slotGenerationRemainingBySlot: buildSlotRemainingCounts(state, config),
+        dailySlotGenerationCounts: state.dailySlotGenerationCounts,
+        monthlyBudgetJpy: config.monthlyBudgetJpy,
+        warningBudgetJpy: config.warningBudgetJpy,
+        stopBudgetJpy: config.stopBudgetJpy,
+        monthlyEstimatedCostJpy: Number(state.estimatedCostJpy.toFixed(4))
+      },
       storage: {
         kind: state.kind,
         note: state.note,
