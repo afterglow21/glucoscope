@@ -14,6 +14,8 @@ const AI_LETTER_WORKER_ENDPOINT_STORAGE_KEY = "glucoscope.aiLetterWorkerEndpoint
 const AI_LETTER_WORKER_ENABLED_STORAGE_KEY = "glucoscope.aiLetterWorkerEnabled.v1";
 const AI_LETTER_LOCAL_CACHE_STORAGE_KEY = "glucoscope.aiLetterLocalCache.v1";
 const AI_LETTER_LOCAL_CACHE_MAX_ITEMS = 30;
+const TURNSTILE_SITE_KEY = "0x4AAAAAADyftbRcWQW23mEa";
+const TURNSTILE_SCRIPT_ID = "glucoscope-turnstile-script";
 const DEFAULT_AI_LETTER_WORKER_ENDPOINT = "http://127.0.0.1:8787/api/gluco-letter";
 
 let currentLivePeriod = localStorage.getItem(LIVE_PERIOD_STORAGE_KEY) || "today";
@@ -173,6 +175,7 @@ const translations = {
     aiLetterStatusBudgetStopped: "今月のAI分析は利用上限に近づいたため、新しいお手紙を少しお休みしています。",
     aiLetterStatusDisabled: "AI分析はただいまお休み中です。いつものグルコのお話とChatGPTコピー機能は使えます🍀",
     aiLetterStatusTurnstileFailed: "AI分析の安全確認がうまくいきませんでした。少し時間をおいて、もう一度試してください🍀",
+    aiLetterStatusTurnstileWaiting: "AI分析の安全確認を準備しています。少し待ってからもう一度試してください🍀",
     aiLetterStatusError: "AI分析のテスト呼び出しに失敗しました。Workerが起動しているか確認してください。",
     chatGptLetterTitle: "🤖 ChatGPTで分析",
     chatGptLetterBadge: "コピー",
@@ -1481,8 +1484,90 @@ function getAiLetterErrorStatusKey(data) {
   return "aiLetterStatusError";
 }
 
+function ensureTurnstileScript() {
+  if (!TURNSTILE_SITE_KEY) return;
+  if (document.getElementById(TURNSTILE_SCRIPT_ID)) return;
+
+  const script = document.createElement("script");
+  script.id = TURNSTILE_SCRIPT_ID;
+  script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+  script.async = true;
+  script.defer = true;
+  script.onload = () => renderAiLetterTurnstileWidget();
+  document.head.appendChild(script);
+}
+
+function ensureAiLetterTurnstileContainer() {
+  const aiButton = document.getElementById("aiLetterButton");
+  if (!aiButton) return null;
+
+  let container = document.getElementById("aiLetterTurnstile");
+  if (container) return container;
+
+  container = document.createElement("div");
+  container.id = "aiLetterTurnstile";
+  container.className = "ai-letter-turnstile";
+  container.setAttribute("aria-label", "AI safety check");
+
+  aiButton.insertAdjacentElement("afterend", container);
+  return container;
+}
+
+function renderAiLetterTurnstileWidget() {
+  const container = ensureAiLetterTurnstileContainer();
+  if (!container || !TURNSTILE_SITE_KEY) return;
+  if (!window.turnstile || typeof window.turnstile.render !== "function") return;
+  if (container.dataset.rendered === "true") return;
+
+  window.glucoTurnstileToken = "";
+
+  const widgetId = window.turnstile.render(container, {
+    sitekey: TURNSTILE_SITE_KEY,
+    theme: "auto",
+    callback: (token) => {
+      window.glucoTurnstileToken = token;
+    },
+    "expired-callback": () => {
+      window.glucoTurnstileToken = "";
+    },
+    "error-callback": () => {
+      window.glucoTurnstileToken = "";
+      setAiLetterPanelStatus("aiLetterStatusTurnstileFailed", "error");
+    }
+  });
+
+  container.dataset.rendered = "true";
+  container.dataset.widgetId = String(widgetId);
+}
+
+function setupAiLetterTurnstile() {
+  if (!TURNSTILE_SITE_KEY) return;
+
+  ensureAiLetterTurnstileContainer();
+  ensureTurnstileScript();
+
+  if (window.turnstile && typeof window.turnstile.render === "function") {
+    renderAiLetterTurnstileWidget();
+  }
+}
+
+function resetAiLetterTurnstile() {
+  const container = document.getElementById("aiLetterTurnstile");
+  const widgetId = container?.dataset?.widgetId;
+
+  window.glucoTurnstileToken = "";
+
+  if (widgetId && window.turnstile && typeof window.turnstile.reset === "function") {
+    try {
+      window.turnstile.reset(widgetId);
+    } catch (error) {
+      console.warn("Failed to reset AI letter Turnstile widget", error);
+    }
+  }
+}
+
 function getTurnstileTokenForAiLetter() {
-  const responseInput = document.querySelector("[name='cf-turnstile-response']");
+  const responseInput = document.querySelector("#aiLetterTurnstile [name='cf-turnstile-response']");
   if (responseInput && responseInput.value) return responseInput.value;
 
   if (typeof window !== "undefined" && typeof window.glucoTurnstileToken === "string") {
@@ -1763,6 +1848,7 @@ async function handleAiLetterRequest() {
     }
   } finally {
     aiLetterRequestInFlight = false;
+    resetAiLetterTurnstile();
     updateAiLetterControls(null, "", { preserveAiStatus: true });
   }
 }
@@ -1772,6 +1858,8 @@ function setupAiLetterPrototype() {
   if (aiButton) {
     aiButton.addEventListener("click", handleAiLetterRequest);
   }
+
+  setupAiLetterTurnstile();
 }
 
 function setupChatGptHandoff() {

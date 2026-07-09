@@ -251,3 +251,16 @@ The frontend sends `turnstileToken` when a Turnstile widget is added.
 The Worker verifies that token with Cloudflare Siteverify before cache, usage guard, or OpenAI generation.
 
 OpenAI must not be called when verification fails.
+
+
+### Frontend site key
+
+The public Turnstile site key is currently embedded in `js/app.js`:
+
+```text
+TURNSTILE_SITE_KEY=0x4AAAAAADyftbRcWQW23mEa
+```
+
+This value is safe to expose in browser JavaScript.
+
+The secret key must stay in the Worker environment only.

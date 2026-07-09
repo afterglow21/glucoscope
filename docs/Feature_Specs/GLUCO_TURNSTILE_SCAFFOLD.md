@@ -74,3 +74,24 @@ The public Turnstile site key may be used in the frontend later.
 - Add production Cloudflare secret.
 - Enable `TURNSTILE_REQUIRED=true` only after the widget is working.
 - Combine with KV cache, slot guard, and budget guard.
+
+
+## Frontend Widget
+
+The AI Letter panel now renders a Cloudflare Turnstile widget using the public site key:
+
+```text
+0x4AAAAAADyftbRcWQW23mEa
+```
+
+The frontend sends the resulting token as:
+
+```json
+{
+  "turnstileToken": "..."
+}
+```
+
+The token is reset after each AI Letter request because Turnstile tokens are intended for one-time server-side verification.
+
+Local development can keep `TURNSTILE_REQUIRED=false` until the Worker secret is configured.
