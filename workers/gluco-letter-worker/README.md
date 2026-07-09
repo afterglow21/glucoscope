@@ -31,3 +31,49 @@ http://127.0.0.1:8787/api/gluco-letter
 - No raw Nightscout logs are expected.
 - The request should contain summarized glucose data only.
 - Turnstile, cache, usage counters, and budget guard are future phases.
+
+## Response contract
+
+The prototype now uses the draft response contract documented in:
+
+```text
+docs/Feature_Specs/GLUCO_AI_LETTER_WORKER_CONTRACT.md
+```
+
+Success responses return:
+
+```json
+{
+  "ok": true,
+  "version": "gluco-ai-letter-worker-response-v0.1",
+  "status": "success",
+  "letter": {
+    "text": "..."
+  },
+  "usage": {
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "estimatedCostJpy": 0
+  },
+  "guard": {
+    "rateLimited": false,
+    "budgetBlocked": false
+  }
+}
+```
+
+For local UI testing, the prototype can simulate future states by including `forceStatus` in the request body:
+
+```json
+{
+  "forceStatus": "cached"
+}
+```
+
+Supported prototype states:
+
+- `success`
+- `cached`
+- `rate_limited`
+- `budget_stopped`
+- `ai_disabled`

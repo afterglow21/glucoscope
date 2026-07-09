@@ -164,6 +164,10 @@ const translations = {
     aiLetterStatusWaitingForSummary: "血糖サマリーを読み込むと、AI分析テストを試せます。",
     aiLetterStatusReady: "開発用Workerに接続して、固定テストお手紙を表示します。",
     aiLetterStatusSuccess: "テスト用のグルコAIお手紙を表示しました🍀",
+    aiLetterStatusCached: "前回のグルコAIお手紙を表示しました🍀",
+    aiLetterStatusRateLimited: "今日のAI分析は上限に近づいています。前回のお手紙やChatGPTコピー機能は使えます🍀",
+    aiLetterStatusBudgetStopped: "今月のAI分析は利用上限に近づいたため、新しいお手紙を少しお休みしています。",
+    aiLetterStatusDisabled: "AI分析はただいまお休み中です。いつものグルコのお話とChatGPTコピー機能は使えます🍀",
     aiLetterStatusError: "AI分析のテスト呼び出しに失敗しました。Workerが起動しているか確認してください。",
     chatGptLetterTitle: "🤖 ChatGPTで分析",
     chatGptLetterBadge: "コピー",
@@ -286,6 +290,10 @@ const translations = {
     aiLetterStatusWaitingForSummary: "AI analysis test will be available after the glucose summary loads.",
     aiLetterStatusReady: "This will call the development Worker and show a fixed test letter.",
     aiLetterStatusSuccess: "Test Gluco AI letter displayed 🍀",
+    aiLetterStatusCached: "Previous Gluco AI letter displayed 🍀",
+    aiLetterStatusRateLimited: "AI analysis is near today’s limit. The previous letter and ChatGPT copy handoff are still available 🍀",
+    aiLetterStatusBudgetStopped: "New AI letters are paused because the monthly AI limit is near.",
+    aiLetterStatusDisabled: "AI analysis is paused for now. Gluco’s everyday story and ChatGPT copy handoff are still available 🍀",
     aiLetterStatusError: "AI analysis test call failed. Please check whether the Worker is running.",
     chatGptLetterTitle: "🤖 Analyze with ChatGPT",
     chatGptLetterBadge: "Copy",
@@ -1325,6 +1333,34 @@ function showAiLetterResult(letter) {
   result.textContent = letter;
 }
 
+function getAiLetterTextFromResponse(data) {
+  if (!data || typeof data !== "object") return "";
+
+  if (typeof data.letter === "string") return data.letter;
+  if (data.letter && typeof data.letter.text === "string") return data.letter.text;
+  if (typeof data.letterText === "string") return data.letterText;
+  return "";
+}
+
+function getAiLetterStatusKeyFromResponse(data) {
+  if (!data || typeof data !== "object") return "aiLetterStatusSuccess";
+
+  if (data.status === "cached" || data.cached === true || data.letter?.cached === true) {
+    return "aiLetterStatusCached";
+  }
+
+  return "aiLetterStatusSuccess";
+}
+
+function getAiLetterErrorStatusKey(data) {
+  const code = data?.code || data?.errorCode || data?.error;
+
+  if (code === "rate_limited") return "aiLetterStatusRateLimited";
+  if (code === "budget_stopped") return "aiLetterStatusBudgetStopped";
+  if (code === "ai_disabled") return "aiLetterStatusDisabled";
+  return "aiLetterStatusError";
+}
+
 function getAiLetterSlot(date = new Date()) {
   const hour = date.getHours();
   if (hour < 12) return { key: "morning", label: t("slotMorning") };
@@ -1553,16 +1589,20 @@ async function handleAiLetterRequest() {
     });
 
     const data = await response.json().catch(() => ({}));
+    const letterText = getAiLetterTextFromResponse(data);
 
-    if (!response.ok || !data.letter) {
-      throw new Error(data.error || `Worker returned ${response.status}`);
+    if (!response.ok || data.ok === false || !letterText) {
+      const error = new Error(data.message || data.error || `Worker returned ${response.status}`);
+      error.aiLetterData = data;
+      throw error;
     }
 
-    showAiLetterResult(data.letter);
-    setAiLetterPanelStatus("aiLetterStatusSuccess", "success");
+    showAiLetterResult(letterText);
+    setAiLetterPanelStatus(getAiLetterStatusKeyFromResponse(data), "success");
   } catch (error) {
     console.error("AI letter prototype call failed", error);
-    setAiLetterPanelStatus("aiLetterStatusError", "error");
+    const errorStatusKey = getAiLetterErrorStatusKey(error.aiLetterData);
+    setAiLetterPanelStatus(errorStatusKey, "error");
   } finally {
     aiLetterRequestInFlight = false;
     updateAiLetterControls();
