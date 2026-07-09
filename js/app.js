@@ -238,11 +238,11 @@ const translations = {
     highLineLabel: "高血糖ライン 180",
     deltaUnavailable: "前回更新との差分はまだ表示できません",
     deltaTitle: "前回更新との差分",
-    scoreExcellent: "今日はかなり安定しています。",
-    scoreGreat: "今日は良い流れです。",
-    scoreGood: "今日はまずまず安定しています。",
-    scoreFair: "今日は少し整えどころがあります。",
-    scoreGentle: "今日は無理せず、明日に整えていきましょう。"
+    scoreExcellent: "落ち着いた時間がたくさん見えているよ。今日の流れをやさしく見てみよう。",
+    scoreGreat: "良い流れが見えているよ。小さな手がかりも見つかっているね。",
+    scoreGood: "落ち着きも見えているよ。今日の流れを一緒に見よう。",
+    scoreFair: "少し動きも見えているよ。明日のヒントとして一緒に見よう。",
+    scoreGentle: "ゆらぎも見えているよ。無理せず、流れをやさしく見よう。"
   },
   en: {
     tabLive: "🟢 Live",
@@ -353,11 +353,11 @@ const translations = {
     highLineLabel: "High line 180",
     deltaUnavailable: "The difference from the previous update is not available yet",
     deltaTitle: "Difference from previous update",
-    scoreExcellent: "Today looks very steady.",
-    scoreGreat: "Today is flowing nicely.",
-    scoreGood: "Today looks fairly steady.",
-    scoreFair: "There may be a few places to review today.",
-    scoreGentle: "Take it gently today. Tomorrow is another day."
+    scoreExcellent: "There are many steady moments today. Let’s look gently together.",
+    scoreGreat: "A gentle flow is visible today. Small clues are showing up too.",
+    scoreGood: "There are steady moments too. Let’s look together.",
+    scoreFair: "There is some movement today. We can use it as a gentle clue.",
+    scoreGentle: "Today looks a little wavy. Let’s look gently, without forcing it."
   }
 };
 
@@ -1345,29 +1345,29 @@ function buildPatternHints({ tir, tar, tbr, cv, avg, glucoScore, previousScore }
   const numericCv = Number(cv);
 
   if (currentLanguage === "en") {
-    if (numericTir >= 70) hints.push(`Time in range is ${tir}%, so there is a steady part to notice.`);
-    if (numericTar >= 20) hints.push(`Time above range is ${tar}%, so higher periods may be worth reviewing gently.`);
-    if (numericTbr >= 4) hints.push(`Time below range is ${tbr}%, so lower periods may be worth checking later.`);
-    if (numericCv >= 36) hints.push(`CV is ${cv}%, suggesting a little more variability.`);
+    if (numericTir >= 70) hints.push(`TIR is ${tir}%, and steady moments are visible in this range.`);
+    if (numericTar >= 20) hints.push(`TAR is ${tar}%, so higher periods may offer gentle clues when reviewed later.`);
+    if (numericTbr >= 4) hints.push(`TBR is ${tbr}%, so lower periods may be gentle clues to look back on later.`);
+    if (numericCv >= 36) hints.push(`CV is ${cv}%, so the day looks a little more wavy.`);
     if (previousScore !== null && Number.isFinite(Number(previousScore))) {
       const diff = Number(glucoScore) - Number(previousScore);
-      if (diff > 0) hints.push(`GlucoScore is ${diff} higher than the previous comparison period.`);
-      if (diff < 0) hints.push(`GlucoScore is ${Math.abs(diff)} lower than the previous comparison period.`);
+      if (diff > 0) hints.push(`GlucoScore looks ${diff} points higher than the previous comparison period.`);
+      if (diff < 0) hints.push(`GlucoScore looks ${Math.abs(diff)} points softer than the previous comparison period.`);
     }
-    if (!hints.length) hints.push(`Average glucose is ${avg}mg/dL and the selected range has usable reflection clues.`);
+    if (!hints.length) hints.push(`Average glucose is ${avg}mg/dL, and the selected range has clues we can review gently.`);
     return hints.slice(0, 4);
   }
 
-  if (numericTir >= 70) hints.push(`TIRは${tir}%で、落ち着いている時間もちゃんと見えています。`);
-  if (numericTar >= 20) hints.push(`TARは${tar}%で、高めの時間をあとでやさしく見返すヒントになりそうです。`);
-  if (numericTbr >= 4) hints.push(`TBRは${tbr}%で、低めの時間をあとで確認する手がかりになりそうです。`);
-  if (numericCv >= 36) hints.push(`CVは${cv}%で、血糖の上下が少し大きめに見えます。`);
+  if (numericTir >= 70) hints.push(`TIRは${tir}%で、落ち着いている時間もちゃんと見えているよ。`);
+  if (numericTar >= 20) hints.push(`TARは${tar}%で、高めの時間もあとでやさしく振り返るヒントになりそうだよ。`);
+  if (numericTbr >= 4) hints.push(`TBRは${tbr}%で、低めの時間もあとでそっと見返す手がかりになりそうだよ。`);
+  if (numericCv >= 36) hints.push(`CVは${cv}%で、血糖の動きが少し大きめに見えているよ。`);
   if (previousScore !== null && Number.isFinite(Number(previousScore))) {
     const diff = Number(glucoScore) - Number(previousScore);
-    if (diff > 0) hints.push(`GlucoScoreは比較期間より${diff}上がっています。`);
-    if (diff < 0) hints.push(`GlucoScoreは比較期間より${Math.abs(diff)}下がっています。`);
+    if (diff > 0) hints.push(`GlucoScoreは比較期間より${diff}高く見えているよ。`);
+    if (diff < 0) hints.push(`GlucoScoreは比較期間より${Math.abs(diff)}控えめに見えているよ。`);
   }
-  if (!hints.length) hints.push(`平均血糖は${avg}mg/dLで、表示中の期間を振り返る手がかりがあります。`);
+  if (!hints.length) hints.push(`平均血糖は${avg}mg/dLで、表示中の期間にも振り返りの手がかりがあるよ。`);
   return hints.slice(0, 4);
 }
 
@@ -1461,41 +1461,71 @@ function setupChatGptHandoff() {
 function makeComment(tir, tar, tbr, avg, cv) {
   if (currentLanguage === "en") {
     if (Number(tir) >= 90 && Number(tbr) < 4 && Number(cv) < 30) {
-      return `Today looks very steady.\n\nTIR is ${tir}%, and average glucose is ${avg}mg/dL.\nThe flow looks calm with less variability 😊`;
+      return `Gluco is here 🍀
+There are many steady moments today.
+TIR is ${tir}%, and average glucose is ${avg}mg/dL.
+This flow can be a gentle clue for tomorrow too.`;
     }
 
     if (Number(tbr) >= 4) {
-      return `Time below range is a little noticeable today.\n\nTBR was ${tbr}%.\nIt may be helpful to gently look back at overnight or pre-meal dips later.`;
+      return `Gluco is here 🍀
+Some lower moments are visible today.
+TBR is ${tbr}%.
+When you have time, looking back at overnight or pre-meal flow may give you a gentle clue.`;
     }
 
     if (Number(tar) >= 20) {
-      return `Time above range is a little higher today.\n\nTAR was ${tar}%.\nLooking at post-meal rises may give you a small clue.`;
+      return `Gluco is here 🍀
+Some higher moments are visible today.
+TAR is ${tar}%.
+Post-meal or afternoon flow may hold a small clue, without blaming the numbers.`;
     }
 
     if (Number(cv) >= 36) {
-      return `Glucose swings look a little larger today.\n\nCV was ${cv}%.\nIt may help to look back at when the ups and downs happened.`;
+      return `Gluco is here 🍀
+Today looks a little wavy.
+CV is ${cv}%.
+You do not have to force anything; we can simply notice when the ups and downs appeared.`;
     }
 
-    return `Today looks fairly steady.\n\nTIR is ${tir}%.\nIt would be nice to keep this gentle flow going.`;
+    return `Gluco is here 🍀
+There are steady moments in today’s flow.
+TIR is ${tir}%.
+Let’s keep using these numbers as small clues, not as a judgment.`;
   }
 
   if (Number(tir) >= 90 && Number(tbr) < 4 && Number(cv) < 30) {
-    return `今日はかなり安定しています。\n\nTIRは${tir}%、平均血糖は${avg}mg/dLです。\n血糖のばらつきも少なく、とても良い流れです😊`;
+    return `グルコだよ🍀
+今日は落ち着いた時間がたくさん見えているよ。
+TIRは${tir}%、平均血糖は${avg}mg/dLだったね。
+この流れも、明日を少し楽にするためのやさしい手がかりになりそうだよ。`;
   }
 
   if (Number(tbr) >= 4) {
-    return `今日は低血糖時間が少し気になります。\n\nTBRは${tbr}%でした。\n夜間や食前の下がり方をあとで見返すと良さそうです。`;
+    return `グルコだよ🍀
+今日は低めの時間が少し見えているよ。
+TBRは${tbr}%だったね。
+夜間や食前の流れを、あとでそっと振り返る手がかりにできそうだよ。`;
   }
 
   if (Number(tar) >= 20) {
-    return `今日は高血糖時間がやや多めです。\n\nTARは${tar}%でした。\n食後の上がり方を中心に見るとヒントがありそうです。`;
+    return `グルコだよ🍀
+今日は高めの時間も少し見えているよ。
+TARは${tar}%だったね。
+食後や午後の流れをやさしく見返すと、小さなヒントが見つかるかもしれないね。`;
   }
 
   if (Number(cv) >= 36) {
-    return `今日は血糖の上下が少し大きめです。\n\nCVは${cv}%でした。\n乱高下のタイミングをあとで確認してみましょう。`;
+    return `グルコだよ🍀
+今日は血糖の動きが少し大きめに見えているよ。
+CVは${cv}%だったね。
+無理に整えようとしなくて大丈夫。どの時間帯に動きがあったか、一緒にそっと見てみよう。`;
   }
 
-  return `今日はまずまず安定しています。\n\nTIRは${tir}%です。\nこのまま落ち着いた流れを保てると良さそうです。`;
+  return `グルコだよ🍀
+今日は落ち着いている時間もちゃんと見えているよ。
+TIRは${tir}%だったね。
+血糖はあなたを責める数字じゃなくて、明日を少し楽にするための手がかりだよ。`;
 }
 
 function getEntryTime(entry) {
