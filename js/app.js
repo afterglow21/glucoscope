@@ -155,7 +155,7 @@ const translations = {
     ruleCommentBadge: "ブラウザ内",
     ruleCommentLead: "外部AIを使わず、表示中の血糖サマリーから短い振り返りを表示します。",
     aiLetterTitle: "✨ AI分析 beta",
-    aiLetterLead: "朝・昼・夜の3回、グルコがより自然なお手紙を作る予定です。",
+    aiLetterLead: "朝・昼・夜の時間で、グルコがお手紙を作ってくれます。",
     aiLetterButtonPreparing: "AI分析は準備中",
     aiLetterButtonReady: "AI分析を試す",
     aiLetterButtonLoading: "グルコがお手紙を書いています...",
