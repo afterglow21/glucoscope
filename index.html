@@ -186,7 +186,39 @@
         <div id="commentGlucoLuckyBadge" class="gluco-lucky-badge" hidden>🍀 小さな幸運ラッキーグルコと出逢ったよ</div>
       </div>
       <div class="gluco-comment-body">
-        <div id="comment">データを読み込んでいます...</div>
+        <div class="letter-section rule-letter-section">
+          <div class="letter-section-header">
+            <span class="letter-section-title" data-i18n-key="ruleCommentTitle">🍀 いつものグルココメント</span>
+            <span class="letter-section-badge" data-i18n-key="ruleCommentBadge">ブラウザ内</span>
+          </div>
+          <p class="letter-section-lead" data-i18n-key="ruleCommentLead">外部AIを使わず、表示中の血糖サマリーから短い振り返りを表示します。</p>
+          <div id="comment" class="rule-comment-text">データを読み込んでいます...</div>
+        </div>
+
+        <div class="letter-action-grid">
+          <div class="letter-action-panel ai-letter-panel">
+            <div class="letter-panel-topline">
+              <span class="letter-section-title" data-i18n-key="aiLetterTitle">✨ AI分析 beta</span>
+              <span id="aiSlotBadge" class="letter-section-badge ai-slot-badge">--</span>
+            </div>
+            <p class="letter-section-lead" data-i18n-key="aiLetterLead">朝・昼・夜のスロットで、グルコがより自然なお手紙を作る予定です。</p>
+            <button id="aiLetterButton" type="button" class="letter-primary-button" disabled data-i18n-key="aiLetterButtonPreparing">AI分析は準備中</button>
+            <div id="aiLetterStatus" class="letter-panel-status" data-i18n-key="aiLetterStatusPreparing">Cloudflare Worker接続前なので、まだAPIは呼び出しません。</div>
+          </div>
+
+          <div class="letter-action-panel chatgpt-letter-panel">
+            <div class="letter-panel-topline">
+              <span class="letter-section-title" data-i18n-key="chatGptLetterTitle">🤖 ChatGPTで分析</span>
+              <span class="letter-section-badge" data-i18n-key="chatGptLetterBadge">コピー</span>
+            </div>
+            <p class="letter-section-lead" data-i18n-key="chatGptLetterLead">集計済みサマリーだけを使って、ChatGPTに貼れるグルコ用プロンプトを作ります。</p>
+            <div class="letter-button-row">
+              <button id="chatGptCopyButton" type="button" class="letter-secondary-button" data-i18n-key="chatGptCopyButton">プロンプトをコピー</button>
+              <a id="chatGptOpenLink" class="letter-text-link" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" data-i18n-key="chatGptOpenLink">ChatGPTを開く</a>
+            </div>
+            <div id="chatGptCopyStatus" class="letter-panel-status" aria-live="polite" data-i18n-key="chatGptCopyWaiting">データ取得後にコピーできます。</div>
+          </div>
+        </div>
       </div>
     </div>
   </section>

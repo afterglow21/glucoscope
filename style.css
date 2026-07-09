@@ -560,7 +560,7 @@ body{
   cursor:pointer;
 }
 
-.custom-range-controls button{
+.custom-range-controls > button{
   border:1px solid rgba(46,204,113,.32);
   background:rgba(46,204,113,.12);
   color:#dcfce7;
@@ -793,9 +793,168 @@ body{
   filter:drop-shadow(0 18px 28px rgba(0,0,0,.24));
 }
 
+
+.letter-section{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.rule-letter-section{
+  padding-bottom:20px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+
+.letter-section-header,
+.letter-panel-topline{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.letter-section-title{
+  color:#edf2f7;
+  font-size:16px;
+  font-weight:900;
+  letter-spacing:.2px;
+}
+
+.letter-section-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:26px;
+  padding:5px 10px;
+  border-radius:999px;
+  background:rgba(46,204,113,.12);
+  border:1px solid rgba(46,204,113,.24);
+  color:#9ff5bd;
+  font-size:12px;
+  font-weight:800;
+  white-space:nowrap;
+}
+
+.letter-section-lead{
+  margin:0;
+  color:#9fb2cf;
+  font-size:13px;
+  line-height:1.7;
+}
+
+.letter-action-grid{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:14px;
+  margin-top:20px;
+}
+
+.letter-action-panel{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  min-height:188px;
+  padding:18px;
+  border-radius:20px;
+  background:rgba(15,23,42,.28);
+  border:1px solid rgba(255,255,255,.07);
+}
+
+.ai-letter-panel{
+  background:
+    radial-gradient(circle at 10% 0%, rgba(46,204,113,.12), transparent 38%),
+    rgba(15,23,42,.28);
+}
+
+.chatgpt-letter-panel{
+  background:
+    radial-gradient(circle at 10% 0%, rgba(59,130,246,.13), transparent 38%),
+    rgba(15,23,42,.28);
+}
+
+.ai-slot-badge{
+  color:#fde68a;
+  border-color:rgba(250,204,21,.30);
+  background:rgba(250,204,21,.10);
+}
+
+.letter-button-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:auto;
+}
+
+.letter-primary-button,
+.letter-secondary-button,
+.letter-text-link{
+  min-height:38px;
+  border-radius:999px;
+  padding:9px 14px;
+  font-size:13px;
+  font-weight:900;
+  text-decoration:none;
+}
+
+.letter-primary-button,
+.letter-secondary-button{
+  cursor:pointer;
+}
+
+.letter-primary-button{
+  border:1px solid rgba(46,204,113,.34);
+  background:rgba(46,204,113,.15);
+  color:#dcfce7;
+}
+
+.letter-primary-button:disabled{
+  cursor:not-allowed;
+  opacity:.62;
+}
+
+.letter-secondary-button{
+  border:1px solid rgba(96,165,250,.34);
+  background:rgba(59,130,246,.14);
+  color:#dbeafe;
+}
+
+.letter-secondary-button:disabled{
+  cursor:not-allowed;
+  opacity:.55;
+}
+
+.letter-text-link{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid rgba(255,255,255,.08);
+  color:#cbd5e1;
+  background:rgba(255,255,255,.04);
+}
+
+.letter-text-link:hover{
+  color:#fff;
+  border-color:rgba(255,255,255,.16);
+}
+
+.letter-panel-status{
+  color:#9fb2cf;
+  font-size:12px;
+  line-height:1.6;
+}
+
+.letter-panel-status.success{
+  color:#9ff5bd;
+}
+
+.letter-panel-status.error{
+  color:#fca5a5;
+}
+
 #comment{
-  font-size:24px;
-  line-height:1.9;
+  font-size:23px;
+  line-height:1.85;
   color:#edf2f7;
   white-space:pre-line;
 }
@@ -822,6 +981,16 @@ body{
   .gluco-comment-image{
     width:128px;
     height:128px;
+  }
+
+  .letter-action-grid{
+    grid-template-columns:1fr;
+  }
+
+  .letter-section-header,
+  .letter-panel-topline{
+    align-items:flex-start;
+    flex-direction:column;
   }
 
   #comment{

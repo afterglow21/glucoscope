@@ -12,6 +12,7 @@ const LIVE_PERIOD_STORAGE_KEY = "glucoscope.livePeriod.v1";
 const CUSTOM_RANGE_STORAGE_KEY = "glucoscope.customRange.v1";
 
 let currentLivePeriod = localStorage.getItem(LIVE_PERIOD_STORAGE_KEY) || "today";
+let latestAiLetterSummary = null;
 
 const GLUCO_NORMAL_MAX_ID = 50;
 const GLUCO_LUCKY_MIN_ID = 51;
@@ -146,6 +147,26 @@ const translations = {
     mealBolusLabel: "手動ボーラス",
     correctionBolusLabel: "自動ボーラス",
     letterTitle: "✉ グルコからのお手紙",
+    ruleCommentTitle: "🍀 いつものグルココメント",
+    ruleCommentBadge: "ブラウザ内",
+    ruleCommentLead: "外部AIを使わず、表示中の血糖サマリーから短い振り返りを表示します。",
+    aiLetterTitle: "✨ AI分析 beta",
+    aiLetterLead: "朝・昼・夜のスロットで、グルコがより自然なお手紙を作る予定です。",
+    aiLetterButtonPreparing: "AI分析は準備中",
+    aiLetterStatusPreparing: "Cloudflare Worker接続前なので、まだAPIは呼び出しません。",
+    chatGptLetterTitle: "🤖 ChatGPTで分析",
+    chatGptLetterBadge: "コピー",
+    chatGptLetterLead: "集計済みサマリーだけを使って、ChatGPTに貼れるグルコ用プロンプトを作ります。",
+    chatGptCopyButton: "プロンプトをコピー",
+    chatGptOpenLink: "ChatGPTを開く",
+    chatGptCopyWaiting: "データ取得後にコピーできます。",
+    chatGptCopyReady: "表示中のサマリーをコピーできます。",
+    chatGptCopied: "グルコ用プロンプトをコピーしました🍀",
+    chatGptCopyFailed: "コピーできませんでした。ブラウザの権限を確認してください。",
+    aiSummaryUnavailable: "まだAI分析用サマリーを作れていません。",
+    slotMorning: "朝のスロット",
+    slotAfternoon: "昼のスロット",
+    slotNight: "夜のスロット",
     averageLabel: "平均",
     cvLabel: "（変動係数）",
     tirDesc: "目標範囲内の時間",
@@ -241,6 +262,26 @@ const translations = {
     mealBolusLabel: "Manual bolus",
     correctionBolusLabel: "Auto bolus",
     letterTitle: "✉ Letter from Gluco",
+    ruleCommentTitle: "🍀 Usual Gluco comment",
+    ruleCommentBadge: "In browser",
+    ruleCommentLead: "A short reflection made from the selected glucose summary without calling external AI.",
+    aiLetterTitle: "✨ AI analysis beta",
+    aiLetterLead: "Gluco will create a more natural letter in morning, afternoon, and night slots.",
+    aiLetterButtonPreparing: "AI analysis is preparing",
+    aiLetterStatusPreparing: "The Cloudflare Worker is not connected yet, so no API is called.",
+    chatGptLetterTitle: "🤖 Analyze with ChatGPT",
+    chatGptLetterBadge: "Copy",
+    chatGptLetterLead: "Create a Gluco prompt for ChatGPT using only the summarized data.",
+    chatGptCopyButton: "Copy prompt",
+    chatGptOpenLink: "Open ChatGPT",
+    chatGptCopyWaiting: "Available after the data loads.",
+    chatGptCopyReady: "You can copy the selected summary.",
+    chatGptCopied: "Gluco prompt copied 🍀",
+    chatGptCopyFailed: "Could not copy. Please check browser permissions.",
+    aiSummaryUnavailable: "The AI-ready summary is not ready yet.",
+    slotMorning: "Morning slot",
+    slotAfternoon: "Afternoon slot",
+    slotNight: "Night slot",
     averageLabel: "Average",
     cvLabel: "(coefficient of variation)",
     tirDesc: "Time in target range",
@@ -993,6 +1034,7 @@ function applyLanguage() {
   updatePeriodButtons();
   renderStoredDailyLetterGlucoImage();
   renderCollectionView();
+  updateAiLetterControls();
 }
 
 function setLanguage(language) {
@@ -1226,6 +1268,194 @@ function formatDateTime(date) {
     hour: "2-digit",
     minute: "2-digit"
   });
+}
+
+
+function getAiLetterSlot(date = new Date()) {
+  const hour = date.getHours();
+  if (hour < 12) return { key: "morning", label: t("slotMorning") };
+  if (hour < 18) return { key: "afternoon", label: t("slotAfternoon") };
+  return { key: "night", label: t("slotNight") };
+}
+
+function updateAiSlotDisplay() {
+  const slotBadge = document.getElementById("aiSlotBadge");
+  if (!slotBadge) return;
+  slotBadge.textContent = getAiLetterSlot().label;
+}
+
+function setAiLetterSummary(summary) {
+  latestAiLetterSummary = summary;
+  updateAiLetterControls();
+}
+
+function updateAiLetterControls(statusKey = null, statusType = "") {
+  updateAiSlotDisplay();
+
+  const copyButton = document.getElementById("chatGptCopyButton");
+  const copyStatus = document.getElementById("chatGptCopyStatus");
+  const hasSummary = Boolean(latestAiLetterSummary);
+
+  if (copyButton) {
+    copyButton.disabled = !hasSummary;
+    copyButton.textContent = t("chatGptCopyButton");
+  }
+
+  if (copyStatus) {
+    copyStatus.classList.remove("success", "error");
+    if (statusType) copyStatus.classList.add(statusType);
+    if (statusKey) {
+      copyStatus.textContent = t(statusKey);
+    } else {
+      copyStatus.textContent = hasSummary ? t("chatGptCopyReady") : t("chatGptCopyWaiting");
+    }
+  }
+
+  const aiButton = document.getElementById("aiLetterButton");
+  if (aiButton) {
+    aiButton.disabled = true;
+    aiButton.textContent = t("aiLetterButtonPreparing");
+  }
+
+  const aiStatus = document.getElementById("aiLetterStatus");
+  if (aiStatus) {
+    aiStatus.textContent = t("aiLetterStatusPreparing");
+  }
+}
+
+function formatAiDateRange(rangeStart, rangeEnd) {
+  if (!Number.isFinite(rangeStart) || !Number.isFinite(rangeEnd)) return "--";
+  return `${formatDateTime(new Date(rangeStart))} ${t("chartRangeSeparator")} ${formatDateTime(new Date(rangeEnd))}`;
+}
+
+function getLatestDeltaFromEntries(entries) {
+  const sortedEntries = [...entries]
+    .filter((entry) => Number.isFinite(getEntryTime(entry)) && Number.isFinite(Number(entry.sgv)))
+    .sort((a, b) => getEntryTime(b) - getEntryTime(a));
+
+  if (sortedEntries.length < 2) return "--";
+  return formatGlucoseDelta(sortedEntries[0].sgv, sortedEntries[1].sgv);
+}
+
+function buildPatternHints({ tir, tar, tbr, cv, avg, glucoScore, previousScore }) {
+  const hints = [];
+  const numericTir = Number(tir);
+  const numericTar = Number(tar);
+  const numericTbr = Number(tbr);
+  const numericCv = Number(cv);
+
+  if (currentLanguage === "en") {
+    if (numericTir >= 70) hints.push(`Time in range is ${tir}%, so there is a steady part to notice.`);
+    if (numericTar >= 20) hints.push(`Time above range is ${tar}%, so higher periods may be worth reviewing gently.`);
+    if (numericTbr >= 4) hints.push(`Time below range is ${tbr}%, so lower periods may be worth checking later.`);
+    if (numericCv >= 36) hints.push(`CV is ${cv}%, suggesting a little more variability.`);
+    if (previousScore !== null && Number.isFinite(Number(previousScore))) {
+      const diff = Number(glucoScore) - Number(previousScore);
+      if (diff > 0) hints.push(`GlucoScore is ${diff} higher than the previous comparison period.`);
+      if (diff < 0) hints.push(`GlucoScore is ${Math.abs(diff)} lower than the previous comparison period.`);
+    }
+    if (!hints.length) hints.push(`Average glucose is ${avg}mg/dL and the selected range has usable reflection clues.`);
+    return hints.slice(0, 4);
+  }
+
+  if (numericTir >= 70) hints.push(`TIRは${tir}%で、落ち着いている時間もちゃんと見えています。`);
+  if (numericTar >= 20) hints.push(`TARは${tar}%で、高めの時間をあとでやさしく見返すヒントになりそうです。`);
+  if (numericTbr >= 4) hints.push(`TBRは${tbr}%で、低めの時間をあとで確認する手がかりになりそうです。`);
+  if (numericCv >= 36) hints.push(`CVは${cv}%で、血糖の上下が少し大きめに見えます。`);
+  if (previousScore !== null && Number.isFinite(Number(previousScore))) {
+    const diff = Number(glucoScore) - Number(previousScore);
+    if (diff > 0) hints.push(`GlucoScoreは比較期間より${diff}上がっています。`);
+    if (diff < 0) hints.push(`GlucoScoreは比較期間より${Math.abs(diff)}下がっています。`);
+  }
+  if (!hints.length) hints.push(`平均血糖は${avg}mg/dLで、表示中の期間を振り返る手がかりがあります。`);
+  return hints.slice(0, 4);
+}
+
+function buildAiLetterSummary({ periodKey, rangeStart, rangeEnd, latest, entries, tir, tar, tbr, avg, cv, gmi, glucoScore, previousScore, sevenDayAverageScore }) {
+  const slot = getAiLetterSlot();
+  const latestTime = latest ? getEntryTime(latest) : NaN;
+  const latestDate = Number.isFinite(latestTime) ? new Date(latestTime) : null;
+  const direction = latest?.direction ? (directionMap[latest.direction] || latest.direction) : "--";
+  const delta = getLatestDeltaFromEntries(entries);
+
+  return {
+    version: "gluco-ai-letter-summary-v0.1",
+    pageMode: "kazuma-public-demo",
+    language: currentLanguage,
+    period: periodKey,
+    slot: slot.key,
+    slotLabel: slot.label,
+    rangeLabel: formatAiDateRange(rangeStart, rangeEnd),
+    latestMeasuredAt: latestDate ? formatDateTime(latestDate) : "--",
+    currentGlucose: latest?.sgv ?? null,
+    direction,
+    delta,
+    metrics: {
+      tir,
+      tar,
+      tbr,
+      averageGlucose: avg,
+      cv,
+      gmi,
+      glucoScore,
+      previousScore,
+      sevenDayAverageScore
+    },
+    patternHints: buildPatternHints({ tir, tar, tbr, cv, avg, glucoScore, previousScore })
+  };
+}
+
+function buildChatGptPrompt(summary) {
+  if (!summary) return "";
+
+  if (currentLanguage === "en") {
+    return `You are gluco, the official AI companion of GlucoScope.\n\nPlease write a short, gentle letter for someone living with diabetes, using only the glucose summary below.\n\nRules:\n- Do not diagnose.\n- Do not make treatment decisions.\n- Do not suggest insulin doses, medication changes, or device setting changes.\n- Do not shame, blame, or frighten the person.\n- Treat glucose data as clues for reflection, not as a grade.\n- Use simple, warm language.\n- Keep it to 3-6 short sentences.\n\nGlucose summary:\n- Page mode: ${summary.pageMode}\n- Period: ${summary.period}\n- Slot: ${summary.slotLabel}\n- Range: ${summary.rangeLabel}\n- Latest measured at: ${summary.latestMeasuredAt}\n- Current glucose: ${summary.currentGlucose ?? "--"} mg/dL\n- Direction: ${summary.direction}\n- Delta from previous reading: ${summary.delta} mg/dL\n- TIR: ${summary.metrics.tir}%\n- TAR: ${summary.metrics.tar}%\n- TBR: ${summary.metrics.tbr}%\n- Average glucose: ${summary.metrics.averageGlucose} mg/dL\n- CV: ${summary.metrics.cv}%\n- GMI estimate: ${summary.metrics.gmi}%\n- GlucoScore: ${summary.metrics.glucoScore}\n- Previous comparison score: ${summary.metrics.previousScore ?? "--"}\n- 7-day average score: ${summary.metrics.sevenDayAverageScore ?? "--"}\n- Reflection hints:\n${summary.patternHints.map((hint) => `  - ${hint}`).join("\n")}\n\nPlease write as gluco. Start naturally, like a small kind friend nearby.`;
+  }
+
+  return `あなたはGlucoScope公式AIパートナー「グルコ」です。\n\n下の血糖サマリーだけをもとに、糖尿病とともに生きる人へ、短くてやさしいお手紙を書いてください。\n\nルール:\n- 診断しない。\n- 治療判断をしない。\n- インスリン量、薬、医療機器設定の変更を指示しない。\n- 責めない。怖がらせない。急かさない。\n- 血糖データを採点ではなく、振り返りの手がかりとして扱う。\n- 子どもにも伝わるくらいやさしい言葉にする。\n- 3〜6文くらいの短いお手紙にする。\n\n血糖サマリー:\n- ページ種別: ${summary.pageMode}\n- 期間: ${summary.period}\n- スロット: ${summary.slotLabel}\n- 表示範囲: ${summary.rangeLabel}\n- 最新測定: ${summary.latestMeasuredAt}\n- 現在血糖: ${summary.currentGlucose ?? "--"} mg/dL\n- 矢印: ${summary.direction}\n- 前回との差分: ${summary.delta} mg/dL\n- TIR: ${summary.metrics.tir}%\n- TAR: ${summary.metrics.tar}%\n- TBR: ${summary.metrics.tbr}%\n- 平均血糖: ${summary.metrics.averageGlucose} mg/dL\n- CV: ${summary.metrics.cv}%\n- GMI目安: ${summary.metrics.gmi}%\n- GlucoScore: ${summary.metrics.glucoScore}\n- 比較期間のGlucoScore: ${summary.metrics.previousScore ?? "--"}\n- 過去7日平均GlucoScore: ${summary.metrics.sevenDayAverageScore ?? "--"}\n- 振り返りヒント:\n${summary.patternHints.map((hint) => `  - ${hint}`).join("\n")}\n\nグルコとして、そばにいる小さなともだちのように書いてください。`;
+}
+
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  try {
+    document.execCommand("copy");
+  } finally {
+    document.body.removeChild(textarea);
+  }
+}
+
+async function handleChatGptCopy() {
+  if (!latestAiLetterSummary) {
+    updateAiLetterControls("aiSummaryUnavailable", "error");
+    return;
+  }
+
+  try {
+    await copyTextToClipboard(buildChatGptPrompt(latestAiLetterSummary));
+    updateAiLetterControls("chatGptCopied", "success");
+  } catch (error) {
+    console.error(error);
+    updateAiLetterControls("chatGptCopyFailed", "error");
+  }
+}
+
+function setupChatGptHandoff() {
+  const copyButton = document.getElementById("chatGptCopyButton");
+  if (copyButton) {
+    copyButton.addEventListener("click", handleChatGptCopy);
+  }
 }
 
 function makeComment(tir, tar, tbr, avg, cv) {
@@ -1982,6 +2212,7 @@ async function loadDailyStats() {
 
     if (values.length === 0) {
       document.getElementById("comment").textContent = t("noDailyData");
+      setAiLetterSummary(null);
       updateScoreMetaDisplay(null, null, null, currentLivePeriod);
       return;
     }
@@ -2032,6 +2263,23 @@ async function loadDailyStats() {
 
     updateDisplayedMetrics({ tir, tar, tbr, avg, cv, gmi });
 
+    setAiLetterSummary(buildAiLetterSummary({
+      periodKey: currentLivePeriod,
+      rangeStart,
+      rangeEnd,
+      latest,
+      entries,
+      tir,
+      tar,
+      tbr,
+      avg,
+      cv,
+      gmi,
+      glucoScore: glucoScore.score,
+      previousScore,
+      sevenDayAverageScore
+    }));
+
     document.getElementById("comment").textContent =
       makeComment(tir, tar, tbr, avg, cv, latest?.sgv ?? "--");
 
@@ -2044,6 +2292,7 @@ async function loadDailyStats() {
     updateCurrentGlucoseColor(null);
     updateGlucoseDelta(null, null);
     updateScoreMetaDisplay(null, null, null, currentLivePeriod);
+    setAiLetterSummary(null);
     document.getElementById("comment").textContent = t("commentLoadingError");
   }
 }
@@ -2284,8 +2533,10 @@ updateClock();
 renderStoredDailyLetterGlucoImage();
 setLiveStatus("pending", "CHECKING", "Nightscoutの最新データを確認中");
 updateHealthBar(null, null, "waiting");
+updateAiLetterControls();
 loadDailyStats();
 setupDatePickerButtons();
+setupChatGptHandoff();
 setupViewTabs();
 
 setInterval(updateClock, 1000);
