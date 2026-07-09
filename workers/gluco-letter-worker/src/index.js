@@ -300,6 +300,9 @@ function buildOpenAiInstructions(language = "ja") {
       "Do not recommend insulin doses, medication changes, pump settings, or device-setting changes.",
       "Use the provided summarized data only. Do not invent measurements.",
       "Write as a short warm letter, not as a medical report.",
+      "Because the letter may be shown later from cache, avoid real-time wording such as 'right now' or 'current glucose'.",
+      "When mentioning the latest glucose value, say 'the latest reading' or include the provided measurement time.",
+      "Use natural wording for the letter slot, such as 'today’s afternoon letter'.",
       "Keep it concise, concrete, and gentle. End with a small reflection clue for tomorrow."
     ].join(" ");
   }
@@ -311,6 +314,9 @@ function buildOpenAiInstructions(language = "ja") {
     "血糖値の良し悪しを決めつけず、評価・採点・反省を迫る言い方を避けます。",
     "与えられた集計済みサマリーだけを使い、測定値や出来事を作りません。",
     "医療レポートではなく、グルコからのやさしいお手紙として書きます。",
+    "キャッシュ表示される可能性があるため、「今の血糖」「現在の血糖」「たった今」などのリアルタイム断定は避けます。",
+    "最新測定に触れる場合は、「最新の測定では」「○○ごろの測定では」のように時刻やサマリー上の測定であることが伝わる言い方にします。",
+    "「昼のお手紙」などの時間帯ラベルは、「今日の『昼のお手紙』だよ」のように自然な助詞で書きます。",
     "短く、具体的で、やさしく。最後に明日を少し楽にする小さな手がかりを添えてください。"
   ].join(" ");
 }
@@ -351,8 +357,10 @@ function buildOpenAiPrompt(summary = {}) {
 Requirements:
 - Start with "Gluco is here 🍀"
 - 5 to 8 short lines
-- Mention the active letter time: ${slotLabel}
+- Mention the active letter time naturally, such as "today’s ${slotLabel}"
 - Mention 1 to 3 concrete clues from the summary
+- If mentioning glucose value, use "the latest reading" and include the measurement time when available
+- Avoid real-time wording such as "right now" because the letter may be shown later from cache
 - Avoid medical advice, dosing advice, diagnosis, blame, fear, or strict instructions
 - Use gentle, plain language
 
@@ -365,8 +373,10 @@ ${JSON.stringify(safeSummary, null, 2)}`;
 条件:
 - 最初は「グルコだよ🍀」で始める
 - 5〜8行くらいの短いお手紙
-- 今のお手紙の時間帯「${slotLabel}」を自然に含める
+- 今のお手紙の時間帯「${slotLabel}」は、「今日の『${slotLabel}』だよ」のように自然な助詞で含める
 - サマリーから見える具体的な手がかりを1〜3個だけ入れる
+- 血糖値に触れる場合は「今の血糖」ではなく、「最新の測定では」または「${summary.latestMeasuredAt || "最新測定"}ごろの測定では」のように書く
+- キャッシュ表示される可能性があるため、「今」「現在」「たった今」などのリアルタイム断定を避ける
 - 医療判断、診断、インスリン量、薬、ポンプ設定、デバイス設定の助言はしない
 - 責めない、怖がらせない、急かさない
 - やさしく、自然な日本語で書く
