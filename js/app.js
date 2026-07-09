@@ -12,6 +12,8 @@ const LIVE_PERIOD_STORAGE_KEY = "glucoscope.livePeriod.v1";
 const CUSTOM_RANGE_STORAGE_KEY = "glucoscope.customRange.v1";
 const AI_LETTER_WORKER_ENDPOINT_STORAGE_KEY = "glucoscope.aiLetterWorkerEndpoint.v1";
 const AI_LETTER_WORKER_ENABLED_STORAGE_KEY = "glucoscope.aiLetterWorkerEnabled.v1";
+const AI_LETTER_LOCAL_CACHE_STORAGE_KEY = "glucoscope.aiLetterLocalCache.v1";
+const AI_LETTER_LOCAL_CACHE_MAX_ITEMS = 30;
 const DEFAULT_AI_LETTER_WORKER_ENDPOINT = "http://127.0.0.1:8787/api/gluco-letter";
 
 let currentLivePeriod = localStorage.getItem(LIVE_PERIOD_STORAGE_KEY) || "today";
@@ -165,7 +167,9 @@ const translations = {
     aiLetterStatusReady: "開発用Workerに接続して、グルコのお手紙を表示します。",
     aiLetterStatusSuccess: "グルコのお手紙を表示しました🍀",
     aiLetterStatusCached: "前回のグルコAIお手紙を表示しました🍀",
-    aiLetterStatusRateLimited: "今日の新しいAIお手紙は上限に達しました。表示中のお手紙はそのまま読めます。ChatGPTコピー機能も使えます🍀",
+    aiLetterStatusLocalCache: "保存済みのグルコのお手紙を表示しています🍀",
+    aiLetterStatusLocalCacheAfterLimit: "今日の新しいお手紙は上限に達しました。保存済みのお手紙を表示しています🍀",
+    aiLetterStatusRateLimited: "今日の新しいAIお手紙は上限に達しました。表示中または保存済みのお手紙があれば、そのまま読めます。ChatGPTコピー機能も使えます🍀",
     aiLetterStatusBudgetStopped: "今月のAI分析は利用上限に近づいたため、新しいお手紙を少しお休みしています。",
     aiLetterStatusDisabled: "AI分析はただいまお休み中です。いつものグルコのお話とChatGPTコピー機能は使えます🍀",
     aiLetterStatusError: "AI分析のテスト呼び出しに失敗しました。Workerが起動しているか確認してください。",
@@ -1347,6 +1351,87 @@ function hasVisibleAiLetterResult() {
   return Boolean(result && !result.hidden && result.textContent.trim());
 }
 
+function getAiLetterLocalCacheKey(summary = {}) {
+  return [
+    summary.pageMode || "page",
+    summary.language || currentLanguage || "ja",
+    summary.period || currentLivePeriod || "today",
+    summary.slot || "unknown",
+    summary.rangeLabel || ""
+  ].join("|");
+}
+
+function readAiLetterLocalCache() {
+  try {
+    const raw = localStorage.getItem(AI_LETTER_LOCAL_CACHE_STORAGE_KEY);
+    if (!raw) return {};
+    const cache = JSON.parse(raw);
+    return cache && typeof cache === "object" ? cache : {};
+  } catch (error) {
+    console.warn("Failed to read AI letter local cache", error);
+    return {};
+  }
+}
+
+function writeAiLetterLocalCache(cache) {
+  try {
+    localStorage.setItem(AI_LETTER_LOCAL_CACHE_STORAGE_KEY, JSON.stringify(cache));
+  } catch (error) {
+    console.warn("Failed to write AI letter local cache", error);
+  }
+}
+
+function trimAiLetterLocalCache(cache) {
+  const entries = Object.entries(cache)
+    .sort(([, a], [, b]) => String(b.savedAt || "").localeCompare(String(a.savedAt || "")));
+
+  return Object.fromEntries(entries.slice(0, AI_LETTER_LOCAL_CACHE_MAX_ITEMS));
+}
+
+function getCachedAiLetter(summary = latestAiLetterSummary) {
+  if (!summary) return null;
+
+  const cache = readAiLetterLocalCache();
+  const item = cache[getAiLetterLocalCacheKey(summary)];
+
+  if (!item || typeof item.text !== "string" || !item.text.trim()) return null;
+  return item;
+}
+
+function saveAiLetterLocalCache(summary, data, letterText) {
+  if (!summary || !letterText) return;
+
+  const cache = readAiLetterLocalCache();
+  const key = getAiLetterLocalCacheKey(summary);
+
+  cache[key] = {
+    text: letterText,
+    savedAt: new Date().toISOString(),
+    status: data?.status || "success",
+    source: data?.source || "",
+    provider: data?.letter?.provider || "",
+    model: data?.letter?.model || "",
+    usage: data?.usage || null,
+    slot: {
+      key: summary.slot || "unknown",
+      label: summary.slotLabel || ""
+    },
+    period: summary.period || currentLivePeriod || "today",
+    rangeLabel: summary.rangeLabel || ""
+  };
+
+  writeAiLetterLocalCache(trimAiLetterLocalCache(cache));
+}
+
+function showCachedAiLetter(summary = latestAiLetterSummary, statusKey = "aiLetterStatusLocalCache", statusType = "success") {
+  const cached = getCachedAiLetter(summary);
+  if (!cached) return false;
+
+  showAiLetterResult(cached.text);
+  setAiLetterPanelStatus(statusKey, statusType);
+  return true;
+}
+
 function getAiLetterTextFromResponse(data) {
   if (!data || typeof data !== "object") return "";
 
@@ -1410,6 +1495,10 @@ function updateAiSlotDisplay() {
 function setAiLetterSummary(summary) {
   latestAiLetterSummary = summary;
   updateAiLetterControls();
+
+  if (!hasVisibleAiLetterResult()) {
+    showCachedAiLetter(summary);
+  }
 }
 
 function updateAiLetterControls(statusKey = null, statusType = "", options = {}) {
@@ -1635,6 +1724,7 @@ async function handleAiLetterRequest() {
     }
 
     showAiLetterResult(letterText);
+    saveAiLetterLocalCache(latestAiLetterSummary, data, letterText);
     setAiLetterPanelStatus(
       getAiLetterStatusKeyFromResponse(data),
       "success",
@@ -1643,10 +1733,18 @@ async function handleAiLetterRequest() {
   } catch (error) {
     console.error("AI letter prototype call failed", error);
     const workerMessage = error.aiLetterData?.userMessage;
-    if (workerMessage) {
+    const errorStatusKey = getAiLetterErrorStatusKey(error.aiLetterData);
+    const restoredFromCache = showCachedAiLetter(
+      latestAiLetterSummary,
+      errorStatusKey === "aiLetterStatusRateLimited"
+        ? "aiLetterStatusLocalCacheAfterLimit"
+        : "aiLetterStatusLocalCache",
+      errorStatusKey === "aiLetterStatusRateLimited" ? "error" : "success"
+    );
+
+    if (!restoredFromCache && workerMessage) {
       setAiLetterPanelMessage(workerMessage, "error");
-    } else {
-      const errorStatusKey = getAiLetterErrorStatusKey(error.aiLetterData);
+    } else if (!restoredFromCache) {
       setAiLetterPanelStatus(errorStatusKey, "error");
     }
   } finally {
