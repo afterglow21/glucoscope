@@ -165,7 +165,7 @@ const translations = {
     aiLetterStatusReady: "開発用Workerに接続して、固定テストお手紙を表示します。",
     aiLetterStatusSuccess: "テスト用のグルコAIお手紙を表示しました🍀",
     aiLetterStatusCached: "前回のグルコAIお手紙を表示しました🍀",
-    aiLetterStatusRateLimited: "今日のAI分析は上限に近づいています。前回のお手紙やChatGPTコピー機能は使えます🍀",
+    aiLetterStatusRateLimited: "今日の新しいAIお手紙は上限に達しました。表示中のお手紙はそのまま読めます。ChatGPTコピー機能も使えます🍀",
     aiLetterStatusBudgetStopped: "今月のAI分析は利用上限に近づいたため、新しいお手紙を少しお休みしています。",
     aiLetterStatusDisabled: "AI分析はただいまお休み中です。いつものグルコのお話とChatGPTコピー機能は使えます🍀",
     aiLetterStatusError: "AI分析のテスト呼び出しに失敗しました。Workerが起動しているか確認してください。",
@@ -1310,13 +1310,13 @@ function isAiLetterWorkerEnabled() {
   return params.has("debugAiWorker") || localStorage.getItem(AI_LETTER_WORKER_ENABLED_STORAGE_KEY) === "true";
 }
 
-function setAiLetterPanelStatus(statusKey, statusType = "") {
+function setAiLetterPanelStatus(statusKey, statusType = "", detailText = "") {
   const status = document.getElementById("aiLetterStatus");
   if (!status) return;
 
   status.classList.remove("success", "error");
   if (statusType) status.classList.add(statusType);
-  status.textContent = t(statusKey);
+  status.textContent = detailText ? `${t(statusKey)} ${detailText}` : t(statusKey);
 }
 
 function showAiLetterResult(letter) {
@@ -1352,6 +1352,21 @@ function getAiLetterStatusKeyFromResponse(data) {
   return "aiLetterStatusSuccess";
 }
 
+function getAiLetterUsageDetailFromResponse(data) {
+  const usage = data?.usage;
+  if (!usage || typeof usage !== "object") return "";
+
+  const generations = Number(usage.monthlyGenerationCount);
+  const cost = Number(usage.monthlyEstimatedCostJpy);
+  if (!Number.isFinite(generations) || !Number.isFinite(cost)) return "";
+
+  if (currentLanguage === "en") {
+    return `(This month: ${generations} new / approx. ¥${cost.toFixed(2)})`;
+  }
+
+  return `（今月: 新規${generations}回 / 約${cost.toFixed(2)}円）`;
+}
+
 function getAiLetterErrorStatusKey(data) {
   const code = data?.code || data?.errorCode || data?.error;
 
@@ -1379,7 +1394,7 @@ function setAiLetterSummary(summary) {
   updateAiLetterControls();
 }
 
-function updateAiLetterControls(statusKey = null, statusType = "") {
+function updateAiLetterControls(statusKey = null, statusType = "", options = {}) {
   updateAiSlotDisplay();
 
   const copyButton = document.getElementById("chatGptCopyButton");
@@ -1416,7 +1431,7 @@ function updateAiLetterControls(statusKey = null, statusType = "") {
   }
 
   const aiStatus = document.getElementById("aiLetterStatus");
-  if (aiStatus && !aiLetterRequestInFlight) {
+  if (aiStatus && !aiLetterRequestInFlight && !options.preserveAiStatus) {
     aiStatus.classList.remove("success", "error");
 
     if (!workerEnabled) {
@@ -1569,7 +1584,6 @@ async function handleAiLetterRequest() {
   }
 
   aiLetterRequestInFlight = true;
-  showAiLetterResult("");
   updateAiLetterControls();
   setAiLetterPanelStatus("aiLetterButtonLoading");
 
@@ -1598,14 +1612,18 @@ async function handleAiLetterRequest() {
     }
 
     showAiLetterResult(letterText);
-    setAiLetterPanelStatus(getAiLetterStatusKeyFromResponse(data), "success");
+    setAiLetterPanelStatus(
+      getAiLetterStatusKeyFromResponse(data),
+      "success",
+      getAiLetterUsageDetailFromResponse(data)
+    );
   } catch (error) {
     console.error("AI letter prototype call failed", error);
     const errorStatusKey = getAiLetterErrorStatusKey(error.aiLetterData);
     setAiLetterPanelStatus(errorStatusKey, "error");
   } finally {
     aiLetterRequestInFlight = false;
-    updateAiLetterControls();
+    updateAiLetterControls(null, "", { preserveAiStatus: true });
   }
 }
 

@@ -284,3 +284,76 @@ Later versions may add:
 - provider/model metadata
 - admin usage report endpoint
 - emergency kill switch state
+
+
+---
+
+## 11. Usage Guard Prototype
+
+The Worker prototype includes an in-memory usage guard before OpenAI connection.
+
+This is intentionally temporary.
+
+Current prototype behavior:
+
+- counts daily new generations
+- counts monthly new generations
+- counts cache hits
+- estimates input tokens from the summary payload
+- estimates output tokens from the returned letter
+- estimates cost in JPY
+- stops new generation when daily or monthly guard is reached
+- exposes a local usage report endpoint
+
+### Usage endpoint
+
+```text
+GET /api/gluco-letter/usage
+```
+
+Prototype response:
+
+```json
+{
+  "ok": true,
+  "version": "gluco-ai-letter-worker-response-v0.1",
+  "status": "usage",
+  "report": {
+    "today": {
+      "aiGenerationCount": 1,
+      "cacheHitCount": 0,
+      "rateLimitedCount": 0
+    },
+    "month": {
+      "aiGenerationCount": 1,
+      "inputTokens": 870,
+      "outputTokens": 150,
+      "estimatedCostJpy": 0.0578,
+      "monthlyBudgetJpy": 1000,
+      "budgetUsageRate": 0.01
+    }
+  }
+}
+```
+
+### Important limitation
+
+The prototype uses in-memory state only.
+
+It is useful for local testing, but it is not persistent and must be replaced by Cloudflare KV or D1 before public release.
+
+### Future production storage
+
+Production should store counters such as:
+
+- day key
+- month key
+- generation count
+- cache hit count
+- input tokens
+- output tokens
+- estimated cost
+- budget blocked count
+- Turnstile failure count
+
+No personal health data should be stored in usage counters.
