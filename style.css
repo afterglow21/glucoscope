@@ -953,6 +953,22 @@ body{
   color:#fca5a5;
 }
 
+.ai-letter-result{
+  margin-top:4px;
+  padding:14px 15px;
+  border-radius:16px;
+  background:rgba(46,204,113,.08);
+  border:1px solid rgba(46,204,113,.18);
+  color:#edf2f7;
+  font-size:14px;
+  line-height:1.65;
+  white-space:pre-line;
+}
+
+.ai-letter-result[hidden]{
+  display:none;
+}
+
 #comment{
   font-size:19px;
   line-height:1.65;

@@ -10,9 +10,13 @@ const GLUCO_DEBUG_FORCE_LUCKY_DATE_STORAGE_KEY = "glucoscope.debug.forceLuckyDat
 const LANGUAGE_STORAGE_KEY = "glucoscope.language.v1";
 const LIVE_PERIOD_STORAGE_KEY = "glucoscope.livePeriod.v1";
 const CUSTOM_RANGE_STORAGE_KEY = "glucoscope.customRange.v1";
+const AI_LETTER_WORKER_ENDPOINT_STORAGE_KEY = "glucoscope.aiLetterWorkerEndpoint.v1";
+const AI_LETTER_WORKER_ENABLED_STORAGE_KEY = "glucoscope.aiLetterWorkerEnabled.v1";
+const DEFAULT_AI_LETTER_WORKER_ENDPOINT = "http://127.0.0.1:8787/api/gluco-letter";
 
 let currentLivePeriod = localStorage.getItem(LIVE_PERIOD_STORAGE_KEY) || "today";
 let latestAiLetterSummary = null;
+let aiLetterRequestInFlight = false;
 
 const GLUCO_NORMAL_MAX_ID = 50;
 const GLUCO_LUCKY_MIN_ID = 51;
@@ -153,7 +157,14 @@ const translations = {
     aiLetterTitle: "✨ AI分析 beta",
     aiLetterLead: "朝・昼・夜のスロットで、グルコがより自然なお手紙を作る予定です。",
     aiLetterButtonPreparing: "AI分析は準備中",
+    aiLetterButtonReady: "AI分析を試す",
+    aiLetterButtonLoading: "グルコがお手紙を書いています...",
     aiLetterStatusPreparing: "Cloudflare Worker接続前なので、まだAPIは呼び出しません。",
+    aiLetterStatusLocalOnly: "開発用Workerを起動して、URLに ?debugAiWorker=1 を付けるとテストできます。",
+    aiLetterStatusWaitingForSummary: "血糖サマリーを読み込むと、AI分析テストを試せます。",
+    aiLetterStatusReady: "開発用Workerに接続して、固定テストお手紙を表示します。",
+    aiLetterStatusSuccess: "テスト用のグルコAIお手紙を表示しました🍀",
+    aiLetterStatusError: "AI分析のテスト呼び出しに失敗しました。Workerが起動しているか確認してください。",
     chatGptLetterTitle: "🤖 ChatGPTで分析",
     chatGptLetterBadge: "コピー",
     chatGptLetterLead: "集計済みサマリーだけを使って、ChatGPTに貼れるグルコ用プロンプトを作ります。",
@@ -268,7 +279,14 @@ const translations = {
     aiLetterTitle: "✨ AI analysis beta",
     aiLetterLead: "Gluco will create a more natural letter in morning, afternoon, and night slots.",
     aiLetterButtonPreparing: "AI analysis is preparing",
+    aiLetterButtonReady: "Try AI analysis",
+    aiLetterButtonLoading: "Gluco is writing...",
     aiLetterStatusPreparing: "The Cloudflare Worker is not connected yet, so no API is called.",
+    aiLetterStatusLocalOnly: "Start the local Worker and add ?debugAiWorker=1 to the URL to test it.",
+    aiLetterStatusWaitingForSummary: "AI analysis test will be available after the glucose summary loads.",
+    aiLetterStatusReady: "This will call the development Worker and show a fixed test letter.",
+    aiLetterStatusSuccess: "Test Gluco AI letter displayed 🍀",
+    aiLetterStatusError: "AI analysis test call failed. Please check whether the Worker is running.",
     chatGptLetterTitle: "🤖 Analyze with ChatGPT",
     chatGptLetterBadge: "Copy",
     chatGptLetterLead: "Create a Gluco prompt for ChatGPT using only the summarized data.",
@@ -1271,6 +1289,42 @@ function formatDateTime(date) {
 }
 
 
+function getAiLetterWorkerEndpoint() {
+  const params = new URLSearchParams(window.location.search);
+  const queryEndpoint = params.get("aiWorkerEndpoint");
+  if (queryEndpoint) return queryEndpoint;
+
+  return localStorage.getItem(AI_LETTER_WORKER_ENDPOINT_STORAGE_KEY) || DEFAULT_AI_LETTER_WORKER_ENDPOINT;
+}
+
+function isAiLetterWorkerEnabled() {
+  const params = new URLSearchParams(window.location.search);
+  return params.has("debugAiWorker") || localStorage.getItem(AI_LETTER_WORKER_ENABLED_STORAGE_KEY) === "true";
+}
+
+function setAiLetterPanelStatus(statusKey, statusType = "") {
+  const status = document.getElementById("aiLetterStatus");
+  if (!status) return;
+
+  status.classList.remove("success", "error");
+  if (statusType) status.classList.add(statusType);
+  status.textContent = t(statusKey);
+}
+
+function showAiLetterResult(letter) {
+  const result = document.getElementById("aiLetterResult");
+  if (!result) return;
+
+  if (!letter) {
+    result.hidden = true;
+    result.textContent = "";
+    return;
+  }
+
+  result.hidden = false;
+  result.textContent = letter;
+}
+
 function getAiLetterSlot(date = new Date()) {
   const hour = date.getHours();
   if (hour < 12) return { key: "morning", label: t("slotMorning") };
@@ -1311,15 +1365,31 @@ function updateAiLetterControls(statusKey = null, statusType = "") {
     }
   }
 
+  const workerEnabled = isAiLetterWorkerEnabled();
   const aiButton = document.getElementById("aiLetterButton");
+
   if (aiButton) {
-    aiButton.disabled = true;
-    aiButton.textContent = t("aiLetterButtonPreparing");
+    aiButton.disabled = !hasSummary || !workerEnabled || aiLetterRequestInFlight;
+    if (aiLetterRequestInFlight) {
+      aiButton.textContent = t("aiLetterButtonLoading");
+    } else if (workerEnabled && hasSummary) {
+      aiButton.textContent = t("aiLetterButtonReady");
+    } else {
+      aiButton.textContent = t("aiLetterButtonPreparing");
+    }
   }
 
   const aiStatus = document.getElementById("aiLetterStatus");
-  if (aiStatus) {
-    aiStatus.textContent = t("aiLetterStatusPreparing");
+  if (aiStatus && !aiLetterRequestInFlight) {
+    aiStatus.classList.remove("success", "error");
+
+    if (!workerEnabled) {
+      aiStatus.textContent = t("aiLetterStatusLocalOnly");
+    } else if (!hasSummary) {
+      aiStatus.textContent = t("aiLetterStatusWaitingForSummary");
+    } else {
+      aiStatus.textContent = t("aiLetterStatusReady");
+    }
   }
 }
 
@@ -1448,6 +1518,61 @@ async function handleChatGptCopy() {
   } catch (error) {
     console.error(error);
     updateAiLetterControls("chatGptCopyFailed", "error");
+  }
+}
+
+async function handleAiLetterRequest() {
+  if (!latestAiLetterSummary) {
+    setAiLetterPanelStatus("aiLetterStatusWaitingForSummary", "error");
+    return;
+  }
+
+  if (!isAiLetterWorkerEnabled()) {
+    setAiLetterPanelStatus("aiLetterStatusLocalOnly", "error");
+    return;
+  }
+
+  aiLetterRequestInFlight = true;
+  showAiLetterResult("");
+  updateAiLetterControls();
+  setAiLetterPanelStatus("aiLetterButtonLoading");
+
+  try {
+    const response = await fetch(getAiLetterWorkerEndpoint(), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        summary: latestAiLetterSummary,
+        client: {
+          app: "GlucoScope",
+          mode: "worker-prototype"
+        }
+      })
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok || !data.letter) {
+      throw new Error(data.error || `Worker returned ${response.status}`);
+    }
+
+    showAiLetterResult(data.letter);
+    setAiLetterPanelStatus("aiLetterStatusSuccess", "success");
+  } catch (error) {
+    console.error("AI letter prototype call failed", error);
+    setAiLetterPanelStatus("aiLetterStatusError", "error");
+  } finally {
+    aiLetterRequestInFlight = false;
+    updateAiLetterControls();
+  }
+}
+
+function setupAiLetterPrototype() {
+  const aiButton = document.getElementById("aiLetterButton");
+  if (aiButton) {
+    aiButton.addEventListener("click", handleAiLetterRequest);
   }
 }
 
@@ -2587,6 +2712,7 @@ updateAiLetterControls();
 loadDailyStats();
 setupDatePickerButtons();
 setupChatGptHandoff();
+setupAiLetterPrototype();
 setupViewTabs();
 
 setInterval(updateClock, 1000);
