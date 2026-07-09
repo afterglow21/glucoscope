@@ -13,13 +13,17 @@ const CUSTOM_RANGE_STORAGE_KEY = "glucoscope.customRange.v1";
 const AI_LETTER_WORKER_ENDPOINT_STORAGE_KEY = "glucoscope.aiLetterWorkerEndpoint.v1";
 const AI_LETTER_WORKER_ENABLED_STORAGE_KEY = "glucoscope.aiLetterWorkerEnabled.v1";
 const AI_LETTER_LOCAL_CACHE_STORAGE_KEY = "glucoscope.aiLetterLocalCache.v1";
+const AI_LETTER_MODE_STORAGE_KEY = "glucoscope.aiLetterMode.v1";
 const AI_LETTER_LOCAL_CACHE_MAX_ITEMS = 30;
+const AI_LETTER_MODES = ["letter", "deep"];
 const TURNSTILE_SITE_KEY = "0x4AAAAAADyftbRcWQW23mEa";
 const TURNSTILE_SCRIPT_ID = "glucoscope-turnstile-script";
 const DEFAULT_AI_LETTER_WORKER_ENDPOINT = "http://127.0.0.1:8787/api/gluco-letter";
 
 let currentLivePeriod = localStorage.getItem(LIVE_PERIOD_STORAGE_KEY) || "today";
+let currentAiLetterMode = localStorage.getItem(AI_LETTER_MODE_STORAGE_KEY) === "deep" ? "deep" : "letter";
 let latestAiLetterSummary = null;
+let latestRuleCommentMetrics = null;
 let aiLetterRequestInFlight = false;
 
 const GLUCO_NORMAL_MAX_ID = 50;
@@ -156,20 +160,32 @@ const translations = {
     correctionBolusLabel: "自動ボーラス",
     letterTitle: "✉ グルコからのお手紙",
     ruleCommentTitle: "🍀 いつものグルコのお話",
-    ruleCommentBadge: "ブラウザ内",
-    ruleCommentLead: "外部AIを使わず、表示中の血糖サマリーから短い振り返りを表示します。",
+    ruleCommentBadge: "",
+    ruleCommentDeepBadge: "",
+    ruleCommentLead: "外部AIを使わず、表示中の血糖サマリーから短いふりかえりを表示します。",
     aiLetterTitle: "✨ AI分析 beta",
-    aiLetterLead: "朝・昼・夜の時間で、グルコがお手紙を作ってくれます。",
+    aiLetterLead: "選んだモードで、AIによる分析結果を表示します。",
+    aiLetterModeSwitchTitle: "分析モード",
+    aiLetterModeSwitchLead: "表示中のパネルに反映されます。",
+    aiLetterModeLetter: "🍀 やさしい分析",
+    aiLetterModeDeep: "📊 しっかり分析",
+    aiLetterModeLetterLabel: "やさしい分析",
+    aiLetterModeDeepLabel: "しっかり分析",
+    aiLetterPanelSwitchTitle: "表示",
+    aiLetterPanelBrowser: "いつものグルコ",
+    aiLetterPanelAi: "AI分析",
+    aiLetterPanelChat: "ChatGPT",
     aiLetterButtonPreparing: "AI分析は準備中",
     aiLetterButtonReady: "AI分析を試す",
-    aiLetterButtonLoading: "グルコがお手紙を書いています...",
+    aiLetterButtonCached: "保存済みの分析を表示",
+    aiLetterButtonLoading: "グルコがお手紙を書いてるよ...",
     aiLetterStatusPreparing: "Cloudflare Worker接続前なので、まだAPIは呼び出しません。",
-    aiLetterStatusLocalOnly: "開発用Workerを起動して、URLに ?debugAiWorker=1 を付けるとテストできます。",
+    aiLetterStatusLocalOnly: "",
     aiLetterStatusWaitingForSummary: "血糖サマリーを読み込むと、AI分析テストを試せます。",
-    aiLetterStatusReady: "開発用Workerに接続して、グルコのお手紙を表示します。",
+    aiLetterStatusReady: "",
     aiLetterStatusSuccess: "グルコのお手紙を表示しました🍀",
     aiLetterStatusCached: "前回のグルコAIお手紙を表示しました🍀",
-    aiLetterStatusLocalCache: "保存済みのグルコのお手紙を表示しています🍀",
+    aiLetterStatusLocalCache: "保存済みのグルコAIお手紙を表示しています🍀",
     aiLetterStatusLocalCacheAfterLimit: "今日の新しいお手紙は上限に達しました。保存済みのお手紙を表示しています🍀",
     aiLetterStatusRateLimited: "今日の新しいAIお手紙は上限に達しました。表示中または保存済みのお手紙があれば、そのまま読めます。ChatGPTコピー機能も使えます🍀",
     aiLetterStatusBudgetStopped: "今月のAI分析は利用上限に近づいたため、新しいお手紙を少しお休みしています。",
@@ -178,12 +194,12 @@ const translations = {
     aiLetterStatusTurnstileWaiting: "AI分析の安全確認を準備しています。少し待ってからもう一度試してください🍀",
     aiLetterStatusError: "AI分析のテスト呼び出しに失敗しました。Workerが起動しているか確認してください。",
     chatGptLetterTitle: "🤖 ChatGPTに貼って相談",
-    chatGptLetterBadge: "コピー",
+    chatGptLetterBadge: "",
     chatGptLetterLead: "集計済みサマリーだけを使って、ChatGPTに貼るための文章を作ります。",
     chatGptCopyButton: "ChatGPTに貼る文をコピー",
     chatGptOpenLink: "ChatGPTを開く",
     chatGptCopyWaiting: "データ取得後にコピーできます。",
-    chatGptCopyReady: "表示中のサマリーをコピーできます。",
+    chatGptCopyReady: "",
     chatGptCopied: "ChatGPTに貼る文をコピーしました🍀",
     chatGptCopyFailed: "コピーできませんでした。ブラウザの権限を確認してください。",
     aiSummaryUnavailable: "まだAI分析用サマリーを作れていません。",
@@ -286,31 +302,44 @@ const translations = {
     correctionBolusLabel: "Auto bolus",
     letterTitle: "✉ Letter from Gluco",
     ruleCommentTitle: "🍀 Gluco’s everyday story",
-    ruleCommentBadge: "In browser",
+    ruleCommentBadge: "",
+    ruleCommentDeepBadge: "",
     ruleCommentLead: "A short reflection made from the selected glucose summary without calling external AI.",
     aiLetterTitle: "✨ AI analysis beta",
-    aiLetterLead: "Gluco will create a more natural letter as a morning, afternoon, or night letter.",
+    aiLetterLead: "Shows AI-generated analysis in the selected mode.",
+    aiLetterModeSwitchTitle: "Reflection mode",
+    aiLetterModeSwitchLead: "Applied to all three panels.",
+    aiLetterModeLetter: "🍀 Gentle analysis",
+    aiLetterModeDeep: "📊 Detailed reflection",
+    aiLetterModeLetterLabel: "gentle analysis",
+    aiLetterModeDeepLabel: "detailed reflection",
+    aiLetterPanelSwitchTitle: "View",
+    aiLetterPanelBrowser: "Gluco story",
+    aiLetterPanelAi: "AI analysis",
+    aiLetterPanelChat: "ChatGPT",
     aiLetterButtonPreparing: "AI analysis is preparing",
     aiLetterButtonReady: "Try AI analysis",
     aiLetterButtonLoading: "Gluco is writing...",
     aiLetterStatusPreparing: "The Cloudflare Worker is not connected yet, so no API is called.",
     aiLetterStatusLocalOnly: "Start the local Worker and add ?debugAiWorker=1 to the URL to test it.",
     aiLetterStatusWaitingForSummary: "AI analysis test will be available after the glucose summary loads.",
-    aiLetterStatusReady: "This will call the development Worker and show a fixed test letter.",
-    aiLetterStatusSuccess: "Test Gluco AI letter displayed 🍀",
-    aiLetterStatusCached: "Previous Gluco AI letter displayed 🍀",
-    aiLetterStatusRateLimited: "AI analysis is near today’s limit. The previous letter and ChatGPT copy handoff are still available 🍀",
+    aiLetterStatusReady: "This will call the development Worker and show the selected Gluco reflection.",
+    aiLetterStatusSuccess: "Gluco reflection displayed 🍀",
+    aiLetterStatusCached: "Previous Gluco AI reflection displayed 🍀",
+    aiLetterStatusLocalCache: "Saved Gluco AI reflection displayed 🍀",
+    aiLetterStatusLocalCacheAfterLimit: "Today’s new reflection has reached its limit. A saved reflection is displayed 🍀",
+    aiLetterStatusRateLimited: "Today’s new AI reflections have reached the limit. The previous reflection and ChatGPT copy handoff are still available 🍀",
     aiLetterStatusBudgetStopped: "New AI letters are paused because the monthly AI limit is near.",
     aiLetterStatusDisabled: "AI analysis is paused for now. Gluco’s everyday story and ChatGPT copy handoff are still available 🍀",
     aiLetterStatusError: "AI analysis test call failed. Please check whether the Worker is running.",
     chatGptLetterTitle: "🤖 Ask ChatGPT",
-    chatGptLetterBadge: "Copy",
+    chatGptLetterBadge: "",
     chatGptLetterLead: "Create text you can paste into ChatGPT using only the summarized data.",
     chatGptCopyButton: "Copy text for ChatGPT",
     chatGptOpenLink: "Open ChatGPT",
     chatGptCopyWaiting: "Available after the data loads.",
     chatGptCopyReady: "You can copy the selected summary.",
-    chatGptCopied: "Gluco prompt copied 🍀",
+    chatGptCopied: "Copied text for ChatGPT 🍀",
     chatGptCopyFailed: "Could not copy. Please check browser permissions.",
     aiSummaryUnavailable: "The AI-ready summary is not ready yet.",
     slotMorning: "Morning letter",
@@ -396,7 +425,448 @@ const translations = {
 };
 
 function t(key) {
-  return translations[currentLanguage]?.[key] || translations.ja[key] || key;
+  const currentTranslations = translations[currentLanguage] || {};
+  if (Object.prototype.hasOwnProperty.call(currentTranslations, key)) {
+    return currentTranslations[key];
+  }
+
+  if (Object.prototype.hasOwnProperty.call(translations.ja, key)) {
+    return translations.ja[key];
+  }
+
+  return key;
+}
+
+function injectAiLetterLayoutStyles() {
+  if (document.getElementById("glucoscope-ai-letter-layout-styles")) return;
+
+  const style = document.createElement("style");
+  style.id = "glucoscope-ai-letter-layout-styles";
+  style.textContent = `
+    .gluco-comment,
+    .gluco-comment-body,
+    .letter-action-grid,
+    .rule-letter-section,
+    .letter-action-panel {
+      min-width: 0;
+    }
+
+    .gluco-letter-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .gluco-letter-title-row .gluco-letter-controls {
+      margin-left: auto;
+    }
+
+    .gluco-letter-controls {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      overflow: visible;
+      max-width: 100%;
+    }
+
+    .gluco-letter-controls.is-in-body {
+      margin: 0 0 12px;
+    }
+
+    .gluco-letter-controls-inner {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    .gluco-letter-control-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      min-width: 0;
+    }
+
+    .gluco-letter-control-title {
+      color: #9fb3d1;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .06em;
+      white-space: nowrap;
+    }
+
+    .gluco-letter-mode-toggle {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      min-width: 0;
+    }
+
+    .gluco-letter-mode-toggle-button {
+      appearance: none;
+      border: 1px solid rgba(59,130,246,.34);
+      border-radius: 999px;
+      background: rgba(37,99,235,.18);
+      color: #dbeafe;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 10px;
+      min-width: 44px;
+      min-height: 34px;
+      font-size: 12px !important;
+      line-height: 1.1;
+      font-weight: 900;
+      text-indent: 0 !important;
+      overflow: visible;
+      cursor: pointer;
+      transition: transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
+      white-space: nowrap;
+    }
+
+    .gluco-letter-panel-toggle-button {
+      background: rgba(15,23,42,.42);
+      border-color: rgba(148,163,184,.26);
+      color: #e2e8f0;
+    }
+
+    .gluco-letter-mode-toggle-button:hover-button:hover {
+      transform: translateY(-1px);
+      background: rgba(37,99,235,.26);
+    }
+
+    .gluco-letter-mode-toggle-button.is-active-button.is-active {
+      border-color: rgba(46,204,113,.58);
+      background: rgba(46,204,113,.20);
+      color: #dcfce7;
+      box-shadow: 0 0 0 2px rgba(46,204,113,.16), 0 12px 24px rgba(0,0,0,.14);
+    }
+
+    .ai-letter-turnstile {
+      display: none;
+      margin-top: 12px;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .ai-letter-turnstile.is-visible {
+      display: block;
+    }
+
+    .ai-letter-panel .letter-primary-button {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .ai-letter-result {
+      margin-top: 14px;
+      padding: 16px 18px;
+      border: 1px solid rgba(46,204,113,.22);
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at 12% 0%, rgba(46,204,113,.12), transparent 44%),
+        rgba(15, 61, 63, .46);
+      color: #e5f7ef;
+      font-size: 16px;
+      line-height: 1.85;
+      white-space: pre-wrap;
+    }
+
+    .rule-letter-section #comment {
+      font-size: 16px;
+      line-height: 1.85;
+      white-space: pre-wrap;
+    }
+
+
+    .ai-letter-result[hidden] {
+      display: none !important;
+    }
+
+    .letter-action-panel .letter-section-title,
+    .rule-letter-section .letter-section-title {
+      overflow-wrap: anywhere;
+    }
+
+    .gluco-letter-panel-hidden {
+      display: none !important;
+    }
+
+    .gluco-letter-controls .gluco-letter-mode-toggle-button {
+      appearance: none;
+      border: 1px solid rgba(59,130,246,.34) !important;
+      border-radius: 999px;
+      background: rgba(37,99,235,.18) !important;
+      color: #dbeafe !important;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 11px;
+      min-height: 34px;
+      font-size: 12px !important;
+      line-height: 1.1;
+      font-weight: 900;
+      text-indent: 0 !important;
+      overflow: visible;
+      white-space: nowrap;
+      box-shadow: none;
+    }
+
+    .gluco-letter-controls .gluco-letter-mode-toggle-button.is-active {
+      border-color: rgba(46,204,113,.58) !important;
+      background: rgba(46,204,113,.20) !important;
+      color: #dcfce7 !important;
+      box-shadow: 0 0 0 2px rgba(46,204,113,.16), 0 12px 24px rgba(0,0,0,.14);
+    }
+
+    .rule-letter-section .letter-section-badge,
+    .chatgpt-letter-panel .letter-section-badge {
+      display: none !important;
+    }
+
+    .letter-status:empty,
+    .letter-copy-status:empty,
+    .ai-letter-status:empty {
+      display: none !important;
+    }
+
+    .chatgpt-letter-panel .letter-section-lead {
+      margin-bottom: 12px !important;
+    }
+
+    .chatgpt-letter-panel .letter-button-row {
+      margin-top: 0 !important;
+    }
+
+    .gluco-comment-avatar {
+      justify-content: flex-start;
+    }
+
+    .gluco-comment-image {
+      width: clamp(220px, 46%, 340px);
+      max-width: 72%;
+      height: auto;
+    }
+
+    @media (min-width: 980px) {
+      .gluco-comment-image {
+        width: clamp(260px, 58%, 380px);
+        max-width: 78%;
+      }
+    }
+
+    .comment-card-header.gluco-letter-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .comment-card-header.gluco-letter-title-row .gluco-letter-controls {
+      margin-left: auto;
+    }
+
+    @media (min-width: 980px) {
+      .gluco-comment {
+        display: grid;
+        grid-template-columns: minmax(260px, 36%) minmax(0, 1fr);
+        align-items: start;
+        gap: 26px;
+        overflow: hidden;
+      }
+
+      .gluco-comment-body {
+        display: block;
+        width: 100%;
+        overflow: hidden;
+      }
+
+      .gluco-comment-avatar {
+        align-self: start;
+        min-height: 420px;
+        align-items: flex-start;
+        justify-content: center;
+        padding-top: 74px;
+        box-sizing: border-box;
+      }
+
+      .gluco-comment-image {
+        margin-top: 18px;
+      }
+
+      .rule-letter-section {
+        padding: 18px;
+        border: 1px solid rgba(255,255,255,.07);
+        border-radius: 20px;
+        background:
+          radial-gradient(circle at 10% 0%, rgba(46,204,113,.10), transparent 38%),
+          rgba(15,23,42,.24);
+      }
+
+      .letter-action-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 14px;
+        margin-top: 14px;
+      }
+
+      .letter-action-panel {
+        width: 100%;
+      }
+    }
+
+    @media (min-width: 1320px) {
+      .gluco-comment {
+        grid-template-columns: minmax(300px, 35%) minmax(0, 1fr);
+        gap: 30px;
+      }
+
+      .letter-action-grid {
+        gap: 16px;
+      }
+    }
+
+    @media (max-width: 979px) {
+      .gluco-letter-controls.is-in-body {
+        margin-top: 14px;
+      }
+
+      .letter-action-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .gluco-letter-title-row,
+      .gluco-letter-controls-inner,
+      .gluco-letter-control-group,
+      .gluco-letter-mode-toggle {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .gluco-letter-title-row .gluco-letter-controls {
+        margin-left: 0;
+        width: 100%;
+      }
+
+      .gluco-letter-mode-toggle-button {
+        width: 100%;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+function normalizeAiLetterMode(mode) {
+  return AI_LETTER_MODES.includes(mode) ? mode : "letter";
+}
+
+function getAiLetterModeLabel(mode = currentAiLetterMode) {
+  return normalizeAiLetterMode(mode) === "deep"
+    ? t("aiLetterModeDeepLabel")
+    : t("aiLetterModeLetterLabel");
+}
+
+function getAiLetterModeButtonLabel(mode = currentAiLetterMode) {
+  return normalizeAiLetterMode(mode) === "deep"
+    ? t("aiLetterModeDeep")
+    : t("aiLetterModeLetter");
+}
+
+function normalizeLetterPanel(panel) {
+  if (panel === "ai" || panel === "chat") return panel;
+  return "browser";
+}
+
+function getLetterPanelLabel(panel) {
+  const normalizedPanel = normalizeLetterPanel(panel);
+
+  const labels = currentLanguage === "en"
+    ? {
+        browser: "Gluco",
+        ai: "AI",
+        chat: "ChatGPT"
+      }
+    : {
+        browser: "いつものグルコ",
+        ai: "AI",
+        chat: "ChatGPT"
+      };
+
+  return labels[normalizedPanel] || labels.browser;
+}
+
+function getClosestLetterPanel(element) {
+  if (!element) return null;
+
+  let node = element;
+  while (node && node !== document.body) {
+    if (
+      node.classList?.contains("letter-action-panel") ||
+      node.classList?.contains("rule-letter-section") ||
+      node.parentElement?.classList?.contains("letter-action-grid")
+    ) {
+      return node;
+    }
+
+    node = node.parentElement;
+  }
+
+  return element.closest?.("section, article, .card, .panel") || element.parentElement;
+}
+
+function getLetterPanelElements() {
+  const body = document.querySelector(".gluco-comment-body");
+  return {
+    browser: body?.querySelector("[data-letter-panel='browser']") || document.querySelector("[data-letter-panel='browser'], .rule-letter-section"),
+    ai: body?.querySelector("[data-letter-panel='ai']") || document.querySelector("[data-letter-panel='ai'], .ai-letter-panel"),
+    chat: body?.querySelector("[data-letter-panel='chat']") || document.querySelector("[data-letter-panel='chat'], .chatgpt-letter-panel")
+  };
+}
+
+function setLetterPanel(panel) {
+  currentAiLetterPanel = "browser";
+  localStorage.removeItem(AI_LETTER_PANEL_STORAGE_KEY);
+  showAllLetterPanels();
+}
+
+function setAiLetterMode(mode, options = {}) {
+  const previousMode = currentAiLetterMode;
+  currentAiLetterMode = normalizeAiLetterMode(mode);
+  localStorage.setItem(AI_LETTER_MODE_STORAGE_KEY, currentAiLetterMode);
+
+  updateAiModeSwitcher();
+  updateLetterPanelSwitcher();
+  updateRuleCommentDisplay();
+  updateAiSlotDisplay();
+
+  if (options.showCached && latestAiLetterSummary) {
+    const restored = showCachedAiLetter(
+      latestAiLetterSummary,
+      "aiLetterStatusLocalCache",
+      "success",
+      currentAiLetterMode
+    );
+
+    if (!restored && previousMode !== currentAiLetterMode) {
+      showAiLetterResult("");
+      setAiLetterPanelStatus("aiLetterStatusReady");
+    }
+  }
+
+  updateAiLetterControls(null, "", { preserveAiStatus: true });
 }
 
 const livePeriodOptions = {
@@ -1053,6 +1523,41 @@ function updateScoreGlucoImage(score) {
   scoreImage.src = getScoreGlucoImage(score);
 }
 
+function renderScoreMessage(element, message = "") {
+  if (!element) return;
+
+  const normalizedMessage = String(message || "").trim();
+  if (!normalizedMessage) {
+    element.textContent = "";
+    return;
+  }
+
+  const firstJapanesePeriod = normalizedMessage.indexOf("。");
+  const firstEnglishPeriod = normalizedMessage.indexOf(". ");
+  let firstSentenceEnd = -1;
+  let punctuationLength = 1;
+
+  if (firstJapanesePeriod >= 0) {
+    firstSentenceEnd = firstJapanesePeriod;
+  } else if (firstEnglishPeriod >= 0) {
+    firstSentenceEnd = firstEnglishPeriod;
+    punctuationLength = 1;
+  }
+
+  if (firstSentenceEnd < 0 || firstSentenceEnd >= normalizedMessage.length - punctuationLength) {
+    element.textContent = normalizedMessage;
+    return;
+  }
+
+  const firstLine = normalizedMessage.slice(0, firstSentenceEnd + punctuationLength).trim();
+  const secondLine = normalizedMessage.slice(firstSentenceEnd + punctuationLength).trim();
+
+  element.textContent = "";
+  element.appendChild(document.createTextNode(firstLine));
+  element.appendChild(document.createElement("br"));
+  element.appendChild(document.createTextNode(secondLine));
+}
+
 function applyLanguage() {
   document.documentElement.lang = currentLanguage === "en" ? "en" : "ja";
 
@@ -1068,6 +1573,8 @@ function applyLanguage() {
   updatePeriodButtons();
   renderStoredDailyLetterGlucoImage();
   renderCollectionView();
+  safelyUpdateLetterControls();
+  updateRuleCommentDisplay();
   updateAiLetterControls();
 }
 
@@ -1318,13 +1825,27 @@ function isAiLetterWorkerEnabled() {
   return params.has("debugAiWorker") || localStorage.getItem(AI_LETTER_WORKER_ENABLED_STORAGE_KEY) === "true";
 }
 
+function setElementTextOrHide(element, text = "") {
+  if (!element) return;
+
+  const normalizedText = String(text || "").trim();
+  element.textContent = normalizedText;
+  element.hidden = normalizedText.length === 0;
+}
+
 function setAiLetterPanelStatus(statusKey, statusType = "", detailText = "") {
   const status = document.getElementById("aiLetterStatus");
   if (!status) return;
 
   status.classList.remove("success", "error");
   if (statusType) status.classList.add(statusType);
-  status.textContent = detailText ? `${t(statusKey)} ${detailText}` : t(statusKey);
+
+  const baseText = t(statusKey);
+  const message = detailText
+    ? `${baseText ? `${baseText} ` : ""}${detailText}`
+    : baseText;
+
+  setElementTextOrHide(status, message);
 }
 
 function setAiLetterPanelMessage(message, statusType = "") {
@@ -1333,11 +1854,36 @@ function setAiLetterPanelMessage(message, statusType = "") {
 
   status.classList.remove("success", "error");
   if (statusType) status.classList.add(statusType);
-  status.textContent = message;
+  setElementTextOrHide(status, message);
+}
+
+function ensureAiLetterResultElement() {
+  let result = document.getElementById("aiLetterResult");
+  if (result) return result;
+
+  const aiPanel =
+    document.getElementById("aiLetterButton")?.closest(".ai-letter-panel") ||
+    document.getElementById("aiLetterButton")?.closest(".letter-action-panel");
+
+  if (!aiPanel) return null;
+
+  result = document.createElement("div");
+  result.id = "aiLetterResult";
+  result.className = "ai-letter-result";
+  result.hidden = true;
+
+  const status = document.getElementById("aiLetterStatus");
+  if (status?.parentElement === aiPanel) {
+    status.insertAdjacentElement("afterend", result);
+  } else {
+    aiPanel.appendChild(result);
+  }
+
+  return result;
 }
 
 function showAiLetterResult(letter) {
-  const result = document.getElementById("aiLetterResult");
+  const result = ensureAiLetterResultElement();
   if (!result) return;
 
   if (!letter) {
@@ -1355,12 +1901,13 @@ function hasVisibleAiLetterResult() {
   return Boolean(result && !result.hidden && result.textContent.trim());
 }
 
-function getAiLetterLocalCacheKey(summary = {}) {
+function getAiLetterLocalCacheKey(summary = {}, mode = currentAiLetterMode) {
   return [
     summary.pageMode || "page",
     summary.language || currentLanguage || "ja",
     summary.period || currentLivePeriod || "today",
     summary.slot || "unknown",
+    normalizeAiLetterMode(mode),
     summary.rangeLabel || ""
   ].join("|");
 }
@@ -1392,24 +1939,30 @@ function trimAiLetterLocalCache(cache) {
   return Object.fromEntries(entries.slice(0, AI_LETTER_LOCAL_CACHE_MAX_ITEMS));
 }
 
-function getCachedAiLetter(summary = latestAiLetterSummary) {
+function getCachedAiLetter(summary = latestAiLetterSummary, mode = currentAiLetterMode) {
   if (!summary) return null;
 
   const cache = readAiLetterLocalCache();
-  const item = cache[getAiLetterLocalCacheKey(summary)];
+  const item = cache[getAiLetterLocalCacheKey(summary, mode)];
 
   if (!item || typeof item.text !== "string" || !item.text.trim()) return null;
   return item;
 }
 
-function saveAiLetterLocalCache(summary, data, letterText) {
+function hasCachedAiLetter(summary = latestAiLetterSummary, mode = currentAiLetterMode) {
+  return Boolean(getCachedAiLetter(summary, mode));
+}
+
+function saveAiLetterLocalCache(summary, data, letterText, mode = currentAiLetterMode) {
   if (!summary || !letterText) return;
 
   const cache = readAiLetterLocalCache();
-  const key = getAiLetterLocalCacheKey(summary);
+  const analysisMode = normalizeAiLetterMode(mode);
+  const key = getAiLetterLocalCacheKey(summary, analysisMode);
 
   cache[key] = {
     text: letterText,
+    analysisMode,
     savedAt: new Date().toISOString(),
     status: data?.status || "success",
     source: data?.source || "",
@@ -1427,8 +1980,8 @@ function saveAiLetterLocalCache(summary, data, letterText) {
   writeAiLetterLocalCache(trimAiLetterLocalCache(cache));
 }
 
-function showCachedAiLetter(summary = latestAiLetterSummary, statusKey = "aiLetterStatusLocalCache", statusType = "success") {
-  const cached = getCachedAiLetter(summary);
+function showCachedAiLetter(summary = latestAiLetterSummary, statusKey = "aiLetterStatusLocalCache", statusType = "success", mode = currentAiLetterMode) {
+  const cached = getCachedAiLetter(summary, mode);
   if (!cached) return false;
 
   showAiLetterResult(cached.text);
@@ -1497,6 +2050,263 @@ function ensureTurnstileScript() {
   document.head.appendChild(script);
 }
 
+function findTextElementByLabel(label) {
+  if (!label) return null;
+
+  const normalizedLabel = String(label).replace(/\s+/g, " ").trim();
+  const candidates = Array.from(document.querySelectorAll("h1, h2, h3, h4, .section-title, .card-title, .letter-title, div, span"))
+    .filter((element) => {
+      const text = (element.textContent || "").replace(/\s+/g, " ").trim();
+      if (!text.includes(normalizedLabel)) return false;
+      if (text.length > normalizedLabel.length + 8) return false;
+      return true;
+    })
+    .sort((a, b) => (a.textContent || "").length - (b.textContent || "").length);
+
+  return candidates[0] || null;
+}
+
+function findGlucoMessageBadge() {
+  const candidates = Array.from(document.querySelectorAll("a, button, span, div, p"));
+  return candidates.find((element) => {
+    const text = (element.textContent || "").trim().toLowerCase();
+    return text === "gluco message";
+  }) || null;
+}
+
+function findLetterTitleRow() {
+  const titleLabel = t("letterTitle").replace(/^\S+\s*/, "").trim();
+  const titleElement =
+    findTextElementByLabel(t("letterTitle")) ||
+    findTextElementByLabel(titleLabel);
+
+  if (!titleElement) return null;
+
+  const row =
+    titleElement.closest?.(".section-header, .card-header, .panel-header, header") ||
+    titleElement.parentElement;
+
+  if (row) {
+    row.classList.add("gluco-letter-title-row");
+  }
+
+  return row;
+}
+
+function findActionPanelRootByProbe(probeElement) {
+  if (!probeElement) return null;
+
+  const actionGrid = document.querySelector(".letter-action-grid");
+  if (actionGrid) {
+    const directChild = Array.from(actionGrid.children)
+      .find((child) => child.contains(probeElement));
+    if (directChild) return directChild;
+  }
+
+  return probeElement.closest?.(".letter-action-panel") || probeElement.parentElement;
+}
+
+function cacheLetterPanelElements(force = false) {
+  if (letterPanelElementsCache && !force) return letterPanelElementsCache;
+
+  const browserPanel = document.querySelector(".rule-letter-section");
+  const aiPanel = findActionPanelRootByProbe(document.getElementById("aiLetterButton"));
+  const chatPanel = findActionPanelRootByProbe(
+    document.getElementById("chatGptCopyButton") ||
+    document.getElementById("chatGptOpenLink")
+  );
+
+  letterPanelElementsCache = {
+    browser: browserPanel,
+    ai: aiPanel,
+    chat: chatPanel
+  };
+
+  Object.entries(letterPanelElementsCache).forEach(([panel, element]) => {
+    if (element) element.dataset.letterPanelRoot = panel;
+  });
+
+  return letterPanelElementsCache;
+}
+
+function setPanelVisibility(element, isVisible) {
+  if (!element) return;
+
+  element.classList.toggle("gluco-letter-panel-hidden", !isVisible);
+  element.hidden = !isVisible;
+  element.setAttribute("aria-hidden", isVisible ? "false" : "true");
+
+  if (isVisible) {
+    element.style.removeProperty("display");
+  } else {
+    element.style.setProperty("display", "none", "important");
+  }
+}
+
+function placeLetterControls(controls, body, firstPanel) {
+  const badge = findGlucoMessageBadge();
+  if (badge) {
+    badge.hidden = true;
+    badge.style.display = "none";
+  }
+
+  const titleRow = findLetterTitleRow();
+  if (titleRow) {
+    controls.classList.remove("is-in-body");
+    if (controls.parentElement !== titleRow) {
+      titleRow.appendChild(controls);
+    }
+    return;
+  }
+
+  controls.classList.add("is-in-body");
+  if (body && firstPanel && controls.parentElement !== body) {
+    body.insertBefore(controls, firstPanel);
+  } else if (body && !controls.parentElement) {
+    body.prepend(controls);
+  }
+}
+
+function ensureAiLetterModeSwitcher() {
+  let controls = document.getElementById("glucoLetterControls");
+
+  if (!controls) {
+    const header = findLetterTitleRow();
+    controls = document.createElement("div");
+    controls.id = "glucoLetterControls";
+    controls.className = "gluco-letter-controls";
+    controls.innerHTML = `
+      <div class="gluco-letter-controls-inner">
+        <div class="gluco-letter-control-group">
+          <span id="glucoLetterModeTitle" class="gluco-letter-control-title">分析</span>
+          <div class="gluco-letter-mode-toggle" role="group" aria-label="Analysis mode">
+            <button id="aiModeLetterToggle" type="button" class="gluco-letter-mode-toggle-button" data-ai-mode-toggle="letter">🍀 やさしい分析</button>
+            <button id="aiModeDeepToggle" type="button" class="gluco-letter-mode-toggle-button" data-ai-mode-toggle="deep">📊 しっかり分析</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    if (header) {
+      header.appendChild(controls);
+    } else {
+      const body = document.querySelector(".gluco-comment-body");
+      const firstPanel = document.querySelector("[data-letter-panel='browser'], .rule-letter-section");
+      if (body && firstPanel) body.insertBefore(controls, firstPanel);
+    }
+  }
+
+  setupLetterControlsClickHandler();
+  updateAiModeSwitcher();
+  updateLetterPanelSwitcher();
+}
+
+function updateAiModeSwitcher() {
+  const controls = document.getElementById("glucoLetterControls");
+  if (!controls) return;
+
+  const title = document.getElementById("glucoLetterModeTitle");
+  if (title) title.textContent = t("aiLetterModeSwitchTitle");
+
+  controls.querySelectorAll("[data-ai-mode-toggle]").forEach((button) => {
+    const mode = normalizeAiLetterMode(button.dataset.aiModeToggle);
+    const label = mode === "deep"
+      ? (currentLanguage === "en" ? "📊 Detailed analysis" : "📊 しっかり分析")
+      : (currentLanguage === "en" ? "🍀 Gentle analysis" : "🍀 やさしい分析");
+    button.textContent = label;
+    button.classList.toggle("is-active", mode === currentAiLetterMode);
+    button.setAttribute("aria-pressed", mode === currentAiLetterMode ? "true" : "false");
+  });
+}
+
+function getGlucoLetterRoot() {
+  return document.querySelector(".gluco-comment");
+}
+
+function applyLetterPanelRootClass(panel = currentAiLetterPanel) {
+  const normalizedPanel = normalizeLetterPanel(panel);
+  const root = getGlucoLetterRoot();
+  const body = document.querySelector(".gluco-comment-body");
+
+  if (root) {
+    root.classList.remove("letter-panel-browser", "letter-panel-ai", "letter-panel-chat");
+    root.classList.add(`letter-panel-${normalizedPanel}`);
+  }
+
+  if (body) {
+    body.dataset.activeLetterPanel = normalizedPanel;
+  }
+}
+
+function showAllLetterPanels() {
+  const root = document.querySelector(".gluco-comment");
+  const body = document.querySelector(".gluco-comment-body");
+
+  if (root) {
+    root.classList.remove("letter-panel-browser", "letter-panel-ai", "letter-panel-chat");
+  }
+
+  if (body) {
+    body.removeAttribute("data-active-letter-panel");
+  }
+
+  const panelSelectors = [
+    ".rule-letter-section",
+    ".ai-letter-panel",
+    ".chatgpt-letter-panel",
+    "[data-letter-panel]"
+  ];
+
+  document.querySelectorAll(panelSelectors.join(",")).forEach((element) => {
+    element.hidden = false;
+    element.removeAttribute("aria-hidden");
+    element.classList.remove("gluco-letter-panel-hidden");
+    element.style.removeProperty("display");
+  });
+
+  const actionGrid = document.querySelector(".letter-action-grid");
+  if (actionGrid) {
+    actionGrid.hidden = false;
+    actionGrid.style.removeProperty("display");
+  }
+}
+
+function updateLetterPanelSwitcher() {
+  showAllLetterPanels();
+}
+
+function safelyUpdateLetterControls() {
+  try {
+    if (!document.getElementById("glucoLetterControls")) {
+      ensureAiLetterModeSwitcher();
+    } else {
+      updateAiModeSwitcher();
+      updateLetterPanelSwitcher();
+    }
+    showAllLetterPanels();
+  } catch (error) {
+    console.warn("Letter controls update skipped", error);
+  }
+}
+
+function cleanupAiLetterModeActionButtons() {
+  const aiButton = document.getElementById("aiLetterButton");
+  const actions = document.getElementById("aiLetterModeActions");
+
+  if (actions && aiButton && actions.parentNode) {
+    actions.parentNode.insertBefore(aiButton, actions);
+    actions.remove();
+  }
+
+  if (aiButton) {
+    aiButton.removeAttribute("data-ai-letter-mode");
+    aiButton.classList.remove("ai-letter-mode-button", "is-active");
+  }
+
+  const deepButton = document.getElementById("aiLetterDeepButton");
+  if (deepButton) deepButton.remove();
+}
+
 function ensureAiLetterTurnstileContainer() {
   const aiButton = document.getElementById("aiLetterButton");
   if (!aiButton) return null;
@@ -1526,6 +2336,12 @@ function renderAiLetterTurnstileWidget() {
     theme: "auto",
     callback: (token) => {
       window.glucoTurnstileToken = token;
+
+      if (pendingAiLetterModeAfterTurnstile) {
+        const pendingMode = pendingAiLetterModeAfterTurnstile;
+        pendingAiLetterModeAfterTurnstile = null;
+        handleAiLetterRequest(pendingMode, { skipTurnstilePrep: true });
+      }
     },
     "expired-callback": () => {
       window.glucoTurnstileToken = "";
@@ -1541,14 +2357,42 @@ function renderAiLetterTurnstileWidget() {
 }
 
 function setupAiLetterTurnstile() {
-  if (!TURNSTILE_SITE_KEY) return;
+  // Turnstile is intentionally lazy.
+  // It is rendered only after the user presses the AI analysis button,
+  // so live data refreshes do not keep running browser checks.
+}
 
-  ensureAiLetterTurnstileContainer();
+function prepareAiLetterTurnstile(analysisMode) {
+  if (!TURNSTILE_SITE_KEY) return false;
+
+  const existingToken = getTurnstileTokenForAiLetter();
+  if (existingToken) return false;
+
+  pendingAiLetterModeAfterTurnstile = normalizeAiLetterMode(analysisMode);
+  const container = ensureAiLetterTurnstileContainer();
+
+  if (container) {
+    container.classList.add("is-visible");
+    container.removeAttribute("hidden");
+  }
+
+  setAiLetterPanelStatus("aiLetterStatusTurnstileWaiting", "success");
   ensureTurnstileScript();
 
   if (window.turnstile && typeof window.turnstile.render === "function") {
     renderAiLetterTurnstileWidget();
+
+    const widgetId = container?.dataset?.widgetId;
+    if (widgetId && typeof window.turnstile.reset === "function") {
+      try {
+        window.turnstile.reset(widgetId);
+      } catch (error) {
+        console.warn("Failed to reset AI letter Turnstile widget", error);
+      }
+    }
   }
+
+  return true;
 }
 
 function resetAiLetterTurnstile() {
@@ -1556,6 +2400,13 @@ function resetAiLetterTurnstile() {
   const widgetId = container?.dataset?.widgetId;
 
   window.glucoTurnstileToken = "";
+
+  if (container) {
+    container.classList.remove("is-visible");
+    container.setAttribute("hidden", "hidden");
+  }
+
+  pendingAiLetterModeAfterTurnstile = null;
 
   if (widgetId && window.turnstile && typeof window.turnstile.reset === "function") {
     try {
@@ -1587,7 +2438,7 @@ function getAiLetterSlot(date = new Date()) {
 function updateAiSlotDisplay() {
   const slotBadge = document.getElementById("aiSlotBadge");
   if (!slotBadge) return;
-  slotBadge.textContent = getAiLetterSlot().label;
+  slotBadge.textContent = `${getAiLetterSlot().label} / ${getAiLetterModeLabel()}`;
 }
 
 function setAiLetterSummary(summary) {
@@ -1614,24 +2465,28 @@ function updateAiLetterControls(statusKey = null, statusType = "", options = {})
   if (copyStatus) {
     copyStatus.classList.remove("success", "error");
     if (statusType) copyStatus.classList.add(statusType);
+
     if (statusKey) {
-      copyStatus.textContent = t(statusKey);
+      setElementTextOrHide(copyStatus, t(statusKey));
     } else {
-      copyStatus.textContent = hasSummary ? t("chatGptCopyReady") : t("chatGptCopyWaiting");
+      setElementTextOrHide(copyStatus, hasSummary ? t("chatGptCopyReady") : t("chatGptCopyWaiting"));
     }
   }
 
   const workerEnabled = isAiLetterWorkerEnabled();
-  const aiButton = document.getElementById("aiLetterButton");
+  safelyUpdateLetterControls();
 
+  const aiButton = document.getElementById("aiLetterButton");
   if (aiButton) {
+    const hasCachedCurrentMode = hasCachedAiLetter(latestAiLetterSummary, currentAiLetterMode);
     aiButton.disabled = !hasSummary || !workerEnabled || aiLetterRequestInFlight;
+
     if (aiLetterRequestInFlight) {
       aiButton.textContent = t("aiLetterButtonLoading");
-    } else if (workerEnabled && hasSummary) {
-      aiButton.textContent = t("aiLetterButtonReady");
+    } else if (workerEnabled && hasSummary && hasCachedCurrentMode) {
+      aiButton.textContent = t("aiLetterButtonCached");
     } else {
-      aiButton.textContent = t("aiLetterButtonPreparing");
+      aiButton.textContent = workerEnabled && hasSummary ? t("aiLetterButtonReady") : t("aiLetterButtonPreparing");
     }
   }
 
@@ -1645,13 +2500,28 @@ function updateAiLetterControls(statusKey = null, statusType = "", options = {})
     aiStatus.classList.remove("success", "error");
 
     if (!workerEnabled) {
-      aiStatus.textContent = t("aiLetterStatusLocalOnly");
+      setElementTextOrHide(aiStatus, t("aiLetterStatusLocalOnly"));
     } else if (!hasSummary) {
-      aiStatus.textContent = t("aiLetterStatusWaitingForSummary");
+      setElementTextOrHide(aiStatus, t("aiLetterStatusWaitingForSummary"));
     } else {
-      aiStatus.textContent = t("aiLetterStatusReady");
+      setElementTextOrHide(aiStatus, t("aiLetterStatusReady"));
     }
   }
+}
+
+function forceEnableAiLetterButtonSoon() {
+  window.setTimeout(() => {
+    const aiButton = document.getElementById("aiLetterButton");
+    const hasSummary = Boolean(latestAiLetterSummary);
+    const workerEnabled = isAiLetterWorkerEnabled();
+
+    if (aiButton && hasSummary && workerEnabled && !aiLetterRequestInFlight) {
+      aiButton.disabled = false;
+      aiButton.textContent = hasCachedAiLetter(latestAiLetterSummary, currentAiLetterMode)
+        ? t("aiLetterButtonCached")
+        : t("aiLetterButtonReady");
+    }
+  }, 0);
 }
 
 function formatAiDateRange(rangeStart, rangeEnd) {
@@ -1736,14 +2606,103 @@ function buildAiLetterSummary({ periodKey, rangeStart, rangeEnd, latest, entries
   };
 }
 
-function buildChatGptPrompt(summary) {
+function buildChatGptPrompt(summary, mode = currentAiLetterMode) {
   if (!summary) return "";
 
+  const analysisMode = normalizeAiLetterMode(mode);
+  const modeLabel = getAiLetterModeLabel(analysisMode);
+
   if (currentLanguage === "en") {
-    return `You are gluco, the official AI companion of GlucoScope.\n\nPlease write a short, gentle letter for someone living with diabetes, using only the glucose summary below.\n\nRules:\n- Do not diagnose.\n- Do not make treatment decisions.\n- Do not suggest insulin doses, medication changes, or device setting changes.\n- Do not shame, blame, or frighten the person.\n- Treat glucose data as clues for reflection, not as a grade.\n- Use simple, warm language.\n- Keep it to 3-6 short sentences.\n\nGlucose summary:\n- Page mode: ${summary.pageMode}\n- Period: ${summary.period}\n- Letter time: ${summary.slotLabel}\n- Range: ${summary.rangeLabel}\n- Latest measured at: ${summary.latestMeasuredAt}\n- Current glucose: ${summary.currentGlucose ?? "--"} mg/dL\n- Direction: ${summary.direction}\n- Delta from previous reading: ${summary.delta} mg/dL\n- TIR: ${summary.metrics.tir}%\n- TAR: ${summary.metrics.tar}%\n- TBR: ${summary.metrics.tbr}%\n- Average glucose: ${summary.metrics.averageGlucose} mg/dL\n- CV: ${summary.metrics.cv}%\n- GMI estimate: ${summary.metrics.gmi}%\n- GlucoScore: ${summary.metrics.glucoScore}\n- Previous comparison score: ${summary.metrics.previousScore ?? "--"}\n- 7-day average score: ${summary.metrics.sevenDayAverageScore ?? "--"}\n- Reflection hints:\n${summary.patternHints.map((hint) => `  - ${hint}`).join("\n")}\n\nPlease write as gluco. Start naturally, like a small kind friend nearby.`;
+    const task = analysisMode === "deep"
+      ? "Please create a structured, detailed reflection for someone living with diabetes, using only the glucose summary below."
+      : "Please write a short, gentle letter for someone living with diabetes, using only the glucose summary below.";
+    const outputRule = analysisMode === "deep"
+      ? "- Use short sections and bullet points. Include overview, metric clues, pattern hints, and gentle things to look back on."
+      : "- Keep it to 3-6 short sentences.";
+
+    return `You are gluco, the official AI companion of GlucoScope.
+
+Mode: ${modeLabel}
+${task}
+
+Rules:
+- Do not diagnose.
+- Do not make treatment decisions.
+- Do not suggest insulin doses, medication changes, or device setting changes.
+- Do not shame, blame, or frighten the person.
+- Treat glucose data as clues for reflection, not as a grade.
+- Use simple, warm language.
+- Avoid real-time wording such as "right now" because this may be read later.
+${outputRule}
+
+Glucose summary:
+- Page mode: ${summary.pageMode}
+- Period: ${summary.period}
+- Letter time: ${summary.slotLabel}
+- Range: ${summary.rangeLabel}
+- Latest measured at: ${summary.latestMeasuredAt}
+- Latest glucose reading: ${summary.currentGlucose ?? "--"} mg/dL
+- Direction: ${summary.direction}
+- Delta from previous reading: ${summary.delta} mg/dL
+- TIR: ${summary.metrics.tir}%
+- TAR: ${summary.metrics.tar}%
+- TBR: ${summary.metrics.tbr}%
+- Average glucose: ${summary.metrics.averageGlucose} mg/dL
+- CV: ${summary.metrics.cv}%
+- GMI estimate: ${summary.metrics.gmi}%
+- GlucoScore: ${summary.metrics.glucoScore}
+- Previous comparison score: ${summary.metrics.previousScore ?? "--"}
+- 7-day average score: ${summary.metrics.sevenDayAverageScore ?? "--"}
+- Reflection hints:
+${summary.patternHints.map((hint) => `  - ${hint}`).join("\n")}
+
+Please write as gluco, a small kind companion nearby.`;
   }
 
-  return `あなたはGlucoScope公式AIパートナー「グルコ」です。\n\n下の血糖サマリーだけをもとに、糖尿病とともに生きる人へ、短くてやさしいお手紙を書いてください。\n\nルール:\n- 診断しない。\n- 治療判断をしない。\n- インスリン量、薬、医療機器設定の変更を指示しない。\n- 責めない。怖がらせない。急かさない。\n- 血糖データを採点ではなく、振り返りの手がかりとして扱う。\n- 子どもにも伝わるくらいやさしい言葉にする。\n- 3〜6文くらいの短いお手紙にする。\n\n血糖サマリー:\n- ページ種別: ${summary.pageMode}\n- 期間: ${summary.period}\n- お手紙の時間: ${summary.slotLabel}\n- 表示範囲: ${summary.rangeLabel}\n- 最新測定: ${summary.latestMeasuredAt}\n- 現在血糖: ${summary.currentGlucose ?? "--"} mg/dL\n- 矢印: ${summary.direction}\n- 前回との差分: ${summary.delta} mg/dL\n- TIR: ${summary.metrics.tir}%\n- TAR: ${summary.metrics.tar}%\n- TBR: ${summary.metrics.tbr}%\n- 平均血糖: ${summary.metrics.averageGlucose} mg/dL\n- CV: ${summary.metrics.cv}%\n- GMI目安: ${summary.metrics.gmi}%\n- GlucoScore: ${summary.metrics.glucoScore}\n- 比較期間のGlucoScore: ${summary.metrics.previousScore ?? "--"}\n- 過去7日平均GlucoScore: ${summary.metrics.sevenDayAverageScore ?? "--"}\n- 振り返りヒント:\n${summary.patternHints.map((hint) => `  - ${hint}`).join("\n")}\n\nグルコとして、そばにいる小さなともだちのように書いてください。`;
+  const task = analysisMode === "deep"
+    ? "下の血糖サマリーだけをもとに、糖尿病とともに生きる人へ、少し詳しい振り返りを書いてください。"
+    : "下の血糖サマリーだけをもとに、糖尿病とともに生きる人へ、短くてやさしいお手紙を書いてください。";
+  const outputRule = analysisMode === "deep"
+    ? "- 短い見出しと箇条書きを使う。全体感、指標の手がかり、見返すとよさそうな観点を分けて書く。"
+    : "- 3〜6文くらいの短いお手紙にする。";
+
+  return `あなたはGlucoScope公式AIパートナー「グルコ」です。
+
+モード: ${modeLabel}
+${task}
+
+ルール:
+- 診断しない。
+- 治療判断をしない。
+- インスリン量、薬、医療機器設定の変更を指示しない。
+- 責めない。怖がらせない。急かさない。
+- 血糖データを採点ではなく、振り返りの手がかりとして扱う。
+- 子どもにも伝わるくらいやさしい言葉にする。
+- キャッシュ表示される可能性があるため、「今の血糖」「現在」などのリアルタイム断定は避ける。
+${outputRule}
+
+血糖サマリー:
+- ページ種別: ${summary.pageMode}
+- 期間: ${summary.period}
+- お手紙の時間: ${summary.slotLabel}
+- 表示範囲: ${summary.rangeLabel}
+- 最新測定: ${summary.latestMeasuredAt}
+- 最新の血糖測定: ${summary.currentGlucose ?? "--"} mg/dL
+- 矢印: ${summary.direction}
+- 前回との差分: ${summary.delta} mg/dL
+- TIR: ${summary.metrics.tir}%
+- TAR: ${summary.metrics.tar}%
+- TBR: ${summary.metrics.tbr}%
+- 平均血糖: ${summary.metrics.averageGlucose} mg/dL
+- CV: ${summary.metrics.cv}%
+- GMI目安: ${summary.metrics.gmi}%
+- GlucoScore: ${summary.metrics.glucoScore}
+- 比較期間のGlucoScore: ${summary.metrics.previousScore ?? "--"}
+- 過去7日平均GlucoScore: ${summary.metrics.sevenDayAverageScore ?? "--"}
+- 振り返りヒント:
+${summary.patternHints.map((hint) => `  - ${hint}`).join("\n")}
+
+グルコとして、そばにいる小さなともだちのように書いてください。`;
 }
 
 async function copyTextToClipboard(text) {
@@ -1774,7 +2733,7 @@ async function handleChatGptCopy() {
   }
 
   try {
-    await copyTextToClipboard(buildChatGptPrompt(latestAiLetterSummary));
+    await copyTextToClipboard(buildChatGptPrompt(latestAiLetterSummary, currentAiLetterMode));
     updateAiLetterControls("chatGptCopied", "success");
   } catch (error) {
     console.error(error);
@@ -1782,7 +2741,10 @@ async function handleChatGptCopy() {
   }
 }
 
-async function handleAiLetterRequest() {
+async function handleAiLetterRequest(mode = currentAiLetterMode, options = {}) {
+  const analysisMode = normalizeAiLetterMode(mode);
+  setAiLetterMode(analysisMode);
+
   if (!latestAiLetterSummary) {
     setAiLetterPanelStatus("aiLetterStatusWaitingForSummary", "error");
     return;
@@ -1790,6 +2752,19 @@ async function handleAiLetterRequest() {
 
   if (!isAiLetterWorkerEnabled()) {
     setAiLetterPanelStatus("aiLetterStatusLocalOnly", "error");
+    return;
+  }
+
+  const cached = getCachedAiLetter(latestAiLetterSummary, analysisMode);
+  if (cached) {
+    showAiLetterResult(cached.text);
+    setAiLetterPanelStatus("aiLetterStatusLocalCache", "success");
+    updateAiLetterControls(null, "", { preserveAiStatus: true });
+    forceEnableAiLetterButtonSoon();
+    return;
+  }
+
+  if (!options.skipTurnstilePrep && prepareAiLetterTurnstile(analysisMode)) {
     return;
   }
 
@@ -1805,6 +2780,7 @@ async function handleAiLetterRequest() {
       },
       body: JSON.stringify({
         summary: latestAiLetterSummary,
+        analysisMode,
         turnstileToken: getTurnstileTokenForAiLetter(),
         client: {
           app: "GlucoScope",
@@ -1823,7 +2799,7 @@ async function handleAiLetterRequest() {
     }
 
     showAiLetterResult(letterText);
-    saveAiLetterLocalCache(latestAiLetterSummary, data, letterText);
+    saveAiLetterLocalCache(latestAiLetterSummary, data, letterText, analysisMode);
     setAiLetterPanelStatus(
       getAiLetterStatusKeyFromResponse(data),
       "success",
@@ -1838,7 +2814,8 @@ async function handleAiLetterRequest() {
       errorStatusKey === "aiLetterStatusRateLimited"
         ? "aiLetterStatusLocalCacheAfterLimit"
         : "aiLetterStatusLocalCache",
-      errorStatusKey === "aiLetterStatusRateLimited" ? "error" : "success"
+      errorStatusKey === "aiLetterStatusRateLimited" ? "error" : "success",
+      analysisMode
     );
 
     if (!restoredFromCache && workerMessage) {
@@ -1850,13 +2827,57 @@ async function handleAiLetterRequest() {
     aiLetterRequestInFlight = false;
     resetAiLetterTurnstile();
     updateAiLetterControls(null, "", { preserveAiStatus: true });
+    forceEnableAiLetterButtonSoon();
   }
 }
 
+function exposeLetterControlGlobals() {
+  window.glucoSetLetterPanel = () => { showAllLetterPanels(); };
+
+  window.glucoSetAiLetterMode = (mode) => {
+    setAiLetterMode(mode, { showCached: true });
+  };
+}
+
+function setupLetterControlsClickHandler() {
+  if (window.glucoLetterControlsClickHandlerAttached) return;
+  window.glucoLetterControlsClickHandlerAttached = true;
+
+  document.addEventListener("click", (event) => {
+    const modeButton = event.target.closest?.("[data-ai-mode-toggle]");
+    if (modeButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      setAiLetterMode(modeButton.dataset.aiModeToggle, { showCached: true });
+      return;
+    }
+
+    const panelButton = event.target.closest?.("[data-letter-panel-toggle]");
+    if (panelButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      setLetterPanel(panelButton.dataset.letterPanelToggle);
+    }
+  }, true);
+}
+
 function setupAiLetterPrototype() {
+  try {
+    injectAiLetterLayoutStyles();
+    cleanupAiLetterModeActionButtons();
+    ensureAiLetterModeSwitcher();
+    exposeLetterControlGlobals();
+    setupLetterControlsClickHandler();
+    showAllLetterPanels();
+    window.setTimeout(() => safelyUpdateLetterControls(), 0);
+    window.setTimeout(() => safelyUpdateLetterControls(), 50);
+  } catch (error) {
+    console.warn("AI letter controls setup skipped", error);
+  }
+
   const aiButton = document.getElementById("aiLetterButton");
   if (aiButton) {
-    aiButton.addEventListener("click", handleAiLetterRequest);
+    aiButton.addEventListener("click", () => handleAiLetterRequest(currentAiLetterMode));
   }
 
   setupAiLetterTurnstile();
@@ -1959,6 +2980,75 @@ TIRは${tir}%だったね。
 血糖はあなたを責める数字じゃなくて、明日を少し楽にするための手がかりだよ。`;
 }
 
+function makeDeepComment(metrics = {}) {
+  const {
+    tir = "--",
+    tar = "--",
+    tbr = "--",
+    avg = "--",
+    cv = "--",
+    gmi = "--",
+    glucoScore = "--",
+    previousScore = null,
+    sevenDayAverageScore = null,
+    periodKey = currentLivePeriod
+  } = metrics;
+
+  const periodText = getRuleCommentPeriodText(periodKey);
+  const scoreDiff = Number.isFinite(Number(previousScore))
+    ? Number(glucoScore) - Number(previousScore)
+    : null;
+  const scoreLine = scoreDiff === null
+    ? (currentLanguage === "en" ? "Comparison score is not available yet." : "比較スコアはまだ見えていないよ。")
+    : scoreDiff > 0
+      ? (currentLanguage === "en" ? `GlucoScore is ${scoreDiff} higher than the comparison period.` : `GlucoScoreは比較期間より${scoreDiff}高く見えているよ。`)
+      : scoreDiff < 0
+        ? (currentLanguage === "en" ? `GlucoScore is ${Math.abs(scoreDiff)} softer than the comparison period.` : `GlucoScoreは比較期間より${Math.abs(scoreDiff)}控えめに見えているよ。`)
+        : (currentLanguage === "en" ? "GlucoScore is about the same as the comparison period." : "GlucoScoreは比較期間と同じくらいに見えているよ。");
+
+  if (currentLanguage === "en") {
+    return `Detailed Gluco reflection 🍀
+${periodText}, TIR is ${tir}%, TAR is ${tar}%, and TBR is ${tbr}%.
+Average glucose is ${avg}mg/dL, CV is ${cv}%, and GMI estimate is ${gmi}%.
+GlucoScore is ${glucoScore}. ${scoreLine}
+Higher, lower, or wavier periods can be gentle clues to look back on later.
+This is not medical advice; it is a small note to help you organize what you notice.`;
+  }
+
+  return `グルコだよ🍀
+${periodText}TIRは${tir}%、TARは${tar}%、TBRは${tbr}%だったよ。
+平均血糖は${avg}mg/dL、CVは${cv}%、GMI目安は${gmi}%だね。
+GlucoScoreは${glucoScore}。${scoreLine}
+高め・低め・ゆらぎが見えた時間は、あとでそっと見返す手がかりになりそう。
+これは医療判断ではなく、気づいたことを整理するための小さなメモとして見てね。`;
+}
+
+function updateRuleCommentDisplay() {
+  const comment = document.getElementById("comment");
+  if (!comment) return;
+
+  const badge = document.querySelector(".rule-letter-section .letter-section-badge");
+  if (badge) {
+    badge.textContent = currentAiLetterMode === "deep"
+      ? t("ruleCommentDeepBadge")
+      : t("ruleCommentBadge");
+  }
+
+  if (!latestRuleCommentMetrics) return;
+
+  comment.textContent = currentAiLetterMode === "deep"
+    ? makeDeepComment(latestRuleCommentMetrics)
+    : makeComment(
+        latestRuleCommentMetrics.tir,
+        latestRuleCommentMetrics.tar,
+        latestRuleCommentMetrics.tbr,
+        latestRuleCommentMetrics.avg,
+        latestRuleCommentMetrics.cv,
+        latestRuleCommentMetrics.periodKey
+      );
+}
+
+
 function getEntryTime(entry) {
   if (entry.date) return Number(entry.date);
   if (entry.dateString) return new Date(entry.dateString).getTime();
@@ -2038,6 +3128,43 @@ function normalizeEntriesForChart(entries, rangeStart, shiftMs = 0) {
 }
 
 
+function getChartGapThresholdMinutes(periodKey, rangeDurationMs, bucketMinutes = 0) {
+  if (bucketMinutes && bucketMinutes > 0) return Math.max(bucketMinutes * 2.5, 90);
+
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  if (periodKey === "today" || periodKey === "yesterday" || rangeDurationMs <= 36 * 60 * 60 * 1000) {
+    return 45;
+  }
+
+  if (rangeDurationMs <= 8 * oneDayMs) return 120;
+  return 360;
+}
+
+function insertChartGaps(points, maxGapMinutes) {
+  if (!Array.isArray(points) || points.length < 2 || !Number.isFinite(maxGapMinutes)) return points;
+
+  const withGaps = [];
+
+  points.forEach((point, index) => {
+    if (index > 0) {
+      const previousPoint = points[index - 1];
+      const gapMinutes = point.x - previousPoint.x;
+
+      if (Number.isFinite(gapMinutes) && gapMinutes > maxGapMinutes) {
+        withGaps.push({
+          x: previousPoint.x + gapMinutes / 2,
+          y: null,
+          isGap: true
+        });
+      }
+    }
+
+    withGaps.push(point);
+  });
+
+  return withGaps;
+}
+
 function getChartBucketMinutes(periodKey, rangeDurationMs) {
   const oneDayMs = 24 * 60 * 60 * 1000;
 
@@ -2104,6 +3231,10 @@ function minutesToLabel(rangeStart, minutes, rangeDurationMs = 24 * 60 * 60 * 10
 }
 
 function getGlucoseSegmentColor(startValue, endValue) {
+  if (!Number.isFinite(Number(startValue)) || !Number.isFinite(Number(endValue))) {
+    return "rgba(56,189,248,0)";
+  }
+
   if (startValue < 70 || endValue < 70) return "#fb7185";
   if (startValue > 180 || endValue > 180) return "#f59e0b";
   return "#38bdf8";
@@ -2186,10 +3317,17 @@ function drawGlucoseChart(entries, options = {}) {
 
   const chartBucketMinutes = getChartBucketMinutes(options.periodKey, rangeDurationMs);
   const rawTodayPoints = normalizeEntriesForChart(entries, rangeStart);
-  const todayPoints = aggregateChartPoints(rawTodayPoints, chartBucketMinutes);
-  const comparisonPoints = aggregateChartPoints(
-    normalizeEntriesForChart(options.comparisonEntries || [], rangeStart, rangeDurationMs),
-    chartBucketMinutes
+  const gapThresholdMinutes = getChartGapThresholdMinutes(options.periodKey, rangeDurationMs, chartBucketMinutes);
+  const todayPoints = insertChartGaps(
+    aggregateChartPoints(rawTodayPoints, chartBucketMinutes),
+    gapThresholdMinutes
+  );
+  const comparisonPoints = insertChartGaps(
+    aggregateChartPoints(
+      normalizeEntriesForChart(options.comparisonEntries || [], rangeStart, rangeDurationMs),
+      chartBucketMinutes
+    ),
+    gapThresholdMinutes
   );
   const showTreatmentEvents = shouldShowTreatmentEvents(options.periodKey, rangeDurationMs);
   const treatmentPoints = showTreatmentEvents
@@ -2219,6 +3357,7 @@ function drawGlucoseChart(entries, options = {}) {
       borderColor: "rgba(203,213,225,.42)",
       pointRadius: 0,
       tension: 0.35,
+      spanGaps: false,
       order: 1
     });
   }
@@ -2230,6 +3369,7 @@ function drawGlucoseChart(entries, options = {}) {
     borderColor: "#38bdf8",
     pointRadius: 0,
     tension: chartBucketMinutes ? 0.42 : 0.35,
+    spanGaps: false,
     segment: {
       borderColor: (context) => getGlucoseSegmentColor(context.p0.parsed.y, context.p1.parsed.y)
     },
@@ -2308,6 +3448,10 @@ function drawGlucoseChart(entries, options = {}) {
                 if (point.carbs) pieces.push(`${point.carbs}g carbs`);
                 if (point.insulin) pieces.push(`${point.insulin}U`);
                 return pieces.join(" / ");
+              }
+
+              if (point.isGap || context.parsed.y === null) {
+                return currentLanguage === "en" ? "Data gap" : "データなし";
               }
 
               return `${context.dataset.label}: ${context.parsed.y} mg/dL`;
@@ -2672,6 +3816,7 @@ async function loadDailyStats() {
     const values = getSgvValuesInRange(entries, rangeStart, rangeEnd);
 
     if (values.length === 0) {
+      latestRuleCommentMetrics = null;
       document.getElementById("comment").textContent = t("noDailyData");
       setAiLetterSummary(null);
       updateScoreMetaDisplay(null, null, null, currentLivePeriod);
@@ -2719,7 +3864,7 @@ async function loadDailyStats() {
 
     const scoreMessage = document.querySelector(".score-message");
     if (scoreMessage) {
-      scoreMessage.textContent = getLocalizedScoreMessage(glucoScore.score, glucoScore.message);
+      renderScoreMessage(scoreMessage, getLocalizedScoreMessage(glucoScore.score, glucoScore.message));
     }
 
     updateDisplayedMetrics({ tir, tar, tbr, avg, cv, gmi });
@@ -2741,8 +3886,19 @@ async function loadDailyStats() {
       sevenDayAverageScore
     }));
 
-    document.getElementById("comment").textContent =
-      makeComment(tir, tar, tbr, avg, cv, currentLivePeriod);
+    latestRuleCommentMetrics = {
+      tir,
+      tar,
+      tbr,
+      avg,
+      cv,
+      gmi,
+      glucoScore: glucoScore.score,
+      previousScore,
+      sevenDayAverageScore,
+      periodKey: currentLivePeriod
+    };
+    updateRuleCommentDisplay();
 
   } catch (error) {
     console.error(error);
@@ -2754,6 +3910,7 @@ async function loadDailyStats() {
     updateGlucoseDelta(null, null);
     updateScoreMetaDisplay(null, null, null, currentLivePeriod);
     setAiLetterSummary(null);
+    latestRuleCommentMetrics = null;
     document.getElementById("comment").textContent = t("commentLoadingError");
   }
 }

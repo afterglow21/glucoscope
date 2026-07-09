@@ -529,3 +529,239 @@ Request field:
 If Turnstile is required and verification fails, the Worker returns `turnstile_failed` and must not call OpenAI.
 
 The frontend should show a gentle retry message.
+
+
+## Analysis Modes
+
+The frontend may send `analysisMode` with the AI Letter request.
+
+```json
+{
+  "analysisMode": "letter"
+}
+```
+
+```json
+{
+  "analysisMode": "deep"
+}
+```
+
+Supported modes:
+
+- `letter`: a short, gentle gluco letter
+- `deep`: a structured, more detailed reflection
+
+The public demo guard treats slot and mode together:
+
+```text
+morning × letter: 1 new generation
+morning × deep: 1 new generation
+afternoon × letter: 1 new generation
+afternoon × deep: 1 new generation
+night × letter: 1 new generation
+night × deep: 1 new generation
+```
+
+That means the intended public demo maximum is 6 new generations per day before shared cache is introduced.
+
+Safety boundaries are identical for both modes: no diagnosis, no treatment decisions, no insulin dose suggestions, no medication or device-setting changes, and no blame or fear.
+
+## 16. Frontend Mode Switcher
+
+The frontend exposes two reflection modes outside the three panels:
+
+- `letter`: gentle letter
+- `deep`: detailed reflection
+
+The selected mode is shared by:
+
+- the browser-only Gluco story panel
+- the AI analysis Worker request
+- the ChatGPT handoff text
+
+The AI execution button remains a single action button; mode buttons only switch the selected mode.
+
+## 17. Letter Page Layout
+
+The Gluco letter area is intentionally arranged as two large columns on desktop:
+
+```text
+[ Gluco image only ] [ Mode switcher ]
+                     [ Browser Gluco story ]
+                     [ AI analysis ]
+                     [ ChatGPT handoff ]
+```
+
+The mode switcher is outside the three panels and applies to all of them. The right column stacks the three panels vertically to avoid narrow cards and horizontal overflow.
+
+## 18. Compact Panel Picker and Lazy Turnstile
+
+The letter area now uses two independent controls:
+
+- Analysis mode: `letter` / `deep`
+- Visible panel: browser Gluco story / AI analysis / ChatGPT handoff
+
+Only the selected panel is shown, which keeps the right column shorter.
+
+Turnstile is lazy-rendered only after the user presses the AI analysis button. This avoids running Turnstile browser checks during routine glucose data refreshes.
+
+## 19. Letter Controls Debug Fix
+
+The `gluco message` badge is replaced by compact controls:
+
+- analysis mode: gentle / detailed
+- visible panel: Gluco / AI / ChatGPT
+
+Panel visibility is now enforced with both a CSS class and direct `hidden` / `display` updates. This avoids cases where all three panels remain visible after the picker is initialized.
+
+## 20. Letter Controls Safety Patch
+
+The compact letter controls are now positioned on the Gluco letter card itself instead of inside the former `gluco message` badge wrapper, because the badge wrapper can be too narrow.
+
+Panel selection uses the direct children of `.letter-action-grid` when available, making AI/ChatGPT panel hiding more reliable.
+
+All letter-control setup and update calls are guarded so control bugs do not interrupt Nightscout data loading.
+
+## 21. Title Row Letter Controls
+
+The compact analysis/view controls are placed in the same row as the `グルコからのお手紙` title, matching the relationship between the glucose chart title and its date-range buttons.
+
+Panel selection now finds panel roots by their title text as well as by existing classes, so AI/ChatGPT panels can be hidden even when class names or nesting differ.
+
+## 22. Panel Visibility Stabilization
+
+Panel selection no longer depends on title-text matching alone.
+
+The frontend now finds the visible panel root by walking from each known control/summary element until it reaches the nearest ancestor that does not contain the sibling panel probes. Hidden panels are suppressed with `display: none !important` through inline styles to avoid CSS cascade conflicts.
+
+The title-row controls keep compact labels: `AI` and `GPT`.
+
+## 23. Fast Panel Picker
+
+The panel picker no longer searches large text blocks on each click.
+
+Panel roots are cached from stable probes:
+
+- browser panel: `.rule-letter-section`
+- AI panel: the direct child of `.letter-action-grid` that contains `#aiLetterButton`
+- ChatGPT panel: the direct child of `.letter-action-grid` that contains `#chatGptCopyButton` or `#chatGptOpenLink`
+
+The controls use event delegation and default button labels are present in the initial HTML string, preventing blank pill buttons before the first update cycle.
+
+## 24. CSS State Panel Picker
+
+The letter panel picker now uses a root CSS state class:
+
+- `.letter-panel-browser`
+- `.letter-panel-ai`
+- `.letter-panel-chat`
+
+Clicking a view button changes only the root class and active button state. Visibility is handled by CSS selectors, avoiding repeated DOM walking and stale cached element references.
+
+A document-level capture click handler is used so the controls continue to work after they are moved into the title row.
+
+## 25. Static Letter Panel Markers
+
+The letter panel picker now uses explicit HTML markers:
+
+```html
+data-letter-panel="browser"
+data-letter-panel="ai"
+data-letter-panel="chat"
+```
+
+The active panel is stored on `.gluco-comment-body` as:
+
+```html
+data-active-letter-panel="browser|ai|chat"
+```
+
+This removes the fragile DOM guessing that previously made panel switching update only after another button was pressed.
+
+## 26. Inline Fallback for Letter Controls
+
+The panel controls now have inline fallback handlers in `index.html`:
+
+```html
+onclick="window.glucoSetLetterPanel?.('ai')"
+```
+
+The JavaScript also exposes:
+
+- `window.glucoSetLetterPanel(panel)`
+- `window.glucoSetAiLetterMode(mode)`
+
+`setLetterPanel()` now immediately updates `data-active-letter-panel`, active button state, and inline `display` styles, then re-applies once on the next animation frame and short timers. This avoids the previous case where the panel changed only after pressing an analysis-mode button.
+
+## 27. Removed Letter View Picker
+
+The `View` / 表示 picker was removed because switching panels was unreliable across the current DOM structure.
+
+The letter area keeps only the analysis-mode control:
+
+- gentle / やさしい
+- detailed / しっかり
+
+The browser Gluco story, AI analysis, and ChatGPT handoff panels are always visible again.
+
+## 28. Letter Copy and Control Polish
+
+Polish after removing the view picker:
+
+- Renamed `やさしいお手紙` to `やさしい分析`
+- AI panel lead copy now says the selected mode shows AI-generated analysis
+- Browser/ChatGPT panel badges are hidden
+- Empty ready/help status text is removed
+- The browser-only detailed comment now starts with `グルコだよ🍀`
+- Restored styled pill buttons for the analysis-mode control
+
+## 29. Empty Status Keys and Chart Data Gaps
+
+Translation lookup now allows empty-string values. This prevents empty status keys such as `aiLetterStatusReady`, `aiLetterStatusLocalOnly`, and `chatGptCopyReady` from falling back to the key name.
+
+The glucose chart now inserts null gap points when CGM readings are separated by a longer interval. For today/yesterday views, gaps over 45 minutes are not connected by a solid line. This avoids drawing a misleading continuous line across CGM replacement or sensor downtime.
+
+## 30. Letter Header Labels and Spacing Polish
+
+Polish:
+
+- Header control title changed from `分析` to `分析モード`
+- Detailed mode button label changed to `しっかり分析`
+- ChatGPT handoff lead/button spacing tightened
+- Gluco image size is allowed to grow within the left panel
+
+## 31. AI Result Container and Retry Button
+
+The AI analysis result is now created by JavaScript if the current HTML does not contain `#aiLetterResult`.
+
+This prevents successful Worker responses from showing only the status line while the generated text is missing.
+
+The AI analysis button is also re-enabled after cached responses and after request completion, so users can press it again to show cached results or try another mode.
+
+## 32. Cached Button and Gluco Deep Tone
+
+UI:
+- When the current slot/mode already has a saved AI result, the button label becomes `保存済みの分析を表示`.
+- The button is still enabled so users can re-display the cached result.
+
+Worker prompt:
+- `letter` is now labeled `やさしい分析`.
+- Japanese deep analysis must start with `グルコだよ🍀`.
+- Japanese deep analysis avoids 丁寧語 (`です`, `ます`, `あります`, `ください`).
+- Deep analysis uses emoji section labels instead of Markdown heading marks such as `###`.
+
+## 33. AI Letter Status Wording
+
+Japanese AI status wording now uses `お手紙` instead of `ふりかえり` for user-facing generated-letter status messages:
+
+- `グルコがお手紙を書いてるよ...`
+- `グルコのお手紙を表示しました🍀`
+- saved/cache/limit messages also use `お手紙`
+
+## 34. Gluco Story Font and Score Message Break
+
+Polish:
+
+- The browser-only `いつものグルコのお話` body now matches the AI analysis result font size/line-height.
+- The GlucoScore message breaks after the first sentence for readability.
