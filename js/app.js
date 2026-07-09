@@ -155,7 +155,7 @@ const translations = {
     ruleCommentBadge: "ブラウザ内",
     ruleCommentLead: "外部AIを使わず、表示中の血糖サマリーから短い振り返りを表示します。",
     aiLetterTitle: "✨ AI分析 beta",
-    aiLetterLead: "朝・昼・夜のスロットで、グルコがより自然なお手紙を作る予定です。",
+    aiLetterLead: "朝・昼・夜の3回、グルコがより自然なお手紙を作る予定です。",
     aiLetterButtonPreparing: "AI分析は準備中",
     aiLetterButtonReady: "AI分析を試す",
     aiLetterButtonLoading: "グルコがお手紙を書いています...",
@@ -175,9 +175,9 @@ const translations = {
     chatGptCopied: "グルコ用プロンプトをコピーしました🍀",
     chatGptCopyFailed: "コピーできませんでした。ブラウザの権限を確認してください。",
     aiSummaryUnavailable: "まだAI分析用サマリーを作れていません。",
-    slotMorning: "朝のスロット",
-    slotAfternoon: "昼のスロット",
-    slotNight: "夜のスロット",
+    slotMorning: "朝のお手紙",
+    slotAfternoon: "昼のお手紙",
+    slotNight: "夜のお手紙",
     averageLabel: "平均",
     cvLabel: "（変動係数）",
     tirDesc: "目標範囲内の時間",
@@ -277,7 +277,7 @@ const translations = {
     ruleCommentBadge: "In browser",
     ruleCommentLead: "A short reflection made from the selected glucose summary without calling external AI.",
     aiLetterTitle: "✨ AI analysis beta",
-    aiLetterLead: "Gluco will create a more natural letter in morning, afternoon, and night slots.",
+    aiLetterLead: "Gluco will create a more natural letter as a morning, afternoon, or night letter.",
     aiLetterButtonPreparing: "AI analysis is preparing",
     aiLetterButtonReady: "Try AI analysis",
     aiLetterButtonLoading: "Gluco is writing...",
@@ -297,9 +297,9 @@ const translations = {
     chatGptCopied: "Gluco prompt copied 🍀",
     chatGptCopyFailed: "Could not copy. Please check browser permissions.",
     aiSummaryUnavailable: "The AI-ready summary is not ready yet.",
-    slotMorning: "Morning slot",
-    slotAfternoon: "Afternoon slot",
-    slotNight: "Night slot",
+    slotMorning: "Morning letter",
+    slotAfternoon: "Afternoon letter",
+    slotNight: "Night letter",
     averageLabel: "Average",
     cvLabel: "(coefficient of variation)",
     tirDesc: "Time in target range",
@@ -1479,10 +1479,10 @@ function buildChatGptPrompt(summary) {
   if (!summary) return "";
 
   if (currentLanguage === "en") {
-    return `You are gluco, the official AI companion of GlucoScope.\n\nPlease write a short, gentle letter for someone living with diabetes, using only the glucose summary below.\n\nRules:\n- Do not diagnose.\n- Do not make treatment decisions.\n- Do not suggest insulin doses, medication changes, or device setting changes.\n- Do not shame, blame, or frighten the person.\n- Treat glucose data as clues for reflection, not as a grade.\n- Use simple, warm language.\n- Keep it to 3-6 short sentences.\n\nGlucose summary:\n- Page mode: ${summary.pageMode}\n- Period: ${summary.period}\n- Slot: ${summary.slotLabel}\n- Range: ${summary.rangeLabel}\n- Latest measured at: ${summary.latestMeasuredAt}\n- Current glucose: ${summary.currentGlucose ?? "--"} mg/dL\n- Direction: ${summary.direction}\n- Delta from previous reading: ${summary.delta} mg/dL\n- TIR: ${summary.metrics.tir}%\n- TAR: ${summary.metrics.tar}%\n- TBR: ${summary.metrics.tbr}%\n- Average glucose: ${summary.metrics.averageGlucose} mg/dL\n- CV: ${summary.metrics.cv}%\n- GMI estimate: ${summary.metrics.gmi}%\n- GlucoScore: ${summary.metrics.glucoScore}\n- Previous comparison score: ${summary.metrics.previousScore ?? "--"}\n- 7-day average score: ${summary.metrics.sevenDayAverageScore ?? "--"}\n- Reflection hints:\n${summary.patternHints.map((hint) => `  - ${hint}`).join("\n")}\n\nPlease write as gluco. Start naturally, like a small kind friend nearby.`;
+    return `You are gluco, the official AI companion of GlucoScope.\n\nPlease write a short, gentle letter for someone living with diabetes, using only the glucose summary below.\n\nRules:\n- Do not diagnose.\n- Do not make treatment decisions.\n- Do not suggest insulin doses, medication changes, or device setting changes.\n- Do not shame, blame, or frighten the person.\n- Treat glucose data as clues for reflection, not as a grade.\n- Use simple, warm language.\n- Keep it to 3-6 short sentences.\n\nGlucose summary:\n- Page mode: ${summary.pageMode}\n- Period: ${summary.period}\n- Letter time: ${summary.slotLabel}\n- Range: ${summary.rangeLabel}\n- Latest measured at: ${summary.latestMeasuredAt}\n- Current glucose: ${summary.currentGlucose ?? "--"} mg/dL\n- Direction: ${summary.direction}\n- Delta from previous reading: ${summary.delta} mg/dL\n- TIR: ${summary.metrics.tir}%\n- TAR: ${summary.metrics.tar}%\n- TBR: ${summary.metrics.tbr}%\n- Average glucose: ${summary.metrics.averageGlucose} mg/dL\n- CV: ${summary.metrics.cv}%\n- GMI estimate: ${summary.metrics.gmi}%\n- GlucoScore: ${summary.metrics.glucoScore}\n- Previous comparison score: ${summary.metrics.previousScore ?? "--"}\n- 7-day average score: ${summary.metrics.sevenDayAverageScore ?? "--"}\n- Reflection hints:\n${summary.patternHints.map((hint) => `  - ${hint}`).join("\n")}\n\nPlease write as gluco. Start naturally, like a small kind friend nearby.`;
   }
 
-  return `あなたはGlucoScope公式AIパートナー「グルコ」です。\n\n下の血糖サマリーだけをもとに、糖尿病とともに生きる人へ、短くてやさしいお手紙を書いてください。\n\nルール:\n- 診断しない。\n- 治療判断をしない。\n- インスリン量、薬、医療機器設定の変更を指示しない。\n- 責めない。怖がらせない。急かさない。\n- 血糖データを採点ではなく、振り返りの手がかりとして扱う。\n- 子どもにも伝わるくらいやさしい言葉にする。\n- 3〜6文くらいの短いお手紙にする。\n\n血糖サマリー:\n- ページ種別: ${summary.pageMode}\n- 期間: ${summary.period}\n- スロット: ${summary.slotLabel}\n- 表示範囲: ${summary.rangeLabel}\n- 最新測定: ${summary.latestMeasuredAt}\n- 現在血糖: ${summary.currentGlucose ?? "--"} mg/dL\n- 矢印: ${summary.direction}\n- 前回との差分: ${summary.delta} mg/dL\n- TIR: ${summary.metrics.tir}%\n- TAR: ${summary.metrics.tar}%\n- TBR: ${summary.metrics.tbr}%\n- 平均血糖: ${summary.metrics.averageGlucose} mg/dL\n- CV: ${summary.metrics.cv}%\n- GMI目安: ${summary.metrics.gmi}%\n- GlucoScore: ${summary.metrics.glucoScore}\n- 比較期間のGlucoScore: ${summary.metrics.previousScore ?? "--"}\n- 過去7日平均GlucoScore: ${summary.metrics.sevenDayAverageScore ?? "--"}\n- 振り返りヒント:\n${summary.patternHints.map((hint) => `  - ${hint}`).join("\n")}\n\nグルコとして、そばにいる小さなともだちのように書いてください。`;
+  return `あなたはGlucoScope公式AIパートナー「グルコ」です。\n\n下の血糖サマリーだけをもとに、糖尿病とともに生きる人へ、短くてやさしいお手紙を書いてください。\n\nルール:\n- 診断しない。\n- 治療判断をしない。\n- インスリン量、薬、医療機器設定の変更を指示しない。\n- 責めない。怖がらせない。急かさない。\n- 血糖データを採点ではなく、振り返りの手がかりとして扱う。\n- 子どもにも伝わるくらいやさしい言葉にする。\n- 3〜6文くらいの短いお手紙にする。\n\n血糖サマリー:\n- ページ種別: ${summary.pageMode}\n- 期間: ${summary.period}\n- お手紙の時間: ${summary.slotLabel}\n- 表示範囲: ${summary.rangeLabel}\n- 最新測定: ${summary.latestMeasuredAt}\n- 現在血糖: ${summary.currentGlucose ?? "--"} mg/dL\n- 矢印: ${summary.direction}\n- 前回との差分: ${summary.delta} mg/dL\n- TIR: ${summary.metrics.tir}%\n- TAR: ${summary.metrics.tar}%\n- TBR: ${summary.metrics.tbr}%\n- 平均血糖: ${summary.metrics.averageGlucose} mg/dL\n- CV: ${summary.metrics.cv}%\n- GMI目安: ${summary.metrics.gmi}%\n- GlucoScore: ${summary.metrics.glucoScore}\n- 比較期間のGlucoScore: ${summary.metrics.previousScore ?? "--"}\n- 過去7日平均GlucoScore: ${summary.metrics.sevenDayAverageScore ?? "--"}\n- 振り返りヒント:\n${summary.patternHints.map((hint) => `  - ${hint}`).join("\n")}\n\nグルコとして、そばにいる小さなともだちのように書いてください。`;
 }
 
 async function copyTextToClipboard(text) {
