@@ -238,9 +238,9 @@ const translations = {
     highLineLabel: "高血糖ライン 180",
     deltaUnavailable: "前回更新との差分はまだ表示できません",
     deltaTitle: "前回更新との差分",
-    scoreExcellent: "落ち着いた時間がたくさん見えているよ。今日の流れをやさしく見てみよう。",
+    scoreExcellent: "落ち着いた時間がたくさん見えているよ。流れをやさしく見てみよう。",
     scoreGreat: "良い流れが見えているよ。小さな手がかりも見つかっているね。",
-    scoreGood: "落ち着きも見えているよ。今日の流れを一緒に見よう。",
+    scoreGood: "落ち着きも見えているよ。流れを一緒に見よう。",
     scoreFair: "少し動きも見えているよ。明日のヒントとして一緒に見よう。",
     scoreGentle: "ゆらぎも見えているよ。無理せず、流れをやさしく見よう。"
   },
@@ -353,11 +353,11 @@ const translations = {
     highLineLabel: "High line 180",
     deltaUnavailable: "The difference from the previous update is not available yet",
     deltaTitle: "Difference from previous update",
-    scoreExcellent: "There are many steady moments today. Let’s look gently together.",
-    scoreGreat: "A gentle flow is visible today. Small clues are showing up too.",
+    scoreExcellent: "There are many steady moments. Let’s look gently together.",
+    scoreGreat: "A gentle flow is visible. Small clues are showing up too.",
     scoreGood: "There are steady moments too. Let’s look together.",
-    scoreFair: "There is some movement today. We can use it as a gentle clue.",
-    scoreGentle: "Today looks a little wavy. Let’s look gently, without forcing it."
+    scoreFair: "There is some movement. We can use it as a gentle clue.",
+    scoreGentle: "Some waviness is visible. Let’s look gently, without forcing it."
   }
 };
 
@@ -1458,72 +1458,92 @@ function setupChatGptHandoff() {
   }
 }
 
-function makeComment(tir, tar, tbr, avg, cv) {
+function getRuleCommentPeriodText(periodKey = currentLivePeriod) {
+  if (currentLanguage === "en") {
+    if (periodKey === "today") return "today";
+    if (periodKey === "yesterday") return "yesterday";
+    if (periodKey === "seven") return "in this 7-day view";
+    if (periodKey === "thirty") return "in this 30-day view";
+    if (periodKey === "custom") return "in this selected range";
+    return "in this selected range";
+  }
+
+  if (periodKey === "today") return "今日は";
+  if (periodKey === "yesterday") return "昨日は";
+  if (periodKey === "seven") return "この7日間は";
+  if (periodKey === "thirty") return "この30日間は";
+  if (periodKey === "custom") return "選んだ期間は";
+  return "この期間は";
+}
+
+function makeComment(tir, tar, tbr, avg, cv, periodKey = currentLivePeriod) {
+  const periodText = getRuleCommentPeriodText(periodKey);
+
   if (currentLanguage === "en") {
     if (Number(tir) >= 90 && Number(tbr) < 4 && Number(cv) < 30) {
       return `Gluco is here 🍀
-There are many steady moments today.
+There are many steady moments ${periodText}.
 TIR is ${tir}%, and average glucose is ${avg}mg/dL.
 This flow can be a gentle clue for tomorrow too.`;
     }
 
     if (Number(tbr) >= 4) {
       return `Gluco is here 🍀
-Some lower moments are visible today.
+Some lower moments are visible ${periodText}.
 TBR is ${tbr}%.
 When you have time, looking back at overnight or pre-meal flow may give you a gentle clue.`;
     }
 
     if (Number(tar) >= 20) {
       return `Gluco is here 🍀
-Some higher moments are visible today.
+Some higher moments are visible ${periodText}.
 TAR is ${tar}%.
 Post-meal or afternoon flow may hold a small clue, without blaming the numbers.`;
     }
 
     if (Number(cv) >= 36) {
       return `Gluco is here 🍀
-Today looks a little wavy.
+The glucose flow looks a little wavy ${periodText}.
 CV is ${cv}%.
 You do not have to force anything; we can simply notice when the ups and downs appeared.`;
     }
 
     return `Gluco is here 🍀
-There are steady moments in today’s flow.
+There are steady moments ${periodText}.
 TIR is ${tir}%.
 Let’s keep using these numbers as small clues, not as a judgment.`;
   }
 
   if (Number(tir) >= 90 && Number(tbr) < 4 && Number(cv) < 30) {
     return `グルコだよ🍀
-今日は落ち着いた時間がたくさん見えているよ。
+${periodText}落ち着いた時間がたくさん見えているよ。
 TIRは${tir}%、平均血糖は${avg}mg/dLだったね。
 この流れも、明日を少し楽にするためのやさしい手がかりになりそうだよ。`;
   }
 
   if (Number(tbr) >= 4) {
     return `グルコだよ🍀
-今日は低めの時間が少し見えているよ。
+${periodText}低めの時間も少し見えているよ。
 TBRは${tbr}%だったね。
 夜間や食前の流れを、あとでそっと振り返る手がかりにできそうだよ。`;
   }
 
   if (Number(tar) >= 20) {
     return `グルコだよ🍀
-今日は高めの時間も少し見えているよ。
+${periodText}高めの時間も少し見えているよ。
 TARは${tar}%だったね。
 食後や午後の流れをやさしく見返すと、小さなヒントが見つかるかもしれないね。`;
   }
 
   if (Number(cv) >= 36) {
     return `グルコだよ🍀
-今日は血糖の動きが少し大きめに見えているよ。
+${periodText}血糖の動きが少し大きめに見えているよ。
 CVは${cv}%だったね。
 無理に整えようとしなくて大丈夫。どの時間帯に動きがあったか、一緒にそっと見てみよう。`;
   }
 
   return `グルコだよ🍀
-今日は落ち着いている時間もちゃんと見えているよ。
+${periodText}落ち着いている時間もちゃんと見えているよ。
 TIRは${tir}%だったね。
 血糖はあなたを責める数字じゃなくて、明日を少し楽にするための手がかりだよ。`;
 }
@@ -2311,7 +2331,7 @@ async function loadDailyStats() {
     }));
 
     document.getElementById("comment").textContent =
-      makeComment(tir, tar, tbr, avg, cv, latest?.sgv ?? "--");
+      makeComment(tir, tar, tbr, avg, cv, currentLivePeriod);
 
   } catch (error) {
     console.error(error);
