@@ -497,3 +497,35 @@ The OpenAI prompt must preserve GlucoScope safety boundaries:
 - no pump or device setting advice
 - no blame, fear, pressure, scoring, or judgment
 - summarized data only
+
+
+---
+
+## 14. Turnstile Verification Scaffold
+
+The Worker supports optional Cloudflare Turnstile verification.
+
+Default local mode:
+
+```text
+TURNSTILE_REQUIRED=false
+```
+
+Production mode:
+
+```text
+TURNSTILE_REQUIRED=true
+TURNSTILE_SECRET_KEY=<secret>
+```
+
+Request field:
+
+```json
+{
+  "turnstileToken": "..."
+}
+```
+
+If Turnstile is required and verification fails, the Worker returns `turnstile_failed` and must not call OpenAI.
+
+The frontend should show a gentle retry message.

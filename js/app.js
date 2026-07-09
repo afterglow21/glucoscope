@@ -172,6 +172,7 @@ const translations = {
     aiLetterStatusRateLimited: "今日の新しいAIお手紙は上限に達しました。表示中または保存済みのお手紙があれば、そのまま読めます。ChatGPTコピー機能も使えます🍀",
     aiLetterStatusBudgetStopped: "今月のAI分析は利用上限に近づいたため、新しいお手紙を少しお休みしています。",
     aiLetterStatusDisabled: "AI分析はただいまお休み中です。いつものグルコのお話とChatGPTコピー機能は使えます🍀",
+    aiLetterStatusTurnstileFailed: "AI分析の安全確認がうまくいきませんでした。少し時間をおいて、もう一度試してください🍀",
     aiLetterStatusError: "AI分析のテスト呼び出しに失敗しました。Workerが起動しているか確認してください。",
     chatGptLetterTitle: "🤖 ChatGPTで分析",
     chatGptLetterBadge: "コピー",
@@ -1476,7 +1477,19 @@ function getAiLetterErrorStatusKey(data) {
   if (code === "rate_limited") return "aiLetterStatusRateLimited";
   if (code === "budget_stopped") return "aiLetterStatusBudgetStopped";
   if (code === "ai_disabled") return "aiLetterStatusDisabled";
+  if (code === "turnstile_failed") return "aiLetterStatusTurnstileFailed";
   return "aiLetterStatusError";
+}
+
+function getTurnstileTokenForAiLetter() {
+  const responseInput = document.querySelector("[name='cf-turnstile-response']");
+  if (responseInput && responseInput.value) return responseInput.value;
+
+  if (typeof window !== "undefined" && typeof window.glucoTurnstileToken === "string") {
+    return window.glucoTurnstileToken;
+  }
+
+  return "";
 }
 
 function getAiLetterSlot(date = new Date()) {
@@ -1707,6 +1720,7 @@ async function handleAiLetterRequest() {
       },
       body: JSON.stringify({
         summary: latestAiLetterSummary,
+        turnstileToken: getTurnstileTokenForAiLetter(),
         client: {
           app: "GlucoScope",
           mode: "worker-prototype"

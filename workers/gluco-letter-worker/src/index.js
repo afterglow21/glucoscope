@@ -6,6 +6,7 @@ const DEFAULT_GUARD_CONFIG = {
   provider: "prototype",
   openAiModel: "gpt-5.4-nano",
   openAiMaxOutputTokens: 700,
+  turnstileRequired: false,
   dailyGenerationLimit: 3,
   slotGenerationLimit: 1,
   monthlyBudgetJpy: 1000,
@@ -83,6 +84,7 @@ function readGuardConfig(env = {}) {
     provider,
     openAiModel: env.OPENAI_MODEL || DEFAULT_GUARD_CONFIG.openAiModel,
     openAiMaxOutputTokens: Math.max(100, Math.floor(readNumber(env.OPENAI_MAX_OUTPUT_TOKENS, DEFAULT_GUARD_CONFIG.openAiMaxOutputTokens))),
+    turnstileRequired: readBoolean(env.TURNSTILE_REQUIRED, DEFAULT_GUARD_CONFIG.turnstileRequired),
     dailyGenerationLimit: Math.max(0, Math.floor(readNumber(env.AI_DAILY_GENERATION_LIMIT, DEFAULT_GUARD_CONFIG.dailyGenerationLimit))),
     slotGenerationLimit: Math.max(0, Math.floor(readNumber(env.AI_SLOT_GENERATION_LIMIT, DEFAULT_GUARD_CONFIG.slotGenerationLimit))),
     monthlyBudgetJpy,
@@ -543,6 +545,104 @@ function buildUsagePayload({ state, requestUsage, config, summary = {} }) {
   };
 }
 
+function getTurnstileToken(payload = {}) {
+  return payload.turnstileToken || payload?.turnstile?.token || "";
+}
+
+async function verifyTurnstileToken({ payload, request, env, config }) {
+  if (!config.turnstileRequired) {
+    return {
+      required: false,
+      verified: false,
+      skipped: true
+    };
+  }
+
+  const token = getTurnstileToken(payload);
+  if (!token) {
+    return {
+      required: true,
+      verified: false,
+      skipped: false,
+      code: "missing_turnstile_token",
+      message: "Missing Turnstile token."
+    };
+  }
+
+  if (!env.TURNSTILE_SECRET_KEY) {
+    return {
+      required: true,
+      verified: false,
+      skipped: false,
+      code: "missing_turnstile_secret",
+      message: "Missing TURNSTILE_SECRET_KEY."
+    };
+  }
+
+  const formData = new URLSearchParams();
+  formData.append("secret", env.TURNSTILE_SECRET_KEY);
+  formData.append("response", token);
+
+  const remoteIp = request.headers.get("CF-Connecting-IP");
+  if (remoteIp) formData.append("remoteip", remoteIp);
+
+  try {
+    const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      body: formData
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || result.success !== true) {
+      return {
+        required: true,
+        verified: false,
+        skipped: false,
+        code: "turnstile_failed",
+        message: "Turnstile verification failed.",
+        details: {
+          errorCodes: result["error-codes"] || []
+        }
+      };
+    }
+
+    return {
+      required: true,
+      verified: true,
+      skipped: false,
+      challengeTs: result.challenge_ts || null,
+      hostname: result.hostname || null
+    };
+  } catch (error) {
+    return {
+      required: true,
+      verified: false,
+      skipped: false,
+      code: "turnstile_unavailable",
+      message: error.message || "Turnstile verification request failed."
+    };
+  }
+}
+
+function buildTurnstileError(turnstileVerification = {}) {
+  return {
+    code: "turnstile_failed",
+    message: turnstileVerification.message || "Turnstile verification failed.",
+    userMessage: "AI分析の安全確認がうまくいきませんでした。少し時間をおいて、もう一度試してください🍀",
+    retryable: true,
+    details: {
+      reason: turnstileVerification.code || "turnstile_failed",
+      turnstile: {
+        required: true,
+        verified: false,
+        skipped: false
+      },
+      provider: "cloudflare-turnstile",
+      ...(turnstileVerification.details || {})
+    }
+  };
+}
+
 function buildSlotRemainingCounts(state, config) {
   ensureSlotCounters(state);
 
@@ -554,7 +654,7 @@ function buildSlotRemainingCounts(state, config) {
   };
 }
 
-function buildGuardPayload({ state, config, budgetBlocked = false, summary = {} }) {
+function buildGuardPayload({ state, config, budgetBlocked = false, summary = {}, turnstileVerification = {} }) {
   ensureSlotCounters(state);
 
   const slotKey = normalizeSlot(summary.slot);
@@ -567,8 +667,8 @@ function buildGuardPayload({ state, config, budgetBlocked = false, summary = {} 
   const slotRateLimited = slotGenerationCount >= config.slotGenerationLimit;
 
   return {
-    turnstileRequired: false,
-    turnstileVerified: false,
+    turnstileRequired: config.turnstileRequired,
+    turnstileVerified: Boolean(turnstileVerification.verified),
     rateLimited: totalRateLimited || slotRateLimited,
     totalRateLimited,
     slotRateLimited,
@@ -592,7 +692,7 @@ function buildGuardPayload({ state, config, budgetBlocked = false, summary = {} 
   };
 }
 
-function buildSuccessPayload({ summary, payload, status, usageState, requestUsage, config, generationResult }) {
+function buildSuccessPayload({ summary, payload, status, usageState, requestUsage, config, generationResult, turnstileVerification = {} }) {
   const cached = status === "cached";
   const generatedAt = new Date().toISOString();
   const source = generationResult.provider === "openai" ? "openai" : "prototype-worker";
@@ -624,7 +724,8 @@ function buildSuccessPayload({ summary, payload, status, usageState, requestUsag
       state: usageState,
       config,
       budgetBlocked: false,
-      summary
+      summary,
+      turnstileVerification
     })
   };
 }
@@ -657,7 +758,7 @@ function buildRateLimitedUserMessage({ summary = {}, reason = "total" }) {
   return "今日の新しいAIお手紙は上限に達しました。表示中のお手紙はそのまま読めます。ChatGPTコピー機能も使えます🍀";
 }
 
-function buildGuardError(status, { usageState, config, payload, summary = {}, reason = "manual" }) {
+function buildGuardError(status, { usageState, config, payload, summary = {}, reason = "manual", turnstileVerification = {} }) {
   ensureSlotCounters(usageState);
   const slotKey = normalizeSlot(summary.slot);
 
@@ -675,7 +776,7 @@ function buildGuardError(status, { usageState, config, payload, summary = {}, re
       details: {
         reason,
         usage: buildUsagePayload({ state: usageState, requestUsage: emptyRequestUsage(), config, summary }),
-        guard: buildGuardPayload({ state: usageState, config, budgetBlocked: false, summary }),
+        guard: buildGuardPayload({ state: usageState, config, budgetBlocked: false, summary, turnstileVerification }),
         clientMode: getClientMode(payload)
       }
     };
@@ -693,7 +794,7 @@ function buildGuardError(status, { usageState, config, payload, summary = {}, re
       status: 402,
       details: {
         usage: buildUsagePayload({ state: usageState, requestUsage: emptyRequestUsage(), config, summary }),
-        guard: buildGuardPayload({ state: usageState, config, budgetBlocked: true, summary }),
+        guard: buildGuardPayload({ state: usageState, config, budgetBlocked: true, summary, turnstileVerification }),
         clientMode: getClientMode(payload)
       }
     };
@@ -711,7 +812,7 @@ function buildGuardError(status, { usageState, config, payload, summary = {}, re
       status: 503,
       details: {
         usage: buildUsagePayload({ state: usageState, requestUsage: emptyRequestUsage(), config, summary }),
-        guard: buildGuardPayload({ state: usageState, config, budgetBlocked: false, summary }),
+        guard: buildGuardPayload({ state: usageState, config, budgetBlocked: false, summary, turnstileVerification }),
         clientMode: getClientMode(payload)
       }
     };
@@ -795,7 +896,7 @@ function buildUsageReport({ state, config }) {
           : 0
       },
       guard: {
-        turnstileRequired: false,
+        turnstileRequired: config.turnstileRequired,
         turnstileVerified: false,
         rateLimited: state.dailyGenerationCount >= config.dailyGenerationLimit,
         totalRateLimited: state.dailyGenerationCount >= config.dailyGenerationLimit,
@@ -876,6 +977,20 @@ export default {
       }, 400);
     }
 
+    const turnstileVerification = await verifyTurnstileToken({
+      payload,
+      request,
+      env,
+      config
+    });
+
+    if (config.turnstileRequired && !turnstileVerification.verified) {
+      return errorResponse(
+        buildTurnstileError(turnstileVerification),
+        turnstileVerification.code === "missing_turnstile_secret" ? 500 : 403
+      );
+    }
+
     const prototypeStatus = getPrototypeStatus(payload);
     const effectiveUsageState = applyDebugUsageOverrides(usageState, payload);
     const forcedGuardError = buildGuardError(prototypeStatus, {
@@ -883,7 +998,8 @@ export default {
       config,
       payload,
       summary,
-      reason: "manual"
+      reason: "manual",
+      turnstileVerification
     });
 
     if (forcedGuardError) {
@@ -904,7 +1020,8 @@ export default {
         config,
         payload,
         summary,
-        reason: guardBlock.reason
+        reason: guardBlock.reason,
+        turnstileVerification
       });
       const { status, ...errorBody } = guardError;
       return errorResponse(errorBody, status);
@@ -951,7 +1068,8 @@ export default {
       usageState,
       requestUsage,
       config,
-      generationResult
+      generationResult,
+      turnstileVerification
     }));
   }
 };

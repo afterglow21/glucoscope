@@ -230,3 +230,24 @@ The OpenAI prompt tells gluco to:
 - avoid blame, fear, judgment, or pressure
 
 The frontend still sends summarized data only.
+
+
+## Turnstile verification scaffold
+
+Local development stays OFF by default:
+
+```text
+TURNSTILE_REQUIRED=false
+```
+
+Production can require Cloudflare Turnstile before OpenAI generation:
+
+```text
+TURNSTILE_REQUIRED=true
+TURNSTILE_SECRET_KEY=<Cloudflare secret>
+```
+
+The frontend sends `turnstileToken` when a Turnstile widget is added.  
+The Worker verifies that token with Cloudflare Siteverify before cache, usage guard, or OpenAI generation.
+
+OpenAI must not be called when verification fails.
