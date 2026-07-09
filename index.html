@@ -175,9 +175,19 @@
   </section>
 
   <section class="card comment-card">
-    <div class="comment-card-header">
+    <div class="comment-card-header gluco-letter-title-row">
       <div class="label" data-i18n-key="letterTitle">✉ グルコからのお手紙</div>
-      <div class="comment-tag">gluco message</div>
+      <div id="glucoLetterControls" class="gluco-letter-controls">
+        <div class="gluco-letter-controls-inner">
+          <div class="gluco-letter-control-group">
+            <span id="glucoLetterModeTitle" class="gluco-letter-control-title">分析</span>
+            <div class="gluco-letter-mode-toggle" role="group" aria-label="分析モード">
+              <button id="aiModeLetterToggle" type="button" class="gluco-letter-mode-toggle-button" data-ai-mode-toggle="letter" onclick="window.glucoSetAiLetterMode?.('letter')">🍀 やさしい分析</button>
+              <button id="aiModeDeepToggle" type="button" class="gluco-letter-mode-toggle-button" data-ai-mode-toggle="deep" onclick="window.glucoSetAiLetterMode?.('deep')">📊 しっかり</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="gluco-comment">
       <div class="gluco-comment-avatar">
@@ -201,10 +211,9 @@
               <span class="letter-section-title" data-i18n-key="aiLetterTitle">✨ AI分析 beta</span>
               <span id="aiSlotBadge" class="letter-section-badge ai-slot-badge">--</span>
             </div>
-            <p class="letter-section-lead" data-i18n-key="aiLetterLead">朝・昼・夜の3回、グルコがより自然なお手紙を作る予定です。</p>
+            <p class="letter-section-lead" data-i18n-key="aiLetterLead">朝・昼・夜のスロットで、グルコがより自然なお手紙を作る予定です。</p>
             <button id="aiLetterButton" type="button" class="letter-primary-button" disabled data-i18n-key="aiLetterButtonPreparing">AI分析は準備中</button>
             <div id="aiLetterStatus" class="letter-panel-status" data-i18n-key="aiLetterStatusPreparing">Cloudflare Worker接続前なので、まだAPIは呼び出しません。</div>
-            <div id="aiLetterResult" class="ai-letter-result" hidden></div>
           </div>
 
           <div class="letter-action-panel chatgpt-letter-panel">

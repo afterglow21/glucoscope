@@ -1,5 +1,6 @@
 const CONTRACT_VERSION = "gluco-ai-letter-worker-response-v0.1";
 const LETTER_SLOT_KEYS = ["morning", "afternoon", "night"];
+const ANALYSIS_MODE_KEYS = ["letter", "deep"];
 
 const DEFAULT_GUARD_CONFIG = {
   aiEnabled: true,
@@ -7,7 +8,7 @@ const DEFAULT_GUARD_CONFIG = {
   openAiModel: "gpt-5.4-nano",
   openAiMaxOutputTokens: 700,
   turnstileRequired: false,
-  dailyGenerationLimit: 3,
+  dailyGenerationLimit: 6,
   slotGenerationLimit: 1,
   monthlyBudgetJpy: 1000,
   warningBudgetJpy: 800,
@@ -117,8 +118,36 @@ function createEmptySlotCounts() {
   };
 }
 
+function createEmptyModeCounts() {
+  return {
+    letter: 0,
+    deep: 0
+  };
+}
+
+function createEmptyModeSlotCounts() {
+  return {
+    letter: createEmptySlotCounts(),
+    deep: createEmptySlotCounts()
+  };
+}
+
 function normalizeSlot(slot) {
   return LETTER_SLOT_KEYS.includes(slot) ? slot : "unknown";
+}
+
+function normalizeAnalysisMode(mode) {
+  return ANALYSIS_MODE_KEYS.includes(mode) ? mode : "letter";
+}
+
+function getAnalysisMode(payload = {}, summary = {}) {
+  return normalizeAnalysisMode(payload.analysisMode || summary.analysisMode);
+}
+
+function getAnalysisModeLabel(mode = "letter", language = "ja") {
+  const normalizedMode = normalizeAnalysisMode(mode);
+  if (language === "en") return normalizedMode === "deep" ? "detailed analysis" : "gentle analysis";
+  return normalizedMode === "deep" ? "しっかり分析" : "やさしい分析";
 }
 
 function getSlotLabel(summary = {}, language = "ja") {
@@ -149,14 +178,22 @@ function createUsageState(now = new Date(), config = DEFAULT_GUARD_CONFIG) {
     dailyRateLimitedCount: 0,
     dailyTurnstileVerifiedCount: 0,
     dailyTurnstileFailedCount: 0,
+    dailyModeGenerationCounts: createEmptyModeCounts(),
+    dailyModeCacheHitCounts: createEmptyModeCounts(),
+    dailyModeRateLimitedCounts: createEmptyModeCounts(),
     dailySlotGenerationCounts: createEmptySlotCounts(),
     dailySlotCacheHitCounts: createEmptySlotCounts(),
     dailySlotRateLimitedCounts: createEmptySlotCounts(),
+    dailyModeSlotGenerationCounts: createEmptyModeSlotCounts(),
+    dailyModeSlotCacheHitCounts: createEmptyModeSlotCounts(),
+    dailyModeSlotRateLimitedCounts: createEmptyModeSlotCounts(),
     monthlyGenerationCount: 0,
     monthlyCacheHitCount: 0,
     monthlyBudgetBlockedCount: 0,
     monthlyAiDisabledCount: 0,
     monthlyTurnstileVerifiedCount: 0,
+    monthlyModeGenerationCounts: createEmptyModeCounts(),
+    monthlyModeCacheHitCounts: createEmptyModeCounts(),
     monthlyTurnstileFailedCount: 0,
     inputTokens: 0,
     outputTokens: 0,
@@ -164,6 +201,59 @@ function createUsageState(now = new Date(), config = DEFAULT_GUARD_CONFIG) {
     startedAt: now.toISOString(),
     updatedAt: now.toISOString()
   };
+}
+
+function ensureModeCounters(state) {
+  state.dailyModeGenerationCounts = {
+    ...createEmptyModeCounts(),
+    ...(state.dailyModeGenerationCounts || {})
+  };
+  state.dailyModeCacheHitCounts = {
+    ...createEmptyModeCounts(),
+    ...(state.dailyModeCacheHitCounts || {})
+  };
+  state.dailyModeRateLimitedCounts = {
+    ...createEmptyModeCounts(),
+    ...(state.dailyModeRateLimitedCounts || {})
+  };
+  state.monthlyModeGenerationCounts = {
+    ...createEmptyModeCounts(),
+    ...(state.monthlyModeGenerationCounts || {})
+  };
+  state.monthlyModeCacheHitCounts = {
+    ...createEmptyModeCounts(),
+    ...(state.monthlyModeCacheHitCounts || {})
+  };
+}
+
+function ensureModeSlotCounters(state) {
+  state.dailyModeSlotGenerationCounts = {
+    ...createEmptyModeSlotCounts(),
+    ...(state.dailyModeSlotGenerationCounts || {})
+  };
+  state.dailyModeSlotCacheHitCounts = {
+    ...createEmptyModeSlotCounts(),
+    ...(state.dailyModeSlotCacheHitCounts || {})
+  };
+  state.dailyModeSlotRateLimitedCounts = {
+    ...createEmptyModeSlotCounts(),
+    ...(state.dailyModeSlotRateLimitedCounts || {})
+  };
+
+  for (const mode of ANALYSIS_MODE_KEYS) {
+    state.dailyModeSlotGenerationCounts[mode] = {
+      ...createEmptySlotCounts(),
+      ...(state.dailyModeSlotGenerationCounts[mode] || {})
+    };
+    state.dailyModeSlotCacheHitCounts[mode] = {
+      ...createEmptySlotCounts(),
+      ...(state.dailyModeSlotCacheHitCounts[mode] || {})
+    };
+    state.dailyModeSlotRateLimitedCounts[mode] = {
+      ...createEmptySlotCounts(),
+      ...(state.dailyModeSlotRateLimitedCounts[mode] || {})
+    };
+  }
 }
 
 function ensureSlotCounters(state) {
@@ -179,6 +269,8 @@ function ensureSlotCounters(state) {
     ...createEmptySlotCounts(),
     ...(state.dailySlotRateLimitedCounts || {})
   };
+  ensureModeCounters(state);
+  ensureModeSlotCounters(state);
 }
 
 function getUsageState(config, now = new Date()) {
@@ -198,9 +290,15 @@ function getUsageState(config, now = new Date()) {
     prototypeUsageState.dailyRateLimitedCount = 0;
     prototypeUsageState.dailyTurnstileVerifiedCount = 0;
     prototypeUsageState.dailyTurnstileFailedCount = 0;
+    prototypeUsageState.dailyModeGenerationCounts = createEmptyModeCounts();
+    prototypeUsageState.dailyModeCacheHitCounts = createEmptyModeCounts();
+    prototypeUsageState.dailyModeRateLimitedCounts = createEmptyModeCounts();
     prototypeUsageState.dailySlotGenerationCounts = createEmptySlotCounts();
     prototypeUsageState.dailySlotCacheHitCounts = createEmptySlotCounts();
     prototypeUsageState.dailySlotRateLimitedCounts = createEmptySlotCounts();
+    prototypeUsageState.dailyModeSlotGenerationCounts = createEmptyModeSlotCounts();
+    prototypeUsageState.dailyModeSlotCacheHitCounts = createEmptyModeSlotCounts();
+    prototypeUsageState.dailyModeSlotRateLimitedCounts = createEmptyModeSlotCounts();
   }
 
   return prototypeUsageState;
@@ -236,8 +334,12 @@ function applyDebugUsageOverrides(state, payload = {}) {
   }
 
   const mockSlot = normalizeSlot(debug.mockSlot || payload?.summary?.slot);
+  const mockMode = getAnalysisMode(payload, payload?.summary || {});
   if (Number.isFinite(Number(debug.mockSlotGenerationCount))) {
-    nextState.dailySlotGenerationCounts[mockSlot] = Number(debug.mockSlotGenerationCount);
+    const mockCount = Number(debug.mockSlotGenerationCount);
+    nextState.dailySlotGenerationCounts[mockSlot] = mockCount;
+    nextState.dailyModeSlotGenerationCounts[mockMode][mockSlot] = mockCount;
+    nextState.dailyModeGenerationCounts[mockMode] = Math.max(nextState.dailyModeGenerationCounts[mockMode] || 0, mockCount);
   }
 
   return nextState;
@@ -272,15 +374,52 @@ function getPrototypeStatus(payload = {}) {
   return "success";
 }
 
-function buildPrototypeLetter(summary = {}) {
+function buildPrototypeLetter(summary = {}, mode = "letter") {
   const language = summary.language === "en" ? "en" : "ja";
   const metrics = summary.metrics || {};
   const slotLabel = getSlotLabel(summary, language);
+  const analysisMode = normalizeAnalysisMode(mode);
+  const modeLabel = getAnalysisModeLabel(analysisMode, language);
   const rangeLabel = summary.rangeLabel || "--";
   const tir = metrics.tir ?? "--";
+  const tar = metrics.tar ?? "--";
+  const tbr = metrics.tbr ?? "--";
   const avg = metrics.averageGlucose ?? "--";
+  const cv = metrics.cv ?? "--";
   const score = metrics.glucoScore ?? "--";
-  const hints = Array.isArray(summary.patternHints) ? summary.patternHints.slice(0, 2) : [];
+  const hints = Array.isArray(summary.patternHints) ? summary.patternHints.slice(0, analysisMode === "deep" ? 4 : 2) : [];
+
+  if (analysisMode === "deep") {
+    if (language === "en") {
+      const hintLines = hints.length ? hints.map((hint) => `- ${hint}`).join("\n") : "- The selected range has clues we can look back on gently.";
+      return `Gluco is here 🍀
+Detailed reflection for the ${slotLabel}.
+
+Overview
+- Range: ${rangeLabel}
+- TIR ${tir}%, TAR ${tar}%, TBR ${tbr}%
+- Average glucose ${avg}mg/dL, CV ${cv}%, GlucoScore ${score}
+
+Clues visible in the summary
+${hintLines}
+
+This is not a diagnosis or a treatment instruction. It is a gentle map for noticing patterns and discussing anything concerning with your healthcare team.`;
+    }
+
+    const hintLines = hints.length ? hints.map((hint) => `・${hint}`).join("\n") : "・表示中の期間には、あとでやさしく見返せる手がかりがありそうだよ。";
+    return `グルコだよ🍀
+これは${slotLabel}の「${modeLabel}」だよ。
+
+全体の流れ
+・表示範囲: ${rangeLabel}
+・TIR ${tir}% / TAR ${tar}% / TBR ${tbr}%
+・平均血糖 ${avg}mg/dL / CV ${cv}% / GlucoScore ${score}
+
+見えている手がかり
+${hintLines}
+
+これは診断や治療の指示ではなく、あとで主治医さんとも話しやすくするための、やさしい振り返りだよ。`;
+  }
 
   if (language === "en") {
     const hintLine = hints.length ? `\nI also noticed: ${hints.join(" / ")}` : "";
@@ -299,50 +438,64 @@ TIRは${tir}%、平均血糖は${avg}mg/dL、GlucoScoreは${score}だったよ�
 血糖はあなたを責める数字じゃなくて、今日を理解して明日を少し楽にするための手がかりだよ。`;
 }
 
-function buildOpenAiInstructions(language = "ja") {
+function buildOpenAiInstructions(language = "ja", mode = "letter") {
+  const analysisMode = normalizeAnalysisMode(mode);
+
   if (language === "en") {
+    const modeInstruction = analysisMode === "deep"
+      ? "Write a structured detailed reflection, not a medical report. Use short sections and bullet points."
+      : "Write as a short warm letter, not as a medical report.";
+
     return [
       "You are gluco, GlucoScope's gentle AI companion.",
       "You help people living with diabetes reflect on summarized glucose data with kindness.",
       "Do not diagnose, judge, blame, scare, or give treatment decisions.",
       "Do not recommend insulin doses, medication changes, pump settings, or device-setting changes.",
       "Use the provided summarized data only. Do not invent measurements.",
-      "Write as a short warm letter, not as a medical report.",
-      "Because the letter may be shown later from cache, avoid real-time wording such as 'right now' or 'current glucose'.",
+      modeInstruction,
+      "Because the response may be shown later from cache, avoid real-time wording such as 'right now' or 'current glucose'.",
       "When mentioning the latest glucose value, say 'the latest reading' or include the provided measurement time.",
-      "Use natural wording for the letter slot, such as 'today’s afternoon letter'.",
-      "Keep it concise, concrete, and gentle. End with a small reflection clue for tomorrow."
+      "Treat TIR, TAR, TBR, average glucose, CV, GMI, and GlucoScore as reflection clues, not grades.",
+      "Keep it concrete, gentle, and clear. End with a small reflection clue for tomorrow."
     ].join(" ");
   }
 
+  const modeInstruction = analysisMode === "deep"
+    ? "医療レポートではなく、絵文字アイコン付きの短い見出しと箇条書きを使った、少し詳しい分析として書きます。丁寧語の『です』『ます』『あります』『ください』は使わず、グルコらしい自然でやさしい話し方にします。"
+    : "医療レポートではなく、グルコからのやさしい分析として書きます。";
+
   return [
     "あなたはGlucoScope公式AIパートナーのグルコです。",
-    "糖尿病とともに生きる人が、血糖データを責められることなくやさしく振り返るための短いお手紙を書きます。",
+    "糖尿病とともに生きる人が、血糖データを責められることなくやさしく振り返るための文章を書きます。",
     "診断、治療判断、インスリン量、薬、ポンプ設定、デバイス設定の変更指示はしません。",
     "血糖値の良し悪しを決めつけず、評価・採点・反省を迫る言い方を避けます。",
     "与えられた集計済みサマリーだけを使い、測定値や出来事を作りません。",
-    "医療レポートではなく、グルコからのやさしいお手紙として書きます。",
-    "キャッシュ表示される可能性があるため、「今の血糖」「現在の血糖」「たった今」などのリアルタイム断定は避けます。",
-    "最新測定に触れる場合は、「最新の測定では」「○○ごろの測定では」のように時刻やサマリー上の測定であることが伝わる言い方にします。",
-    "「昼のお手紙」などの時間帯ラベルは、「今日の『昼のお手紙』だよ」のように自然な助詞で書きます。",
-    "短く、具体的で、やさしく。最後に明日を少し楽にする小さな手がかりを添えてください。"
+    modeInstruction,
+    "キャッシュ表示される可能性があるため、『今の血糖』『現在の血糖』『たった今』などのリアルタイム断定は避けます。",
+    "最新測定に触れる場合は、『最新の測定では』『○○ごろの測定では』のように時刻やサマリー上の測定であることが伝わる言い方にします。",
+    "TIR、TAR、TBR、平均血糖、CV、GMI、GlucoScoreは採点ではなく、振り返りの手がかりとして扱います。",
+    "具体的で、やさしく、読みやすく。最後に明日を少し楽にする小さな手がかりを添えてください。"
   ].join(" ");
 }
 
-function buildOpenAiPrompt(summary = {}) {
+function buildOpenAiPrompt(summary = {}, mode = "letter") {
   const language = summary.language === "en" ? "en" : "ja";
+  const analysisMode = normalizeAnalysisMode(mode);
+  const modeLabel = getAnalysisModeLabel(analysisMode, language);
   const slotLabel = getSlotLabel(summary, language);
   const metrics = summary.metrics || {};
   const hints = Array.isArray(summary.patternHints) ? summary.patternHints : [];
 
   const safeSummary = {
     language,
+    mode: analysisMode,
+    modeLabel,
     period: summary.period,
     slot: normalizeSlot(summary.slot),
     slotLabel,
     rangeLabel: summary.rangeLabel,
     latestMeasuredAt: summary.latestMeasuredAt,
-    currentGlucose: summary.currentGlucose,
+    latestGlucoseReading: summary.currentGlucose,
     direction: summary.direction,
     delta: summary.delta,
     metrics: {
@@ -356,10 +509,28 @@ function buildOpenAiPrompt(summary = {}) {
       previousScore: metrics.previousScore,
       sevenDayAverageScore: metrics.sevenDayAverageScore
     },
-    patternHints: hints.slice(0, 4)
+    patternHints: hints.slice(0, analysisMode === "deep" ? 6 : 4)
   };
 
   if (language === "en") {
+    if (analysisMode === "deep") {
+      return `Create one detailed Gluco reflection for this summarized glucose view.
+
+Requirements:
+- Start with "Gluco is here 🍀"
+- Use short emoji section labels, such as 🍀 Flow / 📊 Metric clues / 🔎 Pattern clues / 🌱 A small next reflection
+- Do not use Markdown heading marks such as #, ##, or ###
+- Mention the active time naturally: ${slotLabel}
+- Include TIR, TAR, TBR, average glucose, CV, and GlucoScore when available
+- Do not frame numbers as grades or success/failure
+- Avoid real-time wording such as "right now" because this may be shown later from cache
+- Avoid medical advice, dosing advice, diagnosis, blame, fear, or strict instructions
+- Keep it readable: about 10 to 16 short lines
+
+Summarized data:
+${JSON.stringify(safeSummary, null, 2)}`;
+    }
+
     return `Write one Gluco letter for this summarized glucose view.
 
 Requirements:
@@ -373,6 +544,28 @@ Requirements:
 - Use gentle, plain language
 
 Summarized data:
+${JSON.stringify(safeSummary, null, 2)}`;
+  }
+
+  if (analysisMode === "deep") {
+    return `この集計済み血糖サマリーをもとに、グルコからの「${modeLabel}」を1つ書いて。
+
+条件:
+- 最初は必ず「グルコだよ🍀」で始める
+- 丁寧語の「です」「ます」「あります」「ください」は使わない
+- 「###」「##」「#」などのMarkdown見出しは使わない
+- 区切りは、絵文字アイコン付きの短い見出しにする
+  例: 🍀 全体の流れ / 📊 数字の手がかり / 🔎 気になった動き / 🌱 明日の小さな見返し
+- 今の時間帯「${slotLabel}」を自然に含める
+- TIR、TAR、TBR、平均血糖、CV、GlucoScoreを、分かる範囲で具体的に扱う
+- 数字を採点、合否、成功/失敗として扱わない
+- キャッシュ表示される可能性があるため、「今」「現在」「たった今」などのリアルタイム断定を避ける
+- 医療判断、診断、インスリン量、薬、ポンプ設定、デバイス設定の助言はしない
+- 責めない、怖がらせない、急かさない
+- 10〜16行くらい。短い見出しと箇条書きを中心に、やさしく自然に書く
+- 文末は「だよ」「だね」「そう」「かも」「見えているよ」など、グルコらしいやわらかい口調にする
+
+集計済みサマリー:
 ${JSON.stringify(safeSummary, null, 2)}`;
   }
 
@@ -421,7 +614,7 @@ function getOpenAiUsage(data = {}) {
   };
 }
 
-async function callOpenAiLetter({ summary, env, config }) {
+async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
   if (!env.OPENAI_API_KEY) {
     const error = new Error("Missing OPENAI_API_KEY");
     error.code = "missing_openai_api_key";
@@ -439,8 +632,8 @@ async function callOpenAiLetter({ summary, env, config }) {
     },
     body: JSON.stringify({
       model,
-      instructions: buildOpenAiInstructions(language),
-      input: buildOpenAiPrompt(summary),
+      instructions: buildOpenAiInstructions(language, mode),
+      input: buildOpenAiPrompt(summary, mode),
       max_output_tokens: config.openAiMaxOutputTokens,
       tool_choice: "none",
       store: false
@@ -484,8 +677,10 @@ async function callOpenAiLetter({ summary, env, config }) {
 }
 
 async function generateLetter({ summary, payload, env, config, status }) {
+  const analysisMode = getAnalysisMode(payload, summary);
+
   if (status === "cached" || config.provider !== "openai") {
-    const text = buildPrototypeLetter(summary);
+    const text = buildPrototypeLetter(summary, analysisMode);
     const inputTokens = estimateInputTokens(summary);
     const outputTokens = estimateOutputTokens(text);
 
@@ -510,7 +705,8 @@ async function generateLetter({ summary, payload, env, config, status }) {
   return callOpenAiLetter({
     summary,
     env,
-    config
+    config,
+    mode: analysisMode
   });
 }
 
@@ -518,6 +714,7 @@ function buildUsagePayload({ state, requestUsage, config, summary = {} }) {
   ensureSlotCounters(state);
 
   const slotKey = normalizeSlot(summary.slot);
+  const analysisMode = normalizeAnalysisMode(summary.analysisMode);
   const monthlyEstimatedCostJpy = Number(state.estimatedCostJpy.toFixed(4));
   const budgetUsageRate = config.monthlyBudgetJpy > 0
     ? Number((monthlyEstimatedCostJpy / config.monthlyBudgetJpy * 100).toFixed(2))
@@ -531,13 +728,25 @@ function buildUsagePayload({ state, requestUsage, config, summary = {} }) {
     totalOutputTokens: state.outputTokens,
     dailyGenerationCount: state.dailyGenerationCount,
     dailyCacheHitCount: state.dailyCacheHitCount,
+    dailyModeGenerationCounts: state.dailyModeGenerationCounts,
+    dailyModeCacheHitCounts: state.dailyModeCacheHitCounts,
     dailySlotGenerationCounts: state.dailySlotGenerationCounts,
     dailySlotCacheHitCounts: state.dailySlotCacheHitCounts,
+    dailyModeSlotGenerationCounts: state.dailyModeSlotGenerationCounts,
+    dailyModeSlotCacheHitCounts: state.dailyModeSlotCacheHitCounts,
+    activeMode: {
+      key: analysisMode,
+      label: getAnalysisModeLabel(analysisMode, summary.language === "en" ? "en" : "ja"),
+      generationCount: state.dailyModeGenerationCounts[analysisMode] || 0,
+      cacheHitCount: state.dailyModeCacheHitCounts[analysisMode] || 0
+    },
     activeSlot: {
       key: slotKey,
       label: getSlotLabel(summary, summary.language === "en" ? "en" : "ja"),
-      generationCount: state.dailySlotGenerationCounts[slotKey] || 0,
-      cacheHitCount: state.dailySlotCacheHitCounts[slotKey] || 0
+      generationCount: getModeSlotCount(state, analysisMode, slotKey),
+      cacheHitCount: getModeSlotCount(state, analysisMode, slotKey, "dailyModeSlotCacheHitCounts"),
+      aggregateGenerationCount: state.dailySlotGenerationCounts[slotKey] || 0,
+      aggregateCacheHitCount: state.dailySlotCacheHitCounts[slotKey] || 0
     },
     monthlyGenerationCount: state.monthlyGenerationCount,
     monthlyCacheHitCount: state.monthlyCacheHitCount,
@@ -649,6 +858,26 @@ function buildTurnstileError(turnstileVerification = {}) {
   };
 }
 
+function getModeSlotCount(state, mode, slot, field = "dailyModeSlotGenerationCounts") {
+  ensureSlotCounters(state);
+  const normalizedMode = normalizeAnalysisMode(mode);
+  const normalizedSlot = normalizeSlot(slot);
+  return state[field]?.[normalizedMode]?.[normalizedSlot] || 0;
+}
+
+function incrementModeCount(state, field, mode, amount = 1) {
+  ensureSlotCounters(state);
+  const normalizedMode = normalizeAnalysisMode(mode);
+  state[field][normalizedMode] = (state[field][normalizedMode] || 0) + amount;
+}
+
+function incrementModeSlotCount(state, field, mode, slot, amount = 1) {
+  ensureSlotCounters(state);
+  const normalizedMode = normalizeAnalysisMode(mode);
+  const normalizedSlot = normalizeSlot(slot);
+  state[field][normalizedMode][normalizedSlot] = (state[field][normalizedMode][normalizedSlot] || 0) + amount;
+}
+
 function buildSlotRemainingCounts(state, config) {
   ensureSlotCounters(state);
 
@@ -660,17 +889,39 @@ function buildSlotRemainingCounts(state, config) {
   };
 }
 
+function buildModeSlotRemainingCounts(state, config) {
+  ensureSlotCounters(state);
+
+  const remaining = {};
+  for (const mode of ANALYSIS_MODE_KEYS) {
+    remaining[mode] = {};
+    for (const slot of [...LETTER_SLOT_KEYS, "unknown"]) {
+      remaining[mode][slot] = Math.max(0, config.slotGenerationLimit - getModeSlotCount(state, mode, slot));
+    }
+  }
+  return remaining;
+}
+
+function isAnyModeSlotRateLimited(state, config) {
+  ensureSlotCounters(state);
+  return ANALYSIS_MODE_KEYS.some((mode) => (
+    Object.values(state.dailyModeSlotGenerationCounts[mode] || {}).some((count) => count >= config.slotGenerationLimit)
+  ));
+}
+
 function buildGuardPayload({ state, config, budgetBlocked = false, summary = {}, turnstileVerification = {} }) {
   ensureSlotCounters(state);
 
   const slotKey = normalizeSlot(summary.slot);
+  const analysisMode = normalizeAnalysisMode(summary.analysisMode);
   const slotGenerationCount = state.dailySlotGenerationCounts[slotKey] || 0;
+  const modeSlotGenerationCount = getModeSlotCount(state, analysisMode, slotKey);
   const monthlyEstimatedCostJpy = Number(state.estimatedCostJpy.toFixed(4));
   const budgetWarning = monthlyEstimatedCostJpy >= config.warningBudgetJpy;
   const dailyGenerationRemaining = Math.max(0, config.dailyGenerationLimit - state.dailyGenerationCount);
-  const slotGenerationRemaining = Math.max(0, config.slotGenerationLimit - slotGenerationCount);
+  const slotGenerationRemaining = Math.max(0, config.slotGenerationLimit - modeSlotGenerationCount);
   const totalRateLimited = state.dailyGenerationCount >= config.dailyGenerationLimit;
-  const slotRateLimited = slotGenerationCount >= config.slotGenerationLimit;
+  const slotRateLimited = modeSlotGenerationCount >= config.slotGenerationLimit;
 
   return {
     turnstileRequired: config.turnstileRequired,
@@ -685,12 +936,21 @@ function buildGuardPayload({ state, config, budgetBlocked = false, summary = {},
     dailyGenerationRemaining,
     slotGenerationLimit: config.slotGenerationLimit,
     slotGenerationRemaining,
+    activeMode: {
+      key: analysisMode,
+      label: getAnalysisModeLabel(analysisMode, summary.language === "en" ? "en" : "ja"),
+      generationCount: state.dailyModeGenerationCounts[analysisMode] || 0
+    },
     activeSlot: {
       key: slotKey,
       label: getSlotLabel(summary, summary.language === "en" ? "en" : "ja"),
-      generationCount: slotGenerationCount
+      generationCount: modeSlotGenerationCount,
+      aggregateGenerationCount: slotGenerationCount
     },
+    dailyModeGenerationCounts: state.dailyModeGenerationCounts,
     dailySlotGenerationCounts: state.dailySlotGenerationCounts,
+    dailyModeSlotGenerationCounts: state.dailyModeSlotGenerationCounts,
+    modeSlotGenerationRemainingBySlot: buildModeSlotRemainingCounts(state, config),
     monthlyBudgetJpy: config.monthlyBudgetJpy,
     warningBudgetJpy: config.warningBudgetJpy,
     stopBudgetJpy: config.stopBudgetJpy,
@@ -702,6 +962,8 @@ function buildSuccessPayload({ summary, payload, status, usageState, requestUsag
   const cached = status === "cached";
   const generatedAt = new Date().toISOString();
   const source = generationResult.provider === "openai" ? "openai" : "prototype-worker";
+  const analysisMode = normalizeAnalysisMode(summary.analysisMode);
+  const language = summary.language === "en" ? "en" : "ja";
 
   return {
     status,
@@ -709,7 +971,12 @@ function buildSuccessPayload({ summary, payload, status, usageState, requestUsag
     clientMode: getClientMode(payload),
     letter: {
       text: generationResult.text,
-      language: summary.language === "en" ? "en" : "ja",
+      language,
+      analysisMode,
+      mode: {
+        key: analysisMode,
+        label: getAnalysisModeLabel(analysisMode, language)
+      },
       generatedAt,
       provider: generationResult.provider,
       model: generationResult.model,
@@ -741,6 +1008,7 @@ function buildPrototypeCacheKey(summary = {}) {
     summary.pageMode || "unknown-page",
     summary.period || "unknown-period",
     normalizeSlot(summary.slot),
+    normalizeAnalysisMode(summary.analysisMode),
     summary.rangeLabel || "unknown-range"
   ].join(":");
 }
@@ -748,29 +1016,33 @@ function buildPrototypeCacheKey(summary = {}) {
 function buildRateLimitedUserMessage({ summary = {}, reason = "total" }) {
   const language = summary.language === "en" ? "en" : "ja";
   const slotLabel = getSlotLabel(summary, language);
+  const modeLabel = getAnalysisModeLabel(summary.analysisMode, language);
 
   if (language === "en") {
     if (reason === "slot") {
-      return `Today's new ${slotLabel} has reached its limit. The letter on screen stays available, and the ChatGPT copy feature still works 🍀`;
+      return `Today's new ${slotLabel} ${modeLabel} has reached its limit. The reflection on screen stays available, and the ChatGPT copy feature still works 🍀`;
     }
 
-    return "Today's new AI letters have reached the limit. The letter on screen stays available, and the ChatGPT copy feature still works 🍀";
+    return "Today's new AI reflections have reached the limit. The reflection on screen stays available, and the ChatGPT copy feature still works 🍀";
   }
 
   if (reason === "slot") {
-    return `今日の新しい${slotLabel}は上限に達しました。表示中のお手紙はそのまま読めます。ChatGPTコピー機能も使えます🍀`;
+    return `今日の新しい${slotLabel}の${modeLabel}は上限に達しました。表示中または保存済みの振り返りはそのまま読めます。ChatGPTコピー機能も使えます🍀`;
   }
 
-  return "今日の新しいAIお手紙は上限に達しました。表示中のお手紙はそのまま読めます。ChatGPTコピー機能も使えます🍀";
+  return "今日の新しいAI振り返りは上限に達しました。表示中または保存済みの振り返りはそのまま読めます。ChatGPTコピー機能も使えます🍀";
 }
 
 function buildGuardError(status, { usageState, config, payload, summary = {}, reason = "manual", turnstileVerification = {} }) {
   ensureSlotCounters(usageState);
   const slotKey = normalizeSlot(summary.slot);
+  const analysisMode = normalizeAnalysisMode(summary.analysisMode);
 
   if (status === "rate_limited") {
     usageState.dailyRateLimitedCount += 1;
     usageState.dailySlotRateLimitedCounts[slotKey] = (usageState.dailySlotRateLimitedCounts[slotKey] || 0) + 1;
+    incrementModeCount(usageState, "dailyModeRateLimitedCounts", analysisMode);
+    incrementModeSlotCount(usageState, "dailyModeSlotRateLimitedCounts", analysisMode, slotKey);
     usageState.updatedAt = new Date().toISOString();
 
     return {
@@ -856,7 +1128,8 @@ function getGuardBlock({ status, usageState, config, summary = {} }) {
   if (usageState.dailyGenerationCount >= config.dailyGenerationLimit) return { status: "rate_limited", reason: "total" };
 
   const slotKey = normalizeSlot(summary.slot);
-  const slotGenerationCount = usageState.dailySlotGenerationCounts?.[slotKey] || 0;
+  const analysisMode = normalizeAnalysisMode(summary.analysisMode);
+  const slotGenerationCount = getModeSlotCount(usageState, analysisMode, slotKey);
   if (slotGenerationCount >= config.slotGenerationLimit) {
     return { status: "rate_limited", reason: "slot" };
   }
@@ -867,15 +1140,22 @@ function getGuardBlock({ status, usageState, config, summary = {} }) {
 function recordSuccess({ usageState, status, requestUsage, summary = {} }) {
   ensureSlotCounters(usageState);
   const slotKey = normalizeSlot(summary.slot);
+  const analysisMode = normalizeAnalysisMode(summary.analysisMode);
 
   if (status === "cached") {
     usageState.dailyCacheHitCount += 1;
     usageState.monthlyCacheHitCount += 1;
     usageState.dailySlotCacheHitCounts[slotKey] = (usageState.dailySlotCacheHitCounts[slotKey] || 0) + 1;
+    incrementModeCount(usageState, "dailyModeCacheHitCounts", analysisMode);
+    incrementModeCount(usageState, "monthlyModeCacheHitCounts", analysisMode);
+    incrementModeSlotCount(usageState, "dailyModeSlotCacheHitCounts", analysisMode, slotKey);
   } else {
     usageState.dailyGenerationCount += 1;
     usageState.monthlyGenerationCount += 1;
     usageState.dailySlotGenerationCounts[slotKey] = (usageState.dailySlotGenerationCounts[slotKey] || 0) + 1;
+    incrementModeCount(usageState, "dailyModeGenerationCounts", analysisMode);
+    incrementModeCount(usageState, "monthlyModeGenerationCounts", analysisMode);
+    incrementModeSlotCount(usageState, "dailyModeSlotGenerationCounts", analysisMode, slotKey);
     usageState.inputTokens += requestUsage.inputTokens;
     usageState.outputTokens += requestUsage.outputTokens;
     usageState.estimatedCostJpy = Number((usageState.estimatedCostJpy + requestUsage.estimatedCostJpy).toFixed(4));
@@ -898,9 +1178,15 @@ function buildUsageReport({ state, config }) {
         rateLimitedCount: state.dailyRateLimitedCount,
         turnstileVerifiedCount: state.dailyTurnstileVerifiedCount || 0,
         turnstileFailedCount: state.dailyTurnstileFailedCount || 0,
+        modeGenerationCounts: state.dailyModeGenerationCounts,
+        modeCacheHitCounts: state.dailyModeCacheHitCounts,
+        modeRateLimitedCounts: state.dailyModeRateLimitedCounts,
         slotGenerationCounts: state.dailySlotGenerationCounts,
         slotCacheHitCounts: state.dailySlotCacheHitCounts,
         slotRateLimitedCounts: state.dailySlotRateLimitedCounts,
+        modeSlotGenerationCounts: state.dailyModeSlotGenerationCounts,
+        modeSlotCacheHitCounts: state.dailyModeSlotCacheHitCounts,
+        modeSlotRateLimitedCounts: state.dailyModeSlotRateLimitedCounts,
         slotGenerationLimit: config.slotGenerationLimit
       },
       month: {
@@ -911,6 +1197,8 @@ function buildUsageReport({ state, config }) {
         aiDisabledCount: state.monthlyAiDisabledCount,
         turnstileVerifiedCount: state.monthlyTurnstileVerifiedCount || 0,
         turnstileFailedCount: state.monthlyTurnstileFailedCount || 0,
+        modeGenerationCounts: state.monthlyModeGenerationCounts,
+        modeCacheHitCounts: state.monthlyModeCacheHitCounts,
         inputTokens: state.inputTokens,
         outputTokens: state.outputTokens,
         estimatedCostJpy: Number(state.estimatedCostJpy.toFixed(4)),
@@ -927,7 +1215,7 @@ function buildUsageReport({ state, config }) {
         turnstileFailedCount: state.dailyTurnstileFailedCount || 0,
         rateLimited: state.dailyGenerationCount >= config.dailyGenerationLimit,
         totalRateLimited: state.dailyGenerationCount >= config.dailyGenerationLimit,
-        slotRateLimited: Object.values(state.dailySlotGenerationCounts).some((count) => count >= config.slotGenerationLimit),
+        slotRateLimited: isAnyModeSlotRateLimited(state, config),
         budgetBlocked: state.estimatedCostJpy >= config.stopBudgetJpy,
         budgetWarning: state.estimatedCostJpy >= config.warningBudgetJpy,
         aiEnabled: config.aiEnabled,
@@ -935,7 +1223,10 @@ function buildUsageReport({ state, config }) {
         dailyGenerationRemaining: Math.max(0, config.dailyGenerationLimit - state.dailyGenerationCount),
         slotGenerationLimit: config.slotGenerationLimit,
         slotGenerationRemainingBySlot: buildSlotRemainingCounts(state, config),
+        modeSlotGenerationRemainingBySlot: buildModeSlotRemainingCounts(state, config),
+        dailyModeGenerationCounts: state.dailyModeGenerationCounts,
         dailySlotGenerationCounts: state.dailySlotGenerationCounts,
+        dailyModeSlotGenerationCounts: state.dailyModeSlotGenerationCounts,
         monthlyBudgetJpy: config.monthlyBudgetJpy,
         warningBudgetJpy: config.warningBudgetJpy,
         stopBudgetJpy: config.stopBudgetJpy,
@@ -995,7 +1286,7 @@ export default {
       }, 400);
     }
 
-    const summary = payload?.summary;
+    let summary = payload?.summary;
     if (!summary || typeof summary !== "object") {
       return errorResponse({
         code: "missing_summary",
@@ -1003,6 +1294,11 @@ export default {
         userMessage: "AI分析用の血糖サマリーが見つかりませんでした。"
       }, 400);
     }
+
+    summary = {
+      ...summary,
+      analysisMode: getAnalysisMode(payload, summary)
+    };
 
     const turnstileVerification = await verifyTurnstileToken({
       payload,

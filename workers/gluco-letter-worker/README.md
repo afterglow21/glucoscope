@@ -264,3 +264,40 @@ TURNSTILE_SITE_KEY=0x4AAAAAADyftbRcWQW23mEa
 This value is safe to expose in browser JavaScript.
 
 The secret key must stay in the Worker environment only.
+
+
+## AI analysis modes
+
+The Worker accepts two public demo modes:
+
+```json
+{
+  "analysisMode": "letter"
+}
+```
+
+```json
+{
+  "analysisMode": "deep"
+}
+```
+
+Mode meaning:
+
+- `letter`: gentle short letter from gluco
+- `deep`: structured, more detailed reflection
+
+For the public demo, the intended guard is:
+
+```text
+3 slots × 2 modes = up to 6 new generations per day
+```
+
+Set local development to match that behavior:
+
+```text
+AI_DAILY_GENERATION_LIMIT="6"
+AI_SLOT_GENERATION_LIMIT="1"
+```
+
+The slot limit is applied per slot and per mode, so the evening gentle letter and the evening detailed reflection each have their own first-generation allowance.

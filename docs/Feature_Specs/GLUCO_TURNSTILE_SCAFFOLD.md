@@ -99,3 +99,18 @@ Successful and failed POST verifications are counted separately:
 ```
 
 This avoids confusing the usage page with the actual AI letter POST verification result.
+
+
+## Frontend Widget
+
+The AI Letter panel renders a Cloudflare Turnstile widget using the public site key.
+
+The frontend sends the resulting token as:
+
+```json
+{
+  "turnstileToken": "..."
+}
+```
+
+The token is reset after each AI Letter request because Turnstile tokens are intended for one-time server-side verification.
