@@ -2,8 +2,10 @@
 
 This is the first Cloudflare Worker prototype for GlucoScope AI Letter.
 
-It does **not** call OpenAI yet.  
+By default, it still does **not** call OpenAI.  
 It returns a fixed gentle gluco test letter from the summarized payload.
+
+OpenAI connection is available only when explicitly enabled with Worker environment settings.
 
 ## Local dev
 
@@ -173,3 +175,58 @@ Current prototype slots:
 - `night`
 
 `cached` responses do not count as new generations.
+
+
+## OpenAI connection scaffold
+
+The Worker can now call OpenAI only when this is explicitly enabled:
+
+```text
+AI_PROVIDER=openai
+OPENAI_MODEL=gpt-5.4-nano
+OPENAI_MAX_OUTPUT_TOKENS=700
+OPENAI_API_KEY=<Cloudflare secret>
+```
+
+Default mode remains:
+
+```text
+AI_PROVIDER=prototype
+```
+
+So local demo testing stays safe and does not create OpenAI API usage unless the provider is changed.
+
+### Production secret
+
+Set the API key as a Cloudflare secret. Do not put it in GitHub, frontend JavaScript, localStorage, or committed config files.
+
+```bash
+cd workers/gluco-letter-worker
+npx wrangler secret put OPENAI_API_KEY
+```
+
+Then set non-secret environment variables in Cloudflare settings or `wrangler.toml` later:
+
+```text
+AI_PROVIDER=openai
+OPENAI_MODEL=gpt-5.4-nano
+OPENAI_MAX_OUTPUT_TOKENS=700
+```
+
+### Provider behavior
+
+- `AI_PROVIDER=prototype`: fixed local gluco test letter
+- `AI_PROVIDER=openai`: calls OpenAI Responses API from the Worker
+- `cached`: does not call OpenAI and does not count as a new generation
+
+### Safety boundaries in the prompt
+
+The OpenAI prompt tells gluco to:
+
+- write a short, gentle letter
+- use summarized data only
+- avoid diagnosis or treatment decisions
+- avoid insulin dose, medication, pump setting, or device setting advice
+- avoid blame, fear, judgment, or pressure
+
+The frontend still sends summarized data only.

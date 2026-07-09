@@ -424,3 +424,76 @@ If a slot reaches its limit, the Worker returns:
 The frontend should prefer `userMessage` when present, because it can include the active slot label.
 
 The visible letter should not disappear when a guard error is returned.
+
+
+---
+
+## 13. OpenAI Provider Scaffold
+
+The Worker can optionally use OpenAI as the AI letter provider.
+
+Default mode remains the prototype provider.
+
+```text
+AI_PROVIDER=prototype
+```
+
+OpenAI mode must be explicitly enabled on the Worker side:
+
+```text
+AI_PROVIDER=openai
+OPENAI_MODEL=gpt-5.4-nano
+OPENAI_MAX_OUTPUT_TOKENS=700
+OPENAI_API_KEY=<secret>
+```
+
+The API key must be stored as a Cloudflare secret.
+
+It must never be exposed in:
+
+- GitHub Pages JavaScript
+- localStorage
+- committed repository files
+- browser-visible configuration
+
+### Provider response
+
+When OpenAI generation succeeds:
+
+```json
+{
+  "letter": {
+    "provider": "openai",
+    "model": "gpt-5.4-nano"
+  },
+  "usage": {
+    "inputTokens": 1234,
+    "outputTokens": 321,
+    "estimatedCostJpy": 0.08
+  }
+}
+```
+
+When OpenAI generation fails:
+
+```json
+{
+  "ok": false,
+  "code": "provider_error",
+  "userMessage": "AIお手紙の生成中に小さなエラーが起きました。表示中のお手紙やChatGPTコピー機能はそのまま使えます🍀"
+}
+```
+
+Provider errors should not erase the visible letter.
+
+### Prompt safety
+
+The OpenAI prompt must preserve GlucoScope safety boundaries:
+
+- no diagnosis
+- no treatment decisions
+- no insulin dose advice
+- no medication advice
+- no pump or device setting advice
+- no blame, fear, pressure, scoring, or judgment
+- summarized data only
