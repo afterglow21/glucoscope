@@ -18,7 +18,7 @@ function jsonResponse(body, status = 200) {
 function buildPrototypeLetter(summary = {}) {
   const language = summary.language === "en" ? "en" : "ja";
   const metrics = summary.metrics || {};
-  const slotLabel = summary.slotLabel || (language === "en" ? "current slot" : "今のスロット");
+  const slotLabel = summary.slotLabel || (language === "en" ? "current letter" : "今のお手紙");
   const rangeLabel = summary.rangeLabel || "--";
   const tir = metrics.tir ?? "--";
   const avg = metrics.averageGlucose ?? "--";
@@ -36,7 +36,7 @@ The numbers are not here to judge you; they are small clues for understanding to
 
   const hintLine = hints.length ? `\n見えている手がかり: ${hints.join(" / ")}` : "";
   return `グルコだよ🍀
-これは${slotLabel}のテスト用AIお手紙だよ。
+これは${slotLabel}のテスト版だよ。
 表示範囲は ${rangeLabel} だね。
 TIRは${tir}%、平均血糖は${avg}mg/dL、GlucoScoreは${score}だったよ。${hintLine}
 血糖はあなたを責める数字じゃなくて、今日を理解して明日を少し楽にするための手がかりだよ。`;
