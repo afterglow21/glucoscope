@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>GlucoScope</title>
-  <link rel="stylesheet" href="style.css?v=20260710-mobile-readability-1">
+  <link rel="stylesheet" href="style.css?v=20260710-simple-view-1">
 </head>
 <body>
 
@@ -50,6 +50,94 @@
 </div>
 
 <main id="liveView" class="view-panel active">
+
+<section id="mobileLiveSimpleView" class="mobile-simple-view" aria-label="Mobile simple glucose view">
+  <div class="mobile-simple-mode-switch" role="group" aria-label="Mobile display mode">
+    <button id="mobileSimpleModeButton" type="button" class="mobile-simple-mode-button active" data-i18n-key="mobileSimpleModeButton">🍀 やさしい表示</button>
+    <button id="mobileDetailModeButton" type="button" class="mobile-simple-mode-button" data-i18n-key="mobileDetailModeButton">📊 詳しく見る</button>
+  </div>
+
+  <section class="card mobile-simple-card mobile-simple-current-card">
+    <div class="mobile-simple-eyebrow" data-i18n-key="mobileSimpleCurrentEyebrow">いまの血糖</div>
+    <div class="mobile-simple-current-main">
+      <span id="mobileSimpleGlucoseValue" class="mobile-simple-current-value">--</span>
+      <span class="mobile-simple-current-unit">mg/dL</span>
+      <span id="mobileSimpleGlucoseDelta" class="mobile-simple-delta">--</span>
+      <span id="mobileSimpleGlucoseArrow" class="mobile-simple-arrow">→</span>
+    </div>
+    <div class="mobile-simple-status-row">
+      <span id="mobileSimpleRangeStatus" class="mobile-simple-pill">--</span>
+      <span id="mobileSimpleStatus" class="mobile-simple-pill muted">--</span>
+    </div>
+    <p class="mobile-simple-note"><span data-i18n-key="lastUpdatedLabel">最終更新</span>: <span id="mobileSimpleLastUpdate">--</span></p>
+  </section>
+
+  <section class="card mobile-simple-card mobile-simple-score-card">
+    <div class="mobile-simple-card-header">
+      <div>
+        <div class="mobile-simple-eyebrow" data-i18n-key="glucoScoreLabel">🍀 GlucoScore</div>
+        <div id="mobileSimpleScoreReason" class="mobile-simple-score-badge">--</div>
+      </div>
+      <img id="mobileSimpleScoreGlucoImage" src="assets/gluco/about/gluco-gentle-watch.png" alt="" class="mobile-simple-gluco-image">
+    </div>
+    <div class="mobile-simple-score-main">
+      <span id="mobileSimpleScoreValue" class="mobile-simple-score-value">--</span>
+      <p id="mobileSimpleScoreMessage" class="mobile-simple-score-message">--</p>
+    </div>
+    <p class="mobile-simple-note"><span id="mobileSimpleScoreYesterdayDelta">--</span><br><span id="mobileSimpleScoreSevenDayAverage">--</span></p>
+  </section>
+
+  <section class="mobile-simple-metric-grid" aria-label="Main glucose metrics">
+    <div class="mobile-simple-mini-card">
+      <span class="mobile-simple-mini-label">TIR</span>
+      <strong id="mobileSimpleTirValue">--%</strong>
+      <small data-i18n-key="tirDesc">目標範囲内の時間</small>
+    </div>
+    <div class="mobile-simple-mini-card">
+      <span class="mobile-simple-mini-label">TBR</span>
+      <strong id="mobileSimpleTbrValue">--%</strong>
+      <small data-i18n-key="tbrDesc">低血糖の時間</small>
+    </div>
+    <div class="mobile-simple-mini-card">
+      <span class="mobile-simple-mini-label" data-i18n-key="averageLabel">平均</span>
+      <strong><span id="mobileSimpleAvgValue">--</span><span class="mobile-simple-mini-unit"> mg/dL</span></strong>
+      <small data-i18n-key="avgDesc">平均血糖値</small>
+    </div>
+    <div class="mobile-simple-mini-card">
+      <span class="mobile-simple-mini-label">CV</span>
+      <strong id="mobileSimpleCvValue">--%</strong>
+      <small data-i18n-key="cvDesc">血糖のばらつき</small>
+    </div>
+  </section>
+
+  <section class="card mobile-simple-card mobile-simple-letter-card">
+    <div class="mobile-simple-card-header">
+      <div>
+        <div class="mobile-simple-eyebrow" data-i18n-key="mobileSimpleLetterEyebrow">グルコからのお手紙</div>
+        <h2 data-i18n-key="mobileSimpleLetterTitle">今日をやさしく振り返る</h2>
+      </div>
+    </div>
+
+    <div class="mobile-simple-ai-controls" role="group" aria-label="AI reflection mode">
+      <button id="mobileSimpleAiModeLetter" type="button" class="mobile-simple-mode-chip" data-ai-mode-toggle="letter" data-i18n-key="aiLetterModeLetter">🍀 やさしい分析</button>
+      <button id="mobileSimpleAiModeDeep" type="button" class="mobile-simple-mode-chip" data-ai-mode-toggle="deep" data-i18n-key="aiLetterModeDeep">📊 しっかり分析</button>
+    </div>
+
+    <div class="mobile-simple-letter-section">
+      <div class="mobile-simple-letter-section-title" data-i18n-key="ruleCommentTitle">🍀 いつものグルコのお話</div>
+      <div id="mobileSimpleRuleComment" class="mobile-simple-letter-text">データを読み込んでいます...</div>
+    </div>
+
+    <div class="mobile-simple-letter-section mobile-simple-ai-section">
+      <div class="mobile-simple-letter-section-title" data-i18n-key="aiLetterTitle">✨ AI分析 beta</div>
+      <button id="mobileSimpleAiButton" type="button" class="mobile-simple-primary-button" data-i18n-key="aiLetterButtonPreparing">AI分析は準備中</button>
+      <div id="mobileSimpleAiStatus" class="mobile-simple-ai-status">--</div>
+      <div id="mobileSimpleAiLetterResult" class="mobile-simple-letter-text mobile-simple-ai-result" hidden></div>
+    </div>
+
+    <button id="mobileSimpleShowDetailButton" type="button" class="mobile-simple-secondary-button" data-i18n-key="mobileSimpleShowDetailButton">詳しいグラフを見る</button>
+  </section>
+</section>
 <section class="hero-grid">
   <div class="card score-card hero-score-card">
     <div class="score-header">
@@ -405,6 +493,6 @@
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js"></script>
-<script src="js/app.js?v=20260710-mobile-readability-1"></script>
+<script src="js/app.js?v=20260710-simple-view-1"></script>
 </body>
 </html>

@@ -157,6 +157,12 @@ const translations = {
     languageLabel: "Language",
     glucoScoreLabel: "🍀 GlucoScore",
     currentGlucoseLabel: "現在血糖",
+    mobileSimpleModeButton: "🍀 やさしい表示",
+    mobileDetailModeButton: "📊 詳しく見る",
+    mobileSimpleCurrentEyebrow: "いまの血糖",
+    mobileSimpleLetterEyebrow: "グルコからのお手紙",
+    mobileSimpleLetterTitle: "今日をやさしく振り返る",
+    mobileSimpleShowDetailButton: "詳しいグラフを見る",
     chartTitle: "📈 血糖グラフ",
     legendToday: "血糖値",
     legendYesterday: "昨日の重ね表示",
@@ -306,6 +312,12 @@ const translations = {
     languageLabel: "Language",
     glucoScoreLabel: "🍀 GlucoScore",
     currentGlucoseLabel: "Current glucose",
+    mobileSimpleModeButton: "🍀 Simple view",
+    mobileDetailModeButton: "📊 Details",
+    mobileSimpleCurrentEyebrow: "Current glucose",
+    mobileSimpleLetterEyebrow: "Letter from Gluco",
+    mobileSimpleLetterTitle: "A gentle look at today",
+    mobileSimpleShowDetailButton: "See detailed chart",
     chartTitle: "📈 Glucose chart",
     legendToday: "Glucose",
     legendYesterday: "Yesterday overlay",
@@ -1592,6 +1604,7 @@ function applyLanguage() {
   safelyUpdateLetterControls();
   updateRuleCommentDisplay();
   updateAiLetterControls();
+  syncMobileSimpleView();
 }
 
 function setLanguage(language) {
@@ -4139,6 +4152,129 @@ function setupDatePickerButtons() {
   });
 }
 
+
+function copyTextContent(targetId, sourceSelector, fallback = "--") {
+  const target = document.getElementById(targetId);
+  const source = document.querySelector(sourceSelector);
+  if (!target) return;
+
+  const text = source?.textContent?.trim() || fallback;
+  target.textContent = text;
+}
+
+function copyHtmlContent(targetId, sourceSelector, fallback = "--") {
+  const target = document.getElementById(targetId);
+  const source = document.querySelector(sourceSelector);
+  if (!target) return;
+
+  const html = source?.innerHTML?.trim();
+  if (html) {
+    target.innerHTML = html;
+  } else {
+    target.textContent = fallback;
+  }
+}
+
+function syncMobileSimpleView() {
+  copyTextContent("mobileSimpleGlucoseValue", "#glucoseValue");
+  copyTextContent("mobileSimpleGlucoseDelta", "#glucoseDelta", "");
+  copyTextContent("mobileSimpleGlucoseArrow", "#glucoseArrow", "→");
+  copyTextContent("mobileSimpleRangeStatus", "#rangeStatus");
+  copyTextContent("mobileSimpleStatus", "#status");
+  copyTextContent("mobileSimpleLastUpdate", "#currentLastUpdate");
+
+  copyTextContent("mobileSimpleScoreValue", "#scoreValue");
+  copyTextContent("mobileSimpleScoreReason", "#scoreReason");
+  copyHtmlContent("mobileSimpleScoreMessage", ".score-message");
+  copyTextContent("mobileSimpleScoreYesterdayDelta", "#scoreYesterdayDelta", "");
+  copyTextContent("mobileSimpleScoreSevenDayAverage", "#scoreSevenDayAverage", "");
+
+  const mobileGluco = document.getElementById("mobileSimpleScoreGlucoImage");
+  const sourceGluco = document.getElementById("scoreGlucoImage");
+  if (mobileGluco && sourceGluco) {
+    mobileGluco.src = sourceGluco.src;
+    mobileGluco.alt = sourceGluco.alt || "";
+  }
+
+  copyTextContent("mobileSimpleTirValue", "#tirValue");
+  copyTextContent("mobileSimpleTbrValue", "#tbrValue");
+  copyTextContent("mobileSimpleAvgValue", "#avgValue");
+  copyTextContent("mobileSimpleCvValue", "#cvValue");
+
+  copyHtmlContent("mobileSimpleRuleComment", "#comment", currentLanguage === "en" ? "Loading glucose data..." : "データを読み込んでいます...");
+
+  const aiButton = document.getElementById("aiLetterButton");
+  const mobileAiButton = document.getElementById("mobileSimpleAiButton");
+  if (mobileAiButton && aiButton) {
+    mobileAiButton.textContent = aiButton.textContent || t("aiLetterButtonPreparing");
+    mobileAiButton.disabled = aiButton.disabled;
+  }
+
+  copyTextContent("mobileSimpleAiStatus", "#aiLetterStatus", "");
+
+  const aiResult = document.getElementById("aiLetterResult");
+  const mobileAiResult = document.getElementById("mobileSimpleAiLetterResult");
+  if (mobileAiResult) {
+    const hasAiResult = Boolean(aiResult && !aiResult.hidden && aiResult.textContent.trim());
+    mobileAiResult.hidden = !hasAiResult;
+    mobileAiResult.textContent = hasAiResult ? aiResult.textContent.trim() : "";
+  }
+
+  document.querySelectorAll(".mobile-simple-mode-chip[data-ai-mode-toggle]").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.aiModeToggle === currentAiLetterMode);
+  });
+}
+
+function setMobileLiveMode(mode = "simple") {
+  const resolvedMode = mode === "detail" ? "detail" : "simple";
+  document.body.classList.toggle("mobile-live-detail-mode", resolvedMode === "detail");
+  document.body.classList.toggle("mobile-live-simple-mode", resolvedMode !== "detail");
+  document.getElementById("mobileSimpleModeButton")?.classList.toggle("active", resolvedMode !== "detail");
+  document.getElementById("mobileDetailModeButton")?.classList.toggle("active", resolvedMode === "detail");
+}
+
+function setupMobileSimpleView() {
+  const simpleButton = document.getElementById("mobileSimpleModeButton");
+  const detailButton = document.getElementById("mobileDetailModeButton");
+  const showDetailButton = document.getElementById("mobileSimpleShowDetailButton");
+  const aiButton = document.getElementById("mobileSimpleAiButton");
+
+  simpleButton?.addEventListener("click", () => setMobileLiveMode("simple"));
+  detailButton?.addEventListener("click", () => setMobileLiveMode("detail"));
+  showDetailButton?.addEventListener("click", () => {
+    setMobileLiveMode("detail");
+    document.querySelector(".chart-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  aiButton?.addEventListener("click", () => {
+    const sourceButton = document.getElementById("aiLetterButton");
+    if (sourceButton && !sourceButton.disabled) sourceButton.click();
+  });
+
+  document.querySelectorAll(".mobile-simple-mode-chip[data-ai-mode-toggle]").forEach((button) => {
+    button.addEventListener("click", () => {
+      window.glucoSetAiLetterMode?.(button.dataset.aiModeToggle || "letter");
+      syncMobileSimpleView();
+    });
+  });
+
+  const watchTargets = [
+    "#glucoseValue", "#glucoseDelta", "#glucoseArrow", "#rangeStatus", "#status", "#currentLastUpdate",
+    "#scoreValue", "#scoreReason", ".score-message", "#scoreYesterdayDelta", "#scoreSevenDayAverage", "#scoreGlucoImage",
+    "#tirValue", "#tbrValue", "#avgValue", "#cvValue", "#comment", "#aiLetterButton", "#aiLetterStatus"
+  ];
+
+  const observer = new MutationObserver(() => syncMobileSimpleView());
+  watchTargets.forEach((selector) => {
+    const node = document.querySelector(selector);
+    if (node) observer.observe(node, { childList: true, characterData: true, subtree: true, attributes: true });
+  });
+
+  setMobileLiveMode("simple");
+  syncMobileSimpleView();
+  window.setInterval(syncMobileSimpleView, 2000);
+}
+
 function setupViewTabs() {
   const tabs = document.querySelectorAll(".view-tab");
   const panels = {
@@ -4182,6 +4318,7 @@ function setupViewTabs() {
 // data/AI initialization step has a temporary error.
 setupViewTabs();
 setupLanguageSwitch();
+setupMobileSimpleView();
 setupPeriodSwitch();
 setupCollectionShareButton();
 applyLanguage();
