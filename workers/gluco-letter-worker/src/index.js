@@ -393,7 +393,7 @@ function buildPrototypeLetter(summary = {}, mode = "letter") {
     if (language === "en") {
       const hintLines = hints.length ? hints.map((hint) => `- ${hint}`).join("\n") : "- The selected range has clues we can look back on gently.";
       return `Gluco is here 🍀
-Detailed reflection for the ${slotLabel}.
+I looked at the selected range gently.
 
 Overview
 - Range: ${rangeLabel}
@@ -408,7 +408,7 @@ This is not a diagnosis or a treatment instruction. It is a gentle map for notic
 
     const hintLines = hints.length ? hints.map((hint) => `・${hint}`).join("\n") : "・表示中の期間には、あとでやさしく見返せる手がかりがありそうだよ。";
     return `グルコだよ🍀
-これは${slotLabel}の「${modeLabel}」だよ。
+表示中のデータを、少し詳しく一緒に見ていくね。
 
 全体の流れ
 ・表示範囲: ${rangeLabel}
@@ -424,15 +424,13 @@ ${hintLines}
   if (language === "en") {
     const hintLine = hints.length ? `\nI also noticed: ${hints.join(" / ")}` : "";
     return `Gluco is here 🍀
-This is a prototype AI letter for the ${slotLabel}.
-I looked at the selected range: ${rangeLabel}.
+I looked at the selected range gently: ${rangeLabel}.
 TIR is ${tir}%, average glucose is ${avg}mg/dL, and GlucoScore is ${score}.${hintLine}
 The numbers are not here to judge you; they are small clues for understanding today and improving tomorrow.`;
   }
 
   const hintLine = hints.length ? `\n見えている手がかり: ${hints.join(" / ")}` : "";
   return `グルコだよ🍀
-これは${slotLabel}のテスト版だよ。
 表示範囲は ${rangeLabel} だね。
 TIRは${tir}%、平均血糖は${avg}mg/dL、GlucoScoreは${score}だったよ。${hintLine}
 血糖はあなたを責める数字じゃなくて、今日を理解して明日を少し楽にするための手がかりだよ。`;
@@ -520,7 +518,8 @@ Requirements:
 - Start with "Gluco is here 🍀"
 - Use short emoji section labels, such as 🍀 Flow / 📊 Metric clues / 🔎 Pattern clues / 🌱 A small next reflection
 - Do not use Markdown heading marks such as #, ##, or ###
-- Mention the active time naturally: ${slotLabel}
+- Do not write meta labels such as "This is a prototype", "This is the detailed analysis", or "This is the ${slotLabel}"
+- Mention the active time only if it reads naturally; do not force it
 - Include TIR, TAR, TBR, average glucose, CV, and GlucoScore when available
 - Do not frame numbers as grades or success/failure
 - Avoid real-time wording such as "right now" because this may be shown later from cache
@@ -536,7 +535,8 @@ ${JSON.stringify(safeSummary, null, 2)}`;
 Requirements:
 - Start with "Gluco is here 🍀"
 - 5 to 8 short lines
-- Mention the active letter time naturally, such as "today’s ${slotLabel}"
+- Do not write meta labels such as "This is a prototype" or "This is today’s ${slotLabel}"
+- Mention the active letter time only if it reads naturally; do not force it
 - Mention 1 to 3 concrete clues from the summary
 - If mentioning glucose value, use "the latest reading" and include the measurement time when available
 - Avoid real-time wording such as "right now" because the letter may be shown later from cache
@@ -556,7 +556,8 @@ ${JSON.stringify(safeSummary, null, 2)}`;
 - 「###」「##」「#」などのMarkdown見出しは使わない
 - 区切りは、絵文字アイコン付きの短い見出しにする
   例: 🍀 全体の流れ / 📊 数字の手がかり / 🔎 気になった動き / 🌱 明日の小さな見返し
-- 今の時間帯「${slotLabel}」を自然に含める
+- 「これは${slotLabel}のテスト版だよ」「これは${slotLabel}の『${modeLabel}』だよ」のような説明文は書かない
+- 時間帯ラベル「${slotLabel}」は、必要な時だけ自然に触れる。無理に入れない
 - TIR、TAR、TBR、平均血糖、CV、GlucoScoreを、分かる範囲で具体的に扱う
 - 数字を採点、合否、成功/失敗として扱わない
 - キャッシュ表示される可能性があるため、「今」「現在」「たった今」などのリアルタイム断定を避ける
@@ -574,7 +575,8 @@ ${JSON.stringify(safeSummary, null, 2)}`;
 条件:
 - 最初は「グルコだよ🍀」で始める
 - 5〜8行くらいの短いお手紙
-- 今のお手紙の時間帯「${slotLabel}」は、「今日の『${slotLabel}』だよ」のように自然な助詞で含める
+- 「これは${slotLabel}のテスト版だよ」「これは${slotLabel}の『${modeLabel}』だよ」のような説明文は書かない
+- 時間帯ラベル「${slotLabel}」は、必要な時だけ自然に触れる。無理に入れない
 - サマリーから見える具体的な手がかりを1〜3個だけ入れる
 - 血糖値に触れる場合は「今の血糖」ではなく、「最新の測定では」または「${summary.latestMeasuredAt || "最新測定"}ごろの測定では」のように書く
 - キャッシュ表示される可能性があるため、「今」「現在」「たった今」などのリアルタイム断定を避ける
