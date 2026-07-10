@@ -3448,6 +3448,8 @@ function drawGlucoseChart(entries, options = {}) {
     }
   );
 
+  const isMobileChart = window.matchMedia && window.matchMedia("(max-width: 640px)").matches;
+
   glucoseChart = new Chart(ctx, {
     type: "line",
     data: { datasets },
@@ -3458,6 +3460,9 @@ function drawGlucoseChart(entries, options = {}) {
       plugins: {
         legend: { display: false },
         tooltip: {
+          titleFont: { size: isMobileChart ? 14 : 12, weight: "700" },
+          bodyFont: { size: isMobileChart ? 14 : 12 },
+          padding: isMobileChart ? 12 : 10,
           callbacks: {
             title: (items) => {
               if (!items.length) return "";
@@ -3492,7 +3497,8 @@ function drawGlucoseChart(entries, options = {}) {
             color: "rgba(148,163,184,.10)"
           },
           ticks: {
-            maxTicksLimit: options.periodKey === "thirty" ? 7 : 8,
+            maxTicksLimit: isMobileChart ? (options.periodKey === "thirty" ? 4 : 5) : (options.periodKey === "thirty" ? 7 : 8),
+            font: { size: isMobileChart ? 12 : 11, weight: isMobileChart ? "600" : "400" },
             callback: (value) => minutesToLabel(rangeStart, Number(value), rangeDurationMs)
           }
         },
@@ -3501,6 +3507,9 @@ function drawGlucoseChart(entries, options = {}) {
           max: 250,
           grid: {
             color: "rgba(148,163,184,.10)"
+          },
+          ticks: {
+            font: { size: isMobileChart ? 12 : 11, weight: isMobileChart ? "600" : "400" }
           }
         }
       }

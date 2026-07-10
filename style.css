@@ -2581,3 +2581,376 @@ canvas{
   }
 }
 
+
+
+/* Mobile readability pass v1
+   Keep the desktop layout intact and make only narrow screens easier to read. */
+@media (max-width: 640px){
+  html{
+    -webkit-text-size-adjust:100%;
+    text-size-adjust:100%;
+  }
+
+  body{
+    font-size:16px;
+  }
+
+  .dashboard{
+    width:100%;
+    margin:0;
+    padding:12px 12px 92px;
+  }
+
+  .card{
+    padding:20px;
+    border-radius:20px;
+  }
+
+  .header{
+    gap:14px;
+    margin-bottom:16px;
+    padding-top:4px;
+  }
+
+  .brand-block h1{
+    font-size:32px;
+    margin-bottom:14px;
+  }
+
+  .brand-icon{
+    font-size:34px;
+  }
+
+  .brand-kicker{
+    font-size:14px;
+    line-height:1.45;
+    margin-bottom:14px;
+  }
+
+  .brand-story{
+    font-size:14px;
+    line-height:1.6;
+  }
+
+  .last-update,
+  .app-credit-version,
+  .app-credit-line{
+    font-size:13px;
+  }
+
+  .clock{
+    font-size:42px;
+  }
+
+  .header-date{
+    font-size:17px;
+  }
+
+  .live-indicator{
+    min-height:38px;
+    padding:8px 16px;
+    font-size:14px;
+  }
+
+  .view-toolbar{
+    flex-direction:column;
+    align-items:stretch;
+    gap:12px;
+    margin-bottom:16px;
+    padding-top:14px;
+  }
+
+  .view-tabs{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:10px;
+  }
+
+  .view-tab{
+    min-height:44px;
+    padding:10px 12px;
+    font-size:14px;
+    font-weight:800;
+  }
+
+  .language-switch{
+    justify-content:flex-start;
+    flex-wrap:wrap;
+    font-size:14px;
+  }
+
+  .language-button{
+    min-height:40px;
+    padding:8px 14px;
+    font-size:14px;
+  }
+
+  .hero-grid{
+    gap:14px;
+    margin-bottom:14px;
+  }
+
+  .hero-score-card,
+  .hero-current-card{
+    min-height:auto;
+  }
+
+  .label{
+    font-size:22px;
+  }
+
+  .score-header{
+    align-items:flex-start;
+  }
+
+  .score-badge{
+    padding:7px 14px;
+    font-size:15px;
+  }
+
+  .score-main{
+    align-items:center;
+    gap:16px;
+    margin-top:22px;
+    transform:none;
+  }
+
+  .score-value{
+    font-size:82px;
+  }
+
+  .score-message{
+    max-width:none;
+    font-size:18px;
+    line-height:1.55;
+  }
+
+  .score-meta{
+    margin-top:18px;
+    font-size:13px;
+    line-height:1.6;
+  }
+
+  #glucoseValue{
+    font-size:72px;
+  }
+
+  .current-main{
+    gap:20px;
+    margin-bottom:22px;
+  }
+
+  .arrow{
+    font-size:48px;
+  }
+
+  .unit{
+    font-size:24px;
+  }
+
+  .pill-row,
+  .status-pill{
+    min-height:40px;
+    padding:9px 15px;
+    font-size:15px;
+  }
+
+  .smartguard-row,
+  .device-pill{
+    min-height:38px;
+    font-size:14px;
+  }
+
+  .current-small-note{
+    font-size:14px;
+    line-height:1.5;
+  }
+
+  .metric-grid{
+    grid-template-columns:1fr;
+    gap:12px;
+    margin-bottom:14px;
+  }
+
+  .metric-card{
+    min-height:126px;
+    padding:20px;
+  }
+
+  .metric-label{
+    font-size:17px;
+  }
+
+  .metric-label span{
+    font-size:12px;
+  }
+
+  .metric-value{
+    font-size:44px;
+  }
+
+  .metric-unit-inline{
+    font-size:20px;
+  }
+
+  .metric-desc{
+    font-size:15px;
+    line-height:1.5;
+  }
+
+  .metric-desc small{
+    font-size:12px;
+  }
+
+  .chart-card{
+    margin-top:14px;
+  }
+
+  .chart-header{
+    gap:14px;
+  }
+
+  .period-switch{
+    justify-content:flex-start;
+    gap:8px;
+  }
+
+  .period-button{
+    min-height:40px;
+    padding:8px 13px;
+    font-size:13px;
+  }
+
+  .chart-range{
+    font-size:14px;
+    line-height:1.5;
+  }
+
+  .chart-legend{
+    gap:9px 12px;
+    font-size:13px;
+    line-height:1.45;
+  }
+
+  .chart-wrap{
+    height:330px;
+  }
+
+  .comment-card-header,
+  .letter-section-header,
+  .letter-panel-topline{
+    gap:10px;
+  }
+
+  .comment-tag,
+  .letter-section-badge{
+    white-space:normal;
+    text-align:left;
+  }
+
+  .gluco-comment{
+    gap:16px;
+  }
+
+  .gluco-comment-body{
+    padding:20px;
+  }
+
+  .gluco-comment-avatar{
+    min-height:210px;
+  }
+
+  .gluco-comment-image{
+    width:150px;
+    height:150px;
+  }
+
+  .letter-section-title{
+    font-size:18px;
+  }
+
+  .letter-section-lead,
+  .letter-panel-status{
+    font-size:14px;
+    line-height:1.7;
+  }
+
+  .letter-action-panel{
+    min-height:auto;
+    padding:20px;
+  }
+
+  .letter-primary-button,
+  .letter-secondary-button,
+  .letter-text-link{
+    min-height:44px;
+    padding:10px 16px;
+    font-size:14px;
+  }
+
+  .ai-letter-result{
+    padding:16px;
+    font-size:16px;
+    line-height:1.85;
+  }
+
+  #comment{
+    font-size:17px;
+    line-height:1.8;
+  }
+
+  .coming-soon-card{
+    padding:24px 20px;
+  }
+
+  .coming-soon-card h2{
+    font-size:26px;
+  }
+
+  .coming-soon-lead,
+  .coming-soon-note p{
+    font-size:16px;
+  }
+}
+
+@media (max-width: 420px){
+  .dashboard{
+    padding-left:10px;
+    padding-right:10px;
+  }
+
+  .card{
+    padding:18px;
+  }
+
+  .view-tabs{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .score-main{
+    gap:14px;
+  }
+
+  .score-gluco,
+  .score-gluco-image{
+    width:86px;
+    height:86px;
+    flex-basis:86px;
+  }
+
+  .score-value{
+    font-size:76px;
+  }
+
+  #glucoseValue{
+    font-size:68px;
+  }
+
+  .metric-value{
+    font-size:42px;
+  }
+
+  .chart-wrap{
+    height:315px;
+  }
+}
