@@ -145,6 +145,13 @@ const translations = {
     tabLive: "🟢 Live",
     tabJournal: "📖 Journal",
     tabClinic: "🏥 Clinic",
+    comingSoonEyebrow: "準備中",
+    journalComingSoonTitle: "📖 Journal は準備中です",
+    journalComingSoonLead: "食事、体調、気づいたことを、血糖の振り返りと一緒に残せる場所を準備しています。",
+    journalComingSoonNote: "血糖データを責めるためではなく、あとからやさしく思い出せる小さなメモ帳にしていく予定です。",
+    clinicComingSoonTitle: "🏥 Clinic は準備中です",
+    clinicComingSoonLead: "診察前に見返したい血糖の流れや、相談したいことをまとめやすくする場所を準備しています。",
+    clinicComingSoonNote: "医療判断を置き換えるものではなく、主治医との会話を少し助けるための振り返りページとして育てていきます。",
     tabCollection: "🍀 想い出",
     tabAbout: "✨ About",
     languageLabel: "Language",
@@ -287,6 +294,13 @@ const translations = {
     tabLive: "🟢 Live",
     tabJournal: "📖 Journal",
     tabClinic: "🏥 Clinic",
+    comingSoonEyebrow: "Coming soon",
+    journalComingSoonTitle: "📖 Journal is coming soon",
+    journalComingSoonLead: "A place to keep meals, how you felt, and small notes alongside glucose reflections is being prepared.",
+    journalComingSoonNote: "It will be a gentle notebook for looking back later, not a place to judge glucose data.",
+    clinicComingSoonTitle: "🏥 Clinic is coming soon",
+    clinicComingSoonLead: "A place to organize glucose patterns and notes you may want to review before clinic visits is being prepared.",
+    clinicComingSoonNote: "It will not replace medical decisions. It is meant to gently support conversations with your clinician.",
     tabCollection: "🍀 Collection",
     tabAbout: "✨ About",
     languageLabel: "Language",
@@ -4120,6 +4134,8 @@ function setupViewTabs() {
   const tabs = document.querySelectorAll(".view-tab");
   const panels = {
     live: document.getElementById("liveView"),
+    journal: document.getElementById("journalView"),
+    clinic: document.getElementById("clinicView"),
     about: document.getElementById("aboutView"),
     collection: document.getElementById("collectionView")
   };
