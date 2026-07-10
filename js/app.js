@@ -151,7 +151,7 @@ const translations = {
     glucoScoreLabel: "🍀 GlucoScore",
     currentGlucoseLabel: "現在血糖",
     chartTitle: "📈 血糖グラフ",
-    legendToday: "今日",
+    legendToday: "血糖値",
     legendYesterday: "昨日の重ね表示",
     legendRange: "TIR目標範囲",
     legendMealBolus: "手動ボーラス",
@@ -293,7 +293,7 @@ const translations = {
     glucoScoreLabel: "🍀 GlucoScore",
     currentGlucoseLabel: "Current glucose",
     chartTitle: "📈 Glucose chart",
-    legendToday: "Today",
+    legendToday: "Glucose",
     legendYesterday: "Yesterday overlay",
     legendRange: "TIR target range",
     legendMealBolus: "Manual bolus",
@@ -3233,12 +3233,16 @@ function minutesToLabel(rangeStart, minutes, rangeDurationMs = 24 * 60 * 60 * 10
 }
 
 function getGlucoseSegmentColor(startValue, endValue) {
-  if (!Number.isFinite(Number(startValue)) || !Number.isFinite(Number(endValue))) {
+  if (startValue === null || endValue === null
+    || !Number.isFinite(Number(startValue))
+    || !Number.isFinite(Number(endValue))) {
     return "rgba(56,189,248,0)";
   }
 
-  if (startValue < 70 || endValue < 70) return "#fb7185";
-  if (startValue > 180 || endValue > 180) return "#f59e0b";
+  const start = Number(startValue);
+  const end = Number(endValue);
+  if (start < 70 || end < 70) return "#fb7185";
+  if (start > 180 || end > 180) return "#f59e0b";
   return "#38bdf8";
 }
 
@@ -3365,7 +3369,7 @@ function drawGlucoseChart(entries, options = {}) {
   }
 
   datasets.push({
-    label: options.primaryLabel || (options.periodKey === "today" ? t("todayLabel") : t("selectedRangeLabel")),
+    label: options.primaryLabel || t("glucoseLabel"),
     data: todayPoints,
     borderWidth: 3,
     borderColor: "#38bdf8",
@@ -3384,6 +3388,8 @@ function drawGlucoseChart(entries, options = {}) {
         label: t("mealBolusLabel"),
         type: "scatter",
         data: mealBolusPoints,
+        showLine: false,
+        borderWidth: 0,
         pointRadius: 5,
         pointHoverRadius: 7,
         pointBackgroundColor: "#fbbf24",
@@ -3395,6 +3401,8 @@ function drawGlucoseChart(entries, options = {}) {
         label: t("correctionBolusLabel"),
         type: "scatter",
         data: correctionBolusPoints,
+        showLine: false,
+        borderWidth: 0,
         pointRadius: 5,
         pointHoverRadius: 7,
         pointBackgroundColor: "#a78bfa",
@@ -3808,7 +3816,7 @@ async function loadDailyStats() {
     drawGlucoseChart(entries, {
       comparisonEntries: showTodayComparison ? previousEntries : [],
       comparisonLabel: t("yesterdayLabel"),
-      primaryLabel: currentLivePeriod === "today" ? t("todayLabel") : t("selectedRangeLabel"),
+      primaryLabel: t("glucoseLabel"),
       treatmentEvents: treatments,
       rangeStart,
       rangeEnd,
