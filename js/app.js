@@ -4169,6 +4169,9 @@ function setupViewTabs() {
   activateView(panels[initialView] ? initialView : "live");
 }
 
+// Set up top-level navigation first so tabs keep working even if a later
+// data/AI initialization step has a temporary error.
+setupViewTabs();
 setupLanguageSwitch();
 setupPeriodSwitch();
 setupCollectionShareButton();
@@ -4182,7 +4185,6 @@ loadDailyStats();
 setupDatePickerButtons();
 setupChatGptHandoff();
 setupAiLetterPrototype();
-setupViewTabs();
 
 setInterval(updateClock, 1000);
 setInterval(loadDailyStats, 60000);
