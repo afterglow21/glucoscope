@@ -1343,6 +1343,107 @@ reflect on their blood glucose data with kindness.
 
 ---
 
+## Visual Identity & Generation Rules
+## ビジュアル同一性・画像生成ルール
+
+### EN
+
+gluco is an official GlucoScope character,
+not a generic cute dog or a decorative mascot.
+
+When creating a new illustration,
+the highest priority is that gluco still looks like
+the same existing character.
+
+Before generation or editing, review:
+
+1. This PROJECT_BIBLE
+2. `docs/Brand/GLUCO_VISUAL_GUIDE.md`
+3. `assets/gluco/profile/gluco.png`
+4. Representative images in `assets/gluco/about/`
+5. Existing expressions in `assets/gluco/live/`
+
+The following identity traits must remain consistent:
+
+- A small, gentle dog mascot with a slightly large head and small body
+- Soft light-brown and white fur
+- A broad white blaze from the forehead through the center of the face and muzzle
+- White neck, chest, belly, paws, and white tail tip
+- Light-brown sides of the face, ears, back, and body
+- Large round black eyes with small white highlights
+- A small dark-brown nose, tiny gentle smile, and soft pink cheeks
+- Large upright ears with darker brown inner ears and longer fluffy ear-tip hair
+- A soft fluffy tail
+- Pale watercolor texture, picture-book warmth, and a reassuring expression
+- The four-leaf clover as a meaningful symbol of reassurance, hope, and small luck
+
+New expressions, poses, props, clothing, backgrounds, seasons,
+and compositions may be created.
+
+The face, fur-color placement, ears, eyes, body proportions,
+white markings, and tail must not be redesigned.
+
+Generated Japanese text must not be used as final artwork
+when it contains misspellings or distorted characters.
+For important assets, generate the character illustration first,
+then add official text and layout separately.
+
+The detailed source of truth is:
+
+`docs/Brand/GLUCO_VISUAL_GUIDE.md`
+
+---
+
+### JP
+
+グルコは、
+一般的な「かわいい犬」や装飾用のマスコットではなく、
+GlucoScopeの大切な公式キャラクターです。
+
+新しいイラストを生成するときは、
+既存のグルコと同じキャラクターに見えることを
+最優先にします。
+
+生成・編集前に必ず確認します。
+
+1. このPROJECT_BIBLE
+2. `docs/Brand/GLUCO_VISUAL_GUIDE.md`
+3. `assets/gluco/profile/gluco.png`
+4. `assets/gluco/about/` の代表画像
+5. `assets/gluco/live/` の既存表情画像
+
+次の特徴は固定します。
+
+- 頭がやや大きく、体が小さい、やさしい犬のマスコット
+- ライトブラウンと白の、ふわふわした毛並み
+- 額から顔中央、口元へ続く幅広い白い模様
+- 首、胸、お腹、手足、しっぽの先端は白
+- 顔の左右、耳、背中、体側はライトブラウン
+- 小さな白い光が入った、大きく丸い黒い目
+- 小さなこげ茶色の鼻、やさしく微笑む小さな口、薄いピンクの頬
+- 大きめの立ち耳。内側は濃いブラウンで、耳先に長めのふわ毛
+- やわらかく、ふわふわしたしっぽ
+- 淡い水彩、絵本のようなあたたかさ、安心感のある表情
+- 四葉のクローバーを、安心・希望・小さな幸運の象徴として大切に使う
+
+新しくしてよいものは、
+表情、ポーズ、小物、衣装、背景、季節、シーン、構図です。
+
+顔、毛色の配置、耳、目、体形、白い模様、しっぽは
+別のデザインに変更しません。
+
+AI画像内の日本語に誤字や文字崩れがある場合は、
+正式素材として使用しません。
+重要な素材では、
+キャラクターイラストの生成と、
+正式な文字・レイアウトの制作を分けます。
+
+詳細な正本は次のファイルです。
+
+`docs/Brand/GLUCO_VISUAL_GUIDE.md`
+
+---
+
 # 6. Data Integration Principles
 # 6. データ連携原則
 
