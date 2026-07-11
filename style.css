@@ -4319,3 +4319,265 @@ canvas{
     font-size:clamp(15px,2.4vw,19px);
   }
 }
+
+/* ========================================================================== 
+   Mobile Navigation Phase 2.2 refinements
+   - Landscape desk mode is optimized only for the Graph tab
+   - Respect iPhone landscape safe areas
+   - Keep current glucose inside its card
+   - Show TAR / TBR beside the compact graph donut
+   - Visually center donut labels
+   - Give Gluco more presence on the Letter tab
+   ========================================================================== */
+
+@media (max-width: 720px), (max-width: 960px) and (orientation: landscape) and (hover: none) and (pointer: coarse){
+  .mobile-range-donut-inner{
+    display:grid;
+    place-content:center;
+    justify-items:center;
+    gap:2px;
+    box-sizing:border-box;
+    padding:0;
+    transform:translateY(-1px);
+  }
+
+  .mobile-range-donut-inner strong{
+    display:block;
+    margin:0;
+    line-height:.92;
+  }
+
+  .mobile-range-donut-inner span{
+    display:block;
+    margin:1px 0 0;
+    line-height:1;
+  }
+
+  /* The graph donut repeats TIR in its center, so the compact side list only
+     needs TAR and TBR. */
+  body.mobile-page-graph .mobile-range-layout{
+    display:grid;
+    grid-template-columns:auto minmax(42px,1fr);
+    align-items:center;
+    gap:7px;
+    width:100%;
+    margin:0;
+  }
+
+  body.mobile-page-graph .mobile-range-values{
+    display:grid;
+    gap:5px;
+    min-width:0;
+  }
+
+  body.mobile-page-graph .mobile-range-value.tir{
+    display:none;
+  }
+
+  body.mobile-page-graph .mobile-range-value{
+    display:grid;
+    gap:1px;
+    min-height:0;
+    padding:3px 4px;
+    border-radius:9px;
+    background:rgba(255,255,255,.045);
+  }
+
+  body.mobile-page-graph .mobile-range-value span{
+    font-size:8px;
+    line-height:1;
+  }
+
+  body.mobile-page-graph .mobile-range-value strong{
+    font-size:12px;
+    line-height:1;
+    white-space:nowrap;
+  }
+
+  /* Gluco is a central part of the Letter experience, not a small utility
+     thumbnail. */
+  body.mobile-page-letter .gluco-comment-avatar{
+    display:grid;
+    grid-template-columns:minmax(118px,38vw) minmax(0,1fr);
+    align-items:center;
+    gap:14px;
+    padding:12px 4px 18px;
+  }
+
+  body.mobile-page-letter .gluco-comment-image{
+    width:clamp(118px,38vw,154px);
+    height:clamp(118px,38vw,154px);
+    grid-column:1;
+    grid-row:1 / span 2;
+    object-fit:cover;
+  }
+
+  body.mobile-page-letter .gluco-letter-number,
+  body.mobile-page-letter .gluco-lucky-badge{
+    grid-column:2;
+    width:fit-content;
+    max-width:100%;
+  }
+}
+
+/* On a phone in landscape, only the Graph tab becomes a fixed one-screen desk
+   display. Every other mobile tab remains scrollable, so rotating the phone
+   cannot crop the letter, reflection, glucose, or more pages. */
+@media (max-width: 960px) and (orientation: landscape) and (hover: none) and (pointer: coarse){
+  html:not(.force-desktop-view) body:not(.mobile-page-graph){
+    overflow-x:hidden;
+    overflow-y:auto;
+  }
+
+  html:not(.force-desktop-view) body:not(.mobile-page-graph) .dashboard{
+    width:100%;
+    min-height:100dvh;
+    height:auto;
+    overflow:visible;
+    padding-left:max(10px, env(safe-area-inset-left));
+    padding-right:max(10px, env(safe-area-inset-right));
+    padding-bottom:calc(var(--mobile-nav-height) + 22px + env(safe-area-inset-bottom));
+  }
+
+  html:not(.force-desktop-view) body:not(.mobile-page-graph) #liveView{
+    min-height:0;
+    height:auto;
+    overflow:visible;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-glucose #liveView,
+  html:not(.force-desktop-view) body.mobile-page-reflection #liveView{
+    display:block;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-glucose #liveView > .hero-grid,
+  html:not(.force-desktop-view) body.mobile-page-glucose #mobileRangeCard,
+  html:not(.force-desktop-view) body.mobile-page-reflection #liveView > .hero-grid,
+  html:not(.force-desktop-view) body.mobile-page-reflection #liveView > .metric-grid{
+    height:auto;
+    min-height:0;
+    margin-bottom:10px;
+  }
+
+  html:not(.force-desktop-view) body:not(.mobile-page-graph) .mobile-bottom-nav{
+    left:max(10px, env(safe-area-inset-left));
+    right:max(10px, env(safe-area-inset-right));
+    width:auto;
+    transform:none;
+  }
+}
+
+/* GuardianMonitor-like desk layout: Graph tab only. */
+@media (max-width: 960px) and (orientation: landscape) and (hover: none) and (pointer: coarse){
+  html:not(.force-desktop-view) body.mobile-page-graph .dashboard{
+    padding-top:5px;
+    padding-right:max(8px, env(safe-area-inset-right));
+    padding-bottom:calc(60px + env(safe-area-inset-bottom));
+    padding-left:max(8px, env(safe-area-inset-left));
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph #liveView{
+    grid-template-columns:minmax(0,1fr) clamp(168px,23vw,208px);
+    gap:7px;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph #liveView > .chart-card,
+  html:not(.force-desktop-view) body.mobile-page-graph #liveView .hero-current-card,
+  html:not(.force-desktop-view) body.mobile-page-graph #mobileRangeCard{
+    min-width:0;
+    overflow:hidden;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph #liveView .hero-current-card{
+    padding:6px 8px;
+  }
+
+  /* Stack arrow and unit in a narrow second column. This keeps even a
+     three-digit glucose value and delta inside the safe area. */
+  html:not(.force-desktop-view) body.mobile-page-graph .current-main{
+    display:grid;
+    grid-template-columns:minmax(0,auto) auto;
+    grid-template-rows:auto auto;
+    grid-template-areas:
+      "value arrow"
+      "value unit";
+    align-items:center;
+    justify-content:center;
+    column-gap:5px;
+    row-gap:0;
+    width:100%;
+    max-width:100%;
+    margin:0;
+    overflow:visible;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .current-value-wrap{
+    grid-area:value;
+    min-width:0;
+    padding-right:18px;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph #glucoseValue{
+    font-size:clamp(48px,7.2vw,72px);
+    line-height:.86;
+    white-space:nowrap;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .current-delta{
+    top:-.34em;
+    right:-1px;
+    min-width:0;
+    padding:3px 6px;
+    font-size:clamp(10px,1.55vw,13px);
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .arrow{
+    grid-area:arrow;
+    align-self:end;
+    font-size:clamp(27px,3.7vw,38px);
+    line-height:.9;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .unit{
+    grid-area:unit;
+    align-self:start;
+    margin:0;
+    font-size:clamp(10px,1.55vw,13px);
+    line-height:1.1;
+    white-space:nowrap;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph #mobileRangeCard{
+    padding:6px 7px;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .mobile-range-layout{
+    grid-template-columns:minmax(72px,92px) minmax(44px,1fr);
+    gap:6px;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .mobile-range-donut{
+    width:min(19vh,92px);
+    height:min(19vh,92px);
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .mobile-range-donut-inner{
+    width:min(13.5vh,66px);
+    height:min(13.5vh,66px);
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .mobile-range-donut-inner strong{
+    font-size:clamp(14px,2.2vw,18px);
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .mobile-range-donut-inner span{
+    font-size:8px;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .mobile-bottom-nav{
+    left:calc(50% + (env(safe-area-inset-left) - env(safe-area-inset-right)) / 2);
+    right:auto;
+    width:min(620px,calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right) - 24px));
+    transform:translateX(-50%);
+  }
+}
