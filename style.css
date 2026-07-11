@@ -4581,3 +4581,156 @@ canvas{
     transform:translateX(-50%);
   }
 }
+
+
+/* ========================================================================== 
+   Mobile Navigation Phase 2.3 refinements
+   - Keep three-digit glucose, delta, arrow and unit inside the landscape card
+   - Show the last measured date/time when the compact header is hidden
+   - Give the compact graph donut more breathing room
+   - Separate Reflection comparison metadata from the main score copy
+   - Center a larger, uncropped Gluco illustration on the Letter page
+   ========================================================================== */
+
+.graph-last-update{
+  display:none;
+}
+
+@media (max-width: 720px), (max-width: 960px) and (orientation: landscape) and (hover: none) and (pointer: coarse){
+  body.mobile-page-reflection .score-meta{
+    margin-top:10px;
+    padding-top:5px;
+    border-top:1px solid rgba(255,255,255,.06);
+  }
+
+  body.mobile-page-letter .gluco-comment-avatar{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:9px;
+    width:100%;
+    padding:14px 8px 20px;
+    text-align:center;
+  }
+
+  body.mobile-page-letter .gluco-comment-image{
+    order:1;
+    width:min(76vw,300px);
+    height:auto;
+    max-height:none;
+    aspect-ratio:1 / 1;
+    object-fit:contain;
+    object-position:center;
+    border-radius:24px;
+  }
+
+  body.mobile-page-letter .gluco-letter-number{
+    position:static;
+    order:2;
+    width:fit-content;
+    max-width:min(92%,360px);
+    margin:0 auto;
+  }
+
+  body.mobile-page-letter .gluco-lucky-badge{
+    position:static;
+    order:3;
+    width:fit-content;
+    max-width:min(92%,360px);
+    margin:0 auto;
+  }
+}
+
+@media (max-width: 960px) and (orientation: landscape) and (hover: none) and (pointer: coarse){
+  html:not(.force-desktop-view) body.mobile-page-graph #liveView .hero-current-card{
+    padding:7px 8px 6px;
+    align-items:center;
+    justify-content:center;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .current-main{
+    display:grid;
+    grid-template-columns:minmax(0,auto) auto;
+    grid-template-rows:auto auto;
+    grid-template-areas:
+      "value arrow"
+      "value unit";
+    align-items:center;
+    justify-content:center;
+    column-gap:5px;
+    row-gap:0;
+    width:100%;
+    max-width:100%;
+    margin:0;
+    overflow:hidden;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .current-value-wrap{
+    grid-area:value;
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+    min-width:0;
+    padding:5px 32px 0 0;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph #glucoseValue{
+    max-width:100%;
+    font-size:clamp(39px,5.25vw,56px);
+    line-height:.88;
+    letter-spacing:-.055em;
+    white-space:nowrap;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .current-delta{
+    top:0;
+    right:0;
+    min-width:28px;
+    padding:2px 5px;
+    font-size:clamp(9px,1.35vw,11px);
+    line-height:1;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .arrow{
+    grid-area:arrow;
+    align-self:end;
+    font-size:clamp(24px,3.2vw,32px);
+    line-height:.88;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .unit{
+    grid-area:unit;
+    align-self:start;
+    margin:0;
+    font-size:clamp(9px,1.3vw,11px);
+    line-height:1.05;
+    white-space:nowrap;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .graph-last-update{
+    display:block;
+    width:100%;
+    margin-top:5px;
+    color:#9fb2cf;
+    font-size:clamp(8px,1.15vw,10px);
+    font-weight:700;
+    line-height:1.2;
+    text-align:center;
+    white-space:nowrap;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .mobile-range-donut-inner{
+    transform:translateY(1px);
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .mobile-range-donut-inner strong{
+    font-size:clamp(13px,1.85vw,16px);
+    letter-spacing:-.045em;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .mobile-range-donut-inner span{
+    margin-top:2px;
+    font-size:7px;
+  }
+}

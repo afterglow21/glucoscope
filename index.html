@@ -22,7 +22,7 @@
     })();
   </script>
   <title>GlucoScope</title>
-  <link rel="stylesheet" href="style.css?v=20260711-mobile-app-22">
+  <link rel="stylesheet" href="style.css?v=20260711-mobile-app-23">
 </head>
 <body>
 
@@ -108,6 +108,9 @@
       </span>
       <span id="glucoseArrow" class="arrow">→</span>
       <span class="unit">mg/dL</span>
+    </div>
+    <div id="graphLastUpdate" class="graph-last-update">
+      <span data-i18n-key="lastUpdatedLabel">最終更新</span>: <span id="graphLastUpdateValue">--</span>
     </div>
 
     <div class="current-status-row">
@@ -341,7 +344,6 @@
       <div class="collection-status">
         <div id="collectionProgress" class="collection-progress">0 / 70</div>
         <div id="collectionAchievement" class="collection-achievement">称号: --</div>
-        <button id="collectionShareButton" type="button" class="collection-share-button">称号をシェア</button>
       </div>
     </div>
     <div class="collection-summary">
@@ -503,6 +505,6 @@
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js"></script>
-<script src="js/app.js?v=20260711-mobile-app-22"></script>
+<script src="js/app.js?v=20260711-mobile-app-23"></script>
 </body>
 </html>

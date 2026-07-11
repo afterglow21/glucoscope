@@ -3829,6 +3829,11 @@ async function loadLatestGlucose() {
     });
   }
 
+  const graphLastUpdateValue = document.getElementById("graphLastUpdateValue");
+  if (graphLastUpdateValue) {
+    graphLastUpdateValue.textContent = formatDateTime(measuredAt);
+  }
+
   return latest;
 }
 
