@@ -2,8 +2,9 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>GlucoScope</title>
-  <link rel="stylesheet" href="style.css?v=20260710-simple-view-1">
+  <link rel="stylesheet" href="style.css?v=20260711-mobile-app-1">
 </head>
 <body>
 
@@ -16,13 +17,17 @@
     </div>
 
     <div class="header-center" aria-label="Live status and current time">
-      <div id="liveIndicator" class="live-indicator live-pending" title="Nightscout接続状態">
-        <span id="liveDot" class="live-dot"></span>
-        <span id="liveLabel">CHECKING</span>
+      <div class="header-status-block">
+        <div id="liveIndicator" class="live-indicator live-pending" title="Nightscout接続状態">
+          <span id="liveDot" class="live-dot"></span>
+          <span id="liveLabel">CHECKING</span>
+        </div>
+        <div class="last-update">Updated <span id="headerUpdated">--</span></div>
       </div>
-      <div class="last-update">Updated <span id="headerUpdated">--</span></div>
-      <div id="clock" class="clock">--:--</div>
-      <div id="headerDate" class="header-date">----</div>
+      <div class="header-time-block">
+        <div id="clock" class="clock">--:--</div>
+        <div id="headerDate" class="header-date">----</div>
+      </div>
     </div>
 
     <div class="app-credit header-credit" aria-label="GlucoScope credit">
@@ -51,93 +56,6 @@
 
 <main id="liveView" class="view-panel active">
 
-<section id="mobileLiveSimpleView" class="mobile-simple-view" aria-label="Mobile simple glucose view">
-  <div class="mobile-simple-mode-switch" role="group" aria-label="Mobile display mode">
-    <button id="mobileSimpleModeButton" type="button" class="mobile-simple-mode-button active" data-i18n-key="mobileSimpleModeButton">🍀 やさしい表示</button>
-    <button id="mobileDetailModeButton" type="button" class="mobile-simple-mode-button" data-i18n-key="mobileDetailModeButton">📊 詳しく見る</button>
-  </div>
-
-  <section class="card mobile-simple-card mobile-simple-current-card">
-    <div class="mobile-simple-eyebrow" data-i18n-key="mobileSimpleCurrentEyebrow">いまの血糖</div>
-    <div class="mobile-simple-current-main">
-      <span id="mobileSimpleGlucoseValue" class="mobile-simple-current-value">--</span>
-      <span class="mobile-simple-current-unit">mg/dL</span>
-      <span id="mobileSimpleGlucoseDelta" class="mobile-simple-delta">--</span>
-      <span id="mobileSimpleGlucoseArrow" class="mobile-simple-arrow">→</span>
-    </div>
-    <div class="mobile-simple-status-row">
-      <span id="mobileSimpleRangeStatus" class="mobile-simple-pill">--</span>
-      <span id="mobileSimpleStatus" class="mobile-simple-pill muted">--</span>
-    </div>
-    <p class="mobile-simple-note"><span data-i18n-key="lastUpdatedLabel">最終更新</span>: <span id="mobileSimpleLastUpdate">--</span></p>
-  </section>
-
-  <section class="card mobile-simple-card mobile-simple-score-card">
-    <div class="mobile-simple-card-header">
-      <div>
-        <div class="mobile-simple-eyebrow" data-i18n-key="glucoScoreLabel">🍀 GlucoScore</div>
-        <div id="mobileSimpleScoreReason" class="mobile-simple-score-badge">--</div>
-      </div>
-      <img id="mobileSimpleScoreGlucoImage" src="assets/gluco/about/gluco-gentle-watch.png" alt="" class="mobile-simple-gluco-image">
-    </div>
-    <div class="mobile-simple-score-main">
-      <span id="mobileSimpleScoreValue" class="mobile-simple-score-value">--</span>
-      <p id="mobileSimpleScoreMessage" class="mobile-simple-score-message">--</p>
-    </div>
-    <p class="mobile-simple-note"><span id="mobileSimpleScoreYesterdayDelta">--</span><br><span id="mobileSimpleScoreSevenDayAverage">--</span></p>
-  </section>
-
-  <section class="mobile-simple-metric-grid" aria-label="Main glucose metrics">
-    <div class="mobile-simple-mini-card">
-      <span class="mobile-simple-mini-label">TIR</span>
-      <strong id="mobileSimpleTirValue">--%</strong>
-      <small data-i18n-key="tirDesc">目標範囲内の時間</small>
-    </div>
-    <div class="mobile-simple-mini-card">
-      <span class="mobile-simple-mini-label">TBR</span>
-      <strong id="mobileSimpleTbrValue">--%</strong>
-      <small data-i18n-key="tbrDesc">低血糖の時間</small>
-    </div>
-    <div class="mobile-simple-mini-card">
-      <span class="mobile-simple-mini-label" data-i18n-key="averageLabel">平均</span>
-      <strong><span id="mobileSimpleAvgValue">--</span><span class="mobile-simple-mini-unit"> mg/dL</span></strong>
-      <small data-i18n-key="avgDesc">平均血糖値</small>
-    </div>
-    <div class="mobile-simple-mini-card">
-      <span class="mobile-simple-mini-label">CV</span>
-      <strong id="mobileSimpleCvValue">--%</strong>
-      <small data-i18n-key="cvDesc">血糖のばらつき</small>
-    </div>
-  </section>
-
-  <section class="card mobile-simple-card mobile-simple-letter-card">
-    <div class="mobile-simple-card-header">
-      <div>
-        <div class="mobile-simple-eyebrow" data-i18n-key="mobileSimpleLetterEyebrow">グルコからのお手紙</div>
-        <h2 data-i18n-key="mobileSimpleLetterTitle">今日をやさしく振り返る</h2>
-      </div>
-    </div>
-
-    <div class="mobile-simple-ai-controls" role="group" aria-label="AI reflection mode">
-      <button id="mobileSimpleAiModeLetter" type="button" class="mobile-simple-mode-chip" data-ai-mode-toggle="letter" data-i18n-key="aiLetterModeLetter">🍀 やさしい分析</button>
-      <button id="mobileSimpleAiModeDeep" type="button" class="mobile-simple-mode-chip" data-ai-mode-toggle="deep" data-i18n-key="aiLetterModeDeep">📊 しっかり分析</button>
-    </div>
-
-    <div class="mobile-simple-letter-section">
-      <div class="mobile-simple-letter-section-title" data-i18n-key="ruleCommentTitle">🍀 いつものグルコのお話</div>
-      <div id="mobileSimpleRuleComment" class="mobile-simple-letter-text">データを読み込んでいます...</div>
-    </div>
-
-    <div class="mobile-simple-letter-section mobile-simple-ai-section">
-      <div class="mobile-simple-letter-section-title" data-i18n-key="aiLetterTitle">✨ AI分析 beta</div>
-      <button id="mobileSimpleAiButton" type="button" class="mobile-simple-primary-button" data-i18n-key="aiLetterButtonPreparing">AI分析は準備中</button>
-      <div id="mobileSimpleAiStatus" class="mobile-simple-ai-status">--</div>
-      <div id="mobileSimpleAiLetterResult" class="mobile-simple-letter-text mobile-simple-ai-result" hidden></div>
-    </div>
-
-    <button id="mobileSimpleShowDetailButton" type="button" class="mobile-simple-secondary-button" data-i18n-key="mobileSimpleShowDetailButton">詳しいグラフを見る</button>
-  </section>
-</section>
 <section class="hero-grid">
   <div class="card score-card hero-score-card">
     <div class="score-header">
@@ -185,6 +103,26 @@
       <div id="cloudStatus" class="device-pill health-muted" title="NightScout接続状況" aria-label="NightScout接続状況">☁ --</div>
     </div>
     <div class="current-small-note"><span data-i18n-key="lastUpdatedLabel">最終更新</span>: <span id="currentLastUpdate">--</span></div>
+  </div>
+</section>
+
+<section id="mobileRangeCard" class="card mobile-range-card" aria-label="Glucose range balance">
+  <div class="mobile-range-copy">
+    <div class="label" data-i18n-key="mobileRangeTitle">目標範囲のバランス</div>
+    <p data-i18n-key="mobileRangeLead">表示中の期間を、ひと目でやさしく振り返ります。</p>
+  </div>
+  <div class="mobile-range-layout">
+    <div id="mobileRangeDonut" class="mobile-range-donut" style="--tir-angle:0deg; --tar-angle:0deg;" aria-label="TIR TAR TBR donut chart">
+      <div class="mobile-range-donut-inner">
+        <strong id="mobileRangeTirValue">--%</strong>
+        <span>TIR</span>
+      </div>
+    </div>
+    <div class="mobile-range-values">
+      <div class="mobile-range-value tir"><span>TIR</span><strong id="mobileRangeTirText">--%</strong></div>
+      <div class="mobile-range-value tar"><span>TAR</span><strong id="mobileRangeTarText">--%</strong></div>
+      <div class="mobile-range-value tbr"><span>TBR</span><strong id="mobileRangeTbrText">--%</strong></div>
+    </div>
   </div>
 </section>
 
@@ -318,6 +256,31 @@
           </div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <section id="mobileMorePanel" class="card mobile-more-panel">
+    <div class="mobile-more-heading">
+      <span class="mobile-more-icon" aria-hidden="true">•••</span>
+      <div>
+        <h2 data-i18n-key="mobileMoreTitle">その他</h2>
+        <p data-i18n-key="mobileMoreLead">GlucoScopeのほかのページや設定を開けます。</p>
+      </div>
+    </div>
+    <div class="mobile-more-grid">
+      <button type="button" class="mobile-more-link" data-mobile-open-view="journal"><span>📖</span><strong data-i18n-key="mobileMoreJournal">Journal</strong><small data-i18n-key="comingSoonEyebrow">準備中</small></button>
+      <button type="button" class="mobile-more-link" data-mobile-open-view="clinic"><span>🏥</span><strong data-i18n-key="mobileMoreClinic">Clinic</strong><small data-i18n-key="comingSoonEyebrow">準備中</small></button>
+      <button type="button" class="mobile-more-link" data-mobile-open-view="collection"><span>🍀</span><strong data-i18n-key="mobileMoreCollection">想い出</strong><small data-i18n-key="mobileMoreCollectionNote">グルコとの記録</small></button>
+      <button type="button" class="mobile-more-link" data-mobile-open-view="about"><span>✨</span><strong data-i18n-key="mobileMoreAbout">About</strong><small data-i18n-key="mobileMoreAboutNote">GlucoScopeについて</small></button>
+    </div>
+    <div class="mobile-more-language">
+      <span data-i18n-key="languageLabel">Language</span>
+      <button type="button" class="language-button active" data-language="ja">日本語</button>
+      <button type="button" class="language-button" data-language="en">English</button>
+    </div>
+    <div class="mobile-more-links">
+      <a href="pages/about/developer-status.html" data-i18n-key="mobileMoreDeveloperStatus">Developer Status</a>
+      <a href="pages/about/usage-dashboard.html" data-i18n-key="mobileMoreUsageDashboard">Usage Dashboard</a>
     </div>
   </section>
 </main>
@@ -488,11 +451,30 @@
 </section>
 </div>
 
+<nav id="mobileBottomNav" class="mobile-bottom-nav" aria-label="Mobile navigation">
+  <button type="button" class="mobile-bottom-nav-button active" data-mobile-page="monitor">
+    <span class="mobile-bottom-nav-icon" aria-hidden="true">📈</span>
+    <span data-i18n-key="mobileNavMonitor">モニター</span>
+  </button>
+  <button type="button" class="mobile-bottom-nav-button" data-mobile-page="reflection">
+    <span class="mobile-bottom-nav-icon" aria-hidden="true">🍀</span>
+    <span data-i18n-key="mobileNavReflection">ふりかえり</span>
+  </button>
+  <button type="button" class="mobile-bottom-nav-button" data-mobile-page="letter">
+    <span class="mobile-bottom-nav-icon" aria-hidden="true">✉️</span>
+    <span data-i18n-key="mobileNavLetter">お手紙</span>
+  </button>
+  <button type="button" class="mobile-bottom-nav-button" data-mobile-page="more">
+    <span class="mobile-bottom-nav-icon" aria-hidden="true">•••</span>
+    <span data-i18n-key="mobileNavMore">その他</span>
+  </button>
+</nav>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="js/api.js"></script>
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js"></script>
-<script src="js/app.js?v=20260710-simple-view-1"></script>
+<script src="js/app.js?v=20260711-mobile-app-1"></script>
 </body>
 </html>

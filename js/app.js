@@ -157,6 +157,22 @@ const translations = {
     languageLabel: "Language",
     glucoScoreLabel: "🍀 GlucoScore",
     currentGlucoseLabel: "現在血糖",
+    mobileNavMonitor: "モニター",
+    mobileNavReflection: "ふりかえり",
+    mobileNavLetter: "お手紙",
+    mobileNavMore: "その他",
+    mobileRangeTitle: "目標範囲のバランス",
+    mobileRangeLead: "表示中の期間を、ひと目でやさしく振り返ります。",
+    mobileMoreTitle: "その他",
+    mobileMoreLead: "GlucoScopeのほかのページや設定を開けます。",
+    mobileMoreJournal: "Journal",
+    mobileMoreClinic: "Clinic",
+    mobileMoreCollection: "想い出",
+    mobileMoreCollectionNote: "グルコとの記録",
+    mobileMoreAbout: "About",
+    mobileMoreAboutNote: "GlucoScopeについて",
+    mobileMoreDeveloperStatus: "Developer Status",
+    mobileMoreUsageDashboard: "Usage Dashboard",
     mobileSimpleModeButton: "🍀 やさしい表示",
     mobileDetailModeButton: "📊 詳しく見る",
     mobileSimpleCurrentEyebrow: "いまの血糖",
@@ -312,6 +328,22 @@ const translations = {
     languageLabel: "Language",
     glucoScoreLabel: "🍀 GlucoScore",
     currentGlucoseLabel: "Current glucose",
+    mobileNavMonitor: "Monitor",
+    mobileNavReflection: "Reflection",
+    mobileNavLetter: "Letter",
+    mobileNavMore: "More",
+    mobileRangeTitle: "Range balance",
+    mobileRangeLead: "A gentle at-a-glance view of the selected period.",
+    mobileMoreTitle: "More",
+    mobileMoreLead: "Open other GlucoScope pages and settings.",
+    mobileMoreJournal: "Journal",
+    mobileMoreClinic: "Clinic",
+    mobileMoreCollection: "Memories",
+    mobileMoreCollectionNote: "Your moments with Gluco",
+    mobileMoreAbout: "About",
+    mobileMoreAboutNote: "About GlucoScope",
+    mobileMoreDeveloperStatus: "Developer Status",
+    mobileMoreUsageDashboard: "Usage Dashboard",
     mobileSimpleModeButton: "🍀 Simple view",
     mobileDetailModeButton: "📊 Details",
     mobileSimpleCurrentEyebrow: "Current glucose",
@@ -1604,7 +1636,7 @@ function applyLanguage() {
   safelyUpdateLetterControls();
   updateRuleCommentDisplay();
   updateAiLetterControls();
-  syncMobileSimpleView();
+  syncMobileApp();
 }
 
 function setLanguage(language) {
@@ -3461,7 +3493,7 @@ function drawGlucoseChart(entries, options = {}) {
     }
   );
 
-  const isMobileChart = window.matchMedia && window.matchMedia("(max-width: 640px)").matches;
+  const isMobileChart = window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
 
   glucoseChart = new Chart(ctx, {
     type: "line",
@@ -4175,104 +4207,108 @@ function copyHtmlContent(targetId, sourceSelector, fallback = "--") {
   }
 }
 
-function syncMobileSimpleView() {
-  copyTextContent("mobileSimpleGlucoseValue", "#glucoseValue");
-  copyTextContent("mobileSimpleGlucoseDelta", "#glucoseDelta", "");
-  copyTextContent("mobileSimpleGlucoseArrow", "#glucoseArrow", "→");
-  copyTextContent("mobileSimpleRangeStatus", "#rangeStatus");
-  copyTextContent("mobileSimpleStatus", "#status");
-  copyTextContent("mobileSimpleLastUpdate", "#currentLastUpdate");
-
-  copyTextContent("mobileSimpleScoreValue", "#scoreValue");
-  copyTextContent("mobileSimpleScoreReason", "#scoreReason");
-  copyHtmlContent("mobileSimpleScoreMessage", ".score-message");
-  copyTextContent("mobileSimpleScoreYesterdayDelta", "#scoreYesterdayDelta", "");
-  copyTextContent("mobileSimpleScoreSevenDayAverage", "#scoreSevenDayAverage", "");
-
-  const mobileGluco = document.getElementById("mobileSimpleScoreGlucoImage");
-  const sourceGluco = document.getElementById("scoreGlucoImage");
-  if (mobileGluco && sourceGluco) {
-    mobileGluco.src = sourceGluco.src;
-    mobileGluco.alt = sourceGluco.alt || "";
-  }
-
-  copyTextContent("mobileSimpleTirValue", "#tirValue");
-  copyTextContent("mobileSimpleTbrValue", "#tbrValue");
-  copyTextContent("mobileSimpleAvgValue", "#avgValue");
-  copyTextContent("mobileSimpleCvValue", "#cvValue");
-
-  copyHtmlContent("mobileSimpleRuleComment", "#comment", currentLanguage === "en" ? "Loading glucose data..." : "データを読み込んでいます...");
-
-  const aiButton = document.getElementById("aiLetterButton");
-  const mobileAiButton = document.getElementById("mobileSimpleAiButton");
-  if (mobileAiButton && aiButton) {
-    mobileAiButton.textContent = aiButton.textContent || t("aiLetterButtonPreparing");
-    mobileAiButton.disabled = aiButton.disabled;
-  }
-
-  copyTextContent("mobileSimpleAiStatus", "#aiLetterStatus", "");
-
-  const aiResult = document.getElementById("aiLetterResult");
-  const mobileAiResult = document.getElementById("mobileSimpleAiLetterResult");
-  if (mobileAiResult) {
-    const hasAiResult = Boolean(aiResult && !aiResult.hidden && aiResult.textContent.trim());
-    mobileAiResult.hidden = !hasAiResult;
-    mobileAiResult.textContent = hasAiResult ? aiResult.textContent.trim() : "";
-  }
-
-  document.querySelectorAll(".mobile-simple-mode-chip[data-ai-mode-toggle]").forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.aiModeToggle === currentAiLetterMode);
-  });
+function parseMetricPercentage(selector) {
+  const value = Number.parseFloat(document.querySelector(selector)?.textContent || "");
+  return Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0;
 }
 
-function setMobileLiveMode(mode = "simple") {
-  const resolvedMode = mode === "detail" ? "detail" : "simple";
-  document.body.classList.toggle("mobile-live-detail-mode", resolvedMode === "detail");
-  document.body.classList.toggle("mobile-live-simple-mode", resolvedMode !== "detail");
-  document.getElementById("mobileSimpleModeButton")?.classList.toggle("active", resolvedMode !== "detail");
-  document.getElementById("mobileDetailModeButton")?.classList.toggle("active", resolvedMode === "detail");
+function syncMobileRangeSummary() {
+  const tir = parseMetricPercentage("#tirValue");
+  const tar = parseMetricPercentage("#tarValue");
+  const tbr = parseMetricPercentage("#tbrValue");
+  const donut = document.getElementById("mobileRangeDonut");
+
+  if (donut) {
+    donut.style.setProperty("--tir-angle", `${tir * 3.6}deg`);
+    donut.style.setProperty("--tar-angle", `${Math.min(100, tir + tar) * 3.6}deg`);
+    donut.setAttribute("aria-label", `TIR ${tir.toFixed(1)}%, TAR ${tar.toFixed(1)}%, TBR ${tbr.toFixed(1)}%`);
+  }
+
+  copyTextContent("mobileRangeTirValue", "#tirValue");
+  copyTextContent("mobileRangeTirText", "#tirValue");
+  copyTextContent("mobileRangeTarText", "#tarValue");
+  copyTextContent("mobileRangeTbrText", "#tbrValue");
 }
 
-function setupMobileSimpleView() {
-  const simpleButton = document.getElementById("mobileSimpleModeButton");
-  const detailButton = document.getElementById("mobileDetailModeButton");
-  const showDetailButton = document.getElementById("mobileSimpleShowDetailButton");
-  const aiButton = document.getElementById("mobileSimpleAiButton");
+function updateMobileNavState(page = "monitor") {
+  const allowedPages = new Set(["monitor", "reflection", "letter", "more"]);
+  const resolvedPage = allowedPages.has(page) ? page : "monitor";
 
-  simpleButton?.addEventListener("click", () => setMobileLiveMode("simple"));
-  detailButton?.addEventListener("click", () => setMobileLiveMode("detail"));
-  showDetailButton?.addEventListener("click", () => {
-    setMobileLiveMode("detail");
-    document.querySelector(".chart-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  ["monitor", "reflection", "letter", "more"].forEach((name) => {
+    document.body.classList.toggle(`mobile-page-${name}`, name === resolvedPage);
   });
 
-  aiButton?.addEventListener("click", () => {
-    const sourceButton = document.getElementById("aiLetterButton");
-    if (sourceButton && !sourceButton.disabled) sourceButton.click();
+  document.querySelectorAll(".mobile-bottom-nav-button[data-mobile-page]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.mobilePage === resolvedPage);
   });
 
-  document.querySelectorAll(".mobile-simple-mode-chip[data-ai-mode-toggle]").forEach((button) => {
+  document.body.classList.remove("mobile-secondary-view");
+  syncMobileRangeSummary();
+}
+
+function activateLiveViewForMobile() {
+  if (document.getElementById("liveView")?.classList.contains("active")) return;
+  document.querySelector('.view-tab[data-view="live"]')?.click();
+}
+
+function setMobilePage(page = "monitor", options = {}) {
+  const allowedPages = new Set(["monitor", "reflection", "letter", "more"]);
+  const resolvedPage = allowedPages.has(page) ? page : "monitor";
+  activateLiveViewForMobile();
+  updateMobileNavState(resolvedPage);
+
+  if (options.updateHash !== false) {
+    window.history.replaceState(null, "", `#${resolvedPage}`);
+  }
+
+  if (resolvedPage === "monitor") {
+    window.requestAnimationFrame(() => glucoseChart?.resize());
+  }
+
+  window.scrollTo({ top: 0, behavior: options.smooth ? "smooth" : "auto" });
+}
+
+function syncMobileApp() {
+  syncMobileRangeSummary();
+}
+
+function setupMobileApp() {
+  document.querySelectorAll(".mobile-bottom-nav-button[data-mobile-page]").forEach((button) => {
     button.addEventListener("click", () => {
-      window.glucoSetAiLetterMode?.(button.dataset.aiModeToggle || "letter");
-      syncMobileSimpleView();
+      setMobilePage(button.dataset.mobilePage || "monitor", { smooth: true });
     });
   });
 
-  const watchTargets = [
-    "#glucoseValue", "#glucoseDelta", "#glucoseArrow", "#rangeStatus", "#status", "#currentLastUpdate",
-    "#scoreValue", "#scoreReason", ".score-message", "#scoreYesterdayDelta", "#scoreSevenDayAverage", "#scoreGlucoImage",
-    "#tirValue", "#tbrValue", "#avgValue", "#cvValue", "#comment", "#aiLetterButton", "#aiLetterStatus"
-  ];
-
-  const observer = new MutationObserver(() => syncMobileSimpleView());
-  watchTargets.forEach((selector) => {
-    const node = document.querySelector(selector);
-    if (node) observer.observe(node, { childList: true, characterData: true, subtree: true, attributes: true });
+  document.querySelectorAll("[data-mobile-open-view]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const viewName = button.dataset.mobileOpenView;
+      updateMobileNavState("more");
+      document.body.classList.add("mobile-secondary-view");
+      document.querySelector(`.view-tab[data-view="${viewName}"]`)?.click();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
   });
 
-  setMobileLiveMode("simple");
-  syncMobileSimpleView();
-  window.setInterval(syncMobileSimpleView, 2000);
+  const watchTargets = ["#tirValue", "#tarValue", "#tbrValue"];
+  const observer = new MutationObserver(() => syncMobileApp());
+  watchTargets.forEach((selector) => {
+    const node = document.querySelector(selector);
+    if (node) observer.observe(node, { childList: true, characterData: true, subtree: true });
+  });
+
+  const hash = window.location.hash.replace("#", "");
+  const mobilePages = new Set(["monitor", "reflection", "letter", "more"]);
+  const secondaryViews = new Set(["journal", "clinic", "collection", "about"]);
+
+  if (secondaryViews.has(hash)) {
+    updateMobileNavState("more");
+    document.body.classList.add("mobile-secondary-view");
+  } else {
+    setMobilePage(mobilePages.has(hash) ? hash : "monitor", { updateHash: false });
+  }
+
+  syncMobileApp();
+  window.setInterval(syncMobileApp, 2000);
 }
 
 function setupViewTabs() {
@@ -4318,7 +4354,7 @@ function setupViewTabs() {
 // data/AI initialization step has a temporary error.
 setupViewTabs();
 setupLanguageSwitch();
-setupMobileSimpleView();
+setupMobileApp();
 setupPeriodSwitch();
 setupCollectionShareButton();
 applyLanguage();
