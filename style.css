@@ -3597,3 +3597,575 @@ canvas{
     font-size:18px;
   }
 }
+
+/* ========================================================================== 
+   Mobile Navigation Phase 2
+   Five focused phone pages while preserving the desktop dashboard.
+   ========================================================================== */
+
+.mobile-view-return-button{
+  display:none;
+}
+
+.force-desktop-view .mobile-view-return-button{
+  position:fixed;
+  z-index:2000;
+  right:18px;
+  bottom:18px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:44px;
+  padding:10px 15px;
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:999px;
+  background:rgba(16,24,40,.92);
+  color:#eafff1;
+  box-shadow:0 12px 32px rgba(0,0,0,.38);
+  font:800 13px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;
+  cursor:pointer;
+}
+
+@media (max-width: 720px){
+  :root{
+    --mobile-ui-font:13px;
+    --mobile-small-font:11px;
+    --mobile-body-font:15px;
+    --mobile-letter-font:18px;
+    --mobile-nav-height:74px;
+  }
+
+  html[lang="ja"],
+  html[lang="en"]{
+    font-size:16px;
+  }
+
+  body{
+    font-size:var(--mobile-ui-font);
+  }
+
+  .dashboard{
+    padding:6px 6px calc(var(--mobile-nav-height) + 16px + env(safe-area-inset-bottom));
+  }
+
+  .header{
+    gap:6px 10px;
+    margin-bottom:8px;
+    padding:4px 2px 9px;
+  }
+
+  .brand-block h1{
+    font-size:24px;
+  }
+
+  .brand-icon{
+    font-size:24px;
+  }
+
+  .brand-kicker,
+  .last-update,
+  .header-date{
+    font-size:var(--mobile-small-font);
+  }
+
+  .clock{
+    font-size:34px;
+  }
+
+  .live-indicator{
+    min-height:28px;
+    padding:5px 9px;
+    font-size:var(--mobile-small-font);
+  }
+
+  .app-credit-version,
+  .app-credit-line{
+    font-size:10px;
+  }
+
+  .mobile-bottom-nav{
+    left:6px;
+    right:6px;
+    bottom:max(5px, env(safe-area-inset-bottom));
+    grid-template-columns:repeat(5,minmax(0,1fr));
+    gap:2px;
+    padding:5px;
+    border-radius:20px;
+  }
+
+  .mobile-bottom-nav-button{
+    min-height:54px;
+    gap:2px;
+    padding:4px 1px;
+    border-radius:15px;
+    font-size:9px;
+    line-height:1.15;
+    letter-spacing:-.01em;
+  }
+
+  .mobile-bottom-nav-icon{
+    min-height:20px;
+    font-size:17px;
+  }
+
+  .mobile-more-language,
+  .mobile-display-switch{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px solid rgba(255,255,255,.08);
+    color:#9fb2cf;
+    font-size:var(--mobile-ui-font);
+  }
+
+  .mobile-display-switch{
+    margin-top:10px;
+    padding-top:10px;
+  }
+
+  .mobile-display-button{
+    min-height:36px;
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:999px;
+    padding:7px 12px;
+    background:rgba(255,255,255,.045);
+    color:#cbd5e1;
+    font-size:12px;
+    font-weight:800;
+    cursor:pointer;
+  }
+
+  /* Reset all Live dashboard pieces before enabling each focused page. */
+  body.mobile-page-glucose #liveView > .hero-grid,
+  body.mobile-page-graph #liveView > .hero-grid,
+  body.mobile-page-reflection #liveView > .hero-grid{
+    display:block;
+  }
+
+  body.mobile-page-glucose #liveView .hero-score-card,
+  body.mobile-page-glucose #liveView > .metric-grid,
+  body.mobile-page-glucose #liveView > .chart-card,
+  body.mobile-page-glucose #liveView > .comment-card,
+  body.mobile-page-glucose #mobileMorePanel,
+  body.mobile-page-graph #liveView .hero-score-card,
+  body.mobile-page-graph #liveView > .metric-grid,
+  body.mobile-page-graph #liveView > .comment-card,
+  body.mobile-page-graph #mobileMorePanel{
+    display:none;
+  }
+
+  /* -----------------------------------------------------------------------
+     1. Glucose: no-scroll glance view.
+     ----------------------------------------------------------------------- */
+  body.mobile-page-glucose{
+    overflow:hidden;
+  }
+
+  body.mobile-page-glucose .dashboard{
+    height:100dvh;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+
+  body.mobile-page-glucose #liveView{
+    flex:1 1 auto;
+    min-height:0;
+    display:grid;
+    grid-template-rows:minmax(170px,1.02fr) minmax(150px,.82fr);
+    gap:8px;
+    overflow:hidden;
+  }
+
+  body.mobile-page-glucose #liveView > .hero-grid{
+    min-height:0;
+    margin:0;
+  }
+
+  body.mobile-page-glucose #liveView .hero-current-card,
+  body.mobile-page-glucose #mobileRangeCard{
+    display:flex;
+  }
+
+  body.mobile-page-glucose #liveView .hero-current-card{
+    height:100%;
+    min-height:0;
+    margin:0;
+    padding:14px;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+  }
+
+  body.mobile-page-glucose .current-label,
+  body.mobile-page-glucose .current-status-row,
+  body.mobile-page-glucose .current-device-row,
+  body.mobile-page-glucose .current-small-note{
+    display:none;
+  }
+
+  body.mobile-page-glucose .current-main{
+    justify-content:center;
+    flex-wrap:nowrap;
+    gap:12px;
+    margin:0;
+  }
+
+  body.mobile-page-glucose #glucoseValue{
+    font-size:clamp(74px,23vw,112px);
+    line-height:.9;
+  }
+
+  body.mobile-page-glucose .current-delta{
+    top:-.8em;
+    font-size:16px;
+  }
+
+  body.mobile-page-glucose .arrow{
+    font-size:clamp(44px,13vw,66px);
+  }
+
+  body.mobile-page-glucose .unit{
+    align-self:flex-end;
+    margin-bottom:9px;
+    font-size:18px;
+  }
+
+  body.mobile-page-glucose #mobileRangeCard{
+    min-height:0;
+    margin:0;
+    padding:12px 14px;
+    flex-direction:column;
+    justify-content:center;
+  }
+
+  body.mobile-page-glucose .mobile-range-copy{
+    display:none;
+  }
+
+  body.mobile-page-glucose .mobile-range-layout{
+    grid-template-columns:minmax(112px,132px) minmax(0,1fr);
+    gap:12px;
+    width:100%;
+    margin:0;
+  }
+
+  body.mobile-page-glucose .mobile-range-donut{
+    width:min(31vw,132px);
+    height:min(31vw,132px);
+  }
+
+  body.mobile-page-glucose .mobile-range-donut-inner{
+    width:min(22vw,94px);
+    height:min(22vw,94px);
+  }
+
+  body.mobile-page-glucose .mobile-range-donut-inner strong{
+    font-size:26px;
+  }
+
+  body.mobile-page-glucose .mobile-range-values{
+    gap:6px;
+  }
+
+  body.mobile-page-glucose .mobile-range-value{
+    min-height:36px;
+    padding:6px 10px;
+  }
+
+  body.mobile-page-glucose .mobile-range-value strong{
+    font-size:19px;
+  }
+
+  /* -----------------------------------------------------------------------
+     2. Graph: graph-first page with compact glucose and balance cards.
+     ----------------------------------------------------------------------- */
+  body.mobile-page-graph{
+    overflow:hidden;
+  }
+
+  body.mobile-page-graph .dashboard{
+    height:100dvh;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+
+  body.mobile-page-graph #liveView{
+    flex:1 1 auto;
+    min-height:0;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    grid-template-rows:auto minmax(0,1fr);
+    grid-template-areas:
+      "current range"
+      "chart chart";
+    gap:7px;
+    overflow:hidden;
+  }
+
+  body.mobile-page-graph #liveView > .hero-grid{
+    display:contents;
+  }
+
+  body.mobile-page-graph #liveView .hero-current-card{
+    grid-area:current;
+    display:flex;
+    min-height:104px;
+    margin:0;
+    padding:10px 12px;
+    flex-direction:column;
+    justify-content:center;
+  }
+
+  body.mobile-page-graph #mobileRangeCard{
+    grid-area:range;
+    display:flex;
+    min-height:104px;
+    margin:0;
+    padding:8px 10px;
+    align-items:center;
+    justify-content:center;
+  }
+
+  body.mobile-page-graph #liveView > .chart-card{
+    grid-area:chart;
+    display:flex;
+    min-height:0;
+    margin:0;
+    padding:9px 8px;
+    flex-direction:column;
+    overflow:hidden;
+  }
+
+  body.mobile-page-graph .current-label,
+  body.mobile-page-graph .current-status-row,
+  body.mobile-page-graph .current-device-row,
+  body.mobile-page-graph .current-small-note{
+    display:none;
+  }
+
+  body.mobile-page-graph .current-main{
+    justify-content:center;
+    gap:7px;
+    margin:0;
+  }
+
+  body.mobile-page-graph #glucoseValue{
+    font-size:46px;
+    line-height:.9;
+  }
+
+  body.mobile-page-graph .current-delta{
+    top:-.65em;
+    font-size:12px;
+  }
+
+  body.mobile-page-graph .arrow{
+    font-size:31px;
+  }
+
+  body.mobile-page-graph .unit{
+    font-size:13px;
+  }
+
+  body.mobile-page-graph .mobile-range-copy,
+  body.mobile-page-graph .mobile-range-values{
+    display:none;
+  }
+
+  body.mobile-page-graph .mobile-range-layout{
+    display:block;
+    margin:0;
+  }
+
+  body.mobile-page-graph .mobile-range-donut{
+    width:92px;
+    height:92px;
+  }
+
+  body.mobile-page-graph .mobile-range-donut-inner{
+    width:66px;
+    height:66px;
+  }
+
+  body.mobile-page-graph .mobile-range-donut-inner strong{
+    font-size:20px;
+  }
+
+  body.mobile-page-graph .mobile-range-donut-inner span{
+    font-size:9px;
+  }
+
+  body.mobile-page-graph .chart-header{
+    flex:0 0 auto;
+    gap:5px;
+    margin-bottom:4px;
+  }
+
+  body.mobile-page-graph .chart-header .label{
+    font-size:14px;
+  }
+
+  body.mobile-page-graph .chart-legend{
+    display:none;
+  }
+
+  body.mobile-page-graph .chart-actions{
+    gap:4px;
+  }
+
+  body.mobile-page-graph .period-switch{
+    display:grid;
+    grid-template-columns:repeat(5,minmax(0,1fr));
+    width:100%;
+    gap:3px;
+  }
+
+  body.mobile-page-graph .period-button{
+    min-width:0;
+    padding:5px 2px;
+    font-size:9px;
+  }
+
+  body.mobile-page-graph .chart-range{
+    font-size:9px;
+  }
+
+  body.mobile-page-graph .chart-wrap{
+    flex:1 1 auto;
+    min-height:0;
+    height:auto;
+  }
+
+  /* Existing reflection, letter and more pages use identical type tokens in
+     Japanese and English so switching language does not resize the layout. */
+  body.mobile-page-reflection .metric-label,
+  body.mobile-page-more .mobile-more-link small,
+  body.mobile-page-letter .letter-section-lead,
+  body.mobile-page-letter .letter-panel-status{
+    font-size:var(--mobile-small-font);
+  }
+
+  body.mobile-page-reflection .metric-desc,
+  body.mobile-page-more .mobile-more-heading p{
+    font-size:12px;
+  }
+
+  body.mobile-page-letter #comment,
+  body.mobile-page-letter .ai-letter-result{
+    font-size:var(--mobile-letter-font);
+    line-height:1.8;
+  }
+
+  body.mobile-page-letter .letter-section,
+  body.mobile-page-letter .letter-action-panel{
+    padding:16px 14px;
+  }
+
+  body.mobile-page-more .mobile-more-heading h2{
+    font-size:23px;
+  }
+
+  body.mobile-page-more .mobile-more-link strong{
+    font-size:15px;
+  }
+}
+
+/* GuardianMonitor-like landscape desk mode for the Graph tab. */
+@media (max-width: 960px) and (orientation: landscape){
+  html:not(.force-desktop-view) body.mobile-page-graph .dashboard{
+    padding:5px 6px calc(62px + env(safe-area-inset-bottom));
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .header{
+    display:none;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph #liveView{
+    grid-template-columns:minmax(0,2.55fr) minmax(190px,.75fr);
+    grid-template-rows:1fr 1fr;
+    grid-template-areas:
+      "chart current"
+      "chart range";
+    gap:7px;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph #liveView > .chart-card{
+    padding:7px;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph #liveView .hero-current-card,
+  html:not(.force-desktop-view) body.mobile-page-graph #mobileRangeCard{
+    min-height:0;
+    height:100%;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph #glucoseValue{
+    font-size:clamp(54px,9vw,86px);
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .arrow{
+    font-size:clamp(34px,5vw,54px);
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .unit{
+    font-size:14px;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .mobile-range-donut{
+    width:min(24vh,126px);
+    height:min(24vh,126px);
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .mobile-range-donut-inner{
+    width:min(17vh,88px);
+    height:min(17vh,88px);
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .chart-header{
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr);
+    align-items:center;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .chart-actions{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    align-items:center;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .chart-range{
+    white-space:nowrap;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .mobile-bottom-nav,
+  html:not(.force-desktop-view) body.mobile-page-graph + .mobile-bottom-nav{
+    min-height:0;
+  }
+
+  html:not(.force-desktop-view) .mobile-bottom-nav{
+    left:50%;
+    right:auto;
+    width:min(620px,76vw);
+    transform:translateX(-50%);
+    bottom:max(3px,env(safe-area-inset-bottom));
+    padding:4px;
+  }
+
+  html:not(.force-desktop-view) .mobile-bottom-nav-button{
+    min-height:44px;
+    flex-direction:row;
+    gap:5px;
+    font-size:10px;
+  }
+
+  html:not(.force-desktop-view) .mobile-bottom-nav-icon{
+    min-height:0;
+    font-size:15px;
+  }
+}

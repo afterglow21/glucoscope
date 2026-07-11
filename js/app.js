@@ -157,10 +157,14 @@ const translations = {
     languageLabel: "Language",
     glucoScoreLabel: "🍀 GlucoScore",
     currentGlucoseLabel: "現在血糖",
-    mobileNavMonitor: "モニター",
+    mobileNavGlucose: "血糖値",
+    mobileNavGraph: "グラフ",
     mobileNavReflection: "ふりかえり",
     mobileNavLetter: "お手紙",
     mobileNavMore: "その他",
+    mobileDisplayLabel: "表示",
+    mobileDesktopViewButton: "PC画面で見る",
+    mobileReturnViewButton: "📱 スマホ表示に戻す",
     mobileRangeTitle: "目標範囲のバランス",
     mobileRangeLead: "表示中の期間を、ひと目でやさしく振り返ります。",
     mobileMoreTitle: "その他",
@@ -328,10 +332,14 @@ const translations = {
     languageLabel: "Language",
     glucoScoreLabel: "🍀 GlucoScore",
     currentGlucoseLabel: "Current glucose",
-    mobileNavMonitor: "Monitor",
+    mobileNavGlucose: "Glucose",
+    mobileNavGraph: "Graph",
     mobileNavReflection: "Reflection",
     mobileNavLetter: "Letter",
     mobileNavMore: "More",
+    mobileDisplayLabel: "Display",
+    mobileDesktopViewButton: "View desktop layout",
+    mobileReturnViewButton: "📱 Return to mobile view",
     mobileRangeTitle: "Range balance",
     mobileRangeLead: "A gentle at-a-glance view of the selected period.",
     mobileMoreTitle: "More",
@@ -4230,13 +4238,19 @@ function syncMobileRangeSummary() {
   copyTextContent("mobileRangeTbrText", "#tbrValue");
 }
 
-function updateMobileNavState(page = "monitor") {
-  const allowedPages = new Set(["monitor", "reflection", "letter", "more"]);
-  const resolvedPage = allowedPages.has(page) ? page : "monitor";
+const MOBILE_DISPLAY_MODE_KEY = "glucoscope.mobileDisplayMode.v1";
 
-  ["monitor", "reflection", "letter", "more"].forEach((name) => {
+function updateMobileNavState(page = "glucose") {
+  const mobilePages = ["glucose", "graph", "reflection", "letter", "more"];
+  const allowedPages = new Set(mobilePages);
+  const resolvedPage = allowedPages.has(page) ? page : "glucose";
+
+  mobilePages.forEach((name) => {
     document.body.classList.toggle(`mobile-page-${name}`, name === resolvedPage);
   });
+
+  // Remove the previous Phase 1 class if it remains in a cached document.
+  document.body.classList.remove("mobile-page-monitor");
 
   document.querySelectorAll(".mobile-bottom-nav-button[data-mobile-page]").forEach((button) => {
     button.classList.toggle("active", button.dataset.mobilePage === resolvedPage);
@@ -4251,9 +4265,10 @@ function activateLiveViewForMobile() {
   document.querySelector('.view-tab[data-view="live"]')?.click();
 }
 
-function setMobilePage(page = "monitor", options = {}) {
-  const allowedPages = new Set(["monitor", "reflection", "letter", "more"]);
-  const resolvedPage = allowedPages.has(page) ? page : "monitor";
+function setMobilePage(page = "glucose", options = {}) {
+  const allowedPages = new Set(["glucose", "graph", "reflection", "letter", "more"]);
+  const legacyPage = page === "monitor" ? "glucose" : page;
+  const resolvedPage = allowedPages.has(legacyPage) ? legacyPage : "glucose";
   activateLiveViewForMobile();
   updateMobileNavState(resolvedPage);
 
@@ -4261,8 +4276,9 @@ function setMobilePage(page = "monitor", options = {}) {
     window.history.replaceState(null, "", `#${resolvedPage}`);
   }
 
-  if (resolvedPage === "monitor") {
+  if (resolvedPage === "graph") {
     window.requestAnimationFrame(() => glucoseChart?.resize());
+    window.setTimeout(() => glucoseChart?.resize(), 180);
   }
 
   window.scrollTo({ top: 0, behavior: options.smooth ? "smooth" : "auto" });
@@ -4272,10 +4288,43 @@ function syncMobileApp() {
   syncMobileRangeSummary();
 }
 
+function setupMobileDisplayMode() {
+  const desktopButton = document.getElementById("mobileDesktopViewButton");
+  const returnButton = document.getElementById("mobileViewReturnButton");
+  const isForcedDesktop = document.documentElement.classList.contains("force-desktop-view");
+
+  if (returnButton) {
+    returnButton.hidden = !isForcedDesktop;
+    returnButton.addEventListener("click", () => {
+      try {
+        localStorage.setItem(MOBILE_DISPLAY_MODE_KEY, "mobile");
+      } catch (error) {
+        console.warn("Could not save mobile display mode", error);
+      }
+      window.location.href = `${window.location.pathname}?display=mobile#more`;
+    });
+  }
+
+  desktopButton?.addEventListener("click", () => {
+    try {
+      localStorage.setItem(MOBILE_DISPLAY_MODE_KEY, "desktop");
+    } catch (error) {
+      console.warn("Could not save desktop display mode", error);
+    }
+    window.location.href = `${window.location.pathname}?display=desktop#live`;
+  });
+}
+
 function setupMobileApp() {
+  // In forced desktop mode the early head script widened the viewport, so the
+  // existing desktop dashboard is used without mobile page switching.
+  if (document.documentElement.classList.contains("force-desktop-view")) {
+    return;
+  }
+
   document.querySelectorAll(".mobile-bottom-nav-button[data-mobile-page]").forEach((button) => {
     button.addEventListener("click", () => {
-      setMobilePage(button.dataset.mobilePage || "monitor", { smooth: true });
+      setMobilePage(button.dataset.mobilePage || "glucose", { smooth: true });
     });
   });
 
@@ -4296,15 +4345,16 @@ function setupMobileApp() {
     if (node) observer.observe(node, { childList: true, characterData: true, subtree: true });
   });
 
-  const hash = window.location.hash.replace("#", "");
-  const mobilePages = new Set(["monitor", "reflection", "letter", "more"]);
+  const rawHash = window.location.hash.replace("#", "");
+  const hash = rawHash === "monitor" ? "glucose" : rawHash;
+  const mobilePages = new Set(["glucose", "graph", "reflection", "letter", "more"]);
   const secondaryViews = new Set(["journal", "clinic", "collection", "about"]);
 
   if (secondaryViews.has(hash)) {
     updateMobileNavState("more");
     document.body.classList.add("mobile-secondary-view");
   } else {
-    setMobilePage(mobilePages.has(hash) ? hash : "monitor", { updateHash: false });
+    setMobilePage(mobilePages.has(hash) ? hash : "glucose", { updateHash: false });
   }
 
   syncMobileApp();
@@ -4346,7 +4396,8 @@ function setupViewTabs() {
     });
   });
 
-  const initialView = window.location.hash.replace("#", "") || "live";
+  const initialHash = window.location.hash.replace("#", "") || "live";
+  const initialView = initialHash === "more" ? "about" : initialHash;
   activateView(panels[initialView] ? initialView : "live");
 }
 
@@ -4354,6 +4405,7 @@ function setupViewTabs() {
 // data/AI initialization step has a temporary error.
 setupViewTabs();
 setupLanguageSwitch();
+setupMobileDisplayMode();
 setupMobileApp();
 setupPeriodSwitch();
 setupCollectionShareButton();

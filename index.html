@@ -2,9 +2,27 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta id="viewportMeta" name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script>
+    (() => {
+      try {
+        const modeKey = "glucoscope.mobileDisplayMode.v1";
+        const params = new URLSearchParams(window.location.search);
+        const requestedMode = params.get("display");
+        if (requestedMode === "desktop" || requestedMode === "mobile") {
+          localStorage.setItem(modeKey, requestedMode);
+        }
+        if (localStorage.getItem(modeKey) === "desktop") {
+          document.documentElement.classList.add("force-desktop-view");
+          document.getElementById("viewportMeta")?.setAttribute("content", "width=1280");
+        }
+      } catch (error) {
+        console.warn("Could not restore mobile display mode", error);
+      }
+    })();
+  </script>
   <title>GlucoScope</title>
-  <link rel="stylesheet" href="style.css?v=20260711-mobile-app-1">
+  <link rel="stylesheet" href="style.css?v=20260711-mobile-app-2">
 </head>
 <body>
 
@@ -278,6 +296,10 @@
       <button type="button" class="language-button active" data-language="ja">日本語</button>
       <button type="button" class="language-button" data-language="en">English</button>
     </div>
+    <div class="mobile-display-switch">
+      <span data-i18n-key="mobileDisplayLabel">表示</span>
+      <button id="mobileDesktopViewButton" type="button" class="mobile-display-button" data-i18n-key="mobileDesktopViewButton">PC画面で見る</button>
+    </div>
     <div class="mobile-more-links">
       <a href="pages/about/developer-status.html" data-i18n-key="mobileMoreDeveloperStatus">Developer Status</a>
       <a href="pages/about/usage-dashboard.html" data-i18n-key="mobileMoreUsageDashboard">Usage Dashboard</a>
@@ -452,9 +474,13 @@
 </div>
 
 <nav id="mobileBottomNav" class="mobile-bottom-nav" aria-label="Mobile navigation">
-  <button type="button" class="mobile-bottom-nav-button active" data-mobile-page="monitor">
+  <button type="button" class="mobile-bottom-nav-button active" data-mobile-page="glucose">
+    <span class="mobile-bottom-nav-icon" aria-hidden="true">🩸</span>
+    <span data-i18n-key="mobileNavGlucose">血糖値</span>
+  </button>
+  <button type="button" class="mobile-bottom-nav-button" data-mobile-page="graph">
     <span class="mobile-bottom-nav-icon" aria-hidden="true">📈</span>
-    <span data-i18n-key="mobileNavMonitor">モニター</span>
+    <span data-i18n-key="mobileNavGraph">グラフ</span>
   </button>
   <button type="button" class="mobile-bottom-nav-button" data-mobile-page="reflection">
     <span class="mobile-bottom-nav-icon" aria-hidden="true">🍀</span>
@@ -470,11 +496,13 @@
   </button>
 </nav>
 
+<button id="mobileViewReturnButton" type="button" class="mobile-view-return-button" data-i18n-key="mobileReturnViewButton" hidden>📱 スマホ表示に戻す</button>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="js/api.js"></script>
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js"></script>
-<script src="js/app.js?v=20260711-mobile-app-1"></script>
+<script src="js/app.js?v=20260711-mobile-app-2"></script>
 </body>
 </html>
