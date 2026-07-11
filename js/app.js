@@ -3501,7 +3501,7 @@ function drawGlucoseChart(entries, options = {}) {
     }
   );
 
-  const isMobileChart = window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
+  const isMobileChart = window.matchMedia && window.matchMedia("(max-width: 720px), (max-width: 960px) and (orientation: landscape) and (hover: none) and (pointer: coarse)").matches;
 
   glucoseChart = new Chart(ctx, {
     type: "line",

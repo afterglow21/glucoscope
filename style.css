@@ -976,7 +976,7 @@ body{
   white-space:pre-line;
 }
 
-@media (max-width: 720px){
+@media (max-width: 720px), (max-width: 960px) and (orientation: landscape) and (hover: none) and (pointer: coarse){
   .comment-card-header{
     align-items:flex-start;
     flex-direction:column;
@@ -1016,7 +1016,7 @@ body{
   }
 }
 
-@media (max-width: 720px){
+@media (max-width: 720px), (max-width: 960px) and (orientation: landscape) and (hover: none) and (pointer: coarse){
   .score-main{
     gap:18px;
     transform:translateY(-12px);
@@ -1043,7 +1043,7 @@ body{
   }
 }
 
-@media (max-width: 720px){
+@media (max-width: 720px), (max-width: 960px) and (orientation: landscape) and (hover: none) and (pointer: coarse){
   .current-delta{
     top:-6px;
     right:-42px;
@@ -2459,7 +2459,7 @@ canvas{
   }
 }
 
-@media (max-width: 720px){
+@media (max-width: 720px), (max-width: 960px) and (orientation: landscape) and (hover: none) and (pointer: coarse){
   .collection-grid{
     grid-template-columns:repeat(2, 1fr);
   }
@@ -2493,7 +2493,7 @@ canvas{
   }
 }
 
-@media (max-width: 720px){
+@media (max-width: 720px), (max-width: 960px) and (orientation: landscape) and (hover: none) and (pointer: coarse){
   .collection-status{
     align-items:flex-start;
   }
@@ -2972,7 +2972,7 @@ canvas{
   display:none;
 }
 
-@media (max-width: 720px){
+@media (max-width: 720px), (max-width: 960px) and (orientation: landscape) and (hover: none) and (pointer: coarse){
   html{
     -webkit-text-size-adjust:100%;
     text-size-adjust:100%;
@@ -3626,7 +3626,7 @@ canvas{
   cursor:pointer;
 }
 
-@media (max-width: 720px){
+@media (max-width: 720px), (max-width: 960px) and (orientation: landscape) and (hover: none) and (pointer: coarse){
   :root{
     --mobile-ui-font:13px;
     --mobile-small-font:11px;
@@ -4167,5 +4167,155 @@ canvas{
   html:not(.force-desktop-view) .mobile-bottom-nav-icon{
     min-height:0;
     font-size:15px;
+  }
+}
+
+
+/* ========================================================================== 
+   Mobile Navigation Phase 2.1 refinements
+   - Keep phone layout active in landscape
+   - Prevent TIR text from touching the donut ring
+   - Fit Reflection on one screen where practical
+   ========================================================================== */
+
+@media (max-width: 720px), (max-width: 960px) and (orientation: landscape) and (hover: none) and (pointer: coarse){
+  .mobile-range-donut-inner strong{
+    max-width:100%;
+    padding:0 4px;
+    font-size:clamp(18px,5.7vw,24px);
+    line-height:.95;
+    letter-spacing:-.055em;
+    white-space:nowrap;
+    text-align:center;
+  }
+
+  body.mobile-page-graph .mobile-range-donut-inner strong{
+    font-size:clamp(16px,3.2vw,20px);
+  }
+
+  body.mobile-page-reflection{
+    overflow:hidden;
+  }
+
+  body.mobile-page-reflection .dashboard{
+    height:100dvh;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+
+  body.mobile-page-reflection #liveView{
+    flex:1 1 auto;
+    min-height:0;
+    display:grid;
+    grid-template-rows:minmax(150px,.78fr) minmax(0,1.22fr);
+    gap:8px;
+    overflow:hidden;
+  }
+
+  body.mobile-page-reflection #liveView > .hero-grid{
+    min-height:0;
+    margin:0;
+  }
+
+  body.mobile-page-reflection #liveView .hero-score-card{
+    height:100%;
+    min-height:0;
+    margin:0;
+    padding:11px 13px;
+  }
+
+  body.mobile-page-reflection .score-header{
+    min-height:30px;
+    margin-bottom:4px;
+  }
+
+  body.mobile-page-reflection .score-header .label{
+    font-size:17px;
+  }
+
+  body.mobile-page-reflection .score-badge{
+    padding:6px 10px;
+    font-size:12px;
+  }
+
+  body.mobile-page-reflection .score-main{
+    display:grid;
+    grid-template-columns:82px minmax(0,1fr);
+    align-items:center;
+    gap:10px;
+    margin:0;
+  }
+
+  body.mobile-page-reflection .score-gluco,
+  body.mobile-page-reflection .score-gluco-image{
+    width:76px;
+    height:76px;
+  }
+
+  body.mobile-page-reflection .score-value{
+    font-size:clamp(54px,16vw,72px);
+    line-height:.86;
+  }
+
+  body.mobile-page-reflection .score-message{
+    margin-top:3px;
+    font-size:14px;
+    line-height:1.42;
+  }
+
+  body.mobile-page-reflection .score-meta{
+    margin-top:5px;
+    font-size:10px;
+    line-height:1.25;
+  }
+
+  body.mobile-page-reflection #liveView > .metric-grid{
+    min-height:0;
+    height:100%;
+    margin:0;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    grid-template-rows:repeat(3,minmax(0,1fr));
+    gap:7px;
+  }
+
+  body.mobile-page-reflection .metric-card{
+    min-height:0;
+    height:100%;
+    padding:9px 10px;
+    border-radius:16px;
+    overflow:hidden;
+  }
+
+  body.mobile-page-reflection .metric-label{
+    font-size:11px;
+    line-height:1.15;
+  }
+
+  body.mobile-page-reflection .metric-value{
+    margin-top:2px;
+    font-size:clamp(27px,8.8vw,38px);
+    line-height:.95;
+    letter-spacing:-.045em;
+  }
+
+  body.mobile-page-reflection .metric-desc{
+    margin-top:2px;
+    font-size:10px;
+    line-height:1.15;
+  }
+
+  body.mobile-page-reflection .metric-desc small{
+    display:none;
+  }
+}
+
+@media (max-width: 960px) and (orientation: landscape) and (hover: none) and (pointer: coarse){
+  html:not(.force-desktop-view) body.mobile-page-graph{
+    overflow:hidden;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .mobile-range-donut-inner strong{
+    font-size:clamp(15px,2.4vw,19px);
   }
 }
