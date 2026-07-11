@@ -15,6 +15,7 @@ const AI_LETTER_WORKER_ENABLED_STORAGE_KEY = "glucoscope.aiLetterWorkerEnabled.v
 const AI_LETTER_LOCAL_CACHE_STORAGE_KEY = "glucoscope.aiLetterLocalCache.v1";
 const AI_LETTER_MODE_STORAGE_KEY = "glucoscope.aiLetterMode.v1";
 const AI_LETTER_LOCAL_CACHE_MAX_ITEMS = 30;
+const AI_LETTER_LOCAL_CACHE_FRESH_MS = 60 * 60 * 1000;
 const AI_LETTER_MODES = ["letter", "deep"];
 const TURNSTILE_SITE_KEY = "0x4AAAAAADyftbRcWQW23mEa";
 const TURNSTILE_SCRIPT_ID = "glucoscope-turnstile-script";
@@ -25,6 +26,7 @@ let currentAiLetterMode = localStorage.getItem(AI_LETTER_MODE_STORAGE_KEY) === "
 let latestAiLetterSummary = null;
 let latestRuleCommentMetrics = null;
 let aiLetterRequestInFlight = false;
+let aiLetterCacheRefreshTimer = null;
 
 const GLUCO_NORMAL_MAX_ID = 50;
 const GLUCO_LUCKY_MIN_ID = 51;
@@ -206,6 +208,7 @@ const translations = {
     aiLetterButtonPreparing: "AI分析は準備中",
     aiLetterButtonReady: "AI分析を試す",
     aiLetterButtonCached: "保存済みの分析を表示",
+    aiLetterButtonRefresh: "もう一度AI分析",
     aiLetterButtonLoading: "グルコがお手紙を書いてるよ...",
     aiLetterStatusPreparing: "AIお手紙の準備を確認しています。",
     aiLetterStatusLocalOnly: "",
@@ -214,6 +217,7 @@ const translations = {
     aiLetterStatusSuccess: "グルコのお手紙を表示しました🍀",
     aiLetterStatusCached: "前回のグルコAIお手紙を表示しました🍀",
     aiLetterStatusLocalCache: "保存済みのグルコAIお手紙を表示しています🍀",
+    aiLetterStatusFreshCache: "1時間以内に保存されたグルコAIお手紙を表示しました。新しいAI生成は行っていません🍀",
     aiLetterStatusLocalCacheAfterLimit: "今日の新しいお手紙は上限に達しました。保存済みのお手紙を表示しています🍀",
     aiLetterStatusRateLimited: "今日の新しいAIお手紙は上限に達しました。表示中または保存済みのお手紙があれば、そのまま読めます。ChatGPTコピー機能も使えます🍀",
     aiLetterStatusBudgetStopped: "今月のAI分析は利用上限に近づいたため、新しいお手紙を少しお休みしています。",
@@ -264,6 +268,7 @@ const translations = {
     periodSevenDays: "7日",
     periodThirtyDays: "30日",
     periodCustom: "カスタム",
+    customDialogTitle: "表示する期間を選ぶ",
     customFromLabel: "開始",
     customToLabel: "終了",
     customApplyLabel: "表示",
@@ -372,6 +377,8 @@ const translations = {
     aiLetterPanelChat: "ChatGPT",
     aiLetterButtonPreparing: "AI analysis is preparing",
     aiLetterButtonReady: "Try AI analysis",
+    aiLetterButtonCached: "Show saved analysis",
+    aiLetterButtonRefresh: "Run AI analysis again",
     aiLetterButtonLoading: "Gluco is writing...",
     aiLetterStatusPreparing: "Checking whether AI letters are ready.",
     aiLetterStatusLocalOnly: "AI letters are not available in this view yet.",
@@ -380,6 +387,7 @@ const translations = {
     aiLetterStatusSuccess: "Gluco reflection displayed 🍀",
     aiLetterStatusCached: "Previous Gluco AI reflection displayed 🍀",
     aiLetterStatusLocalCache: "Saved Gluco AI reflection displayed 🍀",
+    aiLetterStatusFreshCache: "A Gluco AI reflection saved within the last hour was displayed. No new AI generation was used 🍀",
     aiLetterStatusLocalCacheAfterLimit: "Today’s new reflection has reached its limit. A saved reflection is displayed 🍀",
     aiLetterStatusRateLimited: "Today’s new AI reflections have reached the limit. The previous reflection and ChatGPT copy handoff are still available 🍀",
     aiLetterStatusBudgetStopped: "New AI letters are paused because the monthly AI limit is near.",
@@ -430,6 +438,7 @@ const translations = {
     periodSevenDays: "7 days",
     periodThirtyDays: "30 days",
     periodCustom: "Custom",
+    customDialogTitle: "Choose a date range",
     customFromLabel: "From",
     customToLabel: "To",
     customApplyLabel: "Show",
@@ -929,6 +938,22 @@ const livePeriodOptions = {
   custom: { key: "custom", days: 1, offsetDays: 0, count: 1000 }
 };
 
+let mobileCustomRangeDialogOpen = false;
+
+function isMobileUiLayout() {
+  if (document.documentElement.classList.contains("force-desktop-view")) return false;
+  return Boolean(window.matchMedia?.("(max-width: 720px), (max-width: 960px) and (orientation: landscape) and (hover: none) and (pointer: coarse)").matches);
+}
+
+function setMobileCustomRangeDialog(open) {
+  mobileCustomRangeDialogOpen = Boolean(open);
+  document.body.classList.toggle("custom-range-dialog-open", mobileCustomRangeDialogOpen);
+  syncCustomRangeInputs();
+  if (mobileCustomRangeDialogOpen) {
+    window.setTimeout(() => document.getElementById("customRangeStart")?.focus(), 0);
+  }
+}
+
 
 function formatDateInputValue(date = new Date()) {
   const year = date.getFullYear();
@@ -1023,7 +1048,7 @@ function syncCustomRangeInputs(now = Date.now()) {
 
   if (startInput && !startInput.value) startInput.value = values.startDate;
   if (endInput && !endInput.value) endInput.value = values.endDate;
-  if (controls) controls.hidden = currentLivePeriod !== "custom";
+  if (controls) controls.hidden = isMobileUiLayout() ? !mobileCustomRangeDialogOpen : currentLivePeriod !== "custom";
 }
 
 function saveCustomRangeFromInputs() {
@@ -1105,8 +1130,14 @@ function setupPeriodSwitch() {
   document.querySelectorAll(".period-button").forEach((button) => {
     button.addEventListener("click", () => {
       const nextPeriod = button.dataset.period;
-      if (!livePeriodOptions[nextPeriod] || nextPeriod === currentLivePeriod) return;
+      if (!livePeriodOptions[nextPeriod]) return;
 
+      if (nextPeriod === "custom" && isMobileUiLayout()) {
+        setMobileCustomRangeDialog(true);
+        return;
+      }
+
+      if (nextPeriod === currentLivePeriod) return;
       currentLivePeriod = nextPeriod;
       if (currentLivePeriod === "custom") saveCustomRangeFromInputs();
       localStorage.setItem(LIVE_PERIOD_STORAGE_KEY, currentLivePeriod);
@@ -1121,10 +1152,16 @@ function setupPeriodSwitch() {
       saveCustomRangeFromInputs();
       currentLivePeriod = "custom";
       localStorage.setItem(LIVE_PERIOD_STORAGE_KEY, currentLivePeriod);
+      if (isMobileUiLayout()) setMobileCustomRangeDialog(false);
       updatePeriodButtons();
       loadDailyStats();
     });
   }
+
+  document.getElementById("customRangeClose")?.addEventListener("click", () => setMobileCustomRangeDialog(false));
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && mobileCustomRangeDialogOpen) setMobileCustomRangeDialog(false);
+  });
 
   updatePeriodButtons();
 }
@@ -1961,7 +1998,7 @@ function getAiLetterLocalCacheKey(summary = {}, mode = currentAiLetterMode) {
     summary.period || currentLivePeriod || "today",
     summary.slot || "unknown",
     normalizeAiLetterMode(mode),
-    summary.rangeLabel || ""
+    summary.cacheRangeKey || summary.rangeLabel || ""
   ].join("|");
 }
 
@@ -2002,8 +2039,45 @@ function getCachedAiLetter(summary = latestAiLetterSummary, mode = currentAiLett
   return item;
 }
 
+function getAiLetterCacheAgeMs(item) {
+  const savedAt = Date.parse(item?.savedAt || "");
+  if (!Number.isFinite(savedAt)) return Number.POSITIVE_INFINITY;
+  return Math.max(0, Date.now() - savedAt);
+}
+
+function isAiLetterCacheFresh(item, maxAgeMs = AI_LETTER_LOCAL_CACHE_FRESH_MS) {
+  return Boolean(item && getAiLetterCacheAgeMs(item) < maxAgeMs);
+}
+
+function getFreshCachedAiLetter(summary = latestAiLetterSummary, mode = currentAiLetterMode) {
+  const item = getCachedAiLetter(summary, mode);
+  return isAiLetterCacheFresh(item) ? item : null;
+}
+
 function hasCachedAiLetter(summary = latestAiLetterSummary, mode = currentAiLetterMode) {
   return Boolean(getCachedAiLetter(summary, mode));
+}
+
+function hasFreshCachedAiLetter(summary = latestAiLetterSummary, mode = currentAiLetterMode) {
+  return Boolean(getFreshCachedAiLetter(summary, mode));
+}
+
+function scheduleAiLetterCacheButtonRefresh(summary = latestAiLetterSummary, mode = currentAiLetterMode) {
+  if (aiLetterCacheRefreshTimer) {
+    window.clearTimeout(aiLetterCacheRefreshTimer);
+    aiLetterCacheRefreshTimer = null;
+  }
+
+  const item = getCachedAiLetter(summary, mode);
+  if (!item) return;
+
+  const remainingMs = AI_LETTER_LOCAL_CACHE_FRESH_MS - getAiLetterCacheAgeMs(item);
+  if (remainingMs <= 0) return;
+
+  aiLetterCacheRefreshTimer = window.setTimeout(() => {
+    aiLetterCacheRefreshTimer = null;
+    updateAiLetterControls(null, "", { preserveAiStatus: true });
+  }, remainingMs + 250);
 }
 
 function saveAiLetterLocalCache(summary, data, letterText, mode = currentAiLetterMode) {
@@ -2027,7 +2101,8 @@ function saveAiLetterLocalCache(summary, data, letterText, mode = currentAiLette
       label: summary.slotLabel || ""
     },
     period: summary.period || currentLivePeriod || "today",
-    rangeLabel: summary.rangeLabel || ""
+    rangeLabel: summary.rangeLabel || "",
+    cacheRangeKey: summary.cacheRangeKey || ""
   };
 
   writeAiLetterLocalCache(trimAiLetterLocalCache(cache));
@@ -2532,15 +2607,20 @@ function updateAiLetterControls(statusKey = null, statusType = "", options = {})
   const aiButton = document.getElementById("aiLetterButton");
   if (aiButton) {
     const hasCachedCurrentMode = hasCachedAiLetter(latestAiLetterSummary, currentAiLetterMode);
+    const hasFreshCachedCurrentMode = hasFreshCachedAiLetter(latestAiLetterSummary, currentAiLetterMode);
     aiButton.disabled = !hasSummary || !workerEnabled || aiLetterRequestInFlight;
 
     if (aiLetterRequestInFlight) {
       aiButton.textContent = t("aiLetterButtonLoading");
-    } else if (workerEnabled && hasSummary && hasCachedCurrentMode) {
+    } else if (workerEnabled && hasSummary && hasFreshCachedCurrentMode) {
       aiButton.textContent = t("aiLetterButtonCached");
+    } else if (workerEnabled && hasSummary && hasCachedCurrentMode) {
+      aiButton.textContent = t("aiLetterButtonRefresh");
     } else {
       aiButton.textContent = workerEnabled && hasSummary ? t("aiLetterButtonReady") : t("aiLetterButtonPreparing");
     }
+
+    scheduleAiLetterCacheButtonRefresh(latestAiLetterSummary, currentAiLetterMode);
   }
 
   const aiStatus = document.getElementById("aiLetterStatus");
@@ -2570,9 +2650,11 @@ function forceEnableAiLetterButtonSoon() {
 
     if (aiButton && hasSummary && workerEnabled && !aiLetterRequestInFlight) {
       aiButton.disabled = false;
-      aiButton.textContent = hasCachedAiLetter(latestAiLetterSummary, currentAiLetterMode)
+      aiButton.textContent = hasFreshCachedAiLetter(latestAiLetterSummary, currentAiLetterMode)
         ? t("aiLetterButtonCached")
-        : t("aiLetterButtonReady");
+        : hasCachedAiLetter(latestAiLetterSummary, currentAiLetterMode)
+          ? t("aiLetterButtonRefresh")
+          : t("aiLetterButtonReady");
     }
   }, 0);
 }
@@ -2580,6 +2662,30 @@ function forceEnableAiLetterButtonSoon() {
 function formatAiDateRange(rangeStart, rangeEnd) {
   if (!Number.isFinite(rangeStart) || !Number.isFinite(rangeEnd)) return "--";
   return `${formatDateTime(new Date(rangeStart))} ${t("chartRangeSeparator")} ${formatDateTime(new Date(rangeEnd))}`;
+}
+
+function getAiLetterCacheDateKey(timestamp) {
+  if (!Number.isFinite(timestamp)) return "unknown-date";
+  return formatDateInputValue(new Date(timestamp));
+}
+
+function getAiLetterCacheRangeKey(periodKey, rangeStart, rangeEnd) {
+  const normalizedPeriod = livePeriodOptions[periodKey] ? periodKey : "today";
+  const startDateKey = getAiLetterCacheDateKey(rangeStart);
+  const endDateKey = getAiLetterCacheDateKey(rangeEnd);
+
+  if (normalizedPeriod === "custom") {
+    return `${normalizedPeriod}:${startDateKey}:${endDateKey}`;
+  }
+
+  if (normalizedPeriod === "today" || normalizedPeriod === "yesterday") {
+    return `${normalizedPeriod}:${startDateKey}`;
+  }
+
+  // Seven- and thirty-day windows move as new readings arrive. The one-hour
+  // freshness window controls regeneration, while the local day keeps cache
+  // entries separate across dates.
+  return `${normalizedPeriod}:${endDateKey}`;
 }
 
 function getLatestDeltaFromEntries(entries) {
@@ -2640,6 +2746,7 @@ function buildAiLetterSummary({ periodKey, rangeStart, rangeEnd, latest, entries
     slot: slot.key,
     slotLabel: slot.label,
     rangeLabel: formatAiDateRange(rangeStart, rangeEnd),
+    cacheRangeKey: getAiLetterCacheRangeKey(periodKey, rangeStart, rangeEnd),
     latestMeasuredAt: latestDate ? formatDateTime(latestDate) : "--",
     currentGlucose: latest?.sgv ?? null,
     direction,
@@ -2808,10 +2915,10 @@ async function handleAiLetterRequest(mode = currentAiLetterMode, options = {}) {
     return;
   }
 
-  const cached = getCachedAiLetter(latestAiLetterSummary, analysisMode);
+  const cached = getFreshCachedAiLetter(latestAiLetterSummary, analysisMode);
   if (cached) {
     showAiLetterResult(cached.text);
-    setAiLetterPanelStatus("aiLetterStatusLocalCache", "success");
+    setAiLetterPanelStatus("aiLetterStatusFreshCache", "success");
     updateAiLetterControls(null, "", { preserveAiStatus: true });
     forceEnableAiLetterButtonSoon();
     return;

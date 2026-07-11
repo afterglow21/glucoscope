@@ -22,7 +22,7 @@
     })();
   </script>
   <title>GlucoScope</title>
-  <link rel="stylesheet" href="style.css?v=20260712-se-about-ai-limits-1">
+  <link rel="stylesheet" href="style.css?v=20260713-cache-custom-about-1">
 </head>
 <body>
 
@@ -207,7 +207,11 @@
           <button type="button" class="period-button" data-period="thirty" data-i18n-key="periodThirtyDays">30日</button>
           <button type="button" class="period-button" data-period="custom" data-i18n-key="periodCustom">カスタム</button>
         </div>
-        <div id="customRangeControls" class="custom-range-controls" hidden>
+        <div id="customRangeControls" class="custom-range-controls" role="dialog" aria-modal="true" aria-labelledby="customRangeDialogTitle" hidden>
+          <div class="custom-range-dialog-header">
+            <strong id="customRangeDialogTitle" data-i18n-key="customDialogTitle">表示する期間を選ぶ</strong>
+            <button id="customRangeClose" type="button" class="custom-range-close" aria-label="閉じる">×</button>
+          </div>
           <label><span data-i18n-key="customFromLabel">開始</span><span class="date-input-wrap"><input id="customRangeStart" type="date"><button type="button" class="date-input-icon" data-date-target="customRangeStart" aria-label="開始日のカレンダーを開く">📅</button></span></label>
           <label><span data-i18n-key="customToLabel">終了</span><span class="date-input-wrap"><input id="customRangeEnd" type="date"><button type="button" class="date-input-icon" data-date-target="customRangeEnd" aria-label="終了日のカレンダーを開く">📅</button></span></label>
           <button id="customRangeApply" type="button" data-i18n-key="customApplyLabel">表示</button>
@@ -491,6 +495,6 @@
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js"></script>
-<script src="js/app.js?v=20260712-se-about-ai-limits-1"></script>
+<script src="js/app.js?v=20260713-cache-custom-about-1"></script>
 </body>
 </html>

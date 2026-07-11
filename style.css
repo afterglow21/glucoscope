@@ -5794,3 +5794,285 @@ canvas{
   font-size:13px;
   line-height:1.65;
 }
+
+/* ========================================================================== 
+   Mobile Phase 2.5
+   - Keep multi-digit glucose deltas out of the glucose value
+   - Use a mobile custom-range dialog instead of expanding inside the graph
+   - Restore short metric descriptions on iPhone SE-sized screens
+   ========================================================================== */
+
+.custom-range-dialog-header{
+  display:none;
+}
+
+.custom-range-close{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:34px;
+  height:34px;
+  padding:0;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(15,23,42,.54);
+  color:#e5eefb;
+  font-size:22px;
+  line-height:1;
+}
+
+@media (max-width:720px) and (orientation:portrait) and (hover:none) and (pointer:coarse){
+  body.mobile-page-glucose .current-main{
+    gap:7px;
+    width:100%;
+    justify-content:center;
+  }
+
+  body.mobile-page-glucose .current-value-wrap{
+    min-width:0;
+    padding-right:clamp(46px,12vw,60px);
+  }
+
+  body.mobile-page-glucose #glucoseValue{
+    font-size:clamp(68px,21vw,100px);
+    letter-spacing:-.045em;
+  }
+
+  body.mobile-page-glucose .current-delta{
+    top:4px;
+    right:0;
+    min-width:42px;
+    max-width:58px;
+    padding:3px 6px;
+    font-size:clamp(11px,3.2vw,15px);
+  }
+
+  body.mobile-page-glucose .arrow{
+    font-size:clamp(40px,11vw,56px);
+  }
+
+  body.mobile-page-glucose .unit{
+    margin-bottom:7px;
+    font-size:clamp(13px,3.8vw,17px);
+  }
+
+  body.custom-range-dialog-open{
+    overflow:hidden !important;
+  }
+
+  body.custom-range-dialog-open::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    z-index:300;
+    background:rgba(3,8,20,.76);
+    backdrop-filter:blur(6px);
+  }
+
+  .custom-range-controls:not([hidden]){
+    position:fixed;
+    left:max(14px, env(safe-area-inset-left));
+    right:max(14px, env(safe-area-inset-right));
+    top:50%;
+    z-index:310;
+    display:grid !important;
+    grid-template-columns:1fr;
+    gap:12px;
+    width:auto;
+    max-width:420px;
+    margin:0 auto;
+    padding:16px;
+    transform:translateY(-50%);
+    border:1px solid rgba(92,226,135,.34);
+    border-radius:22px;
+    background:linear-gradient(180deg,rgba(32,47,70,.98),rgba(18,29,48,.98));
+    box-shadow:0 28px 70px rgba(0,0,0,.48);
+  }
+
+  .custom-range-dialog-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+
+  .custom-range-dialog-header strong{
+    color:#f4f8ff;
+    font-size:16px;
+    line-height:1.3;
+  }
+
+  .custom-range-controls label{
+    display:grid;
+    grid-template-columns:46px minmax(0,1fr);
+    align-items:center;
+    gap:8px;
+    min-width:0;
+    color:#cbd8ea;
+    font-size:13px;
+    font-weight:800;
+  }
+
+  .custom-range-controls .date-input-wrap,
+  .custom-range-controls input[type="date"]{
+    min-width:0;
+    width:100%;
+  }
+
+  .custom-range-controls #customRangeApply{
+    min-height:44px;
+    border-radius:14px;
+    font-size:14px;
+    font-weight:900;
+  }
+
+  body.mobile-page-graph .period-button{
+    white-space:nowrap;
+    word-break:keep-all;
+    overflow:hidden;
+    text-overflow:clip;
+  }
+}
+
+@media (max-width:375px) and (orientation:portrait) and (hover:none) and (pointer:coarse){
+  body.mobile-page-glucose .current-value-wrap{
+    padding-right:45px;
+  }
+
+  body.mobile-page-glucose #glucoseValue{
+    font-size:clamp(58px,18vw,70px);
+  }
+
+  body.mobile-page-glucose .current-delta{
+    top:2px;
+    min-width:38px;
+    max-width:44px;
+    padding:2px 4px;
+    font-size:10px;
+  }
+
+  body.mobile-page-graph .period-button{
+    min-width:0;
+    padding-inline:1px;
+    font-size:7px;
+    letter-spacing:-.06em;
+  }
+
+  body.mobile-page-reflection #liveView{
+    grid-template-rows:minmax(100px,.78fr) minmax(0,1.22fr);
+    gap:3px;
+  }
+
+  body.mobile-page-reflection .metric-card{
+    padding:4px 5px;
+  }
+
+  body.mobile-page-reflection .metric-label{
+    font-size:7.5px;
+  }
+
+  body.mobile-page-reflection .metric-value{
+    font-size:20px;
+  }
+
+  body.mobile-page-reflection .metric-desc{
+    display:block;
+    max-width:100%;
+    margin-top:2px;
+    overflow:hidden;
+    color:#aebdd2;
+    font-size:7px;
+    font-weight:700;
+    line-height:1.05;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+  }
+
+  body.mobile-page-reflection .metric-desc small{
+    display:none;
+  }
+}
+
+@media (max-width:960px) and (orientation:landscape) and (hover:none) and (pointer:coarse){
+  body.custom-range-dialog-open{
+    overflow:hidden !important;
+  }
+
+  body.custom-range-dialog-open::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    z-index:300;
+    background:rgba(3,8,20,.76);
+    backdrop-filter:blur(6px);
+  }
+
+  .custom-range-controls:not([hidden]){
+    position:fixed;
+    left:max(18px, env(safe-area-inset-left));
+    right:max(18px, env(safe-area-inset-right));
+    top:50%;
+    z-index:310;
+    display:grid !important;
+    grid-template-columns:1fr 1fr auto;
+    align-items:end;
+    gap:10px;
+    width:min(680px,calc(100vw - 36px - env(safe-area-inset-left) - env(safe-area-inset-right)));
+    max-height:calc(100dvh - 24px);
+    margin:0 auto;
+    padding:14px;
+    overflow:auto;
+    transform:translateY(-50%);
+    border:1px solid rgba(92,226,135,.34);
+    border-radius:20px;
+    background:linear-gradient(180deg,rgba(32,47,70,.98),rgba(18,29,48,.98));
+    box-shadow:0 28px 70px rgba(0,0,0,.48);
+  }
+
+  .custom-range-dialog-header{
+    display:flex;
+    grid-column:1 / -1;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+
+  .custom-range-dialog-header strong{
+    color:#f4f8ff;
+    font-size:14px;
+    line-height:1.3;
+  }
+
+  .custom-range-controls label{
+    display:grid;
+    grid-template-columns:38px minmax(0,1fr);
+    align-items:center;
+    gap:6px;
+    min-width:0;
+    color:#cbd8ea;
+    font-size:11px;
+    font-weight:800;
+  }
+
+  .custom-range-controls .date-input-wrap,
+  .custom-range-controls input[type="date"]{
+    min-width:0;
+    width:100%;
+  }
+
+  .custom-range-controls #customRangeApply{
+    min-height:38px;
+    min-width:72px;
+    border-radius:12px;
+    font-size:12px;
+    font-weight:900;
+  }
+
+  body.mobile-page-graph .period-button{
+    min-width:0;
+    white-space:nowrap;
+    word-break:keep-all;
+    overflow:hidden;
+    text-overflow:clip;
+  }
+}

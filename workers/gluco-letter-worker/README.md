@@ -20,7 +20,7 @@ GitHub Pages
 - Daily, time-slot, and monthly budget guards are enabled.
 - Usage counters are persisted in a singleton SQLite-backed Durable Object.
 - The usage counter stores operational totals only. It does not store glucose values or AI letter text.
-- AI letter cache is still browser-local. A shared Workers KV cache is a separate future step.
+- AI letter cache is still browser-local. For the same period, slot, analysis mode, and range, a saved letter younger than one hour is reused without a new OpenAI call. After one hour, a new generation can be requested if the guard limits allow it. A shared Workers KV cache is a separate future step.
 
 ## Local development
 

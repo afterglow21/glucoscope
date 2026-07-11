@@ -221,7 +221,31 @@ Suggested wording:
 前回のグルコのお手紙を表示しています🍀
 ```
 
-### 5.3 Past periods
+### 5.3 One-hour browser cache refresh window
+
+Until the shared cache is implemented, the public page uses a browser-local cache.
+
+For the same:
+
+- page mode
+- period
+- morning / afternoon / night slot
+- analysis mode
+- displayed range
+
+a saved AI letter that is less than one hour old should be shown without sending a new request to OpenAI.
+
+After one hour, the button should allow a new AI generation when the daily, slot, and budget guards still allow it. The older saved letter remains available as a fallback if the new request fails or the limit has been reached.
+
+Suggested button states:
+
+```text
+No cache: AI分析を試す
+Cache under one hour: 保存済みの分析を表示
+Cache one hour or older: もう一度AI分析
+```
+
+### 5.4 Past periods
 
 For past periods, cache can be more stable.
 
