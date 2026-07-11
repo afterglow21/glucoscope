@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Privacy Notes / プライバシーノート | GlucoScope</title>
+  <link rel="stylesheet" href="../../style.css?v=20260711-trust-usage-1">
+</head>
+<body class="about-detail-body trust-document-body">
+  <main class="about-detail-wrap trust-document-wrap">
+    <nav class="about-detail-topbar" aria-label="Trust Pack navigation">
+      <a class="about-detail-brand" href="../../index.html#more">🍀 GlucoScope</a>
+      <a class="about-detail-back" href="../about/trust-pack.html">Trust Packへ戻る</a>
+    </nav>
+
+    <section class="card about-detail-hero about-detail-hero-with-art trust-document-hero">
+      <div class="about-detail-hero-copy">
+        <p class="about-section-kicker">Trust Pack · Public Summary</p>
+        <h1><span class="about-detail-title-en">Privacy Notes</span><span class="about-detail-title-jp">プライバシーノート</span></h1>
+        <p>公開プレビューで扱うデータと、扱わないデータをできるだけ分かりやすく示します。</p>
+      </div>
+      <img class="about-detail-hero-art" src="../../assets/gluco/about/gluco-small-notice.png" alt="プライバシーノートを案内するGluco">
+    </section>
+
+    <div class="trust-source-note">🔐 PROJECT_BIBLE / SAFETY.mdを基に、公開ページ向けに読みやすく整理した要約です。正本は原文をご確認ください。</div>
+
+    <section class="trust-language-panel card" lang="ja">
+      <div class="trust-language-heading"><span>JP</span><h2>日本語</h2></div>
+      <section class="trust-section">
+  <h2>現在の公開プレビュー</h2>
+  <p>現在のページはKazuma自身のNightscoutデータを表示する公開サンプルです。公開URLを知る人は表示内容を閲覧できます。</p>
+</section>
+<section class="trust-section">
+  <h2>APIキーをブラウザへ置かない</h2>
+  <p>OpenAI APIキーとTurnstileの秘密鍵はCloudflare WorkerのSecretとして管理し、GitHub PagesのHTMLやJavaScriptには置きません。</p>
+</section>
+<section class="trust-section">
+  <h2>AIへ送る内容</h2>
+  <p>AIお手紙では、表示中の期間、TIR、TAR、TBR、平均、CV、GMI、GlucoScore、傾向の要約など、振り返りに必要なサマリーをWorker経由で送ります。個人名や自由記述を必要以上に含めない設計を優先します。</p>
+</section>
+<section class="trust-section">
+  <h2>利用カウンター</h2>
+  <p>AIの生成回数、トークン数、推定利用額、Turnstile成功・失敗などの運用情報を保存します。血糖値やAIお手紙本文そのものを利用カウンターには保存しません。</p>
+</section>
+<section class="trust-section">
+  <h2>ブラウザ内キャッシュ</h2>
+  <p>現在、保存済みAIお手紙は主に閲覧したブラウザのlocalStorageへ保存されます。共有KVキャッシュは今後の実装課題です。</p>
+</section>
+<section class="trust-section">
+  <h2>将来の分析</h2>
+  <p>Cloudflare Web Analytics等を導入する場合も、血糖値やAIお手紙本文をイベント名として送らず、ページ閲覧の全体傾向だけを見る方針です。</p>
+</section>
+    </section>
+
+    <section class="trust-language-panel card trust-language-panel-en" lang="en">
+      <div class="trust-language-heading"><span>EN</span><h2>English summary</h2></div>
+      <section class="trust-section">
+  <h2>Public preview</h2>
+  <p>The current public sample displays Kazuma’s own Nightscout data to anyone who has the URL.</p>
+</section>
+<section class="trust-section">
+  <h2>Secrets stay server-side</h2>
+  <p>OpenAI and Turnstile secret keys are stored as Worker secrets, not in browser code.</p>
+</section>
+<section class="trust-section">
+  <h2>AI summaries</h2>
+  <p>Only the summary needed for reflection is sent through the Worker. Personal identifiers should be minimized.</p>
+</section>
+<section class="trust-section">
+  <h2>Operational counters</h2>
+  <p>Usage counts and estimated developer cost may be stored, but glucose values and letter text are not stored in the usage counter.</p>
+</section>
+    </section>
+
+    <section class="trust-related card">
+  <h2>Related documents / 関連ドキュメント</h2>
+  <div class="trust-related-links">
+    <a href="../about/trust-pack.html">Trust Pack一覧</a>
+    <a href="../../docs/Project_Bible/PROJECT_BIBLE_v1.0_DRAFT.md" target="_blank" rel="noopener">PROJECT_BIBLE原文</a>
+    <a href="../../SAFETY.md" target="_blank" rel="noopener">SAFETY.md原文</a>
+  </div>
+</section>
+  </main>
+</body>
+</html>

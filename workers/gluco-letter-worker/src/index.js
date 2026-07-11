@@ -1,3 +1,5 @@
+import { DurableObject } from "cloudflare:workers";
+
 const CONTRACT_VERSION = "gluco-ai-letter-worker-response-v0.1";
 const LETTER_SLOT_KEYS = ["morning", "afternoon", "night"];
 const ANALYSIS_MODE_KEYS = ["letter", "deep"];
@@ -18,7 +20,7 @@ const DEFAULT_GUARD_CONFIG = {
   outputPriceJpyPerMillionTokens: 200
 };
 
-let prototypeUsageState = null;
+let fallbackUsageState = null;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -169,8 +171,8 @@ function getSlotLabel(summary = {}, language = "ja") {
 
 function createUsageState(now = new Date(), config = DEFAULT_GUARD_CONFIG) {
   return {
-    kind: "prototype-memory",
-    note: "Prototype only. This in-memory state is not durable and will be replaced by KV/D1.",
+    kind: "durable-object-sqlite",
+    note: "Persisted in a singleton Cloudflare Durable Object. No glucose values or letter text are stored in this usage counter.",
     dayKey: getDayKey(now, config.timezoneOffsetHours),
     monthKey: getMonthKey(now, config.timezoneOffsetHours),
     dailyGenerationCount: 0,
@@ -273,35 +275,68 @@ function ensureSlotCounters(state) {
   ensureModeSlotCounters(state);
 }
 
-function getUsageState(config, now = new Date()) {
+function normalizeUsageState(storedState, config, now = new Date()) {
   const dayKey = getDayKey(now, config.timezoneOffsetHours);
   const monthKey = getMonthKey(now, config.timezoneOffsetHours);
+  let state = storedState && typeof storedState === "object"
+    ? cloneUsageState(storedState)
+    : createUsageState(now, config);
 
-  if (!prototypeUsageState || prototypeUsageState.monthKey !== monthKey) {
-    prototypeUsageState = createUsageState(now, config);
+  if (state.monthKey !== monthKey) {
+    state = createUsageState(now, config);
   }
 
-  ensureSlotCounters(prototypeUsageState);
+  state.kind = "durable-object-sqlite";
+  state.note = "Persisted in a singleton Cloudflare Durable Object. No glucose values or letter text are stored in this usage counter.";
+  ensureSlotCounters(state);
 
-  if (prototypeUsageState.dayKey !== dayKey) {
-    prototypeUsageState.dayKey = dayKey;
-    prototypeUsageState.dailyGenerationCount = 0;
-    prototypeUsageState.dailyCacheHitCount = 0;
-    prototypeUsageState.dailyRateLimitedCount = 0;
-    prototypeUsageState.dailyTurnstileVerifiedCount = 0;
-    prototypeUsageState.dailyTurnstileFailedCount = 0;
-    prototypeUsageState.dailyModeGenerationCounts = createEmptyModeCounts();
-    prototypeUsageState.dailyModeCacheHitCounts = createEmptyModeCounts();
-    prototypeUsageState.dailyModeRateLimitedCounts = createEmptyModeCounts();
-    prototypeUsageState.dailySlotGenerationCounts = createEmptySlotCounts();
-    prototypeUsageState.dailySlotCacheHitCounts = createEmptySlotCounts();
-    prototypeUsageState.dailySlotRateLimitedCounts = createEmptySlotCounts();
-    prototypeUsageState.dailyModeSlotGenerationCounts = createEmptyModeSlotCounts();
-    prototypeUsageState.dailyModeSlotCacheHitCounts = createEmptyModeSlotCounts();
-    prototypeUsageState.dailyModeSlotRateLimitedCounts = createEmptyModeSlotCounts();
+  if (state.dayKey !== dayKey) {
+    state.dayKey = dayKey;
+    state.dailyGenerationCount = 0;
+    state.dailyCacheHitCount = 0;
+    state.dailyRateLimitedCount = 0;
+    state.dailyTurnstileVerifiedCount = 0;
+    state.dailyTurnstileFailedCount = 0;
+    state.dailyModeGenerationCounts = createEmptyModeCounts();
+    state.dailyModeCacheHitCounts = createEmptyModeCounts();
+    state.dailyModeRateLimitedCounts = createEmptyModeCounts();
+    state.dailySlotGenerationCounts = createEmptySlotCounts();
+    state.dailySlotCacheHitCounts = createEmptySlotCounts();
+    state.dailySlotRateLimitedCounts = createEmptySlotCounts();
+    state.dailyModeSlotGenerationCounts = createEmptyModeSlotCounts();
+    state.dailyModeSlotCacheHitCounts = createEmptyModeSlotCounts();
+    state.dailyModeSlotRateLimitedCounts = createEmptyModeSlotCounts();
   }
 
-  return prototypeUsageState;
+  state.updatedAt = state.updatedAt || now.toISOString();
+  return state;
+}
+
+async function loadUsageState(env, config) {
+  if (env?.USAGE_COUNTER?.getByName) {
+    const stub = env.USAGE_COUNTER.getByName("glucoscope-global-usage");
+    return stub.getState(config);
+  }
+
+  fallbackUsageState = normalizeUsageState(fallbackUsageState, config);
+  fallbackUsageState.kind = "fallback-memory";
+  fallbackUsageState.note = "Fallback only. Deploy with the USAGE_COUNTER Durable Object binding for persistent counters.";
+  return cloneUsageState(fallbackUsageState);
+}
+
+async function persistUsageState(env, state, config) {
+  const normalized = normalizeUsageState(state, config);
+  normalized.updatedAt = new Date().toISOString();
+
+  if (env?.USAGE_COUNTER?.getByName) {
+    const stub = env.USAGE_COUNTER.getByName("glucoscope-global-usage");
+    return stub.saveState(normalized, config);
+  }
+
+  fallbackUsageState = cloneUsageState(normalized);
+  fallbackUsageState.kind = "fallback-memory";
+  fallbackUsageState.note = "Fallback only. Deploy with the USAGE_COUNTER Durable Object binding for persistent counters.";
+  return cloneUsageState(fallbackUsageState);
 }
 
 function cloneUsageState(state) {
@@ -1171,7 +1206,7 @@ function buildUsageReport({ state, config }) {
 
   return {
     status: "usage",
-    source: "prototype-worker",
+    source: state.kind === "durable-object-sqlite" ? "cloudflare-durable-object" : "worker-fallback",
     report: {
       today: {
         dayKey: state.dayKey,
@@ -1244,6 +1279,31 @@ function buildUsageReport({ state, config }) {
   };
 }
 
+
+export class GlucoUsageCounter extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx, env);
+    this.usageState = null;
+
+    ctx.blockConcurrencyWhile(async () => {
+      this.usageState = await ctx.storage.get("usage-state");
+    });
+  }
+
+  async getState(config = DEFAULT_GUARD_CONFIG) {
+    this.usageState = normalizeUsageState(this.usageState, config);
+    await this.ctx.storage.put("usage-state", this.usageState);
+    return cloneUsageState(this.usageState);
+  }
+
+  async saveState(nextState, config = DEFAULT_GUARD_CONFIG) {
+    this.usageState = normalizeUsageState(nextState, config);
+    this.usageState.updatedAt = new Date().toISOString();
+    await this.ctx.storage.put("usage-state", this.usageState);
+    return cloneUsageState(this.usageState);
+  }
+}
+
 export default {
   async fetch(request, env = {}) {
     if (request.method === "OPTIONS") {
@@ -1251,7 +1311,7 @@ export default {
     }
 
     const config = readGuardConfig(env);
-    const usageState = getUsageState(config);
+    const usageState = await loadUsageState(env, config);
 
     const url = new URL(request.url);
     if (url.pathname === "/api/gluco-letter/usage" && request.method === "GET") {
@@ -1315,6 +1375,7 @@ export default {
         config,
         turnstileVerification
       });
+      await persistUsageState(env, usageState, config);
 
       return errorResponse(
         buildTurnstileError(turnstileVerification),
@@ -1340,6 +1401,7 @@ export default {
     });
 
     if (forcedGuardError) {
+      await persistUsageState(env, usageState, config);
       const { status, ...errorBody } = forcedGuardError;
       return errorResponse(errorBody, status);
     }
@@ -1360,6 +1422,7 @@ export default {
         reason: guardBlock.reason,
         turnstileVerification
       });
+      await persistUsageState(env, usageState, config);
       const { status, ...errorBody } = guardError;
       return errorResponse(errorBody, status);
     }
@@ -1375,6 +1438,7 @@ export default {
       });
     } catch (error) {
       console.error("AI letter provider failed", error);
+      await persistUsageState(env, usageState, config);
 
       return errorResponse({
         code: "provider_error",
@@ -1397,12 +1461,13 @@ export default {
       requestUsage,
       summary
     });
+    const persistedUsageState = await persistUsageState(env, usageState, config);
 
     return okResponse(buildSuccessPayload({
       summary,
       payload,
       status: prototypeStatus,
-      usageState,
+      usageState: persistedUsageState,
       requestUsage,
       config,
       generationResult,

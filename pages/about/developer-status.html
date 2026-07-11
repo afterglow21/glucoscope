@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Developer Status / 開発ステータス | GlucoScope</title>
-  <link rel="stylesheet" href="../../style.css?v=20260711-mobile-app-23">
+  <link rel="stylesheet" href="../../style.css?v=20260711-trust-usage-1">
 </head>
 <body class="about-detail-body">
   <main class="about-detail-wrap">
@@ -59,13 +59,20 @@
 
       <div class="about-detail-mini-card">
         <div class="about-detail-mini-head"><span class="about-detail-mini-icon">🛡️</span><h3><span class="about-detail-mini-title-en">Trust &amp; Safety</span><span class="about-detail-mini-title-jp">安全方針</span></h3></div>
-        <p>Medical &amp; AI PrinciplesとSAFETY.mdを作成済みです。医療判断をしない境界、AIコメントの限界、緊急時の扱いを明記しています。</p>
-        <p><a href="../../SAFETY.md" target="_blank" rel="noopener">SAFETY.mdを読む →</a></p>
+        <p>Medical &amp; AI PrinciplesとSafety Policyを公開向けに整理済みです。医療判断をしない境界、AIコメントの限界、緊急時の扱いを明記しています。</p>
+        <p><a href="../trust/safety-policy.html" target="_blank" rel="noopener">Safety Policyを読む →</a></p>
+      </div>
+
+
+      <div class="about-detail-mini-card">
+        <div class="about-detail-mini-head"><span class="about-detail-mini-icon">📊</span><h3><span class="about-detail-mini-title-en">Persistent Usage Counter</span><span class="about-detail-mini-title-jp">利用カウンターの永続化</span></h3></div>
+        <p>AI生成回数、Turnstile確認、トークン数、推定利用額をCloudflare Durable Objectへ保存します。血糖値やAIお手紙本文は利用カウンターへ保存しません。</p>
+        <p><a href="usage-dashboard.html">Usage Dashboardを見る →</a></p>
       </div>
 
       <div class="about-detail-mini-card">
         <div class="about-detail-mini-head"><span class="about-detail-mini-icon">🧭</span><h3><span class="about-detail-mini-title-en">Next Steps</span><span class="about-detail-mini-title-jp">次の課題</span></h3></div>
-        <p>AIお手紙の共有KVキャッシュ、Cloudflare Web Analytics、Support / Affiliate方針、Journal / Clinicの実装が次の候補です。</p>
+        <p>AIお手紙の共有KVキャッシュ、Cloudflare Web Analytics、Journal / Clinicの実装、公開後のフィードバック反映が次の候補です。利用回数と推定利用額はDurable Objectへ永続保存する構成へ移行しています。</p>
         <p><a href="usage-dashboard.html">Usage Dashboardを見る →</a></p>
       </div>
     </section>

@@ -2085,15 +2085,15 @@ function getAiLetterUsageDetailFromResponse(data) {
   const cost = Number(usage.monthlyEstimatedCostJpy);
   if (!Number.isFinite(generations) || !Number.isFinite(cost)) return "";
 
-  const isPrototypeMemory = usage.storage === "prototype-memory";
+  const isTemporaryMemory = usage.storage !== "durable-object-sqlite";
 
   if (currentLanguage === "en") {
-    const label = isPrototypeMemory ? "this Worker session" : "this month";
-    return `(${label}: ${generations} new / approx. ¥${cost.toFixed(2)})`;
+    const label = isTemporaryMemory ? "this Worker session" : "this month";
+    return `(${label}: ${generations} new / approx. ¥${cost.toFixed(2)}, paid by the developer)`;
   }
 
-  const label = isPrototypeMemory ? "このWorker起動中" : "今月";
-  return `（${label}: 新規${generations}回 / 約${cost.toFixed(2)}円）`;
+  const label = isTemporaryMemory ? "このWorker起動中" : "今月";
+  return `（${label}: 新規${generations}回 / 約${cost.toFixed(2)}円・開発者負担）`;
 }
 
 function getAiLetterErrorStatusKey(data) {

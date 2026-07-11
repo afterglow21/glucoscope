@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Usage Dashboard / 使われ方の見える化 | GlucoScope</title>
-  <link rel="stylesheet" href="../../style.css?v=20260711-mobile-app-23">
+  <link rel="stylesheet" href="../../style.css?v=20260711-trust-usage-1">
 </head>
-<body class="about-detail-body">
-  <main class="about-detail-wrap">
+<body class="about-detail-body usage-dashboard-body">
+  <main class="about-detail-wrap usage-dashboard-wrap">
     <nav class="about-detail-topbar" aria-label="About navigation">
       <a class="about-detail-brand" href="../../index.html#more">🍀 GlucoScope</a>
       <a class="about-detail-back" href="../../index.html#more">その他へ戻る</a>
@@ -15,68 +15,209 @@
 
     <section class="card about-detail-hero about-detail-hero-with-art">
       <div class="about-detail-hero-copy">
-        <p class="about-section-kicker">Usage &amp; Sustainability · Updated 2026-07-11</p>
+        <p class="about-section-kicker">Usage &amp; Sustainability · Live Worker Report</p>
         <h1><span class="about-detail-title-en">Usage Dashboard</span><span class="about-detail-title-jp">使われ方の見える化</span></h1>
-        <p>GlucoScopeが安心して続いていくために、AI利用と公開ページの状態を必要な範囲だけ確認する入口です。</p>
+        <p>AIお手紙が安心して続いていくために、生成回数、安全確認、推定利用額を必要な範囲だけ見える形にしています。</p>
       </div>
       <img class="about-detail-hero-art" src="../../assets/gluco/about/gluco-data-link.png" alt="データのつながりを見守るGluco">
     </section>
 
-    <section class="about-detail-grid about-detail-language-stack">
+    <section class="usage-notice card">
+      <div class="usage-notice-icon">💴</div>
+      <div>
+        <strong>ここに表示されるAI利用額は、開発者（Kazuma）が負担する推定額です。</strong>
+        <p>このページを見た人や、AIお手紙を読んだ人へ請求される金額ではありません。GlucoScopeを無理なく続けるための運用確認として表示しています。</p>
+        <p class="usage-notice-en" lang="en">Estimated AI cost is paid by the developer. It is not a charge to visitors or readers.</p>
+      </div>
+    </section>
+
+    <section id="usageLiveRegion" class="usage-live-panel" aria-live="polite">
+      <div class="usage-loading card">
+        <span class="usage-loading-dot"></span>
+        <span>Cloudflare Workerの利用状況を読み込んでいます…</span>
+      </div>
+    </section>
+
+    <section class="usage-dashboard-grid" aria-label="AI usage metrics">
+      <article class="usage-metric-card usage-metric-primary">
+        <span class="usage-metric-kicker">TODAY</span>
+        <span id="usageTodayCount" class="usage-metric-value">--</span>
+        <span id="usageTodayLimit" class="usage-metric-label">AIお手紙の新規生成</span>
+      </article>
+
+      <article class="usage-metric-card">
+        <span class="usage-metric-kicker">REMAINING</span>
+        <span id="usageRemainingCount" class="usage-metric-value">--</span>
+        <span class="usage-metric-label">今日の残り生成可能数</span>
+      </article>
+
+      <article class="usage-metric-card">
+        <span class="usage-metric-kicker">THIS MONTH</span>
+        <span id="usageMonthCount" class="usage-metric-value">--</span>
+        <span class="usage-metric-label">今月の新規生成</span>
+      </article>
+
+      <article class="usage-metric-card usage-cost-card">
+        <span class="usage-metric-kicker">DEVELOPER COST</span>
+        <span id="usageEstimatedCost" class="usage-metric-value">--</span>
+        <span class="usage-metric-label">推定利用額（開発者負担）</span>
+      </article>
+    </section>
+
+    <section class="card usage-budget-card">
+      <div class="usage-section-heading">
+        <div>
+          <span class="usage-section-kicker">Monthly budget guard</span>
+          <h2>今月の費用ガード</h2>
+        </div>
+        <strong id="usageBudgetText">-- / --</strong>
+      </div>
+      <div class="usage-progress-track" aria-hidden="true"><span id="usageBudgetBar" class="usage-progress-bar"></span></div>
+      <p id="usageBudgetHelp">AIお手紙を無理なく続けるため、警告・停止しきい値を設定しています。</p>
+    </section>
+
+    <section class="usage-detail-grid">
+      <article class="card usage-detail-card">
+        <div class="usage-detail-head"><span>🍀</span><h2>分析モード</h2></div>
+        <dl class="usage-data-list">
+          <div><dt>やさしい分析</dt><dd id="usageGentleCount">--</dd></div>
+          <div><dt>しっかり分析</dt><dd id="usageDeepCount">--</dd></div>
+          <div><dt>キャッシュ表示</dt><dd id="usageCacheHits">--</dd></div>
+        </dl>
+      </article>
+
+      <article class="card usage-detail-card">
+        <div class="usage-detail-head"><span>🛡️</span><h2>安全確認</h2></div>
+        <dl class="usage-data-list">
+          <div><dt>Turnstile成功</dt><dd id="usageTurnstileOk">--</dd></div>
+          <div><dt>Turnstile失敗</dt><dd id="usageTurnstileFailed">--</dd></div>
+          <div><dt>上限で停止</dt><dd id="usageRateLimited">--</dd></div>
+        </dl>
+      </article>
+
+      <article class="card usage-detail-card">
+        <div class="usage-detail-head"><span>🗃️</span><h2>保存状態</h2></div>
+        <dl class="usage-data-list">
+          <div><dt>利用カウンター</dt><dd id="usageStorageKind">--</dd></div>
+          <div><dt>AIお手紙キャッシュ</dt><dd>ブラウザ内</dd></div>
+          <div><dt>共有KVキャッシュ</dt><dd>準備中</dd></div>
+        </dl>
+      </article>
+
+      <article class="card usage-detail-card">
+        <div class="usage-detail-head"><span>🕒</span><h2>更新情報</h2></div>
+        <dl class="usage-data-list">
+          <div><dt>集計日</dt><dd id="usageDayKey">--</dd></div>
+          <div><dt>集計月</dt><dd id="usageMonthKey">--</dd></div>
+          <div><dt>最終更新</dt><dd id="usageUpdatedAt">--</dd></div>
+        </dl>
+      </article>
+    </section>
+
+    <section class="about-detail-grid about-detail-language-stack usage-explainer">
       <div class="card about-detail-card about-copy-jp" lang="ja">
-        <p>現在のAIお手紙は、GitHub PagesからCloudflare Workerを呼び、Turnstileの安全確認後にOpenAIで生成します。</p>
-        <p>Workerには日次・時間帯別の生成上限と、月間費用を守るためのしきい値があります。血糖値の良し悪しを評価したり、個人を追跡したりするための仕組みではありません。</p>
-        <p>お手紙の保存は現在ブラウザ内キャッシュが中心です。別の人や別端末でも同じ保存済み分析を見られる共有KVキャッシュは、これから設計・実装します。</p>
+        <h2>この数字が表すもの</h2>
+        <p>保存するのは、生成回数、トークン数、推定利用額、Turnstile確認、上限到達などの運用情報です。血糖値やAIお手紙本文を、利用カウンターとして保存するものではありません。</p>
+        <p>推定利用額はOpenAIの利用状況から計算する開発者向けの目安です。閲覧者への請求ではありません。</p>
       </div>
-      <div class="card about-detail-card about-copy-en">
-        <p>AI letters are generated by OpenAI through a Cloudflare Worker after a Turnstile safety check from the GitHub Pages site.</p>
-        <p>The Worker has daily and time-slot generation limits together with budget guardrails. It is not designed to judge glucose values or track individual people.</p>
-        <p>Letter caching is currently browser-local. A shared Cloudflare KV cache, allowing the same saved analysis to be reused across devices and viewers, is still planned.</p>
-      </div>
-    </section>
-
-    <section class="about-detail-status-grid" aria-label="Usage dashboard entries">
-      <div class="about-detail-mini-card">
-        <div class="about-detail-mini-head"><span class="about-detail-mini-icon">✉️</span><h3><span class="about-detail-mini-title-en">AI Letters</span><span class="about-detail-mini-title-jp">AIお手紙の利用</span></h3></div>
-        <p>OpenAIモードで稼働中。やさしい分析 / しっかり分析を、日次・時間帯別の上限内で生成します。</p>
-      </div>
-
-      <div class="about-detail-mini-card">
-        <div class="about-detail-mini-head"><span class="about-detail-mini-icon">🛡️</span><h3><span class="about-detail-mini-title-en">Turnstile Guard</span><span class="about-detail-mini-title-jp">安全確認</span></h3></div>
-        <p>Turnstileトークンなしの直接POSTは拒否されます。公開ページから安全確認を通過したリクエストだけを受け付けます。</p>
-      </div>
-
-      <div class="about-detail-mini-card">
-        <div class="about-detail-mini-head"><span class="about-detail-mini-icon">🍀</span><h3><span class="about-detail-mini-title-en">Cache Status</span><span class="about-detail-mini-title-jp">保存済みキャッシュ</span></h3></div>
-        <p>現在はブラウザ内のlocalStorageが中心です。共有KVキャッシュは未実装で、別端末・別の人への共有はまだできません。</p>
-      </div>
-
-      <div class="about-detail-mini-card">
-        <div class="about-detail-mini-head"><span class="about-detail-mini-icon">💴</span><h3><span class="about-detail-mini-title-en">Cost Guard</span><span class="about-detail-mini-title-jp">利用上限と費用</span></h3></div>
-        <p>日次6回、同じ時間帯・同じモードは原則1回を目安に制御し、月間費用にも警告・停止しきい値を設定しています。</p>
-      </div>
-
-      <div class="about-detail-mini-card">
-        <div class="about-detail-mini-head"><span class="about-detail-mini-icon">📊</span><h3><span class="about-detail-mini-title-en">AI Usage Report</span><span class="about-detail-mini-title-jp">AI利用レポート</span></h3></div>
-        <p>ローカル専用ではなく、公開中のCloudflare Workerが返す運用レポートです。個々の血糖値を評価するものではありません。</p>
-        <p><a href="https://gluco-letter-worker.afterglow21.workers.dev/api/gluco-letter/usage" target="_blank" rel="noopener"><code>Worker usage report →</code></a></p>
-      </div>
-
-      <div class="about-detail-mini-card">
-        <div class="about-detail-mini-head"><span class="about-detail-mini-icon">🌐</span><h3><span class="about-detail-mini-title-en">Cloudflare Web Analytics</span><span class="about-detail-mini-title-jp">ページ閲覧の全体傾向</span></h3></div>
-        <p>未導入です。導入時も血糖値やAIお手紙本文をイベント名として送らず、ページ全体の傾向だけを見る方針です。</p>
-      </div>
-
-      <div class="about-detail-mini-card">
-        <div class="about-detail-mini-head"><span class="about-detail-mini-icon">🤝</span><h3><span class="about-detail-mini-title-en">Support &amp; Affiliate</span><span class="about-detail-mini-title-jp">応援と継続性</span></h3></div>
-        <p>方針ページはこれから作成します。GlucoScopeを倫理的で持続可能な形で続ける方法を検討します。</p>
-      </div>
-
-      <div class="about-detail-mini-card">
-        <div class="about-detail-mini-head"><span class="about-detail-mini-icon">🔒</span><h3><span class="about-detail-mini-title-en">Privacy Boundary</span><span class="about-detail-mini-title-jp">プライバシー境界</span></h3></div>
-        <p>使われ方の確認を、糖尿病とともに生きる人を監視したり責めたりするためには使いません。必要最小限の情報だけを扱います。</p>
+      <div class="card about-detail-card about-copy-en" lang="en">
+        <h2>What these numbers mean</h2>
+        <p>The counter stores operational totals such as generations, tokens, estimated developer cost, Turnstile results, and limit events. It does not store glucose values or AI letter text.</p>
+        <p>Estimated cost is an operational estimate paid by the developer, not a charge to visitors.</p>
       </div>
     </section>
+
+    <details class="card usage-raw-details">
+      <summary>開発者向けの詳細データを見る</summary>
+      <p><a href="https://gluco-letter-worker.afterglow21.workers.dev/api/gluco-letter/usage" target="_blank" rel="noopener">Workerの生JSONを開く →</a></p>
+      <pre id="usageRawJson">読み込み後に表示されます。</pre>
+    </details>
   </main>
+
+  <script>
+    (() => {
+      const endpoint = "https://gluco-letter-worker.afterglow21.workers.dev/api/gluco-letter/usage";
+      const liveRegion = document.getElementById("usageLiveRegion");
+
+      const setText = (id, value) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = value;
+      };
+
+      const formatCost = (value) => {
+        const cost = Number(value);
+        if (!Number.isFinite(cost)) return "--";
+        if (cost > 0 && cost < 0.01) return `¥${cost.toFixed(4)}`;
+        return `¥${cost.toFixed(2)}`;
+      };
+
+      const formatDateTime = (value) => {
+        if (!value) return "--";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return value;
+        return new Intl.DateTimeFormat("ja-JP", {
+          year: "numeric", month: "2-digit", day: "2-digit",
+          hour: "2-digit", minute: "2-digit", second: "2-digit"
+        }).format(date);
+      };
+
+      const storageLabel = (kind) => {
+        if (kind === "durable-object-sqlite") return "永続保存（Durable Object）";
+        if (kind === "fallback-memory") return "一時メモリ（要確認）";
+        return kind || "--";
+      };
+
+      fetch(endpoint, { headers: { "Accept": "application/json" }, cache: "no-store" })
+        .then((response) => {
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.json();
+        })
+        .then((data) => {
+          const report = data?.report || {};
+          const today = report.today || {};
+          const month = report.month || {};
+          const guard = report.guard || {};
+          const storage = report.storage || {};
+          const dailyLimit = Number(guard.dailyGenerationLimit || 0);
+          const todayCount = Number(today.aiGenerationCount || 0);
+          const remaining = Number(guard.dailyGenerationRemaining ?? Math.max(0, dailyLimit - todayCount));
+          const budgetRate = Math.max(0, Math.min(100, Number(month.budgetUsageRate || 0)));
+
+          setText("usageTodayCount", `${todayCount}`);
+          setText("usageTodayLimit", `AIお手紙の新規生成 / 上限 ${dailyLimit}回`);
+          setText("usageRemainingCount", `${remaining}`);
+          setText("usageMonthCount", `${Number(month.aiGenerationCount || 0)}`);
+          setText("usageEstimatedCost", formatCost(month.estimatedCostJpy));
+          setText("usageBudgetText", `${formatCost(month.estimatedCostJpy)} / ${formatCost(month.monthlyBudgetJpy)}`);
+          setText("usageGentleCount", `${Number(today.modeGenerationCounts?.letter || 0)}回`);
+          setText("usageDeepCount", `${Number(today.modeGenerationCounts?.deep || 0)}回`);
+          setText("usageCacheHits", `${Number(today.cacheHitCount || 0)}回`);
+          setText("usageTurnstileOk", `${Number(today.turnstileVerifiedCount || 0)}回`);
+          setText("usageTurnstileFailed", `${Number(today.turnstileFailedCount || 0)}回`);
+          setText("usageRateLimited", `${Number(today.rateLimitedCount || 0)}回`);
+          setText("usageStorageKind", storageLabel(storage.kind));
+          setText("usageDayKey", today.dayKey || "--");
+          setText("usageMonthKey", month.monthKey || "--");
+          setText("usageUpdatedAt", formatDateTime(storage.updatedAt));
+          document.getElementById("usageBudgetBar").style.width = `${budgetRate}%`;
+          document.getElementById("usageRawJson").textContent = JSON.stringify(data, null, 2);
+
+          if (guard.budgetBlocked) {
+            setText("usageBudgetHelp", "今月の停止しきい値に達したため、新しいAI生成を停止しています。表示中・保存済みのお手紙はそのまま読めます。");
+          } else if (guard.budgetWarning) {
+            setText("usageBudgetHelp", "今月の警告しきい値に近づいています。費用は開発者が負担し、閲覧者への請求はありません。");
+          }
+
+          liveRegion.innerHTML = storage.kind === "durable-object-sqlite"
+            ? '<div class="usage-status-banner usage-status-ok card"><span>●</span><strong>利用カウンターは永続保存で稼働中です</strong><small>AI分析後の回数と推定利用額がCloudflare Durable Objectへ保存されます。</small></div>'
+            : '<div class="usage-status-banner usage-status-warn card"><span>●</span><strong>利用カウンターが一時メモリで動いています</strong><small>Workerを再デプロイし、Durable Object bindingを確認してください。</small></div>';
+        })
+        .catch((error) => {
+          console.error("Usage report load failed", error);
+          liveRegion.innerHTML = '<div class="usage-status-banner usage-status-warn card"><span>●</span><strong>利用状況を読み込めませんでした</strong><small>AIお手紙本体には影響しない場合があります。少し時間をおいて再読み込みしてください🍀</small></div>';
+          document.getElementById("usageRawJson").textContent = String(error);
+        });
+    })();
+  </script>
 </body>
 </html>
