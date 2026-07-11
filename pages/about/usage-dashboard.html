@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Usage Dashboard / 使われ方の見える化 | GlucoScope</title>
-  <link rel="stylesheet" href="../../style.css?v=20260711-trust-usage-1">
+  <link rel="stylesheet" href="../../style.css?v=20260712-se-about-ai-limits-1">
 </head>
 <body class="about-detail-body usage-dashboard-body">
   <main class="about-detail-wrap usage-dashboard-wrap">
@@ -112,6 +112,16 @@
           <div><dt>最終更新</dt><dd id="usageUpdatedAt">--</dd></div>
         </dl>
       </article>
+
+      <article class="card usage-detail-card">
+        <div class="usage-detail-head"><span>🕰️</span><h2>新規生成の上限</h2></div>
+        <dl class="usage-data-list">
+          <div><dt>朝</dt><dd id="usageMorningLimit">--</dd></div>
+          <div><dt>昼</dt><dd id="usageAfternoonLimit">--</dd></div>
+          <div><dt>夜</dt><dd id="usageNightLimit">--</dd></div>
+        </dl>
+        <p class="usage-detail-note">今日・昨日・7日・30日・カスタムの5期間を、2つの分析モードで試せるように、各時間帯10回・1日最大30回としています。</p>
+      </article>
     </section>
 
     <section class="about-detail-grid about-detail-language-stack usage-explainer">
@@ -119,11 +129,13 @@
         <h2>この数字が表すもの</h2>
         <p>保存するのは、生成回数、トークン数、推定利用額、Turnstile確認、上限到達などの運用情報です。血糖値やAIお手紙本文を、利用カウンターとして保存するものではありません。</p>
         <p>推定利用額はOpenAIの利用状況から計算する開発者向けの目安です。閲覧者への請求ではありません。</p>
+        <p>新規生成は朝・昼・夜それぞれ最大10回、1日最大30回です。5つの表示期間を2つの分析モードで試せることを想定しています。保存済みのお手紙を表示するだけの場合は、新規生成回数を消費しません。</p>
       </div>
       <div class="card about-detail-card about-copy-en" lang="en">
         <h2>What these numbers mean</h2>
         <p>The counter stores operational totals such as generations, tokens, estimated developer cost, Turnstile results, and limit events. It does not store glucose values or AI letter text.</p>
         <p>Estimated cost is an operational estimate paid by the developer, not a charge to visitors.</p>
+        <p>New generation is limited to 10 times in each morning, afternoon, and night slot, with a daily maximum of 30. Showing a saved letter does not consume a new-generation count.</p>
       </div>
     </section>
 
@@ -195,6 +207,11 @@
           setText("usageTurnstileOk", `${Number(today.turnstileVerifiedCount || 0)}回`);
           setText("usageTurnstileFailed", `${Number(today.turnstileFailedCount || 0)}回`);
           setText("usageRateLimited", `${Number(today.rateLimitedCount || 0)}回`);
+          const slotLimit = Number(guard.slotGenerationLimit || today.slotGenerationLimit || 0);
+          const slotCounts = today.slotGenerationCounts || {};
+          setText("usageMorningLimit", `${Number(slotCounts.morning || 0)} / ${slotLimit}回`);
+          setText("usageAfternoonLimit", `${Number(slotCounts.afternoon || 0)} / ${slotLimit}回`);
+          setText("usageNightLimit", `${Number(slotCounts.night || 0)} / ${slotLimit}回`);
           setText("usageStorageKind", storageLabel(storage.kind));
           setText("usageDayKey", today.dayKey || "--");
           setText("usageMonthKey", month.monthKey || "--");

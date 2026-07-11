@@ -144,14 +144,10 @@ const translations = {
   ja: {
     tabLive: "🟢 Live",
     tabJournal: "📖 Journal",
-    tabClinic: "🏥 Clinic",
     comingSoonEyebrow: "準備中",
     journalComingSoonTitle: "📖 Journal は準備中です",
     journalComingSoonLead: "食事、体調、気づいたことを、血糖の振り返りと一緒に残せる場所を準備しています。",
     journalComingSoonNote: "血糖データを責めるためではなく、あとからやさしく思い出せる小さなメモ帳にしていく予定です。",
-    clinicComingSoonTitle: "🏥 Clinic は準備中です",
-    clinicComingSoonLead: "診察前に見返したい血糖の流れや、相談したいことをまとめやすくする場所を準備しています。",
-    clinicComingSoonNote: "医療判断を置き換えるものではなく、主治医との会話を少し助けるための振り返りページとして育てていきます。",
     tabCollection: "🍀 想い出",
     tabAbout: "✨ About",
     languageLabel: "Language",
@@ -170,7 +166,6 @@ const translations = {
     mobileMoreTitle: "その他",
     mobileMoreLead: "GlucoScopeのほかのページや設定を開けます。",
     mobileMoreJournal: "Journal",
-    mobileMoreClinic: "Clinic",
     mobileMoreCollection: "想い出",
     mobileMoreCollectionNote: "グルコとの記録",
     mobileMoreAbout: "About",
@@ -264,9 +259,6 @@ const translations = {
     luckyGlucoBadge: "🍀 小さな幸運",
     luckyGlucoMet: "🍀 小さな幸運ラッキーグルコと出逢ったよ",
     achievementLabel: "称号",
-    shareAchievement: "称号をシェア",
-    shareCopied: "シェア文をコピーしました",
-    shareText: "GlucoScopeで{count}種類のグルコと出会って、称号「{title}」になりました🍀",
     periodToday: "今日",
     periodYesterday: "昨日",
     periodSevenDays: "7日",
@@ -319,14 +311,10 @@ const translations = {
   en: {
     tabLive: "🟢 Live",
     tabJournal: "📖 Journal",
-    tabClinic: "🏥 Clinic",
     comingSoonEyebrow: "Coming soon",
     journalComingSoonTitle: "📖 Journal is coming soon",
     journalComingSoonLead: "A place to keep meals, how you felt, and small notes alongside glucose reflections is being prepared.",
     journalComingSoonNote: "It will be a gentle notebook for looking back later, not a place to judge glucose data.",
-    clinicComingSoonTitle: "🏥 Clinic is coming soon",
-    clinicComingSoonLead: "A place to organize glucose patterns and notes you may want to review before clinic visits is being prepared.",
-    clinicComingSoonNote: "It will not replace medical decisions. It is meant to gently support conversations with your clinician.",
     tabCollection: "🍀 Collection",
     tabAbout: "✨ About",
     languageLabel: "Language",
@@ -345,7 +333,6 @@ const translations = {
     mobileMoreTitle: "More",
     mobileMoreLead: "Open other GlucoScope pages and settings.",
     mobileMoreJournal: "Journal",
-    mobileMoreClinic: "Clinic",
     mobileMoreCollection: "Memories",
     mobileMoreCollectionNote: "Your moments with Gluco",
     mobileMoreAbout: "About",
@@ -438,9 +425,6 @@ const translations = {
     luckyGlucoBadge: "🍀 Little luck",
     luckyGlucoMet: "🍀 You met a little Lucky Gluco today",
     achievementLabel: "Title",
-    shareAchievement: "Share title",
-    shareCopied: "Share text copied",
-    shareText: "I met {count} Gluco friends in GlucoScope and earned the title: {title} 🍀",
     periodToday: "Today",
     periodYesterday: "Yesterday",
     periodSevenDays: "7 days",
@@ -4045,42 +4029,10 @@ function getLocalizedAchievementTitle(achievement) {
   return currentLanguage === "en" ? achievement.en : achievement.ja;
 }
 
-async function shareCollectionAchievement() {
-  const collection = readGlucoCollection();
-  const collectedCount = Object.keys(collection).length;
-  const achievement = getCollectionAchievement(collectedCount);
-  const title = getLocalizedAchievementTitle(achievement);
-  const shareText = t("shareText")
-    .replace("{count}", collectedCount)
-    .replace("{title}", title);
-
-  if (navigator.share) {
-    try {
-      await navigator.share({ text: shareText });
-      return;
-    } catch (error) {
-      // User cancelled sharing; fall back to copy below if possible.
-    }
-  }
-
-  if (navigator.clipboard) {
-    await navigator.clipboard.writeText(shareText);
-    const button = document.getElementById("collectionShareButton");
-    if (button) {
-      const originalText = button.textContent;
-      button.textContent = t("shareCopied");
-      window.setTimeout(() => {
-        button.textContent = originalText;
-      }, 1600);
-    }
-  }
-}
-
 function renderCollectionView() {
   const grid = document.getElementById("collectionGrid");
   const progress = document.getElementById("collectionProgress");
   const achievementEl = document.getElementById("collectionAchievement");
-  const shareButton = document.getElementById("collectionShareButton");
   const today = document.getElementById("collectionToday");
 
   if (!grid) return;
@@ -4100,9 +4052,6 @@ function renderCollectionView() {
     achievementEl.textContent = `${t("achievementLabel")}: ${achievementTitle}`;
   }
 
-  if (shareButton) {
-    shareButton.textContent = t("shareAchievement");
-  }
 
   if (today) {
     today.textContent = t("collectionToday");
@@ -4160,14 +4109,6 @@ function renderCollectionView() {
     if (isLucky) item.appendChild(luckyBadge);
     item.appendChild(meta);
     grid.appendChild(item);
-  });
-}
-
-function setupCollectionShareButton() {
-  const shareButton = document.getElementById("collectionShareButton");
-  if (!shareButton) return;
-  shareButton.addEventListener("click", () => {
-    shareCollectionAchievement().catch((error) => console.warn("Share failed", error));
   });
 }
 
@@ -4353,7 +4294,7 @@ function setupMobileApp() {
   const rawHash = window.location.hash.replace("#", "");
   const hash = rawHash === "monitor" ? "glucose" : rawHash;
   const mobilePages = new Set(["glucose", "graph", "reflection", "letter", "more"]);
-  const secondaryViews = new Set(["journal", "clinic", "collection", "about"]);
+  const secondaryViews = new Set(["journal", "collection", "about"]);
 
   if (secondaryViews.has(hash)) {
     updateMobileNavState("more");
@@ -4371,7 +4312,6 @@ function setupViewTabs() {
   const panels = {
     live: document.getElementById("liveView"),
     journal: document.getElementById("journalView"),
-    clinic: document.getElementById("clinicView"),
     about: document.getElementById("aboutView"),
     collection: document.getElementById("collectionView")
   };
@@ -4413,7 +4353,6 @@ setupLanguageSwitch();
 setupMobileDisplayMode();
 setupMobileApp();
 setupPeriodSwitch();
-setupCollectionShareButton();
 applyLanguage();
 updateClock();
 renderStoredDailyLetterGlucoImage();

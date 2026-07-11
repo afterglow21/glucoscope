@@ -17,7 +17,7 @@ GitHub Pages
 - `AI_PROVIDER=openai`
 - OpenAI API key is stored as a Cloudflare secret.
 - Turnstile verification is required.
-- Daily, mode/slot, and monthly budget guards are enabled.
+- Daily, time-slot, and monthly budget guards are enabled.
 - Usage counters are persisted in a singleton SQLite-backed Durable Object.
 - The usage counter stores operational totals only. It does not store glucose values or AI letter text.
 - AI letter cache is still browser-local. A shared Workers KV cache is a separate future step.
@@ -97,12 +97,14 @@ OPENAI_MAX_OUTPUT_TOKENS=500
 AI_MONTHLY_BUDGET_JPY=100
 AI_WARNING_BUDGET_JPY=50
 AI_STOP_BUDGET_JPY=80
-AI_DAILY_GENERATION_LIMIT=6
-AI_SLOT_GENERATION_LIMIT=1
+AI_DAILY_GENERATION_LIMIT=30
+AI_SLOT_GENERATION_LIMIT=10
 TURNSTILE_REQUIRED=true
 ```
 
 The estimated AI cost shown by the Worker is an operational estimate paid by the developer. It is not a charge to visitors.
+
+The production generation guard allows up to 10 new generations in each time slot (morning, afternoon, and night), with a daily maximum of 30. This is designed so the five periods (today, yesterday, 7 days, 30 days, and custom) can each be tried in both analysis modes within a slot. Cached displays do not consume a new-generation slot.
 
 ## Response contract
 
@@ -117,7 +119,7 @@ The Worker returns:
 - letter text and mode
 - request and monthly token usage
 - estimated developer cost
-- daily and slot guard state
+- daily and time-slot guard state
 - Turnstile status
 - storage kind
 

@@ -5246,3 +5246,551 @@ canvas{
     grid-template-columns:1fr;
   }
 }
+
+/* ========================================================================== 
+   Mobile Phase 2.4
+   - Compact iPhone SE / narrow-screen layouts
+   - Shared mobile treatment for every About detail page
+   ========================================================================== */
+
+@media (max-width: 375px) and (orientation: portrait) and (hover: none) and (pointer: coarse){
+  :root{
+    --mobile-ui-font:11px;
+    --mobile-small-font:9px;
+    --mobile-body-font:13px;
+    --mobile-letter-font:17px;
+    --mobile-nav-height:62px;
+  }
+
+  .dashboard{
+    padding:4px 5px calc(var(--mobile-nav-height) + 10px + env(safe-area-inset-bottom));
+  }
+
+  .header{
+    gap:4px 7px;
+    margin-bottom:5px;
+    padding:2px 1px 6px;
+  }
+
+  .brand-block h1{
+    gap:4px;
+    margin-bottom:3px;
+    font-size:20px;
+  }
+
+  .brand-icon{
+    font-size:20px;
+  }
+
+  .brand-kicker{
+    font-size:10px;
+    line-height:1.12;
+  }
+
+  .clock{
+    font-size:28px;
+  }
+
+  .header-date{
+    font-size:9px;
+  }
+
+  .header-status-block{
+    gap:4px 6px;
+  }
+
+  .live-indicator{
+    min-height:23px;
+    padding:3px 7px;
+    font-size:9px;
+  }
+
+  .last-update{
+    font-size:9px;
+  }
+
+  .app-credit-version,
+  .app-credit-line{
+    font-size:8px;
+    line-height:1.15;
+  }
+
+  .mobile-bottom-nav{
+    left:4px;
+    right:4px;
+    gap:1px;
+    padding:3px;
+    border-radius:16px;
+  }
+
+  .mobile-bottom-nav-button{
+    min-height:47px;
+    padding:3px 0;
+    border-radius:12px;
+    font-size:8px;
+  }
+
+  .mobile-bottom-nav-icon{
+    min-height:17px;
+    font-size:14px;
+  }
+
+  body.mobile-page-glucose #liveView{
+    grid-template-rows:minmax(132px,.95fr) minmax(126px,.9fr);
+    gap:5px;
+  }
+
+  body.mobile-page-glucose #liveView .hero-current-card{
+    padding:8px;
+  }
+
+  body.mobile-page-glucose .current-main{
+    gap:7px;
+  }
+
+  body.mobile-page-glucose #glucoseValue{
+    font-size:clamp(62px,22vw,78px);
+  }
+
+  body.mobile-page-glucose .current-delta{
+    top:-.68em;
+    padding:2px 5px;
+    font-size:11px;
+  }
+
+  body.mobile-page-glucose .arrow{
+    font-size:38px;
+  }
+
+  body.mobile-page-glucose .unit{
+    margin-bottom:5px;
+    font-size:14px;
+  }
+
+  body.mobile-page-glucose #mobileRangeCard{
+    padding:7px 8px;
+  }
+
+  body.mobile-page-glucose .mobile-range-layout{
+    grid-template-columns:94px minmax(0,1fr);
+    gap:7px;
+  }
+
+  body.mobile-page-glucose .mobile-range-donut{
+    width:94px;
+    height:94px;
+  }
+
+  body.mobile-page-glucose .mobile-range-donut-inner{
+    width:66px;
+    height:66px;
+  }
+
+  body.mobile-page-glucose .mobile-range-donut-inner strong{
+    padding:0 2px;
+    font-size:18px;
+    letter-spacing:-.06em;
+  }
+
+  body.mobile-page-glucose .mobile-range-donut-inner span{
+    font-size:9px;
+  }
+
+  body.mobile-page-glucose .mobile-range-values{
+    gap:4px;
+  }
+
+  body.mobile-page-glucose .mobile-range-value{
+    min-height:28px;
+    padding:4px 7px;
+  }
+
+  body.mobile-page-glucose .mobile-range-value span{
+    font-size:9px;
+  }
+
+  body.mobile-page-glucose .mobile-range-value strong{
+    font-size:15px;
+  }
+
+  body.mobile-page-graph #liveView{
+    grid-template-rows:78px minmax(0,1fr);
+    gap:5px;
+  }
+
+  body.mobile-page-graph #liveView .hero-current-card,
+  body.mobile-page-graph #mobileRangeCard{
+    min-height:78px;
+    padding:5px 6px;
+  }
+
+  body.mobile-page-graph #glucoseValue{
+    font-size:36px;
+  }
+
+  body.mobile-page-graph .current-delta{
+    top:-.5em;
+    padding:2px 4px;
+    font-size:9px;
+  }
+
+  body.mobile-page-graph .arrow{
+    font-size:25px;
+  }
+
+  body.mobile-page-graph .unit{
+    font-size:10px;
+  }
+
+  body.mobile-page-graph .mobile-range-layout{
+    grid-template-columns:62px minmax(0,1fr);
+    gap:4px;
+    min-width:0;
+    width:100%;
+  }
+
+  body.mobile-page-graph .mobile-range-donut{
+    width:62px;
+    height:62px;
+  }
+
+  body.mobile-page-graph .mobile-range-donut-inner{
+    width:44px;
+    height:44px;
+  }
+
+  body.mobile-page-graph .mobile-range-donut-inner strong{
+    padding:0 1px;
+    font-size:13px;
+    letter-spacing:-.06em;
+  }
+
+  body.mobile-page-graph .mobile-range-donut-inner span{
+    font-size:7px;
+  }
+
+  body.mobile-page-graph .mobile-range-values{
+    gap:3px;
+    min-width:0;
+  }
+
+  body.mobile-page-graph .mobile-range-value{
+    min-width:0;
+    padding:2px 3px;
+    border-radius:7px;
+  }
+
+  body.mobile-page-graph .mobile-range-value span{
+    font-size:7px;
+  }
+
+  body.mobile-page-graph .mobile-range-value strong{
+    font-size:10px;
+  }
+
+  body.mobile-page-graph #liveView > .chart-card{
+    padding:6px 5px;
+  }
+
+  body.mobile-page-graph .chart-header{
+    gap:3px;
+    margin-bottom:2px;
+  }
+
+  body.mobile-page-graph .chart-header .label{
+    font-size:12px;
+  }
+
+  body.mobile-page-graph .period-switch{
+    gap:2px;
+  }
+
+  body.mobile-page-graph .period-button{
+    min-height:27px;
+    padding:4px 0;
+    font-size:7.5px;
+    line-height:1;
+    letter-spacing:-.04em;
+    white-space:nowrap;
+  }
+
+  body.mobile-page-graph .chart-range{
+    max-width:100%;
+    font-size:8px;
+    line-height:1.05;
+    white-space:normal;
+  }
+
+  body.mobile-page-reflection #liveView{
+    grid-template-rows:minmax(106px,.82fr) minmax(0,1.18fr);
+    gap:4px;
+  }
+
+  body.mobile-page-reflection #liveView .hero-score-card{
+    padding:6px 8px;
+    border-radius:14px;
+  }
+
+  body.mobile-page-reflection .score-header{
+    min-height:21px;
+    margin-bottom:1px;
+  }
+
+  body.mobile-page-reflection .score-header .label{
+    font-size:13px;
+  }
+
+  body.mobile-page-reflection .score-badge{
+    padding:4px 7px;
+    font-size:9px;
+  }
+
+  body.mobile-page-reflection .score-main{
+    grid-template-columns:50px minmax(0,1fr);
+    gap:6px;
+  }
+
+  body.mobile-page-reflection .score-gluco,
+  body.mobile-page-reflection .score-gluco-image{
+    width:48px;
+    height:48px;
+  }
+
+  body.mobile-page-reflection .score-value{
+    font-size:44px;
+    line-height:.84;
+  }
+
+  body.mobile-page-reflection .score-message{
+    display:-webkit-box;
+    margin-top:1px;
+    overflow:hidden;
+    font-size:9.5px;
+    line-height:1.2;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+  }
+
+  body.mobile-page-reflection .score-meta{
+    margin-top:3px;
+    padding-top:3px;
+    font-size:7.5px;
+    line-height:1.1;
+    white-space:nowrap;
+  }
+
+  body.mobile-page-reflection #liveView > .metric-grid{
+    gap:4px;
+  }
+
+  body.mobile-page-reflection .metric-card{
+    padding:5px 6px;
+    border-radius:11px;
+  }
+
+  body.mobile-page-reflection .metric-label{
+    font-size:8px;
+    line-height:1.05;
+    white-space:nowrap;
+  }
+
+  body.mobile-page-reflection .metric-value{
+    margin-top:1px;
+    font-size:22px;
+    line-height:.9;
+  }
+
+  body.mobile-page-reflection .metric-unit-inline{
+    font-size:9px;
+  }
+
+  body.mobile-page-reflection .metric-desc{
+    display:none;
+  }
+}
+
+@media (max-width: 375px) and (max-height: 680px) and (orientation: portrait) and (hover: none) and (pointer: coarse){
+  body.mobile-page-reflection #liveView{
+    grid-template-rows:102px minmax(0,1fr);
+  }
+
+  body.mobile-page-reflection .score-value{
+    font-size:40px;
+  }
+
+  body.mobile-page-reflection .score-message{
+    -webkit-line-clamp:1;
+  }
+}
+
+/* Every About detail page uses the same readable phone layout. Older detail
+   pages only needed a viewport declaration; these rules keep the visual
+   language consistent with the newer Trust and Usage pages. */
+@media (max-width: 640px){
+  .about-detail-body{
+    overflow-x:hidden;
+  }
+
+  .about-detail-wrap,
+  .about-detail-gluco-wrap{
+    width:calc(100% - 20px);
+    margin:10px auto 30px;
+  }
+
+  .about-detail-topbar{
+    flex-direction:row;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:10px;
+  }
+
+  .about-detail-brand{
+    min-width:0;
+    font-size:19px;
+    white-space:nowrap;
+  }
+
+  .about-detail-back{
+    flex:0 1 auto;
+    padding:7px 9px;
+    font-size:11px;
+    text-align:center;
+  }
+
+  .about-detail-hero,
+  .about-detail-card,
+  .about-detail-mini-card,
+  .about-detail-gluco-stage{
+    padding:16px;
+    border-radius:18px;
+  }
+
+  .about-detail-hero-with-art{
+    gap:10px;
+  }
+
+  .about-detail-hero-art{
+    width:112px;
+  }
+
+  .about-detail-hero h1{
+    gap:3px;
+    margin-bottom:7px;
+    font-size:27px;
+    line-height:1.08;
+  }
+
+  .about-detail-title-jp{
+    font-size:15px;
+  }
+
+  .about-detail-hero p{
+    font-size:14px;
+    line-height:1.65;
+  }
+
+  .about-detail-grid,
+  .about-detail-feature-grid,
+  .about-detail-doc-grid,
+  .about-detail-status-grid{
+    gap:10px;
+    margin-top:10px;
+  }
+
+  .about-detail-card.about-copy-jp p,
+  .about-detail-card.about-copy-jp li{
+    font-size:16px;
+    line-height:1.8;
+  }
+
+  .about-detail-card.about-copy-en p,
+  .about-detail-card.about-copy-en li{
+    font-size:14px;
+    line-height:1.7;
+  }
+
+  .about-detail-mini-card{
+    min-width:0;
+  }
+
+  .about-detail-mini-icon{
+    width:34px;
+    height:34px;
+    flex-basis:34px;
+    border-radius:11px;
+    font-size:17px;
+  }
+
+  .about-detail-mini-title-en{
+    font-size:15px;
+  }
+
+  .about-detail-mini-title-jp{
+    font-size:11px;
+  }
+
+  .about-detail-mini-card p{
+    font-size:13px;
+    line-height:1.55;
+  }
+
+  .about-detail-profile{
+    gap:12px;
+  }
+
+  .about-detail-profile-image{
+    width:132px;
+    height:132px;
+    margin:0 auto;
+  }
+
+  .about-detail-gluco-image,
+  .about-detail-gluco-image-large{
+    max-width:100%;
+  }
+}
+
+@media (max-width: 390px){
+  .about-detail-wrap,
+  .about-detail-gluco-wrap{
+    width:calc(100% - 14px);
+    margin-top:7px;
+  }
+
+  .about-detail-brand{
+    font-size:17px;
+  }
+
+  .about-detail-back{
+    max-width:46%;
+    font-size:10px;
+  }
+
+  .about-detail-hero,
+  .about-detail-card,
+  .about-detail-mini-card,
+  .about-detail-gluco-stage{
+    padding:13px;
+  }
+
+  .about-detail-hero-art{
+    width:96px;
+  }
+
+  .about-detail-hero h1{
+    font-size:23px;
+  }
+
+  .about-detail-card.about-copy-jp p,
+  .about-detail-card.about-copy-jp li{
+    font-size:15px;
+  }
+}
+
+.usage-detail-note{
+  margin:12px 0 0;
+  color:#9fb2cf;
+  font-size:13px;
+  line-height:1.65;
+}

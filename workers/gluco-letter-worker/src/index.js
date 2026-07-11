@@ -10,8 +10,8 @@ const DEFAULT_GUARD_CONFIG = {
   openAiModel: "gpt-5.4-nano",
   openAiMaxOutputTokens: 700,
   turnstileRequired: false,
-  dailyGenerationLimit: 6,
-  slotGenerationLimit: 1,
+  dailyGenerationLimit: 30,
+  slotGenerationLimit: 10,
   monthlyBudgetJpy: 1000,
   warningBudgetJpy: 800,
   stopBudgetJpy: 950,
@@ -933,7 +933,8 @@ function buildModeSlotRemainingCounts(state, config) {
   for (const mode of ANALYSIS_MODE_KEYS) {
     remaining[mode] = {};
     for (const slot of [...LETTER_SLOT_KEYS, "unknown"]) {
-      remaining[mode][slot] = Math.max(0, config.slotGenerationLimit - getModeSlotCount(state, mode, slot));
+      const aggregateSlotCount = state.dailySlotGenerationCounts[slot] || 0;
+      remaining[mode][slot] = Math.max(0, config.slotGenerationLimit - aggregateSlotCount);
     }
   }
   return remaining;
@@ -941,9 +942,7 @@ function buildModeSlotRemainingCounts(state, config) {
 
 function isAnyModeSlotRateLimited(state, config) {
   ensureSlotCounters(state);
-  return ANALYSIS_MODE_KEYS.some((mode) => (
-    Object.values(state.dailyModeSlotGenerationCounts[mode] || {}).some((count) => count >= config.slotGenerationLimit)
-  ));
+  return Object.values(state.dailySlotGenerationCounts || {}).some((count) => count >= config.slotGenerationLimit);
 }
 
 function buildGuardPayload({ state, config, budgetBlocked = false, summary = {}, turnstileVerification = {} }) {
@@ -956,9 +955,9 @@ function buildGuardPayload({ state, config, budgetBlocked = false, summary = {},
   const monthlyEstimatedCostJpy = Number(state.estimatedCostJpy.toFixed(4));
   const budgetWarning = monthlyEstimatedCostJpy >= config.warningBudgetJpy;
   const dailyGenerationRemaining = Math.max(0, config.dailyGenerationLimit - state.dailyGenerationCount);
-  const slotGenerationRemaining = Math.max(0, config.slotGenerationLimit - modeSlotGenerationCount);
+  const slotGenerationRemaining = Math.max(0, config.slotGenerationLimit - slotGenerationCount);
   const totalRateLimited = state.dailyGenerationCount >= config.dailyGenerationLimit;
-  const slotRateLimited = modeSlotGenerationCount >= config.slotGenerationLimit;
+  const slotRateLimited = slotGenerationCount >= config.slotGenerationLimit;
 
   return {
     turnstileRequired: config.turnstileRequired,
@@ -981,7 +980,8 @@ function buildGuardPayload({ state, config, budgetBlocked = false, summary = {},
     activeSlot: {
       key: slotKey,
       label: getSlotLabel(summary, summary.language === "en" ? "en" : "ja"),
-      generationCount: modeSlotGenerationCount,
+      generationCount: slotGenerationCount,
+      modeGenerationCount: modeSlotGenerationCount,
       aggregateGenerationCount: slotGenerationCount
     },
     dailyModeGenerationCounts: state.dailyModeGenerationCounts,
@@ -1053,18 +1053,16 @@ function buildPrototypeCacheKey(summary = {}) {
 function buildRateLimitedUserMessage({ summary = {}, reason = "total" }) {
   const language = summary.language === "en" ? "en" : "ja";
   const slotLabel = getSlotLabel(summary, language);
-  const modeLabel = getAnalysisModeLabel(summary.analysisMode, language);
-
   if (language === "en") {
     if (reason === "slot") {
-      return `Today's new ${slotLabel} ${modeLabel} has reached its limit. The reflection on screen stays available, and the ChatGPT copy feature still works 🍀`;
+      return `Today's new ${slotLabel} reflections have reached their shared limit. The reflection on screen stays available, and the ChatGPT copy feature still works 🍀`;
     }
 
     return "Today's new AI reflections have reached the limit. The reflection on screen stays available, and the ChatGPT copy feature still works 🍀";
   }
 
   if (reason === "slot") {
-    return `今日の新しい${slotLabel}の${modeLabel}は上限に達しました。表示中または保存済みの振り返りはそのまま読めます。ChatGPTコピー機能も使えます🍀`;
+    return `今日の新しい${slotLabel}は共通上限に達しました。表示中または保存済みの振り返りはそのまま読めます。ChatGPTコピー機能も使えます🍀`;
   }
 
   return "今日の新しいAI振り返りは上限に達しました。表示中または保存済みの振り返りはそのまま読めます。ChatGPTコピー機能も使えます🍀";
@@ -1165,8 +1163,7 @@ function getGuardBlock({ status, usageState, config, summary = {} }) {
   if (usageState.dailyGenerationCount >= config.dailyGenerationLimit) return { status: "rate_limited", reason: "total" };
 
   const slotKey = normalizeSlot(summary.slot);
-  const analysisMode = normalizeAnalysisMode(summary.analysisMode);
-  const slotGenerationCount = getModeSlotCount(usageState, analysisMode, slotKey);
+  const slotGenerationCount = usageState.dailySlotGenerationCounts[slotKey] || 0;
   if (slotGenerationCount >= config.slotGenerationLimit) {
     return { status: "rate_limited", reason: "slot" };
   }
