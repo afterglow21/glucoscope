@@ -6175,7 +6175,7 @@ canvas{
   }
 
   html:not(.force-desktop-view) body.mobile-page-glucose .gluco-stroll-decor{
-    display:block;
+    display:block !important;
     position:absolute;
     left:1rem;
     right:1rem;
@@ -6238,7 +6238,7 @@ canvas{
   }
 
   html:not(.force-desktop-view) body.mobile-page-graph .mobile-range-gluco-guide{
-    display:flex;
+    display:flex !important;
     align-items:flex-end;
     justify-content:center;
     position:relative;
@@ -6269,7 +6269,7 @@ canvas{
   }
 
   html:not(.force-desktop-view) body.mobile-page-more .mobile-more-gluco-guide{
-    display:flex;
+    display:flex !important;
     align-items:flex-end;
     justify-content:flex-end;
     position:relative;
