@@ -817,3 +817,34 @@ Request order:
 The KV value stores generated letter text and minimal metadata only. It does not store the submitted glucose summary. Entries expire automatically after the configured retention period.
 
 Workers KV is eventually consistent across Cloudflare locations, so a newly written value can take a short time to become visible in another location.
+---
+
+## 36. Production CORS Contract
+
+Production browser origin:
+
+```text
+https://afterglow21.github.io
+```
+
+Normal allowed browser response:
+
+```text
+Access-Control-Allow-Origin: https://afterglow21.github.io
+Vary: Origin
+```
+
+Allowed preflight response:
+
+```text
+HTTP 204
+Access-Control-Allow-Origin: https://afterglow21.github.io
+Access-Control-Allow-Methods: GET, POST, OPTIONS
+Access-Control-Allow-Headers: Content-Type
+Access-Control-Max-Age: 86400
+Vary: Origin, Access-Control-Request-Method, Access-Control-Request-Headers
+```
+
+Unapproved or malformed browser origins receive HTTP `403` and do not receive an `Access-Control-Allow-Origin` header. Requests without an `Origin` header remain available for Wrangler, PowerShell, uptime checks, and other non-browser operational access.
+
+Optional local browser origins are supplied only through the ignored `CORS_LOCAL_ORIGINS` development variable. CORS is not authentication and remains layered with Turnstile, secrets, usage limits, budget controls, and the shared cache.

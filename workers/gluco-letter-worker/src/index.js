@@ -26,18 +26,16 @@ const DEFAULT_GUARD_CONFIG = {
 
 let fallbackUsageState = null;
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-  "Access-Control-Max-Age": "86400"
-};
+const DEFAULT_CORS_ALLOWED_ORIGINS = ["https://afterglow21.github.io"];
+const CORS_ALLOWED_METHODS = ["GET", "POST", "OPTIONS"];
+const CORS_ALLOWED_REQUEST_HEADERS = ["content-type"];
+const CORS_ALLOWED_REQUEST_HEADERS_DISPLAY = "Content-Type";
+const CORS_MAX_AGE_SECONDS = 86400;
 
 function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body, null, 2), {
     status,
     headers: {
-      ...corsHeaders,
       "Content-Type": "application/json; charset=utf-8"
     }
   });
@@ -78,6 +76,167 @@ function readBoolean(value, fallback) {
   if (value === true || value === "true" || value === "1") return true;
   if (value === false || value === "false" || value === "0") return false;
   return fallback;
+}
+
+
+function normalizeConfiguredOrigin(value) {
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+
+  try {
+    const url = new URL(text);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+
+    const canonicalOrigin = url.origin;
+    const configuredValue = text.endsWith("/") ? text.slice(0, -1) : text;
+    return configuredValue === canonicalOrigin ? canonicalOrigin : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function parseConfiguredOrigins(value) {
+  return String(value ?? "")
+    .split(",")
+    .map((item) => normalizeConfiguredOrigin(item))
+    .filter(Boolean);
+}
+
+function readCorsConfig(env = {}) {
+  const productionOrigins = parseConfiguredOrigins(env.CORS_ALLOWED_ORIGINS);
+  const localOrigins = parseConfiguredOrigins(env.CORS_LOCAL_ORIGINS);
+  const allowedOrigins = new Set([
+    ...(productionOrigins.length ? productionOrigins : DEFAULT_CORS_ALLOWED_ORIGINS),
+    ...localOrigins
+  ]);
+
+  return {
+    allowedOrigins,
+    allowRequestsWithoutOrigin: readBoolean(env.CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN, true)
+  };
+}
+
+function evaluateCorsRequest(request, env = {}) {
+  const config = readCorsConfig(env);
+  const originHeader = request.headers.get("Origin");
+
+  if (!originHeader) {
+    return {
+      allowed: config.allowRequestsWithoutOrigin,
+      origin: null,
+      reason: config.allowRequestsWithoutOrigin ? "origin_header_absent" : "origin_header_required"
+    };
+  }
+
+  const origin = normalizeConfiguredOrigin(originHeader);
+  if (!origin) {
+    return {
+      allowed: false,
+      origin: originHeader,
+      reason: "invalid_origin"
+    };
+  }
+
+  return {
+    allowed: config.allowedOrigins.has(origin),
+    origin,
+    reason: config.allowedOrigins.has(origin) ? "origin_allowed" : "origin_not_allowed"
+  };
+}
+
+function appendVaryHeader(headers, value) {
+  const existing = headers.get("Vary") || "";
+  const values = existing
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  if (!values.some((item) => item.toLowerCase() === value.toLowerCase())) {
+    values.push(value);
+  }
+
+  headers.set("Vary", values.join(", "));
+}
+
+function applyCorsHeaders(response, corsDecision) {
+  const headers = new Headers(response.headers);
+  appendVaryHeader(headers, "Origin");
+  headers.delete("Access-Control-Allow-Origin");
+
+  if (corsDecision.allowed && corsDecision.origin) {
+    headers.set("Access-Control-Allow-Origin", corsDecision.origin);
+  }
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+}
+
+function buildCorsErrorResponse(corsDecision, status = 403) {
+  const response = errorResponse({
+    code: corsDecision.reason,
+    message: "The request origin is not allowed.",
+    userMessage: "このページからはAI分析へ接続できません。"
+  }, status);
+
+  return applyCorsHeaders(response, corsDecision);
+}
+
+function getRequestedCorsHeaders(request) {
+  return String(request.headers.get("Access-Control-Request-Headers") || "")
+    .split(",")
+    .map((header) => header.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function handleCorsPreflight(request, corsDecision) {
+  if (!corsDecision.origin) {
+    return buildCorsErrorResponse({
+      ...corsDecision,
+      allowed: false,
+      reason: "cors_preflight_missing_origin"
+    }, 400);
+  }
+
+  if (!corsDecision.allowed) {
+    return buildCorsErrorResponse(corsDecision, 403);
+  }
+
+  const requestedMethod = String(request.headers.get("Access-Control-Request-Method") || "").toUpperCase();
+  if (!requestedMethod || !CORS_ALLOWED_METHODS.includes(requestedMethod) || requestedMethod === "OPTIONS") {
+    return buildCorsErrorResponse({
+      ...corsDecision,
+      allowed: false,
+      reason: "cors_method_not_allowed"
+    }, 403);
+  }
+
+  const requestedHeaders = getRequestedCorsHeaders(request);
+  const unsupportedHeader = requestedHeaders.find((header) => !CORS_ALLOWED_REQUEST_HEADERS.includes(header));
+  if (unsupportedHeader) {
+    return buildCorsErrorResponse({
+      ...corsDecision,
+      allowed: false,
+      reason: "cors_header_not_allowed"
+    }, 403);
+  }
+
+  const headers = new Headers({
+    "Access-Control-Allow-Origin": corsDecision.origin,
+    "Access-Control-Allow-Methods": CORS_ALLOWED_METHODS.join(", "),
+    "Access-Control-Allow-Headers": CORS_ALLOWED_REQUEST_HEADERS_DISPLAY,
+    "Access-Control-Max-Age": String(CORS_MAX_AGE_SECONDS)
+  });
+  appendVaryHeader(headers, "Origin");
+  appendVaryHeader(headers, "Access-Control-Request-Method");
+  appendVaryHeader(headers, "Access-Control-Request-Headers");
+
+  return new Response(null, {
+    status: 204,
+    headers
+  });
 }
 
 function readGuardConfig(env = {}) {
@@ -1604,12 +1763,7 @@ async function serveSharedCachedLetter({
   }));
 }
 
-export default {
-  async fetch(request, env = {}) {
-    if (request.method === "OPTIONS") {
-      return new Response(null, { headers: corsHeaders });
-    }
-
+async function handleApiRequest(request, env = {}) {
     const config = readGuardConfig(env);
     const usageState = await loadUsageState(env, config);
 
@@ -1847,5 +2001,21 @@ export default {
       turnstileVerification,
       cacheResult: cacheWrite
     }));
+}
+
+export default {
+  async fetch(request, env = {}) {
+    const corsDecision = evaluateCorsRequest(request, env);
+
+    if (request.method === "OPTIONS") {
+      return handleCorsPreflight(request, corsDecision);
+    }
+
+    if (!corsDecision.allowed) {
+      return buildCorsErrorResponse(corsDecision, 403);
+    }
+
+    const response = await handleApiRequest(request, env);
+    return applyCorsHeaders(response, corsDecision);
   }
 };

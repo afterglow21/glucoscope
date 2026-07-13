@@ -626,7 +626,33 @@ Interesting for privacy-first future mode, but not recommended for initial publi
 
 ---
 
-## 18. Implementation Phases
+## 18. Production CORS Boundary
+
+The production Worker does not use wildcard CORS. Browser access is restricted to explicitly configured origins.
+
+Current production configuration:
+
+```text
+CORS_ALLOWED_ORIGINS=https://afterglow21.github.io
+CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN=true
+```
+
+Rules:
+
+- Compare the browser `Origin` by exact scheme, host, and port.
+- Do not include a path such as `/glucoscope/` in an allowed Origin.
+- Echo the exact approved Origin in `Access-Control-Allow-Origin`.
+- Add `Vary: Origin` to API responses.
+- Accept preflight methods only for `GET` and `POST`, with `Content-Type` as the allowed request header.
+- Return `403` for unapproved browser origins.
+- Permit requests without an `Origin` header for operational tools and direct server-side checks.
+- Configure local-only origins through ignored development variables, not the production allowlist.
+
+CORS does not authenticate a caller and does not replace Turnstile, secrets, generation limits, or budget controls.
+
+---
+
+## 19. Implementation Phases
 
 ### Phase 0: Specification
 
@@ -649,7 +675,7 @@ Interesting for privacy-first future mode, but not recommended for initial publi
 - Add OpenAI API secret
 - Add fixed test prompt
 - Return sample AI letter
-- Confirm CORS and basic security
+- Confirm exact-origin CORS and basic security
 
 ### Phase 3: Summary payload
 
@@ -661,7 +687,7 @@ Interesting for privacy-first future mode, but not recommended for initial publi
 ### Phase 4: Safety and cost controls
 
 - Add Turnstile validation
-- Add shared cache (implemented with Workers KV; production verification required)
+- Add shared cache (implemented with Workers KV and verified across devices)
 - Add usage counters
 - Add monthly budget guard
 - Add emergency kill switch
@@ -681,7 +707,7 @@ Interesting for privacy-first future mode, but not recommended for initial publi
 
 ---
 
-## 19. Open Questions
+## 20. Open Questions
 
 - Exact morning/afternoon/night time ranges
 - Which AI provider/model to use first
@@ -693,7 +719,7 @@ Interesting for privacy-first future mode, but not recommended for initial publi
 
 ---
 
-## 20. Decision Summary
+## 21. Decision Summary
 
 Current direction:
 
@@ -711,4 +737,3 @@ Track daily/monthly usage.
 Keep monthly AI API cost around a small controlled budget.
 Design user rollout separately.
 ```
-

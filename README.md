@@ -116,18 +116,24 @@ Production KV setup is documented in:
 workers/gluco-letter-worker/README.md
 ```
 
-## Worker CORS note
+## Worker CORS policy
 
-The current Worker returns broad CORS headers for prototype testing.
-Before a wider public release, consider restricting `Access-Control-Allow-Origin` to the GitHub Pages URL and any future custom domain.
-
-Initial allowed origins to consider later:
+The production Worker uses an explicit browser-origin allowlist instead of `Access-Control-Allow-Origin: *`.
+The current public origin is:
 
 ```text
-https://<github-user>.github.io
-https://<github-user>.github.io/<repository-name>
-https://<future-custom-domain>
+https://afterglow21.github.io
 ```
+
+A browser `Origin` contains only the scheme, host, and optional port, so the repository path is not included. Allowed browser responses echo the exact approved origin and include `Vary: Origin`. Disallowed browser origins receive `403`, while command-line and operational requests without an `Origin` header remain available for verification.
+
+For local frontend development, add a non-committed Worker variable such as the following to `workers/gluco-letter-worker/.dev.vars`:
+
+```text
+CORS_LOCAL_ORIGINS="http://127.0.0.1:5500,http://localhost:5500"
+```
+
+CORS limits which browser pages can read the API response. It is not a replacement for Turnstile, usage guards, secrets, or other server-side controls.
 
 ## Safe wording boundary
 

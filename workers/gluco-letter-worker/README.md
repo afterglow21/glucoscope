@@ -26,7 +26,41 @@ GitHub Pages
 - The KV value contains only the generated letter text and minimal metadata. The glucose summary is not stored in KV.
 - Entries remain available for stale fallback for up to 24 hours, then expire automatically.
 - If a new generation is blocked or the provider fails after the one-hour window, the older shared letter can be returned gently as a fallback.
+- Browser CORS access is restricted to the configured GitHub Pages origin.
 
+## Production CORS policy
+
+Production variables:
+
+```text
+CORS_ALLOWED_ORIGINS=https://afterglow21.github.io
+CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN=true
+```
+
+Behavior:
+
+- approved browser origins receive their exact origin in `Access-Control-Allow-Origin`,
+- responses include `Vary: Origin`,
+- valid `OPTIONS` preflight requests receive `204`,
+- unapproved or malformed browser origins receive `403`,
+- requests without an `Origin` header remain available for Wrangler, PowerShell, monitoring, and direct operational checks, and
+- `Access-Control-Allow-Origin: *` is not used.
+
+The GitHub Pages repository path is not part of an Origin. For example, pages under `https://afterglow21.github.io/glucoscope/` send the Origin `https://afterglow21.github.io`.
+
+For local frontend development, create the ignored file `workers/gluco-letter-worker/.dev.vars` and add only the local origins you need:
+
+```text
+CORS_LOCAL_ORIGINS="http://127.0.0.1:5500,http://localhost:5500"
+```
+
+Do not add local origins to the production `CORS_ALLOWED_ORIGINS` value. CORS is a browser boundary, not authentication; Turnstile, secrets, rate limits, and budget guards remain required.
+
+After deployment, run:
+
+```powershell
+.\test-cors.ps1
+```
 
 ## Shared Workers KV cache setup
 
@@ -146,6 +180,8 @@ AI_STOP_BUDGET_JPY=80
 AI_DAILY_GENERATION_LIMIT=30
 AI_SLOT_GENERATION_LIMIT=10
 TURNSTILE_REQUIRED=true
+CORS_ALLOWED_ORIGINS=https://afterglow21.github.io
+CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN=true
 ```
 
 The estimated AI cost shown by the Worker is an operational estimate paid by the developer. It is not a charge to visitors.
