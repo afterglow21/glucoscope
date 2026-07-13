@@ -3524,12 +3524,12 @@ canvas{
 
   
 .gluco-peek-decor,
-.mobile-about-gluco-decor{
+.mobile-more-gluco-slot{
   display:none;
 }
 
 .gluco-peek-image,
-.mobile-about-gluco-image{
+.mobile-more-gluco-image{
   display:block;
   width:100%;
   height:auto;
@@ -5640,7 +5640,9 @@ canvas{
 
 /* ========================================================================== 
    Mobile Gluco decorations
-   - Add a small greeting Gluco to the glucose tab and More > About area
+   - Use a tightly cropped transparent illustration
+   - Show Gluco larger without covering glucose data
+   - Use the empty grid cell to the right of Journal on the More tab
    ========================================================================== */
 
 @media (max-width: 720px) and (orientation: portrait) and (hover: none) and (pointer: coarse){
@@ -5652,18 +5654,17 @@ canvas{
 
   body.mobile-page-glucose .current-main{
     position:relative;
-    z-index:1;
+    z-index:2;
   }
 
   body.mobile-page-glucose .gluco-peek-decor{
     position:absolute;
-    right:8px;
-    bottom:0;
+    right:4px;
+    bottom:-1px;
     display:block;
-    width:min(31vw,124px);
+    width:min(40vw,166px);
     pointer-events:none;
-    z-index:0;
-    opacity:.98;
+    z-index:1;
   }
 
   body.mobile-page-glucose .gluco-peek-image{
@@ -5671,17 +5672,20 @@ canvas{
     object-position:bottom right;
   }
 
-  body.mobile-page-more .mobile-about-gluco-decor{
+  body.mobile-page-more .mobile-more-gluco-slot{
+    min-height:118px;
     display:flex;
-    justify-content:flex-end;
-    margin:6px 0 8px;
-    padding-right:8px;
+    align-items:flex-end;
+    justify-content:center;
+    overflow:hidden;
     pointer-events:none;
   }
 
-  body.mobile-page-more .mobile-about-gluco-image{
-    width:min(44vw,156px);
-    max-width:156px;
+  body.mobile-page-more .mobile-more-gluco-image{
+    width:min(50vw,190px);
+    max-width:100%;
+    object-fit:contain;
+    object-position:center bottom;
   }
 }
 
@@ -5691,19 +5695,19 @@ canvas{
   }
 
   body.mobile-page-glucose .gluco-peek-decor{
-    right:4px;
-    width:min(29vw,102px);
+    right:2px;
+    width:min(38vw,148px);
   }
 
-  body.mobile-page-more .mobile-about-gluco-decor{
-    margin:4px 0 6px;
-    padding-right:2px;
+  body.mobile-page-more .mobile-more-gluco-slot{
+    min-height:104px;
   }
 
-  body.mobile-page-more .mobile-about-gluco-image{
-    width:min(40vw,128px);
+  body.mobile-page-more .mobile-more-gluco-image{
+    width:min(48vw,164px);
   }
 }
+
 /* Every About detail page uses the same readable phone layout. Older detail
    pages only needed a viewport declaration; these rules keep the visual
    language consistent with the newer Trust and Usage pages. */
