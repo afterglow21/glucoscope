@@ -5,6 +5,8 @@ let currentLanguage = localStorage.getItem("glucoscope.language.v1") || "ja";
 
 const GLUCO_COLLECTION_STORAGE_KEY = "glucoscope.glucoCollection.v1";
 const GLUCO_LUCKY_STATE_STORAGE_KEY = "glucoscope.luckyGlucoState.v1";
+const UNICORN_GLUCO_STATE_STORAGE_KEY = "glucoscope.unicornGlucoState.v1";
+const UNICORN_GLUCO_COLLECTION_STORAGE_KEY = "glucoscope.unicornGlucoCollection.v1";
 const GLUCO_VISITOR_SEED_STORAGE_KEY = "glucoscope.visitorSeed.v1";
 const GLUCO_DEBUG_FORCE_LUCKY_DATE_STORAGE_KEY = "glucoscope.debug.forceLuckyDate.v1";
 const LANGUAGE_STORAGE_KEY = "glucoscope.language.v1";
@@ -37,6 +39,8 @@ let latestAiLetterSummary = null;
 let latestRuleCommentMetrics = null;
 let aiLetterRequestInFlight = false;
 let aiLetterCacheRefreshTimer = null;
+let unicornOpeningCheckCompleted = false;
+let activeUnicornGlucoDecision = null;
 
 const GLUCO_NORMAL_MAX_ID = 50;
 const GLUCO_LUCKY_MIN_ID = 51;
@@ -138,6 +142,19 @@ const glucoLiveItems = [
   { id: 68, image: "assets/gluco/live/gluco-live-68.png", title: { ja: "お花畑", en: "Flower garden" } },
   { id: 69, image: "assets/gluco/live/gluco-live-69.png", title: { ja: "すべり台", en: "Slide" } },
   { id: 70, image: "assets/gluco/live/gluco-live-70.png", title: { ja: "公園のおでかけ", en: "Park outing" } }
+];
+
+const unicornGlucoItems = [
+  { id: 1, image: "assets/gluco/unicorn/unicorn-gluco-01-rainbow-ride.png", title: { ja: "虹の空をおさんぽ", en: "Rainbow Ride" } },
+  { id: 2, image: "assets/gluco/unicorn/unicorn-gluco-02-clover-ball.png", title: { ja: "クローバーボール", en: "Clover Ball" } },
+  { id: 3, image: "assets/gluco/unicorn/unicorn-gluco-03-costume.png", title: { ja: "ユニコーンのおめかし", en: "Unicorn Costume" } },
+  { id: 4, image: "assets/gluco/unicorn/unicorn-gluco-04-tea-party.png", title: { ja: "虹のお茶会", en: "Rainbow Tea Party" } },
+  { id: 5, image: "assets/gluco/unicorn/unicorn-gluco-05-cloud-nap.png", title: { ja: "雲の上のおひるね", en: "Cloud Nap" } },
+  { id: 6, image: "assets/gluco/unicorn/unicorn-gluco-06-rainbow-painting.png", title: { ja: "虹を描く時間", en: "Rainbow Painting" } },
+  { id: 7, image: "assets/gluco/unicorn/unicorn-gluco-07-pegasus-flight.png", title: { ja: "ペガサスフライト", en: "Pegasus Flight" } },
+  { id: 8, image: "assets/gluco/unicorn/unicorn-gluco-08-moon-dance.png", title: { ja: "月夜のダンス", en: "Moonlight Dance" } },
+  { id: 9, image: "assets/gluco/unicorn/unicorn-gluco-09-clover-picnic.png", title: { ja: "クローバーピクニック", en: "Clover Picnic" } },
+  { id: 10, image: "assets/gluco/unicorn/unicorn-gluco-10-lucky-embrace.png", title: { ja: "ぎゅっと幸運", en: "Lucky Embrace" } }
 ];
 
 const dailyLetterGlucoImages = glucoLiveItems.map((item) => item.image);
@@ -277,6 +294,13 @@ const translations = {
     collectionProgress: "出会ったグルコ",
     luckyGlucoBadge: "🍀 小さな幸運",
     luckyGlucoMet: "🍀 小さな幸運ラッキーグルコと出逢ったよ",
+    unicornGlucoBadge: "🦄 ユニコーンをつかまえた！",
+    unicornCollectionTitle: "🦄 ユニコーングルコ",
+    unicornCollectionLead: "サイトを開いたとき、最新の測定がぴったり100mg/dLだった日にだけ出会える、小さな幸運です。",
+    unicornCollectionNotMetToday: "今日はまだユニコーングルコと出会っていません。",
+    unicornCollectionMetToday: "今日は「{title}」と出会ったよ🍀",
+    unicornCollectionLocked: "まだ出会っていないユニコーングルコ",
+    unicornCollectionProgress: "出会ったユニコーングルコ",
     achievementLabel: "称号",
     periodToday: "今日",
     periodYesterday: "昨日",
@@ -452,6 +476,13 @@ const translations = {
     collectionProgress: "Gluco met",
     luckyGlucoBadge: "🍀 Little luck",
     luckyGlucoMet: "🍀 You met a little Lucky Gluco today",
+    unicornGlucoBadge: "🦄 You caught a unicorn!",
+    unicornCollectionTitle: "🦄 Unicorn Gluco",
+    unicornCollectionLead: "A little-luck encounter available only when the latest reading is exactly 100 mg/dL as the site opens.",
+    unicornCollectionNotMetToday: "You have not met a Unicorn Gluco today.",
+    unicornCollectionMetToday: "Today you met “{title}” 🍀",
+    unicornCollectionLocked: "Unicorn Gluco not met yet",
+    unicornCollectionProgress: "Unicorn Gluco met",
     achievementLabel: "Title",
     periodToday: "Today",
     periodYesterday: "Yesterday",
@@ -1483,6 +1514,176 @@ function formatLuckyGlucoDailyTitle(number) {
   return `${formatGlucoLiveNumber(number)} Lucky Gluco! ${getGlucoLiveTitle(number)}`;
 }
 
+function getUnicornGlucoItemById(id) {
+  return unicornGlucoItems.find((item) => item.id === Number(id)) || null;
+}
+
+function getLocalizedUnicornTitle(item) {
+  if (!item) return currentLanguage === "en" ? "Unicorn Gluco" : "ユニコーングルコ";
+  return item.title[currentLanguage] || item.title.ja;
+}
+
+function readUnicornGlucoState() {
+  try {
+    return JSON.parse(localStorage.getItem(UNICORN_GLUCO_STATE_STORAGE_KEY) || "{}");
+  } catch (error) {
+    return {};
+  }
+}
+
+function writeUnicornGlucoState(state) {
+  try {
+    localStorage.setItem(UNICORN_GLUCO_STATE_STORAGE_KEY, JSON.stringify(state));
+  } catch (error) {
+    // Unicorn Gluco is a local, optional memory.
+  }
+}
+
+function readUnicornGlucoCollection() {
+  try {
+    return JSON.parse(localStorage.getItem(UNICORN_GLUCO_COLLECTION_STORAGE_KEY) || "{}");
+  } catch (error) {
+    return {};
+  }
+}
+
+function writeUnicornGlucoCollection(collection) {
+  try {
+    localStorage.setItem(UNICORN_GLUCO_COLLECTION_STORAGE_KEY, JSON.stringify(collection));
+  } catch (error) {
+    // Unicorn Gluco is a local, optional memory.
+  }
+}
+
+function getStoredTodayUnicornDecision(dateKey = getLocalDateKey()) {
+  if (activeUnicornGlucoDecision?.dateKey === dateKey) return activeUnicornGlucoDecision;
+
+  const state = readUnicornGlucoState();
+  if (state.dailyDateKey !== dateKey || !state.dailyUnicornId) return null;
+
+  const item = getUnicornGlucoItemById(state.dailyUnicornId);
+  if (!item) return null;
+
+  activeUnicornGlucoDecision = {
+    item,
+    imagePath: item.image,
+    isUnicorn: true,
+    dateKey,
+    measurementDate: Number(state.measurementDate || 0)
+  };
+  return activeUnicornGlucoDecision;
+}
+
+function updateUnicornGlucoCollection(item, dateKey) {
+  if (!item) return;
+
+  const collection = readUnicornGlucoCollection();
+  const imageId = `unicorn-gluco-${String(item.id).padStart(2, "0")}`;
+  const current = collection[imageId];
+
+  if (!current) {
+    collection[imageId] = {
+      firstSeenDate: dateKey,
+      lastSeenDate: dateKey,
+      encounterCount: 1,
+      imagePath: item.image
+    };
+  } else if (current.lastSeenDate !== dateKey) {
+    current.lastSeenDate = dateKey;
+    current.encounterCount = Number(current.encounterCount || 1) + 1;
+    current.imagePath = item.image;
+    collection[imageId] = current;
+  }
+
+  writeUnicornGlucoCollection(collection);
+}
+
+function pickUnicornGlucoItem(dateKey, measurementDate) {
+  const collection = readUnicornGlucoCollection();
+  const uncollected = unicornGlucoItems.filter((item) => {
+    const imageId = `unicorn-gluco-${String(item.id).padStart(2, "0")}`;
+    return !collection[imageId];
+  });
+  const pool = uncollected.length ? uncollected : unicornGlucoItems;
+  const seed = getOrCreateVisitorSeed();
+  return pickGlucoItemFromPool(pool, `${dateKey}:unicorn:${measurementDate}:${seed}`);
+}
+
+function createTodayUnicornEncounter(latest, measuredAt, dateKey = getLocalDateKey()) {
+  const stored = getStoredTodayUnicornDecision(dateKey);
+  if (stored) return stored;
+
+  const measurementDate = Number(latest?.date || measuredAt?.getTime?.() || 0);
+  const item = pickUnicornGlucoItem(dateKey, measurementDate);
+  if (!item) return null;
+
+  writeUnicornGlucoState({
+    dailyDateKey: dateKey,
+    dailyUnicornId: item.id,
+    measurementDate,
+    encounteredAt: Date.now()
+  });
+  updateUnicornGlucoCollection(item, dateKey);
+
+  activeUnicornGlucoDecision = {
+    item,
+    imagePath: item.image,
+    isUnicorn: true,
+    dateKey,
+    measurementDate
+  };
+  return activeUnicornGlucoDecision;
+}
+
+function evaluateOpeningUnicornEncounter(latest, measuredAt, minutesAgo) {
+  const dateKey = getLocalDateKey();
+  const stored = getStoredTodayUnicornDecision(dateKey);
+  if (stored) return stored;
+  if (unicornOpeningCheckCompleted) return null;
+
+  // This flag is set on the first successful latest-glucose response only.
+  // Later 60-second refreshes cannot unlock a Unicorn Gluco in this page session.
+  unicornOpeningCheckCompleted = true;
+
+  const glucose = Number(latest?.sgv);
+  const isFresh = Number.isFinite(minutesAgo) && minutesAgo >= 0 && minutesAgo < 30;
+  if (!isFresh || glucose !== GLUCO_CELEBRATION_THRESHOLDS.unicornGlucose) return null;
+
+  return createTodayUnicornEncounter(latest, measuredAt, dateKey);
+}
+
+function renderUnicornGlucoDecision(decision, dateKey = getLocalDateKey()) {
+  const commentImage = document.getElementById("commentGlucoImage");
+  const commentNumber = document.getElementById("commentGlucoNumber");
+  const commentAvatar = document.querySelector(".gluco-comment-avatar");
+  const luckyBadge = document.getElementById("commentGlucoLuckyBadge");
+
+  if (!commentImage || !decision?.item) return;
+
+  const item = decision.item;
+  const title = getLocalizedUnicornTitle(item);
+  commentImage.src = item.image;
+  commentImage.alt = `${currentLanguage === "en" ? "Unicorn Gluco" : "ユニコーングルコ"} ${String(item.id).padStart(2, "0")} ${title}`;
+
+  commentAvatar?.classList.remove("lucky-gluco");
+  commentAvatar?.classList.add("unicorn-gluco");
+
+  if (commentNumber) {
+    commentNumber.textContent = `🦄 Unicorn Gluco ${String(item.id).padStart(2, "0")} · ${title}`;
+    commentNumber.classList.remove("lucky-gluco");
+    commentNumber.classList.add("unicorn-gluco");
+  }
+
+  if (luckyBadge) {
+    luckyBadge.textContent = t("unicornGlucoBadge");
+    luckyBadge.hidden = false;
+    luckyBadge.classList.add("unicorn-gluco");
+  }
+
+  updateUnicornGlucoCollection(item, dateKey);
+  renderCollectionView();
+}
+
 function readGlucoCollection() {
   try {
     return JSON.parse(localStorage.getItem(GLUCO_COLLECTION_STORAGE_KEY) || "{}");
@@ -1572,6 +1773,7 @@ function renderDailyGlucoDecision(decision, dateKey = getLocalDateKey()) {
 
   if (commentAvatar) {
     commentAvatar.classList.toggle("lucky-gluco", isLucky);
+    commentAvatar.classList.remove("unicorn-gluco");
   }
 
   if (commentNumber) {
@@ -1580,11 +1782,13 @@ function renderDailyGlucoDecision(decision, dateKey = getLocalDateKey()) {
       : updateGlucoLetterCollection(decision.imagePath, dateKey, { isLucky });
     commentNumber.textContent = isLucky ? formatLuckyGlucoDailyTitle(imageNumber) : collectionInfo.label;
     commentNumber.classList.toggle("lucky-gluco", isLucky);
+    commentNumber.classList.remove("unicorn-gluco");
   }
 
   if (luckyBadge) {
     luckyBadge.textContent = t("luckyGlucoMet");
     luckyBadge.hidden = !isLucky;
+    luckyBadge.classList.remove("unicorn-gluco");
   }
 
   renderCollectionView();
@@ -1592,6 +1796,12 @@ function renderDailyGlucoDecision(decision, dateKey = getLocalDateKey()) {
 
 function setDailyLetterGlucoImage(context = null) {
   const dateKey = getLocalDateKey();
+  const unicornDecision = getStoredTodayUnicornDecision(dateKey);
+  if (unicornDecision) {
+    renderUnicornGlucoDecision(unicornDecision, dateKey);
+    return;
+  }
+
   const decision = context
     ? getOrCreateDailyGlucoDecision(context)
     : getStoredDailyGlucoDecision(dateKey) || getPreviewDailyGlucoDecision(dateKey);
@@ -1601,6 +1811,12 @@ function setDailyLetterGlucoImage(context = null) {
 
 function renderStoredDailyLetterGlucoImage() {
   const dateKey = getLocalDateKey();
+  const unicornDecision = getStoredTodayUnicornDecision(dateKey);
+  if (unicornDecision) {
+    renderUnicornGlucoDecision(unicornDecision, dateKey);
+    return;
+  }
+
   renderDailyGlucoDecision(getStoredDailyGlucoDecision(dateKey) || getPreviewDailyGlucoDecision(dateKey), dateKey);
 }
 
@@ -4054,6 +4270,10 @@ async function loadLatestGlucose() {
   updateHeaderUpdated(measuredAt);
   const now = new Date();
   const minutesAgo = Math.round((now - measuredAt) / 60000);
+  const unicornDecision = evaluateOpeningUnicornEncounter(latest, measuredAt, minutesAgo);
+  if (unicornDecision) {
+    renderUnicornGlucoDecision(unicornDecision, getLocalDateKey());
+  }
 
   if (status) {
     status.textContent = currentLanguage === "en"
@@ -4301,6 +4521,9 @@ function renderCollectionView() {
   const progress = document.getElementById("collectionProgress");
   const achievementEl = document.getElementById("collectionAchievement");
   const today = document.getElementById("collectionToday");
+  const unicornGrid = document.getElementById("unicornCollectionGrid");
+  const unicornProgress = document.getElementById("unicornCollectionProgress");
+  const unicornToday = document.getElementById("unicornCollectionToday");
 
   if (!grid) return;
 
@@ -4376,6 +4599,63 @@ function renderCollectionView() {
     if (isLucky) item.appendChild(luckyBadge);
     item.appendChild(meta);
     grid.appendChild(item);
+  });
+
+  if (!unicornGrid) return;
+
+  const unicornCollection = readUnicornGlucoCollection();
+  const unicornCount = Object.keys(unicornCollection).length;
+  if (unicornProgress) {
+    unicornProgress.textContent = `${unicornCount} / ${unicornGlucoItems.length}`;
+    unicornProgress.title = `${t("unicornCollectionProgress")}: ${unicornCount} / ${unicornGlucoItems.length}`;
+  }
+
+  const todayUnicorn = getStoredTodayUnicornDecision();
+  if (unicornToday) {
+    unicornToday.textContent = todayUnicorn
+      ? t("unicornCollectionMetToday").replace("{title}", getLocalizedUnicornTitle(todayUnicorn.item))
+      : t("unicornCollectionNotMetToday");
+  }
+
+  unicornGrid.replaceChildren();
+  unicornGlucoItems.forEach((unicornItem) => {
+    const imageId = `unicorn-gluco-${String(unicornItem.id).padStart(2, "0")}`;
+    const collected = unicornCollection[imageId];
+    const item = document.createElement("div");
+    item.className = `collection-item unicorn-gluco ${collected ? "collected" : "locked"}`;
+
+    const imageBox = document.createElement("div");
+    imageBox.className = collected ? "collection-image-wrap" : "collection-locked";
+    if (collected) {
+      const img = document.createElement("img");
+      img.src = unicornItem.image;
+      img.alt = `${currentLanguage === "en" ? "Unicorn Gluco" : "ユニコーングルコ"} ${String(unicornItem.id).padStart(2, "0")}`;
+      imageBox.appendChild(img);
+    } else {
+      imageBox.textContent = "?";
+      imageBox.setAttribute("aria-label", t("unicornCollectionLocked"));
+    }
+
+    const numberEl = document.createElement("div");
+    numberEl.className = "collection-number";
+    numberEl.textContent = `🦄 ${String(unicornItem.id).padStart(2, "0")} ${getLocalizedUnicornTitle(unicornItem)}`;
+
+    const meta = document.createElement("div");
+    meta.className = "collection-meta";
+    if (collected) {
+      const firstSeenLine = document.createElement("span");
+      firstSeenLine.textContent = `${t("collectionFirstSeen")}: ${collected.firstSeenDate || "--"}`;
+      const countLine = document.createElement("span");
+      countLine.textContent = formatEncounterLabel(collected.encounterCount);
+      meta.replaceChildren(firstSeenLine, countLine);
+    } else {
+      meta.textContent = t("unicornCollectionLocked");
+    }
+
+    item.appendChild(imageBox);
+    item.appendChild(numberEl);
+    item.appendChild(meta);
+    unicornGrid.appendChild(item);
   });
 }
 

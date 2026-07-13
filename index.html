@@ -22,7 +22,7 @@
     })();
   </script>
   <title>GlucoScope</title>
-  <link rel="stylesheet" href="style.css?v=20260713-gluco-static-accent-3">
+  <link rel="stylesheet" href="style.css?v=20260714-unicorn-gluco-1">
 </head>
 <body>
 
@@ -346,6 +346,18 @@
       <span id="collectionToday" data-i18n-key="collectionToday">今日のGlucoに会うと、ここに記録されます。</span>
     </div>
     <div id="collectionGrid" class="collection-grid" aria-live="polite"></div>
+
+    <section class="unicorn-collection-section" aria-labelledby="unicornCollectionTitle">
+      <div class="unicorn-collection-header">
+        <div>
+          <div id="unicornCollectionTitle" class="label" data-i18n-key="unicornCollectionTitle">🦄 ユニコーングルコ</div>
+          <p class="collection-lead" data-i18n-key="unicornCollectionLead">サイトを開いたとき、最新の測定がぴったり100mg/dLだった日にだけ出会える、小さな幸運です。</p>
+        </div>
+        <div id="unicornCollectionProgress" class="collection-progress">0 / 10</div>
+      </div>
+      <div id="unicornCollectionToday" class="collection-summary" data-i18n-key="unicornCollectionNotMetToday">今日はまだユニコーングルコと出会っていません。</div>
+      <div id="unicornCollectionGrid" class="collection-grid unicorn-collection-grid" aria-live="polite"></div>
+    </section>
   </section>
 </section>
 
@@ -501,6 +513,6 @@
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js"></script>
-<script src="js/app.js?v=20260713-output-completion-1"></script>
+<script src="js/app.js?v=20260714-unicorn-gluco-1"></script>
 </body>
 </html>

@@ -132,16 +132,30 @@ Avoid language such as:
 
 ---
 
-## 8. Planned Special Encounter: Unicorn Gluco
+## 8. Special Encounter: Unicorn Gluco
 
-Unicorn Gluco is a planned special encounter for a future release.
+Unicorn Gluco is implemented as a local-only special encounter.
 
-Trigger candidate:
+Trigger rules:
 
-- The active view is `today`.
-- The latest glucose reading is exactly `100 mg/dL`.
+- Evaluate only the first successful latest-glucose response after each page load.
+- Use only the current latest Nightscout entry; never scan today's history or another period.
+- The entry must be fresh under the LIVE rule (`< 30 minutes`).
+- The value must be exactly `100 mg/dL`.
+- If the first successful response is another value, later automatic refreshes in that page session cannot unlock an encounter.
+- A later new page load may unlock it if that opening value is 100mg/dL.
+- At most one illustration is selected per local calendar day.
 
-Initial wording support:
+Display and storage:
+
+- Select an uncollected illustration first; after all ten are collected, select from the full set.
+- Keep the selected illustration fixed for the rest of that local day.
+- Replace the large Letter-tab Gluco illustration only; do not regenerate an AI letter.
+- Save the encounter and first-seen date in `localStorage`.
+- Show a separate 10-item Unicorn Gluco collection inside Gluco Memories.
+- The glucose-tab illustration replacement remains deferred until a matching approved asset exists.
+
+Wording:
 
 ```text
 🦄 ユニコーンをつかまえた！
@@ -155,8 +169,7 @@ Design boundaries:
 - It does not prove good or bad glucose management.
 - It must not pressure people to chase 100mg/dL.
 - Do not add rankings, streak pressure, or optimization mechanics around it.
-- A dedicated illustration and collection record require separate visual, privacy, and implementation review.
-- Until that review is complete, only the wording may be enabled.
+- Do not sync this health-related encounter across devices until account, consent, and privacy design are reviewed.
 
 ---
 
