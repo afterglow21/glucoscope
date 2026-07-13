@@ -27,6 +27,10 @@ GitHub Pages
 - Entries remain available for stale fallback for up to 24 hours, then expire automatically.
 - If a new generation is blocked or the provider fails after the one-hour window, the older shared letter can be returned gently as a fallback.
 - Browser CORS access is restricted to the configured GitHub Pages origin.
+- Gentle and detailed modes use separate OpenAI output limits.
+- If OpenAI reports `status: incomplete` because `max_output_tokens` was reached, the Worker retries once with a larger mode-specific limit.
+- Partial output is never returned or written to browser/KV cache.
+- Token and estimated-cost totals include both attempts when an automatic retry is needed.
 
 ## Positive recognition and Unicorn wording
 
@@ -44,7 +48,7 @@ Initial copy rules:
 These are language and experience rules, not medical grades or treatment targets.
 The prompt must praise the observed flow rather than the person's worth or presumed effort, and it must still mention important lower or higher periods gently.
 
-The shared-cache schema is `gluco-ai-letter-cache-v2`, which prevents older cached wording from overriding the updated tone during rollout.
+The shared-cache schema is `gluco-ai-letter-cache-v3`, which also prevents incomplete or older cached wording from overriding the current output rules.
 
 ## Production CORS policy
 
@@ -191,7 +195,10 @@ Non-secret values are defined in `wrangler.toml`:
 AI_PROVIDER=openai
 AI_ENABLED=true
 OPENAI_MODEL=gpt-5.4-nano
-OPENAI_MAX_OUTPUT_TOKENS=500
+OPENAI_MAX_OUTPUT_TOKENS_LETTER=700
+OPENAI_MAX_OUTPUT_TOKENS_DEEP=1500
+OPENAI_RETRY_MAX_OUTPUT_TOKENS_LETTER=1100
+OPENAI_RETRY_MAX_OUTPUT_TOKENS_DEEP=2400
 AI_MONTHLY_BUDGET_JPY=100
 AI_WARNING_BUDGET_JPY=50
 AI_STOP_BUDGET_JPY=80
@@ -205,6 +212,8 @@ CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN=true
 The estimated AI cost shown by the Worker is an operational estimate paid by the developer. It is not a charge to visitors.
 
 The production generation guard allows up to 10 new generations in each time slot (morning, afternoon, and night), with a daily maximum of 30. This is designed so the five periods (today, yesterday, 7 days, 30 days, and custom) can each be tried in both analysis modes within a slot. Cached displays do not consume a new-generation slot.
+
+The first OpenAI attempt uses the normal limit for the selected mode. Only an API response explicitly marked incomplete due to `max_output_tokens` triggers one retry. A successful retry still counts as one user-requested generation, while usage and developer-cost estimates include both OpenAI attempts. If the retry is also incomplete, the partial text is discarded and is not cached.
 
 ## Response contract
 

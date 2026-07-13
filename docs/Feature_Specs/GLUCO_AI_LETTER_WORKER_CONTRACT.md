@@ -119,11 +119,18 @@ Future fields may include:
       "label": "昼のお手紙"
     }
   },
+  "generation": {
+    "complete": true,
+    "attempts": 0,
+    "retriedAfterIncomplete": false,
+    "initialIncompleteReason": null,
+    "maxOutputTokens": null
+  },
   "cache": {
     "status": "stored",
     "storage": "cloudflare-workers-kv",
     "bindingAvailable": true,
-    "key": "gluco-letter:gluco-ai-letter-cache-v2:<sha256>",
+    "key": "gluco-letter:gluco-ai-letter-cache-v3:<sha256>",
     "fresh": true,
     "ageSeconds": 0,
     "generatedAt": "2026-07-09T05:52:00.000Z",
@@ -473,7 +480,10 @@ OpenAI mode must be explicitly enabled on the Worker side:
 ```text
 AI_PROVIDER=openai
 OPENAI_MODEL=gpt-5.4-nano
-OPENAI_MAX_OUTPUT_TOKENS=700
+OPENAI_MAX_OUTPUT_TOKENS_LETTER=700
+OPENAI_MAX_OUTPUT_TOKENS_DEEP=1500
+OPENAI_RETRY_MAX_OUTPUT_TOKENS_LETTER=1100
+OPENAI_RETRY_MAX_OUTPUT_TOKENS_DEEP=2400
 OPENAI_API_KEY=<secret>
 ```
 
@@ -514,7 +524,21 @@ When OpenAI generation fails:
 }
 ```
 
-Provider errors should not erase the visible letter.
+If the Responses API returns `status: incomplete`, partial output is not accepted. When the reason is `max_output_tokens`, the Worker retries once with the larger limit for the selected mode. If the retry is also incomplete, the Worker returns:
+
+```json
+{
+  "ok": false,
+  "code": "generation_incomplete",
+  "userMessage": "AI分析を最後までまとめきれませんでした。途中の文章は保存していないよ。少し時間をおいて、もう一度試してみてね🍀",
+  "details": {
+    "incompleteReason": "max_output_tokens",
+    "attempts": 2
+  }
+}
+```
+
+Provider errors and incomplete responses should not erase the visible letter. Partial text must never be stored in browser cache or Workers KV. Usage and estimated developer cost include any incomplete attempt and the automatic retry.
 
 ### Prompt safety
 

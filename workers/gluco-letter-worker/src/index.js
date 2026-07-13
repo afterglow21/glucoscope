@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 const CONTRACT_VERSION = "gluco-ai-letter-worker-response-v0.2";
-const AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v2";
+const AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v3";
 const LETTER_SLOT_KEYS = ["morning", "afternoon", "night"];
 const ANALYSIS_MODE_KEYS = ["letter", "deep"];
 
@@ -9,7 +9,10 @@ const DEFAULT_GUARD_CONFIG = {
   aiEnabled: true,
   provider: "prototype",
   openAiModel: "gpt-5.4-nano",
-  openAiMaxOutputTokens: 700,
+  openAiMaxOutputTokensLetter: 700,
+  openAiMaxOutputTokensDeep: 1500,
+  openAiRetryMaxOutputTokensLetter: 1100,
+  openAiRetryMaxOutputTokensDeep: 2400,
   turnstileRequired: false,
   sharedCacheEnabled: true,
   sharedCacheFreshSeconds: 60 * 60,
@@ -253,11 +256,44 @@ function readGuardConfig(env = {}) {
     Math.floor(readNumber(env.AI_CACHE_RETENTION_SECONDS, DEFAULT_GUARD_CONFIG.sharedCacheRetentionSeconds))
   );
 
+  const legacyOpenAiMaxOutputTokens = env.OPENAI_MAX_OUTPUT_TOKENS;
+  const openAiMaxOutputTokensLetter = Math.max(
+    100,
+    Math.floor(readNumber(
+      env.OPENAI_MAX_OUTPUT_TOKENS_LETTER ?? legacyOpenAiMaxOutputTokens,
+      DEFAULT_GUARD_CONFIG.openAiMaxOutputTokensLetter
+    ))
+  );
+  const openAiMaxOutputTokensDeep = Math.max(
+    openAiMaxOutputTokensLetter,
+    Math.floor(readNumber(
+      env.OPENAI_MAX_OUTPUT_TOKENS_DEEP ?? legacyOpenAiMaxOutputTokens,
+      DEFAULT_GUARD_CONFIG.openAiMaxOutputTokensDeep
+    ))
+  );
+  const openAiRetryMaxOutputTokensLetter = Math.max(
+    openAiMaxOutputTokensLetter,
+    Math.floor(readNumber(
+      env.OPENAI_RETRY_MAX_OUTPUT_TOKENS_LETTER,
+      DEFAULT_GUARD_CONFIG.openAiRetryMaxOutputTokensLetter
+    ))
+  );
+  const openAiRetryMaxOutputTokensDeep = Math.max(
+    openAiMaxOutputTokensDeep,
+    Math.floor(readNumber(
+      env.OPENAI_RETRY_MAX_OUTPUT_TOKENS_DEEP,
+      DEFAULT_GUARD_CONFIG.openAiRetryMaxOutputTokensDeep
+    ))
+  );
+
   return {
     aiEnabled: readBoolean(env.AI_ENABLED, DEFAULT_GUARD_CONFIG.aiEnabled),
     provider,
     openAiModel: env.OPENAI_MODEL || DEFAULT_GUARD_CONFIG.openAiModel,
-    openAiMaxOutputTokens: Math.max(100, Math.floor(readNumber(env.OPENAI_MAX_OUTPUT_TOKENS, DEFAULT_GUARD_CONFIG.openAiMaxOutputTokens))),
+    openAiMaxOutputTokensLetter,
+    openAiMaxOutputTokensDeep,
+    openAiRetryMaxOutputTokensLetter,
+    openAiRetryMaxOutputTokensDeep,
     turnstileRequired: readBoolean(env.TURNSTILE_REQUIRED, DEFAULT_GUARD_CONFIG.turnstileRequired),
     sharedCacheEnabled: readBoolean(env.AI_CACHE_ENABLED, DEFAULT_GUARD_CONFIG.sharedCacheEnabled),
     sharedCacheFreshSeconds,
@@ -1129,15 +1165,58 @@ function getOpenAiUsage(data = {}) {
   };
 }
 
-async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
-  if (!env.OPENAI_API_KEY) {
-    const error = new Error("Missing OPENAI_API_KEY");
-    error.code = "missing_openai_api_key";
-    throw error;
+function addRequestUsage(...usageItems) {
+  return usageItems.reduce((total, item) => {
+    if (!item || typeof item !== "object") return total;
+    total.inputTokens += Number(item.inputTokens) || 0;
+    total.outputTokens += Number(item.outputTokens) || 0;
+    total.estimatedCostJpy += Number(item.estimatedCostJpy) || 0;
+    return total;
+  }, emptyRequestUsage());
+}
+
+function getOpenAiIncompleteReason(data = {}) {
+  return data.status === "incomplete"
+    ? data.incomplete_details?.reason || "unknown"
+    : null;
+}
+
+function getOpenAiTokenLimits(config, mode = "letter") {
+  const analysisMode = normalizeAnalysisMode(mode);
+  if (analysisMode === "deep") {
+    return {
+      initial: config.openAiMaxOutputTokensDeep,
+      retry: config.openAiRetryMaxOutputTokensDeep
+    };
   }
 
+  return {
+    initial: config.openAiMaxOutputTokensLetter,
+    retry: config.openAiRetryMaxOutputTokensLetter
+  };
+}
+
+function buildOpenAiRetryPrompt(summary, mode) {
+  const language = summary.language === "en" ? "en" : "ja";
+  const basePrompt = buildOpenAiPrompt(summary, mode);
+
+  if (language === "en") {
+    return `${basePrompt}
+
+Important: Complete the full reflection within the available output limit. End with a complete final sentence; do not stop mid-sentence.`;
+  }
+
+  return `${basePrompt}
+
+重要: 出力上限の中で必ず最後まで書き切り、文の途中で終わらせない。最後は完結した一文で締める。`;
+}
+
+async function callOpenAiAttempt({ summary, env, config, mode, maxOutputTokens, retryAttempt = false }) {
   const model = config.openAiModel;
   const language = summary.language === "en" ? "en" : "ja";
+  const input = retryAttempt
+    ? buildOpenAiRetryPrompt(summary, mode)
+    : buildOpenAiPrompt(summary, mode);
 
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
@@ -1148,8 +1227,8 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
     body: JSON.stringify({
       model,
       instructions: buildOpenAiInstructions(language, mode),
-      input: buildOpenAiPrompt(summary, mode),
-      max_output_tokens: config.openAiMaxOutputTokens,
+      input,
+      max_output_tokens: maxOutputTokens,
       tool_choice: "none",
       store: false
     })
@@ -1165,20 +1244,14 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
   }
 
   const text = extractOpenAiText(data);
-  if (!text) {
-    const error = new Error("OpenAI response did not include output text.");
-    error.code = "openai_empty_output";
-    throw error;
-  }
-
   const openAiUsage = getOpenAiUsage(data);
   const inputTokens = openAiUsage.inputTokens ?? estimateInputTokens(summary);
   const outputTokens = openAiUsage.outputTokens ?? estimateOutputTokens(text);
 
   return {
     text,
-    provider: "openai",
-    model,
+    incompleteReason: getOpenAiIncompleteReason(data),
+    maxOutputTokens,
     usage: {
       inputTokens,
       outputTokens,
@@ -1188,6 +1261,108 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
         config
       })
     }
+  };
+}
+
+function createIncompleteOutputError({ mode, incompleteReason, attempts, maxOutputTokens, usage }) {
+  const error = new Error("OpenAI response was incomplete and was not accepted.");
+  error.code = "openai_incomplete_output";
+  error.analysisMode = normalizeAnalysisMode(mode);
+  error.incompleteReason = incompleteReason || "unknown";
+  error.attempts = attempts;
+  error.maxOutputTokens = maxOutputTokens;
+  error.usage = usage;
+  return error;
+}
+
+async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
+  if (!env.OPENAI_API_KEY) {
+    const error = new Error("Missing OPENAI_API_KEY");
+    error.code = "missing_openai_api_key";
+    throw error;
+  }
+
+  const model = config.openAiModel;
+  const analysisMode = normalizeAnalysisMode(mode);
+  const limits = getOpenAiTokenLimits(config, analysisMode);
+  const firstAttempt = await callOpenAiAttempt({
+    summary,
+    env,
+    config,
+    mode: analysisMode,
+    maxOutputTokens: limits.initial
+  });
+
+  if (!firstAttempt.incompleteReason) {
+    if (!firstAttempt.text) {
+      const error = new Error("OpenAI response did not include output text.");
+      error.code = "openai_empty_output";
+      error.usage = firstAttempt.usage;
+      throw error;
+    }
+
+    return {
+      text: firstAttempt.text,
+      provider: "openai",
+      model,
+      attempts: 1,
+      retriedAfterIncomplete: false,
+      initialIncompleteReason: null,
+      maxOutputTokens: limits.initial,
+      usage: firstAttempt.usage
+    };
+  }
+
+  if (firstAttempt.incompleteReason !== "max_output_tokens") {
+    throw createIncompleteOutputError({
+      mode: analysisMode,
+      incompleteReason: firstAttempt.incompleteReason,
+      attempts: 1,
+      maxOutputTokens: limits.initial,
+      usage: firstAttempt.usage
+    });
+  }
+
+  let retryAttempt;
+  try {
+    retryAttempt = await callOpenAiAttempt({
+      summary,
+      env,
+      config,
+      mode: analysisMode,
+      maxOutputTokens: limits.retry,
+      retryAttempt: true
+    });
+  } catch (error) {
+    error.usage = addRequestUsage(firstAttempt.usage, error.usage);
+    error.retryAttempted = true;
+    error.analysisMode = analysisMode;
+    error.attempts = 2;
+    error.maxOutputTokens = limits.retry;
+    error.initialIncompleteReason = firstAttempt.incompleteReason;
+    throw error;
+  }
+
+  const combinedUsage = addRequestUsage(firstAttempt.usage, retryAttempt.usage);
+  if (retryAttempt.incompleteReason || !retryAttempt.text) {
+    throw createIncompleteOutputError({
+      mode: analysisMode,
+      incompleteReason: retryAttempt.incompleteReason || "empty_output",
+      attempts: 2,
+      maxOutputTokens: limits.retry,
+      usage: combinedUsage
+    });
+  }
+
+  return {
+    text: retryAttempt.text,
+    provider: "openai",
+    model,
+    attempts: 2,
+    retriedAfterIncomplete: true,
+    initialIncompleteReason: firstAttempt.incompleteReason,
+    maxOutputTokens: limits.retry,
+    usage: combinedUsage
   };
 }
 
@@ -1518,6 +1693,13 @@ function buildSuccessPayload({
         label: getSlotLabel(summary, summary.language === "en" ? "en" : "ja")
       }
     },
+    generation: {
+      complete: true,
+      attempts: Number(generationResult.attempts) || 0,
+      retriedAfterIncomplete: Boolean(generationResult.retriedAfterIncomplete),
+      initialIncompleteReason: generationResult.initialIncompleteReason || null,
+      maxOutputTokens: Number(generationResult.maxOutputTokens) || null
+    },
     cache: buildCachePayload({
       cacheResult,
       config,
@@ -1668,6 +1850,16 @@ function getGuardBlock({ status, usageState, config, summary = {} }) {
   }
 
   return null;
+}
+
+function recordProviderUsage({ usageState, requestUsage }) {
+  const usage = requestUsage || emptyRequestUsage();
+  usageState.inputTokens += Number(usage.inputTokens) || 0;
+  usageState.outputTokens += Number(usage.outputTokens) || 0;
+  usageState.estimatedCostJpy = Number((
+    usageState.estimatedCostJpy + (Number(usage.estimatedCostJpy) || 0)
+  ).toFixed(4));
+  usageState.updatedAt = new Date().toISOString();
 }
 
 function recordSuccess({ usageState, status, requestUsage, summary = {} }) {
@@ -2028,10 +2220,15 @@ async function handleApiRequest(request, env = {}) {
     } catch (error) {
       console.error("AI letter provider failed", error);
 
+      const failedUsage = error.usage || emptyRequestUsage();
+      recordProviderUsage({ usageState, requestUsage: failedUsage });
+      const incompleteOutput = error.code === "openai_incomplete_output";
+      const fallbackReason = incompleteOutput ? "generation_incomplete" : "provider_error";
+
       if (staleCacheAvailable) {
         return serveSharedCachedLetter({
           cacheRead,
-          fallbackReason: "provider_error",
+          fallbackReason,
           usageState,
           env,
           config,
@@ -2041,17 +2238,29 @@ async function handleApiRequest(request, env = {}) {
         });
       }
 
-      await persistUsageState(env, usageState, config);
+      const persistedUsageState = await persistUsageState(env, usageState, config);
 
       return errorResponse({
-        code: "provider_error",
+        code: incompleteOutput ? "generation_incomplete" : "provider_error",
         message: error.message || "AI letter provider failed.",
-        userMessage: "AIお手紙の生成中に小さなエラーが起きました。表示中のお手紙やChatGPTコピー機能はそのまま使えます🍀",
+        userMessage: incompleteOutput
+          ? "AI分析を最後までまとめきれませんでした。途中の文章は保存していないよ。少し時間をおいて、もう一度試してみてね🍀"
+          : "AIお手紙の生成中に小さなエラーが起きました。表示中のお手紙やChatGPTコピー機能はそのまま使えます🍀",
         retryable: true,
         details: {
           provider: config.provider,
           model: config.openAiModel,
-          errorCode: error.code || "unknown_provider_error"
+          errorCode: error.code || "unknown_provider_error",
+          analysisMode: error.analysisMode || normalizeAnalysisMode(summary.analysisMode),
+          incompleteReason: error.incompleteReason || null,
+          attempts: Number(error.attempts) || (error.retryAttempted ? 2 : 1),
+          maxOutputTokens: Number(error.maxOutputTokens) || null,
+          usage: buildUsagePayload({
+            state: persistedUsageState,
+            requestUsage: failedUsage,
+            config,
+            summary
+          })
         }
       }, 502);
     }

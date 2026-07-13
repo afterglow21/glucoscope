@@ -475,12 +475,14 @@ Write a short, warm letter using simple language.
 Use the provided summary only.
 ```
 
-The model should be instructed to return short output.
+The model should be instructed to finish within a mode-specific output budget.
 
-Recommended output length:
+Recommended visible output length:
 
-- Japanese: 3-6 short sentences
-- English: 3-6 short sentences
+- Gentle analysis: 5-8 short lines
+- Detailed analysis: 10-16 short lines with short section labels
+
+The Worker must not treat a partial Responses API result as a successful letter. If the provider reports `status: incomplete` with reason `max_output_tokens`, it may retry once with a larger mode-specific token limit. If the retry is incomplete, the partial text must be discarded and must not be written to browser cache or Workers KV.
 
 ---
 

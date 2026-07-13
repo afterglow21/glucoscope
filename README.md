@@ -108,7 +108,8 @@ For the same page mode, language, period, morning/afternoon/night slot, analysis
 - a letter younger than one hour is reused without a new OpenAI request,
 - cache displays do not consume a new-generation count,
 - the shared KV value stores only the generated letter and minimal metadata, not the glucose summary, and
-- entries expire automatically within 24 hours after remaining available as a gentle stale fallback.
+- entries expire automatically within 24 hours after remaining available as a gentle stale fallback, and
+- incomplete OpenAI output is rejected; a `max_output_tokens` cutoff is retried once with a larger mode-specific limit, and partial text is never cached.
 
 Production KV setup is documented in:
 

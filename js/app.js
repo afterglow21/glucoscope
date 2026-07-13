@@ -12,7 +12,7 @@ const LIVE_PERIOD_STORAGE_KEY = "glucoscope.livePeriod.v1";
 const CUSTOM_RANGE_STORAGE_KEY = "glucoscope.customRange.v1";
 const AI_LETTER_WORKER_ENDPOINT_STORAGE_KEY = "glucoscope.aiLetterWorkerEndpoint.v1";
 const AI_LETTER_WORKER_ENABLED_STORAGE_KEY = "glucoscope.aiLetterWorkerEnabled.v1";
-const AI_LETTER_LOCAL_CACHE_STORAGE_KEY = "glucoscope.aiLetterLocalCache.v2";
+const AI_LETTER_LOCAL_CACHE_STORAGE_KEY = "glucoscope.aiLetterLocalCache.v3";
 const AI_LETTER_MODE_STORAGE_KEY = "glucoscope.aiLetterMode.v1";
 const AI_LETTER_LOCAL_CACHE_MAX_ITEMS = 30;
 const AI_LETTER_LOCAL_CACHE_FRESH_MS = 60 * 60 * 1000;
@@ -220,6 +220,9 @@ const translations = {
     aiLetterButtonCached: "保存済みの分析を表示",
     aiLetterButtonRefresh: "もう一度AI分析",
     aiLetterButtonLoading: "グルコがお手紙を書いてるよ...",
+    aiLetterStatusGeneratingDeep: "しっかり分析を最後まで丁寧にまとめているよ。少しだけ待ってね🍀",
+    aiLetterStatusRecoveredAfterRetry: "途中で切れないように整え直して、最後まで表示しました🍀",
+    aiLetterStatusIncomplete: "AI分析を最後までまとめきれませんでした。途中の文章は保存していないよ。少し時間をおいて、もう一度試してみてね🍀",
     aiLetterStatusPreparing: "AIお手紙の準備を確認しています。",
     aiLetterStatusLocalOnly: "",
     aiLetterStatusWaitingForSummary: "血糖サマリーを読み込むと、AIお手紙を試せます。",
@@ -392,6 +395,9 @@ const translations = {
     aiLetterButtonCached: "Show saved analysis",
     aiLetterButtonRefresh: "Run AI analysis again",
     aiLetterButtonLoading: "Gluco is writing...",
+    aiLetterStatusGeneratingDeep: "Gluco is carefully completing the detailed analysis. This may take a little longer 🍀",
+    aiLetterStatusRecoveredAfterRetry: "The reflection was regenerated so it could finish cleanly 🍀",
+    aiLetterStatusIncomplete: "The AI analysis could not be completed. The partial text was not saved. Please try again later 🍀",
     aiLetterStatusPreparing: "Checking whether AI letters are ready.",
     aiLetterStatusLocalOnly: "AI letters are not available in this view yet.",
     aiLetterStatusWaitingForSummary: "AI letters will be available after the glucose summary loads.",
@@ -2170,6 +2176,10 @@ function getAiLetterStatusKeyFromResponse(data) {
     return "aiLetterStatusCached";
   }
 
+  if (data.generation?.retriedAfterIncomplete) {
+    return "aiLetterStatusRecoveredAfterRetry";
+  }
+
   return "aiLetterStatusSuccess";
 }
 
@@ -2199,6 +2209,7 @@ function getAiLetterErrorStatusKey(data) {
   if (code === "budget_stopped") return "aiLetterStatusBudgetStopped";
   if (code === "ai_disabled") return "aiLetterStatusDisabled";
   if (code === "turnstile_failed") return "aiLetterStatusTurnstileFailed";
+  if (code === "generation_incomplete") return "aiLetterStatusIncomplete";
   return "aiLetterStatusError";
 }
 
@@ -3048,7 +3059,9 @@ async function handleAiLetterRequest(mode = currentAiLetterMode, options = {}) {
 
   aiLetterRequestInFlight = true;
   updateAiLetterControls();
-  setAiLetterPanelStatus("aiLetterButtonLoading");
+  setAiLetterPanelStatus(
+    analysisMode === "deep" ? "aiLetterStatusGeneratingDeep" : "aiLetterButtonLoading"
+  );
 
   try {
     const response = await fetch(getAiLetterWorkerEndpoint(), {
