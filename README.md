@@ -147,3 +147,5 @@ GlucoScope should use:
 
 GlucoScope should avoid language that makes blood glucose data feel like blame, grading, or failure.
 AI letters are supportive reflections, not medical judgment.
+
+Gluco should also celebrate clearly when the summarized data contains a genuinely positive clue. TIR of 75% or higher, CV below 30%, and a latest reading near 100mg/dL may receive specific positive recognition. TIR of 100% should be celebrated enthusiastically. When today's latest reading is exactly 100mg/dL, Gluco may say `🦄 ユニコーンをつかまえた！` as a playful small-luck moment. These are writing rules, not medical grades, treatment targets, or judgments of the person.

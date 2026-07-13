@@ -132,7 +132,35 @@ Avoid language such as:
 
 ---
 
-## 8. Future Ideas
+## 8. Planned Special Encounter: Unicorn Gluco
+
+Unicorn Gluco is a planned special encounter for a future release.
+
+Trigger candidate:
+
+- The active view is `today`.
+- The latest glucose reading is exactly `100 mg/dL`.
+
+Initial wording support:
+
+```text
+🦄 ユニコーンをつかまえた！
+最新の測定はぴったり100mg/dL。
+小さな幸運に出会えたね🍀
+```
+
+Design boundaries:
+
+- This is a playful community-inspired moment, not a medical reward.
+- It does not prove good or bad glucose management.
+- It must not pressure people to chase 100mg/dL.
+- Do not add rankings, streak pressure, or optimization mechanics around it.
+- A dedicated illustration and collection record require separate visual, privacy, and implementation review.
+- Until that review is complete, only the wording may be enabled.
+
+---
+
+## 9. Future Ideas
 
 - Special celebration illustrations for titles
 - Seasonal Lucky Gluco

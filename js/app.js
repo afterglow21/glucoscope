@@ -12,11 +12,21 @@ const LIVE_PERIOD_STORAGE_KEY = "glucoscope.livePeriod.v1";
 const CUSTOM_RANGE_STORAGE_KEY = "glucoscope.customRange.v1";
 const AI_LETTER_WORKER_ENDPOINT_STORAGE_KEY = "glucoscope.aiLetterWorkerEndpoint.v1";
 const AI_LETTER_WORKER_ENABLED_STORAGE_KEY = "glucoscope.aiLetterWorkerEnabled.v1";
-const AI_LETTER_LOCAL_CACHE_STORAGE_KEY = "glucoscope.aiLetterLocalCache.v1";
+const AI_LETTER_LOCAL_CACHE_STORAGE_KEY = "glucoscope.aiLetterLocalCache.v2";
 const AI_LETTER_MODE_STORAGE_KEY = "glucoscope.aiLetterMode.v1";
 const AI_LETTER_LOCAL_CACHE_MAX_ITEMS = 30;
 const AI_LETTER_LOCAL_CACHE_FRESH_MS = 60 * 60 * 1000;
 const AI_LETTER_MODES = ["letter", "deep"];
+const GLUCO_CELEBRATION_THRESHOLDS = Object.freeze({
+  unicornGlucose: 100,
+  nearHundredMin: 90,
+  nearHundredMax: 110,
+  tirCelebrate: 75,
+  tirStrong: 90,
+  tirPerfect: 100,
+  cvVeryCalm: 24,
+  cvCalm: 30
+});
 const TURNSTILE_SITE_KEY = "0x4AAAAAADyftbRcWQW23mEa";
 const TURNSTILE_SCRIPT_ID = "glucoscope-turnstile-script";
 const DEFAULT_AI_LETTER_WORKER_ENDPOINT = "http://127.0.0.1:8787/api/gluco-letter";
@@ -2724,15 +2734,78 @@ function getLatestDeltaFromEntries(entries) {
   return formatGlucoseDelta(sortedEntries[0].sgv, sortedEntries[1].sgv);
 }
 
-function buildPatternHints({ tir, tar, tbr, cv, avg, glucoScore, previousScore }) {
+function buildCelebrationHints({ tir, cv, currentGlucose, periodKey = currentLivePeriod }) {
   const hints = [];
   const numericTir = Number(tir);
+  const numericCv = Number(cv);
+  const numericGlucose = Number(currentGlucose);
+  const isTodayView = periodKey === "today";
+
+  if (currentLanguage === "en") {
+    if (isTodayView && numericGlucose === GLUCO_CELEBRATION_THRESHOLDS.unicornGlucose) {
+      hints.push("🦄 You caught a unicorn! The latest reading is exactly 100mg/dL — a small lucky GlucoScope moment worth smiling about.");
+    } else if (
+      isTodayView
+      && Number.isFinite(numericGlucose)
+      && numericGlucose >= GLUCO_CELEBRATION_THRESHOLDS.nearHundredMin
+      && numericGlucose <= GLUCO_CELEBRATION_THRESHOLDS.nearHundredMax
+    ) {
+      hints.push(`The latest reading is ${numericGlucose}mg/dL, nicely close to 100 — a lovely little moment in the flow.`);
+    }
+
+    if (numericTir === GLUCO_CELEBRATION_THRESHOLDS.tirPerfect) {
+      hints.push("TIR is 100%! Every available reading in this view is inside the target range. That is a beautiful flow and absolutely worth celebrating 🍀");
+    } else if (numericTir >= GLUCO_CELEBRATION_THRESHOLDS.tirStrong) {
+      hints.push(`TIR is ${tir}%! Almost all of the available readings are in range — a really beautiful flow 🍀`);
+    } else if (numericTir >= GLUCO_CELEBRATION_THRESHOLDS.tirCelebrate) {
+      hints.push(`TIR is ${tir}%! A strong amount of in-range time has built up here, and that is genuinely lovely to see 🍀`);
+    }
+
+    if (Number.isFinite(numericCv) && numericCv < GLUCO_CELEBRATION_THRESHOLDS.cvVeryCalm) {
+      hints.push(`CV is ${cv}%! The glucose flow is remarkably calm and steady — this is a genuinely beautiful pattern 🍀`);
+    } else if (Number.isFinite(numericCv) && numericCv < GLUCO_CELEBRATION_THRESHOLDS.cvCalm) {
+      hints.push(`CV is ${cv}%, showing a very calm and steady glucose flow. That is a lovely strength in this view 🍀`);
+    }
+
+    return hints;
+  }
+
+  if (isTodayView && numericGlucose === GLUCO_CELEBRATION_THRESHOLDS.unicornGlucose) {
+    hints.push("🦄 ユニコーンをつかまえた！ 最新の測定はぴったり100mg/dL。小さな幸運に出会えたね🍀");
+  } else if (
+    isTodayView
+    && Number.isFinite(numericGlucose)
+    && numericGlucose >= GLUCO_CELEBRATION_THRESHOLDS.nearHundredMin
+    && numericGlucose <= GLUCO_CELEBRATION_THRESHOLDS.nearHundredMax
+  ) {
+    hints.push(`最新の測定は${numericGlucose}mg/dLで、100に近いきれいな数字が見えているよ。ちょっとうれしい瞬間だね🍀`);
+  }
+
+  if (numericTir === GLUCO_CELEBRATION_THRESHOLDS.tirPerfect) {
+    hints.push("TIRは100％！ 表示中のデータはすべて目標範囲の中。これは思いきり一緒に喜びたい、とてもきれいな流れだよ🍀");
+  } else if (numericTir >= GLUCO_CELEBRATION_THRESHOLDS.tirStrong) {
+    hints.push(`TIRは${tir}％！ 表示中のほとんどの時間が目標範囲の中だね。とてもきれいな流れだよ🍀`);
+  } else if (numericTir >= GLUCO_CELEBRATION_THRESHOLDS.tirCelebrate) {
+    hints.push(`TIRは${tir}％！ 目標範囲で過ごせた時間がしっかり積み重なっているね。これは素直にうれしい流れだよ🍀`);
+  }
+
+  if (Number.isFinite(numericCv) && numericCv < GLUCO_CELEBRATION_THRESHOLDS.cvVeryCalm) {
+    hints.push(`CVは${cv}％！ ばらつきがとても小さく、かなり穏やかな流れだよ。これはすごくきれいだね🍀`);
+  } else if (Number.isFinite(numericCv) && numericCv < GLUCO_CELEBRATION_THRESHOLDS.cvCalm) {
+    hints.push(`CVは${cv}％で、血糖の流れがかなり穏やかだよ。うれしい安定感が見えているね🍀`);
+  }
+
+  return hints;
+}
+
+function buildPatternHints({ tir, tar, tbr, cv, avg, glucoScore, previousScore }) {
+  const hints = [];
   const numericTar = Number(tar);
   const numericTbr = Number(tbr);
   const numericCv = Number(cv);
 
   if (currentLanguage === "en") {
-    if (numericTir >= 70) hints.push(`TIR is ${tir}%, and steady moments are visible in this range.`);
+    if (Number(tir) >= 70 && Number(tir) < GLUCO_CELEBRATION_THRESHOLDS.tirCelebrate) hints.push(`TIR is ${tir}%, and steady moments are visible in this range.`);
     if (numericTar >= 20) hints.push(`TAR is ${tar}%, so higher periods may offer gentle clues when reviewed later.`);
     if (numericTbr >= 4) hints.push(`TBR is ${tbr}%, so lower periods may be gentle clues to look back on later.`);
     if (numericCv >= 36) hints.push(`CV is ${cv}%, so the day looks a little more wavy.`);
@@ -2745,7 +2818,7 @@ function buildPatternHints({ tir, tar, tbr, cv, avg, glucoScore, previousScore }
     return hints.slice(0, 4);
   }
 
-  if (numericTir >= 70) hints.push(`TIRは${tir}%で、落ち着いている時間もちゃんと見えているよ。`);
+  if (Number(tir) >= 70 && Number(tir) < GLUCO_CELEBRATION_THRESHOLDS.tirCelebrate) hints.push(`TIRは${tir}%で、落ち着いている時間もちゃんと見えているよ。`);
   if (numericTar >= 20) hints.push(`TARは${tar}%で、高めの時間もあとでやさしく振り返るヒントになりそうだよ。`);
   if (numericTbr >= 4) hints.push(`TBRは${tbr}%で、低めの時間もあとでそっと見返す手がかりになりそうだよ。`);
   if (numericCv >= 36) hints.push(`CVは${cv}%で、血糖の動きが少し大きめに見えているよ。`);
@@ -2764,6 +2837,13 @@ function buildAiLetterSummary({ periodKey, rangeStart, rangeEnd, latest, entries
   const latestDate = Number.isFinite(latestTime) ? new Date(latestTime) : null;
   const direction = latest?.direction ? (directionMap[latest.direction] || latest.direction) : "--";
   const delta = getLatestDeltaFromEntries(entries);
+  const currentGlucose = latest?.sgv ?? null;
+  const celebrationHints = buildCelebrationHints({
+    tir,
+    cv,
+    currentGlucose,
+    periodKey
+  });
 
   return {
     version: "gluco-ai-letter-summary-v0.1",
@@ -2775,7 +2855,7 @@ function buildAiLetterSummary({ periodKey, rangeStart, rangeEnd, latest, entries
     rangeLabel: formatAiDateRange(rangeStart, rangeEnd),
     cacheRangeKey: getAiLetterCacheRangeKey(periodKey, rangeStart, rangeEnd),
     latestMeasuredAt: latestDate ? formatDateTime(latestDate) : "--",
-    currentGlucose: latest?.sgv ?? null,
+    currentGlucose,
     direction,
     delta,
     metrics: {
@@ -2789,6 +2869,7 @@ function buildAiLetterSummary({ periodKey, rangeStart, rangeEnd, latest, entries
       previousScore,
       sevenDayAverageScore
     },
+    celebrationHints,
     patternHints: buildPatternHints({ tir, tar, tbr, cv, avg, glucoScore, previousScore })
   };
 }
@@ -2818,6 +2899,9 @@ Rules:
 - Do not suggest insulin doses, medication changes, or device setting changes.
 - Do not shame, blame, or frighten the person.
 - Treat glucose data as clues for reflection, not as a grade.
+- When celebration clues are present, mention them early and celebrate them clearly instead of minimizing them.
+- If the unicorn clue is present, use "🦄 You caught a unicorn!" once.
+- Praise the observed flow, not the person's worth or assumed effort.
 - Use simple, warm language.
 - Avoid real-time wording such as "right now" because this may be read later.
 ${outputRule}
@@ -2840,6 +2924,8 @@ Glucose summary:
 - GlucoScore: ${summary.metrics.glucoScore}
 - Previous comparison score: ${summary.metrics.previousScore ?? "--"}
 - 7-day average score: ${summary.metrics.sevenDayAverageScore ?? "--"}
+- Celebration clues:
+${(summary.celebrationHints || []).map((hint) => `  - ${hint}`).join("\n") || "  - none"}
 - Reflection hints:
 ${summary.patternHints.map((hint) => `  - ${hint}`).join("\n")}
 
@@ -2864,6 +2950,9 @@ ${task}
 - インスリン量、薬、医療機器設定の変更を指示しない。
 - 責めない。怖がらせない。急かさない。
 - 血糖データを採点ではなく、振り返りの手がかりとして扱う。
+- うれしい手がかりがあるときは、早い段階で具体的に一緒に喜び、褒め言葉を弱めない。
+- ユニコーンの手がかりがあるときは「🦄 ユニコーンをつかまえた！」を1回だけ使う。
+- 努力や人の価値を推測せず、データから見えた良い流れを褒める。
 - 子どもにも伝わるくらいやさしい言葉にする。
 - キャッシュ表示される可能性があるため、「今の血糖」「現在」などのリアルタイム断定は避ける。
 ${outputRule}
@@ -2886,6 +2975,8 @@ ${outputRule}
 - GlucoScore: ${summary.metrics.glucoScore}
 - 比較期間のGlucoScore: ${summary.metrics.previousScore ?? "--"}
 - 過去7日平均GlucoScore: ${summary.metrics.sevenDayAverageScore ?? "--"}
+- うれしい手がかり:
+${(summary.celebrationHints || []).map((hint) => `  - ${hint}`).join("\n") || "  - なし"}
 - 振り返りヒント:
 ${summary.patternHints.map((hint) => `  - ${hint}`).join("\n")}
 
@@ -3095,15 +3186,23 @@ function getRuleCommentPeriodText(periodKey = currentLivePeriod) {
   return "この期間は";
 }
 
-function makeComment(tir, tar, tbr, avg, cv, periodKey = currentLivePeriod) {
+function makeComment(tir, tar, tbr, avg, cv, periodKey = currentLivePeriod, currentGlucose = null) {
   const periodText = getRuleCommentPeriodText(periodKey);
+  const celebrationHints = buildCelebrationHints({ tir, cv, currentGlucose, periodKey });
 
   if (currentLanguage === "en") {
-    if (Number(tir) >= 90 && Number(tbr) < 4 && Number(cv) < 30) {
+    const concernLine = Number(tbr) >= 4
+      ? `TBR is ${tbr}%, so the lower moments are still worth looking back on gently.`
+      : Number(tar) >= 20
+        ? `TAR is ${tar}%, so the higher moments may still offer a useful clue later.`
+        : Number(cv) >= 36
+          ? `CV is ${cv}%, so the wavier moments may be worth noticing without blame.`
+          : "Let’s keep this lovely flow as a small clue for tomorrow too.";
+
+    if (celebrationHints.length) {
       return `Gluco is here 🍀
-There are many steady moments ${periodText}.
-TIR is ${tir}%, and average glucose is ${avg}mg/dL.
-This flow can be a gentle clue for tomorrow too.`;
+${celebrationHints.slice(0, 3).join("\n")}
+${concernLine}`;
     }
 
     if (Number(tbr) >= 4) {
@@ -3133,11 +3232,18 @@ TIR is ${tir}%.
 Let’s keep using these numbers as small clues, not as a judgment.`;
   }
 
-  if (Number(tir) >= 90 && Number(tbr) < 4 && Number(cv) < 30) {
+  const concernLine = Number(tbr) >= 4
+    ? `TBRは${tbr}％だから、低めの時間もあとでそっと見返しておきたいね。`
+    : Number(tar) >= 20
+      ? `TARは${tar}％だから、高めの時間もあとでやさしく振り返る手がかりになりそうだよ。`
+      : Number(cv) >= 36
+        ? `CVは${cv}％だから、動きが大きかった時間も責めずに見返してみよう。`
+        : "このうれしい流れも、明日を少し楽にする手がかりとして覚えておきたいね。";
+
+  if (celebrationHints.length) {
     return `グルコだよ🍀
-${periodText}落ち着いた時間がたくさん見えているよ。
-TIRは${tir}%、平均血糖は${avg}mg/dLだったね。
-この流れも、明日を少し楽にするためのやさしい手がかりになりそうだよ。`;
+${celebrationHints.slice(0, 3).join("\n")}
+${concernLine}`;
   }
 
   if (Number(tbr) >= 4) {
@@ -3182,6 +3288,12 @@ function makeDeepComment(metrics = {}) {
   } = metrics;
 
   const periodText = getRuleCommentPeriodText(periodKey);
+  const celebrationHints = buildCelebrationHints({
+    tir,
+    cv,
+    currentGlucose: metrics.currentGlucose,
+    periodKey
+  });
   const scoreDiff = Number.isFinite(Number(previousScore))
     ? Number(glucoScore) - Number(previousScore)
     : null;
@@ -3194,7 +3306,10 @@ function makeDeepComment(metrics = {}) {
         : (currentLanguage === "en" ? "GlucoScore is about the same as the comparison period." : "GlucoScoreは比較期間と同じくらいに見えているよ。");
 
   if (currentLanguage === "en") {
-    return `Detailed Gluco reflection 🍀
+    const celebrationBlock = celebrationHints.length
+      ? `\n${celebrationHints.slice(0, 3).join("\n")}`
+      : "";
+    return `Detailed Gluco reflection 🍀${celebrationBlock}
 ${periodText}, TIR is ${tir}%, TAR is ${tar}%, and TBR is ${tbr}%.
 Average glucose is ${avg}mg/dL, CV is ${cv}%, and GMI estimate is ${gmi}%.
 GlucoScore is ${glucoScore}. ${scoreLine}
@@ -3202,7 +3317,10 @@ Higher, lower, or wavier periods can be gentle clues to look back on later.
 This is not medical advice; it is a small note to help you organize what you notice.`;
   }
 
-  return `グルコだよ🍀
+  const celebrationBlock = celebrationHints.length
+    ? `\n${celebrationHints.slice(0, 3).join("\n")}`
+    : "";
+  return `グルコだよ🍀${celebrationBlock}
 ${periodText}TIRは${tir}%、TARは${tar}%、TBRは${tbr}%だったよ。
 平均血糖は${avg}mg/dL、CVは${cv}%、GMI目安は${gmi}%だね。
 GlucoScoreは${glucoScore}。${scoreLine}
@@ -3231,7 +3349,8 @@ function updateRuleCommentDisplay() {
         latestRuleCommentMetrics.tbr,
         latestRuleCommentMetrics.avg,
         latestRuleCommentMetrics.cv,
-        latestRuleCommentMetrics.periodKey
+        latestRuleCommentMetrics.periodKey,
+        latestRuleCommentMetrics.currentGlucose
       );
 }
 
@@ -4105,6 +4224,7 @@ async function loadDailyStats() {
       glucoScore: glucoScore.score,
       previousScore,
       sevenDayAverageScore,
+      currentGlucose: latest?.sgv ?? null,
       periodKey: currentLivePeriod
     };
     updateRuleCommentDisplay();

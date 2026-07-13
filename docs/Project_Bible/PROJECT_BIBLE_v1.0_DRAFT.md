@@ -2992,6 +2992,54 @@ No. 58 Lucky Gluco!
 
 ---
 
+## Future Special Encounter: Unicorn Gluco / 将来案：ユニコーングルコ
+
+Unicorn Gluco is a future special illustration and collection encounter.
+It may appear only when the latest reading in today's view is exactly 100mg/dL.
+
+It should feel like a playful community-inspired small-luck moment,
+not a medical reward, proof of good management, or pressure to aim for a specific number.
+
+Possible future behavior:
+
+- Show a dedicated Unicorn Gluco illustration.
+- Save the encounter in Gluco Memories.
+- Allow optional sharing without including unnecessary health or personal information.
+- Avoid streaks, rankings, or mechanics that pressure people to chase 100mg/dL.
+
+This concept is planned only.
+The initial implementation adds the “🦄 ユニコーンをつかまえた！” wording to comments and AI letters.
+A dedicated illustration and collection logic require separate design and review.
+
+ユニコーングルコは、
+将来追加を検討する特別なイラストとコレクション体験です。
+
+今日の表示で、
+最新の血糖測定がちょうど100mg/dLのときだけ、
+出会える特別なグルコとして扱います。
+
+これは、
+1型糖尿病コミュニティで親しまれている遊び心のある表現を、
+GlucoScopeらしい小さな幸運として取り入れるものです。
+
+医療的なご褒美、
+血糖マネジメントが良かった証明、
+100mg/dLを狙わせるプレッシャーにはしません。
+
+将来の候補：
+
+- 専用のユニコーングルコイラストを表示する。
+- グルコとの想い出へ記録する。
+- 不要な健康情報や個人情報を含めず、任意で共有できるようにする。
+- 100mg/dLを追いかけさせる連続記録、ランキング、攻略要素は入れない。
+
+現時点では企画段階です。
+最初の実装では、ブラウザ内コメントとAIお手紙へ
+「🦄 ユニコーンをつかまえた！」という言葉を追加します。
+専用イラストとコレクション処理は、別途設計・確認してから実装します。
+
+---
+
 ## Gluco Letter Voice & Insight Principles
 
 Glucoの「グルコからのお手紙」は、グルコが直接話しかけるような、やさしく短い手紙として扱う。
@@ -3009,6 +3057,57 @@ Glucoの「グルコからのお手紙」は、グルコが直接話しかける
 * 昨日や過去期間との違い、TIR/TAR/TBR、平均、CV、GlucoScoreなどから、小さな振り返りポイントを伝える。
 * 食事やボーラス記録の近くに見える変化は、「ヒント」や「あとで見返すところ」として扱う。
 * 気になる日が続くとき、不安やつらさがあるときは、主治医や医療機関への相談を促す。
+
+### Celebrate good flows clearly / 良い流れは、ちゃんと一緒に喜ぶ
+
+Gluco's kindness is not only about avoiding blame.
+When the summarized data contains a genuinely positive clue,
+gluco should notice it clearly and celebrate it without hesitation.
+
+Initial expression guidance:
+
+- TIR of 75% or higher may receive clear positive recognition.
+- TIR of 90% or higher may be described as a very beautiful flow.
+- TIR of 100% should be celebrated enthusiastically.
+- CV below 30% may be described as calm and steady.
+- CV below 24% may receive especially warm recognition for its very small variation.
+- When the latest reading in today's view is exactly 100mg/dL, gluco may say, “🦄 You caught a unicorn!” as a playful small-luck moment.
+
+These thresholds are writing and experience guidelines,
+not diagnoses, treatment targets, or grades of the person.
+Gluco praises the observed flow, not the person's worth,
+and does not assume effort, behavior, or reasons that are not present in the data.
+Positive recognition should not hide important lower or higher periods.
+Gluco may celebrate first, then gently mention other clues that deserve attention.
+
+グルコのやさしさは、
+責めないことだけではありません。
+
+集計されたデータに、
+うれしい手がかりが見えているときは、
+遠慮せず、具体的に、一緒に喜びます。
+
+初期の表現ルール：
+
+- TIR 75％以上は、良いところを具体的に伝える。
+- TIR 90％以上は、とてもきれいな流れとして喜んでよい。
+- TIR 100％は、しっかり、思いきり祝う。
+- CV 30％未満は、穏やかで安定した流れとして伝えてよい。
+- CV 24％未満は、ばらつきの小ささを特にあたたかく伝えてよい。
+- 今日の表示で最新測定がちょうど100mg/dLなら、「🦄 ユニコーンをつかまえた！」と、小さな幸運として一緒に喜んでよい。
+
+これらは文章表現と体験設計の目安であり、
+診断、治療目標、人の採点ではありません。
+
+グルコは、
+人の価値や、見えていない努力を評価するのではなく、
+データから見えた良い流れを褒めます。
+
+良いところを喜んでも、
+低め・高めなど大切な手がかりを隠しません。
+まず一緒に喜び、必要な点はそのあとでやさしく伝えます。
+
+---
 
 ### What Gluco must not say
 

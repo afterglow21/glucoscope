@@ -28,6 +28,24 @@ GitHub Pages
 - If a new generation is blocked or the provider fails after the one-hour window, the older shared letter can be returned gently as a fallback.
 - Browser CORS access is restricted to the configured GitHub Pages origin.
 
+## Positive recognition and Unicorn wording
+
+The Worker deliberately celebrates positive clues instead of only avoiding blame.
+
+Initial copy rules:
+
+- TIR >= 75% receives clear positive recognition.
+- TIR >= 90% receives stronger recognition.
+- TIR = 100% is celebrated enthusiastically.
+- CV < 30% is described as calm and steady.
+- CV < 24% receives especially warm recognition for very small variation.
+- If today's latest reading is exactly 100mg/dL, the letter may say `🦄 ユニコーンをつかまえた！` once.
+
+These are language and experience rules, not medical grades or treatment targets.
+The prompt must praise the observed flow rather than the person's worth or presumed effort, and it must still mention important lower or higher periods gently.
+
+The shared-cache schema is `gluco-ai-letter-cache-v2`, which prevents older cached wording from overriding the updated tone during rollout.
+
 ## Production CORS policy
 
 Production variables:

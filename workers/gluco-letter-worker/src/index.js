@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 const CONTRACT_VERSION = "gluco-ai-letter-worker-response-v0.2";
-const AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v1";
+const AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v2";
 const LETTER_SLOT_KEYS = ["morning", "afternoon", "night"];
 const ANALYSIS_MODE_KEYS = ["letter", "deep"];
 
@@ -799,6 +799,62 @@ function getPrototypeStatus(payload = {}) {
   return "success";
 }
 
+function buildCelebrationClues(summary = {}) {
+  const language = summary.language === "en" ? "en" : "ja";
+  const metrics = summary.metrics || {};
+  const tir = Number(metrics.tir);
+  const cv = Number(metrics.cv);
+  const latestGlucose = Number(summary.currentGlucose ?? summary.latestGlucoseReading);
+  const isTodayView = summary.period === "today";
+  const clues = [];
+
+  if (language === "en") {
+    if (isTodayView && latestGlucose === 100) {
+      clues.push("🦄 You caught a unicorn! The latest reading is exactly 100mg/dL — a small lucky GlucoScope moment worth smiling about.");
+    } else if (isTodayView && Number.isFinite(latestGlucose) && latestGlucose >= 90 && latestGlucose <= 110) {
+      clues.push(`The latest reading is ${latestGlucose}mg/dL, nicely close to 100 — a lovely little moment in the flow.`);
+    }
+
+    if (tir === 100) {
+      clues.push("TIR is 100%! Every available reading in this view is inside the target range. That is a beautiful flow and absolutely worth celebrating 🍀");
+    } else if (tir >= 90) {
+      clues.push(`TIR is ${metrics.tir}%! Almost all of the available readings are in range — a really beautiful flow 🍀`);
+    } else if (tir >= 75) {
+      clues.push(`TIR is ${metrics.tir}%! A strong amount of in-range time has built up here, and that is genuinely lovely to see 🍀`);
+    }
+
+    if (Number.isFinite(cv) && cv < 24) {
+      clues.push(`CV is ${metrics.cv}%! The glucose flow is remarkably calm and steady — this is a genuinely beautiful pattern 🍀`);
+    } else if (Number.isFinite(cv) && cv < 30) {
+      clues.push(`CV is ${metrics.cv}%, showing a very calm and steady glucose flow. That is a lovely strength in this view 🍀`);
+    }
+
+    return clues;
+  }
+
+  if (isTodayView && latestGlucose === 100) {
+    clues.push("🦄 ユニコーンをつかまえた！ 最新の測定はぴったり100mg/dL。小さな幸運に出会えたね🍀");
+  } else if (isTodayView && Number.isFinite(latestGlucose) && latestGlucose >= 90 && latestGlucose <= 110) {
+    clues.push(`最新の測定は${latestGlucose}mg/dLで、100に近いきれいな数字が見えているよ。ちょっとうれしい瞬間だね🍀`);
+  }
+
+  if (tir === 100) {
+    clues.push("TIRは100％！ 表示中のデータはすべて目標範囲の中。これは思いきり一緒に喜びたい、とてもきれいな流れだよ🍀");
+  } else if (tir >= 90) {
+    clues.push(`TIRは${metrics.tir}％！ 表示中のほとんどの時間が目標範囲の中だね。とてもきれいな流れだよ🍀`);
+  } else if (tir >= 75) {
+    clues.push(`TIRは${metrics.tir}％！ 目標範囲で過ごせた時間がしっかり積み重なっているね。これは素直にうれしい流れだよ🍀`);
+  }
+
+  if (Number.isFinite(cv) && cv < 24) {
+    clues.push(`CVは${metrics.cv}％！ ばらつきがとても小さく、かなり穏やかな流れだよ。これはすごくきれいだね🍀`);
+  } else if (Number.isFinite(cv) && cv < 30) {
+    clues.push(`CVは${metrics.cv}％で、血糖の流れがかなり穏やかだよ。うれしい安定感が見えているね🍀`);
+  }
+
+  return clues;
+}
+
 function buildPrototypeLetter(summary = {}, mode = "letter") {
   const language = summary.language === "en" ? "en" : "ja";
   const metrics = summary.metrics || {};
@@ -812,13 +868,17 @@ function buildPrototypeLetter(summary = {}, mode = "letter") {
   const avg = metrics.averageGlucose ?? "--";
   const cv = metrics.cv ?? "--";
   const score = metrics.glucoScore ?? "--";
+  const celebrationClues = buildCelebrationClues(summary);
   const hints = Array.isArray(summary.patternHints) ? summary.patternHints.slice(0, analysisMode === "deep" ? 4 : 2) : [];
 
   if (analysisMode === "deep") {
     if (language === "en") {
+      const celebrationSection = celebrationClues.length
+        ? `\n\nWorth celebrating\n${celebrationClues.map((clue) => `- ${clue}`).join("\n")}`
+        : "";
       const hintLines = hints.length ? hints.map((hint) => `- ${hint}`).join("\n") : "- The selected range has clues we can look back on gently.";
       return `Gluco is here 🍀
-I looked at the selected range gently.
+I looked at the selected range gently.${celebrationSection}
 
 Overview
 - Range: ${rangeLabel}
@@ -831,9 +891,12 @@ ${hintLines}
 This is not a diagnosis or a treatment instruction. It is a gentle map for noticing patterns and discussing anything concerning with your healthcare team.`;
     }
 
+    const celebrationSection = celebrationClues.length
+      ? `\n\nうれしい手がかり\n${celebrationClues.map((clue) => `・${clue}`).join("\n")}`
+      : "";
     const hintLines = hints.length ? hints.map((hint) => `・${hint}`).join("\n") : "・表示中の期間には、あとでやさしく見返せる手がかりがありそうだよ。";
     return `グルコだよ🍀
-表示中のデータを、少し詳しく一緒に見ていくね。
+表示中のデータを、少し詳しく一緒に見ていくね。${celebrationSection}
 
 全体の流れ
 ・表示範囲: ${rangeLabel}
@@ -847,16 +910,18 @@ ${hintLines}
   }
 
   if (language === "en") {
+    const celebrationLine = celebrationClues.length ? `\n${celebrationClues.slice(0, 2).join("\n")}` : "";
     const hintLine = hints.length ? `\nI also noticed: ${hints.join(" / ")}` : "";
     return `Gluco is here 🍀
-I looked at the selected range gently: ${rangeLabel}.
+I looked at the selected range gently: ${rangeLabel}.${celebrationLine}
 TIR is ${tir}%, average glucose is ${avg}mg/dL, and GlucoScore is ${score}.${hintLine}
 The numbers are not here to judge you; they are small clues for understanding today and improving tomorrow.`;
   }
 
+  const celebrationLine = celebrationClues.length ? `\n${celebrationClues.slice(0, 2).join("\n")}` : "";
   const hintLine = hints.length ? `\n見えている手がかり: ${hints.join(" / ")}` : "";
   return `グルコだよ🍀
-表示範囲は ${rangeLabel} だね。
+表示範囲は ${rangeLabel} だね。${celebrationLine}
 TIRは${tir}%、平均血糖は${avg}mg/dL、GlucoScoreは${score}だったよ。${hintLine}
 血糖はあなたを責める数字じゃなくて、今日を理解して明日を少し楽にするための手がかりだよ。`;
 }
@@ -879,6 +944,11 @@ function buildOpenAiInstructions(language = "ja", mode = "letter") {
       "Because the response may be shown later from cache, avoid real-time wording such as 'right now' or 'current glucose'.",
       "When mentioning the latest glucose value, say 'the latest reading' or include the provided measurement time.",
       "Treat TIR, TAR, TBR, average glucose, CV, GMI, and GlucoScore as reflection clues, not grades.",
+      "When the summary contains positive clues, celebrate them clearly and early instead of minimizing them with phrases like 'not bad', 'not perfect', or 'not too wavy'.",
+      "TIR of 100% deserves enthusiastic celebration. TIR of 75% or higher and CV below 30% should receive specific positive recognition when present.",
+      "If the latest reading in today's view is exactly 100mg/dL, say '🦄 You caught a unicorn!' once as a playful small-luck moment, not as medical judgment.",
+      "Do not assume how hard the person worked or make praise about their worth. Praise the observed flow, not the person as a grade.",
+      "Positive recognition must not hide notable lower or higher periods; celebrate first, then mention important clues gently.",
       "Keep it concrete, gentle, and clear. End with a small reflection clue for tomorrow."
     ].join(" ");
   }
@@ -897,6 +967,11 @@ function buildOpenAiInstructions(language = "ja", mode = "letter") {
     "キャッシュ表示される可能性があるため、『今の血糖』『現在の血糖』『たった今』などのリアルタイム断定は避けます。",
     "最新測定に触れる場合は、『最新の測定では』『○○ごろの測定では』のように時刻やサマリー上の測定であることが伝わる言い方にします。",
     "TIR、TAR、TBR、平均血糖、CV、GMI、GlucoScoreは採点ではなく、振り返りの手がかりとして扱います。",
+    "良い手がかりがあるときは、文章の早い段階で、遠慮せず具体的に一緒に喜びます。『悪くない』『完璧ではないけど』『ばらつきはゼロではないけど』『大きく乱れていない』のように、褒め言葉を弱める言い方はしません。",
+    "TIR 100％はしっかり祝います。TIR 75％以上やCV 30％未満も、該当するときは何が良いのかを具体的に伝えます。",
+    "今日の表示で最新の測定がちょうど100mg/dLなら、『🦄 ユニコーンをつかまえた！』を1回だけ使い、小さな幸運として一緒に喜びます。医療的な評価にはしません。",
+    "努力や生活背景を勝手に推測せず、人の価値ではなく、データから見えた良い流れを褒めます。",
+    "良いところを喜んでも、低め・高めなど大切な手がかりを隠しません。まず喜び、そのあと必要な点をやさしく伝えます。",
     "具体的で、やさしく、読みやすく。最後に明日を少し楽にする小さな手がかりを添えてください。"
   ].join(" ");
 }
@@ -932,6 +1007,7 @@ function buildOpenAiPrompt(summary = {}, mode = "letter") {
       previousScore: metrics.previousScore,
       sevenDayAverageScore: metrics.sevenDayAverageScore
     },
+    celebrationClues: buildCelebrationClues(summary),
     patternHints: hints.slice(0, analysisMode === "deep" ? 6 : 4)
   };
 
@@ -946,6 +1022,9 @@ Requirements:
 - Do not write meta labels such as "This is a prototype", "This is the detailed analysis", or "This is the ${slotLabel}"
 - Mention the active time only if it reads naturally; do not force it
 - Include TIR, TAR, TBR, average glucose, CV, and GlucoScore when available
+- If celebrationClues is not empty, mention one or more of those clues near the beginning and celebrate them clearly
+- If TIR is 100%, celebrate it enthusiastically; if the unicorn clue is present, use "🦄 You caught a unicorn!" once
+- Do not weaken praise with "not bad", "not perfect", or similar backhanded wording
 - Do not frame numbers as grades or success/failure
 - Avoid real-time wording such as "right now" because this may be shown later from cache
 - Avoid medical advice, dosing advice, diagnosis, blame, fear, or strict instructions
@@ -963,6 +1042,9 @@ Requirements:
 - Do not write meta labels such as "This is a prototype" or "This is today’s ${slotLabel}"
 - Mention the active letter time only if it reads naturally; do not force it
 - Mention 1 to 3 concrete clues from the summary
+- If celebrationClues is not empty, mention at least one positive clue early and celebrate it clearly
+- If the unicorn clue is present, use "🦄 You caught a unicorn!" once
+- Do not weaken praise with "not bad", "not perfect", or similar backhanded wording
 - If mentioning glucose value, use "the latest reading" and include the measurement time when available
 - Avoid real-time wording such as "right now" because the letter may be shown later from cache
 - Avoid medical advice, dosing advice, diagnosis, blame, fear, or strict instructions
@@ -984,6 +1066,9 @@ ${JSON.stringify(safeSummary, null, 2)}`;
 - 「これは${slotLabel}のテスト版だよ」「これは${slotLabel}の『${modeLabel}』だよ」のような説明文は書かない
 - 時間帯ラベル「${slotLabel}」は、必要な時だけ自然に触れる。無理に入れない
 - TIR、TAR、TBR、平均血糖、CV、GlucoScoreを、分かる範囲で具体的に扱う
+- celebrationCluesが空でなければ、早い段階で1つ以上を取り上げ、遠慮せず具体的に一緒に喜ぶ
+- TIR 100％ならしっかり祝う。ユニコーンの手がかりがあれば「🦄 ユニコーンをつかまえた！」を1回だけ使う
+- 「悪くない」「完璧ではないけど」「ばらつきはゼロではないけど」「大きく乱れていない」のように、褒め言葉を弱めない
 - 数字を採点、合否、成功/失敗として扱わない
 - キャッシュ表示される可能性があるため、「今」「現在」「たった今」などのリアルタイム断定を避ける
 - 医療判断、診断、インスリン量、薬、ポンプ設定、デバイス設定の助言はしない
@@ -1003,6 +1088,9 @@ ${JSON.stringify(safeSummary, null, 2)}`;
 - 「これは${slotLabel}のテスト版だよ」「これは${slotLabel}の『${modeLabel}』だよ」のような説明文は書かない
 - 時間帯ラベル「${slotLabel}」は、必要な時だけ自然に触れる。無理に入れない
 - サマリーから見える具体的な手がかりを1〜3個だけ入れる
+- celebrationCluesが空でなければ、早い段階で少なくとも1つを取り上げ、遠慮せず具体的に一緒に喜ぶ
+- TIR 100％ならしっかり祝う。ユニコーンの手がかりがあれば「🦄 ユニコーンをつかまえた！」を1回だけ使う
+- 「悪くない」「完璧ではないけど」「ばらつきはゼロではないけど」「大きく乱れていない」のように、褒め言葉を弱めない
 - 血糖値に触れる場合は「今の血糖」ではなく、「最新の測定では」または「${summary.latestMeasuredAt || "最新測定"}ごろの測定では」のように書く
 - キャッシュ表示される可能性があるため、「今」「現在」「たった今」などのリアルタイム断定を避ける
 - 医療判断、診断、インスリン量、薬、ポンプ設定、デバイス設定の助言はしない

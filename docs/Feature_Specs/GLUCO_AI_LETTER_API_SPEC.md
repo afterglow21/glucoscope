@@ -36,6 +36,7 @@ Especially:
 - gluco is a gentle AI companion, not a doctor, judge, or strict coach.
 - Blood glucose data must be treated as a clue for understanding, not as a score for blame.
 - The language must avoid shame, pressure, panic, and unnecessary fear.
+- Positive clues should be celebrated clearly instead of being weakened by backhanded wording.
 - gluco may support reflection, but must never replace healthcare professionals.
 
 ---
@@ -190,6 +191,28 @@ An analysis snapshot may include:
 - slot
 - latest glucose timestamp
 - summary hash
+
+---
+
+## 4.3 Positive Recognition and Unicorn Moment
+
+The AI letter may include explicit positive recognition when supported by the summarized data.
+
+Initial writing thresholds:
+
+- TIR >= 75%: clear positive recognition
+- TIR >= 90%: strong recognition
+- TIR = 100%: enthusiastic celebration
+- CV < 30%: calm and steady flow
+- CV < 24%: especially small variation
+- Today's latest reading = 100mg/dL: `🦄 ユニコーンをつかまえた！`
+
+These are copy and experience rules, not medical grades or treatment targets.
+The letter praises the observed flow, not the person's worth or assumed effort.
+Positive recognition must not hide notable lower or higher periods.
+
+The frontend may send optional `celebrationHints` separately from other `patternHints`.
+The Worker also derives these clues from the summarized metrics so the safety and tone rules do not depend only on frontend wording.
 
 ---
 

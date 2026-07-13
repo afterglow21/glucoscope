@@ -65,8 +65,12 @@ Draft shape:
       "previousScore": 88,
       "sevenDayAverageScore": 89
     },
+    "celebrationHints": [
+      "TIRは95.7％！ 表示中のほとんどの時間が目標範囲の中だね。とてもきれいな流れだよ🍀",
+      "CVは26.1％で、血糖の流れがかなり穏やかだよ。うれしい安定感が見えているね🍀"
+    ],
     "patternHints": [
-      "TIRは95.7%で、落ち着いている時間もちゃんと見えているよ。"
+      "平均血糖は125mg/dLで、表示中の期間にも振り返りの手がかりがあるよ。"
     ]
   },
   "client": {
@@ -75,6 +79,14 @@ Draft shape:
   }
 }
 ```
+
+`celebrationHints` is optional and contains positive observations that should be acknowledged early and clearly.
+The Worker independently derives celebration clues from TIR, CV, and today's latest reading, so prompt tone does not rely only on frontend-provided text.
+
+Special wording:
+
+- If today's latest reading is exactly 100mg/dL, the Japanese letter may say `🦄 ユニコーンをつかまえた！` once.
+- This is a playful small-luck expression, not a medical judgment or reward.
 
 Future fields may include:
 
@@ -111,7 +123,7 @@ Future fields may include:
     "status": "stored",
     "storage": "cloudflare-workers-kv",
     "bindingAvailable": true,
-    "key": "gluco-letter:gluco-ai-letter-cache-v1:<sha256>",
+    "key": "gluco-letter:gluco-ai-letter-cache-v2:<sha256>",
     "fresh": true,
     "ageSeconds": 0,
     "generatedAt": "2026-07-09T05:52:00.000Z",
