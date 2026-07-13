@@ -29,3 +29,7 @@ class_name = "GlucoUsageCounter"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = [ "GlucoUsageCounter" ]
+
+[[kv_namespaces]]
+binding = "AI_LETTER_CACHE"
+id = "845a680f9b284e928e5ab3b390810e7e"
