@@ -3522,7 +3522,20 @@ canvas{
     font-size:17px;
   }
 
-  .mobile-more-link small{
+  
+.gluco-peek-decor,
+.mobile-about-gluco-decor{
+  display:none;
+}
+
+.gluco-peek-image,
+.mobile-about-gluco-image{
+  display:block;
+  width:100%;
+  height:auto;
+}
+
+.mobile-more-link small{
     color:#9fb2cf;
     font-size:12px;
   }
@@ -5623,6 +5636,74 @@ canvas{
   }
 }
 
+
+
+/* ========================================================================== 
+   Mobile Gluco decorations
+   - Add a small greeting Gluco to the glucose tab and More > About area
+   ========================================================================== */
+
+@media (max-width: 720px) and (orientation: portrait) and (hover: none) and (pointer: coarse){
+  body.mobile-page-glucose #liveView .hero-current-card{
+    position:relative;
+    overflow:hidden;
+    padding:14px 14px 38px;
+  }
+
+  body.mobile-page-glucose .current-main{
+    position:relative;
+    z-index:1;
+  }
+
+  body.mobile-page-glucose .gluco-peek-decor{
+    position:absolute;
+    right:8px;
+    bottom:0;
+    display:block;
+    width:min(31vw,124px);
+    pointer-events:none;
+    z-index:0;
+    opacity:.98;
+  }
+
+  body.mobile-page-glucose .gluco-peek-image{
+    object-fit:contain;
+    object-position:bottom right;
+  }
+
+  body.mobile-page-more .mobile-about-gluco-decor{
+    display:flex;
+    justify-content:flex-end;
+    margin:6px 0 8px;
+    padding-right:8px;
+    pointer-events:none;
+  }
+
+  body.mobile-page-more .mobile-about-gluco-image{
+    width:min(44vw,156px);
+    max-width:156px;
+  }
+}
+
+@media (max-width: 390px) and (orientation: portrait) and (hover: none) and (pointer: coarse){
+  body.mobile-page-glucose #liveView .hero-current-card{
+    padding-bottom:32px;
+  }
+
+  body.mobile-page-glucose .gluco-peek-decor{
+    right:4px;
+    width:min(29vw,102px);
+  }
+
+  body.mobile-page-more .mobile-about-gluco-decor{
+    margin:4px 0 6px;
+    padding-right:2px;
+  }
+
+  body.mobile-page-more .mobile-about-gluco-image{
+    width:min(40vw,128px);
+  }
+}
 /* Every About detail page uses the same readable phone layout. Older detail
    pages only needed a viewport declaration; these rules keep the visual
    language consistent with the newer Trust and Usage pages. */
