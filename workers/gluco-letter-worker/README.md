@@ -20,7 +20,53 @@ GitHub Pages
 - Daily, time-slot, and monthly budget guards are enabled.
 - Usage counters are persisted in a singleton SQLite-backed Durable Object.
 - The usage counter stores operational totals only. It does not store glucose values or AI letter text.
-- AI letter cache is still browser-local. For the same period, slot, analysis mode, and range, a saved letter younger than one hour is reused without a new OpenAI call. After one hour, a new generation can be requested if the guard limits allow it. A shared Workers KV cache is a separate future step.
+- AI letters use a two-layer cache: browser-local cache plus a shared Cloudflare Workers KV cache.
+- The shared key is an opaque SHA-256 hash of page mode, language, period, time slot, analysis mode, and displayed range. Raw glucose values are not part of the key.
+- A shared letter younger than one hour is returned without a new OpenAI call or generation-count consumption.
+- The KV value contains only the generated letter text and minimal metadata. The glucose summary is not stored in KV.
+- Entries remain available for stale fallback for up to 24 hours, then expire automatically.
+- If a new generation is blocked or the provider fails after the one-hour window, the older shared letter can be returned gently as a fallback.
+
+
+## Shared Workers KV cache setup
+
+The Worker code treats the KV binding as optional, so the existing API keeps working before setup. To enable the production shared cache on Windows PowerShell:
+
+```powershell
+cd workers/gluco-letter-worker
+.\setup-kv.ps1
+```
+
+The script:
+
+1. installs Worker dependencies,
+2. creates a production KV namespace,
+3. adds the `AI_LETTER_CACHE` binding to `wrangler.toml`, and
+4. runs syntax and dry-deploy checks.
+
+Review the generated `wrangler.toml` diff, then deploy:
+
+```powershell
+npx wrangler deploy
+```
+
+The binding created by Wrangler has this shape:
+
+```toml
+[[kv_namespaces]]
+binding = "AI_LETTER_CACHE"
+id = "<generated namespace id>"
+```
+
+Cache controls are non-secret variables:
+
+```text
+AI_CACHE_ENABLED=true
+AI_CACHE_FRESH_SECONDS=3600
+AI_CACHE_RETENTION_SECONDS=86400
+```
+
+Workers KV is eventually consistent across Cloudflare locations. A newly written value is normally visible immediately where it was written, but another location may briefly see an older value while its edge cache expires.
 
 ## Local development
 
@@ -117,11 +163,13 @@ docs/Feature_Specs/GLUCO_AI_LETTER_WORKER_CONTRACT.md
 The Worker returns:
 
 - letter text and mode
+- shared-cache state (`stored`, `fresh`, `stale-fallback`, or unavailable)
+- original generation time and cache freshness/retention timestamps
 - request and monthly token usage
 - estimated developer cost
 - daily and time-slot guard state
 - Turnstile status
-- storage kind
+- usage-counter and cache storage kind
 
 ## Safety boundary
 

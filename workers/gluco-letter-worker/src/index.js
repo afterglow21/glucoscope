@@ -1,6 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 
-const CONTRACT_VERSION = "gluco-ai-letter-worker-response-v0.1";
+const CONTRACT_VERSION = "gluco-ai-letter-worker-response-v0.2";
+const AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v1";
 const LETTER_SLOT_KEYS = ["morning", "afternoon", "night"];
 const ANALYSIS_MODE_KEYS = ["letter", "deep"];
 
@@ -10,6 +11,9 @@ const DEFAULT_GUARD_CONFIG = {
   openAiModel: "gpt-5.4-nano",
   openAiMaxOutputTokens: 700,
   turnstileRequired: false,
+  sharedCacheEnabled: true,
+  sharedCacheFreshSeconds: 60 * 60,
+  sharedCacheRetentionSeconds: 24 * 60 * 60,
   dailyGenerationLimit: 30,
   slotGenerationLimit: 10,
   monthlyBudgetJpy: 1000,
@@ -81,6 +85,14 @@ function readGuardConfig(env = {}) {
   const warningBudgetJpy = readNumber(env.AI_WARNING_BUDGET_JPY, Math.min(DEFAULT_GUARD_CONFIG.warningBudgetJpy, monthlyBudgetJpy * 0.8));
   const stopBudgetJpy = readNumber(env.AI_STOP_BUDGET_JPY, Math.min(DEFAULT_GUARD_CONFIG.stopBudgetJpy, monthlyBudgetJpy * 0.95));
   const provider = env.AI_PROVIDER === "openai" ? "openai" : DEFAULT_GUARD_CONFIG.provider;
+  const sharedCacheFreshSeconds = Math.max(
+    60,
+    Math.floor(readNumber(env.AI_CACHE_FRESH_SECONDS, DEFAULT_GUARD_CONFIG.sharedCacheFreshSeconds))
+  );
+  const sharedCacheRetentionSeconds = Math.max(
+    sharedCacheFreshSeconds + 60,
+    Math.floor(readNumber(env.AI_CACHE_RETENTION_SECONDS, DEFAULT_GUARD_CONFIG.sharedCacheRetentionSeconds))
+  );
 
   return {
     aiEnabled: readBoolean(env.AI_ENABLED, DEFAULT_GUARD_CONFIG.aiEnabled),
@@ -88,6 +100,9 @@ function readGuardConfig(env = {}) {
     openAiModel: env.OPENAI_MODEL || DEFAULT_GUARD_CONFIG.openAiModel,
     openAiMaxOutputTokens: Math.max(100, Math.floor(readNumber(env.OPENAI_MAX_OUTPUT_TOKENS, DEFAULT_GUARD_CONFIG.openAiMaxOutputTokens))),
     turnstileRequired: readBoolean(env.TURNSTILE_REQUIRED, DEFAULT_GUARD_CONFIG.turnstileRequired),
+    sharedCacheEnabled: readBoolean(env.AI_CACHE_ENABLED, DEFAULT_GUARD_CONFIG.sharedCacheEnabled),
+    sharedCacheFreshSeconds,
+    sharedCacheRetentionSeconds,
     dailyGenerationLimit: Math.max(0, Math.floor(readNumber(env.AI_DAILY_GENERATION_LIMIT, DEFAULT_GUARD_CONFIG.dailyGenerationLimit))),
     slotGenerationLimit: Math.max(0, Math.floor(readNumber(env.AI_SLOT_GENERATION_LIMIT, DEFAULT_GUARD_CONFIG.slotGenerationLimit))),
     monthlyBudgetJpy,
@@ -144,6 +159,222 @@ function normalizeAnalysisMode(mode) {
 
 function getAnalysisMode(payload = {}, summary = {}) {
   return normalizeAnalysisMode(payload.analysisMode || summary.analysisMode);
+}
+
+
+function normalizeCacheIdentityPart(value, fallback = "unknown", maxLength = 180) {
+  const text = String(value ?? "").trim();
+  if (!text) return fallback;
+  return text.slice(0, maxLength);
+}
+
+function getSharedCacheIdentity(summary = {}) {
+  return {
+    schema: AI_LETTER_CACHE_SCHEMA_VERSION,
+    pageMode: normalizeCacheIdentityPart(summary.pageMode, "unknown-page", 80),
+    language: summary.language === "en" ? "en" : "ja",
+    period: normalizeCacheIdentityPart(summary.period, "unknown-period", 40),
+    slot: normalizeSlot(summary.slot),
+    analysisMode: normalizeAnalysisMode(summary.analysisMode),
+    range: normalizeCacheIdentityPart(summary.cacheRangeKey || summary.rangeLabel, "unknown-range", 180)
+  };
+}
+
+async function sha256Hex(value) {
+  const encoded = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", encoded);
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function buildSharedCacheKey(summary = {}) {
+  const identity = getSharedCacheIdentity(summary);
+  const hash = await sha256Hex(JSON.stringify(identity));
+  return `gluco-letter:${AI_LETTER_CACHE_SCHEMA_VERSION}:${hash}`;
+}
+
+function getSharedCacheBinding(env = {}) {
+  return env?.AI_LETTER_CACHE && typeof env.AI_LETTER_CACHE.get === "function"
+    ? env.AI_LETTER_CACHE
+    : null;
+}
+
+function getSharedCacheAvailability(env = {}, config = DEFAULT_GUARD_CONFIG) {
+  return Boolean(config.sharedCacheEnabled && getSharedCacheBinding(env));
+}
+
+function getCacheTimestamp(value) {
+  const timestamp = Date.parse(value || "");
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
+function buildCacheTiming(generatedAt, config = DEFAULT_GUARD_CONFIG, now = new Date()) {
+  const generatedAtMs = getCacheTimestamp(generatedAt) ?? now.getTime();
+  const freshUntilMs = generatedAtMs + config.sharedCacheFreshSeconds * 1000;
+  const expiresAtMs = generatedAtMs + config.sharedCacheRetentionSeconds * 1000;
+
+  return {
+    generatedAt: new Date(generatedAtMs).toISOString(),
+    freshUntil: new Date(freshUntilMs).toISOString(),
+    expiresAt: new Date(expiresAtMs).toISOString(),
+    ageSeconds: Math.max(0, Math.floor((now.getTime() - generatedAtMs) / 1000)),
+    fresh: now.getTime() < freshUntilMs,
+    retained: now.getTime() < expiresAtMs
+  };
+}
+
+function isValidSharedCacheEntry(entry = {}) {
+  return Boolean(
+    entry
+    && entry.version === AI_LETTER_CACHE_SCHEMA_VERSION
+    && typeof entry.text === "string"
+    && entry.text.trim()
+    && getCacheTimestamp(entry.generatedAt) !== null
+  );
+}
+
+async function readSharedCache({ env, config, summary }) {
+  const available = getSharedCacheAvailability(env, config);
+  const key = await buildSharedCacheKey(summary);
+
+  if (!available) {
+    return {
+      available: false,
+      key,
+      status: config.sharedCacheEnabled ? "binding-missing" : "disabled",
+      entry: null,
+      timing: null
+    };
+  }
+
+  try {
+    const entry = await getSharedCacheBinding(env).get(key, {
+      type: "json",
+      cacheTtl: 30
+    });
+
+    if (!isValidSharedCacheEntry(entry)) {
+      return {
+        available: true,
+        key,
+        status: "miss",
+        entry: null,
+        timing: null
+      };
+    }
+
+    const timing = buildCacheTiming(entry.generatedAt, config);
+    if (!timing.retained) {
+      return {
+        available: true,
+        key,
+        status: "expired",
+        entry: null,
+        timing
+      };
+    }
+
+    return {
+      available: true,
+      key,
+      status: timing.fresh ? "fresh" : "stale",
+      entry,
+      timing
+    };
+  } catch (error) {
+    console.error("AI letter shared cache read failed", error);
+    return {
+      available: true,
+      key,
+      status: "read-error",
+      entry: null,
+      timing: null,
+      errorCode: error?.name || "cache_read_error"
+    };
+  }
+}
+
+async function writeSharedCache({ env, config, summary, generationResult }) {
+  const available = getSharedCacheAvailability(env, config);
+  const key = await buildSharedCacheKey(summary);
+
+  if (!available) {
+    return {
+      available: false,
+      key,
+      status: config.sharedCacheEnabled ? "binding-missing" : "disabled",
+      timing: null
+    };
+  }
+
+  const timing = buildCacheTiming(new Date().toISOString(), config);
+  const entry = {
+    version: AI_LETTER_CACHE_SCHEMA_VERSION,
+    text: generationResult.text,
+    language: summary.language === "en" ? "en" : "ja",
+    analysisMode: normalizeAnalysisMode(summary.analysisMode),
+    generatedAt: timing.generatedAt,
+    provider: generationResult.provider || "unknown",
+    model: generationResult.model || "unknown",
+    slot: normalizeSlot(summary.slot)
+  };
+
+  try {
+    await getSharedCacheBinding(env).put(key, JSON.stringify(entry), {
+      expirationTtl: config.sharedCacheRetentionSeconds,
+      metadata: {
+        version: AI_LETTER_CACHE_SCHEMA_VERSION,
+        generatedAt: timing.generatedAt,
+        analysisMode: entry.analysisMode,
+        slot: entry.slot
+      }
+    });
+
+    return {
+      available: true,
+      key,
+      status: "stored",
+      entry,
+      timing
+    };
+  } catch (error) {
+    console.error("AI letter shared cache write failed", error);
+    return {
+      available: true,
+      key,
+      status: "write-error",
+      timing,
+      errorCode: error?.name || "cache_write_error"
+    };
+  }
+}
+
+function buildCachedGenerationResult(cacheRead) {
+  const entry = cacheRead?.entry || {};
+  return {
+    text: entry.text,
+    provider: entry.provider || "unknown",
+    model: entry.model || "unknown",
+    generatedAt: entry.generatedAt,
+    usage: emptyRequestUsage()
+  };
+}
+
+function buildCachePayload({ cacheResult = {}, config = DEFAULT_GUARD_CONFIG, fallbackReason = null }) {
+  const timing = cacheResult.timing || null;
+  return {
+    status: cacheResult.status || "unavailable",
+    storage: cacheResult.available ? "cloudflare-workers-kv" : "unavailable",
+    bindingAvailable: Boolean(cacheResult.available),
+    key: cacheResult.key || null,
+    fresh: Boolean(timing?.fresh),
+    ageSeconds: timing?.ageSeconds ?? null,
+    generatedAt: timing?.generatedAt || cacheResult.entry?.generatedAt || null,
+    freshUntil: timing?.freshUntil || null,
+    expiresAt: timing?.expiresAt || null,
+    freshSeconds: config.sharedCacheFreshSeconds,
+    retentionSeconds: config.sharedCacheRetentionSeconds,
+    fallbackReason
+  };
 }
 
 function getAnalysisModeLabel(mode = "letter", language = "ja") {
@@ -995,10 +1226,26 @@ function buildGuardPayload({ state, config, budgetBlocked = false, summary = {},
   };
 }
 
-function buildSuccessPayload({ summary, payload, status, usageState, requestUsage, config, generationResult, turnstileVerification = {} }) {
+function buildSuccessPayload({
+  summary,
+  payload,
+  status,
+  usageState,
+  requestUsage,
+  config,
+  generationResult,
+  turnstileVerification = {},
+  cacheResult = {},
+  cacheFallbackReason = null
+}) {
   const cached = status === "cached";
-  const generatedAt = new Date().toISOString();
-  const source = generationResult.provider === "openai" ? "openai" : "prototype-worker";
+  const servedFromSharedCache = cached && Boolean(cacheResult?.entry);
+  const generatedAt = generationResult.generatedAt || cacheResult?.timing?.generatedAt || new Date().toISOString();
+  const source = servedFromSharedCache
+    ? "cloudflare-kv"
+    : generationResult.provider === "openai"
+      ? "openai"
+      : "prototype-worker";
   const analysisMode = normalizeAnalysisMode(summary.analysisMode);
   const language = summary.language === "en" ? "en" : "ja";
 
@@ -1018,12 +1265,17 @@ function buildSuccessPayload({ summary, payload, status, usageState, requestUsag
       provider: generationResult.provider,
       model: generationResult.model,
       cached,
-      cacheKey: cached ? buildPrototypeCacheKey(summary) : null,
+      cacheKey: cacheResult.key || null,
       slot: {
         key: normalizeSlot(summary.slot),
         label: getSlotLabel(summary, summary.language === "en" ? "en" : "ja")
       }
     },
+    cache: buildCachePayload({
+      cacheResult,
+      config,
+      fallbackReason: cacheFallbackReason
+    }),
     usage: buildUsagePayload({
       state: usageState,
       requestUsage,
@@ -1033,7 +1285,7 @@ function buildSuccessPayload({ summary, payload, status, usageState, requestUsag
     guard: buildGuardPayload({
       state: usageState,
       config,
-      budgetBlocked: false,
+      budgetBlocked: cacheFallbackReason === "budget_stopped",
       summary,
       turnstileVerification
     })
@@ -1198,7 +1450,7 @@ function recordSuccess({ usageState, status, requestUsage, summary = {} }) {
   usageState.updatedAt = new Date().toISOString();
 }
 
-function buildUsageReport({ state, config }) {
+function buildUsageReport({ state, config, cacheAvailable = false }) {
   ensureSlotCounters(state);
 
   return {
@@ -1266,6 +1518,16 @@ function buildUsageReport({ state, config }) {
         stopBudgetJpy: config.stopBudgetJpy,
         monthlyEstimatedCostJpy: Number(state.estimatedCostJpy.toFixed(4))
       },
+      cache: {
+        enabled: config.sharedCacheEnabled,
+        bindingAvailable: cacheAvailable,
+        storage: cacheAvailable ? "cloudflare-workers-kv" : "unavailable",
+        freshSeconds: config.sharedCacheFreshSeconds,
+        retentionSeconds: config.sharedCacheRetentionSeconds,
+        note: cacheAvailable
+          ? "Generated AI letter text and minimal metadata are retained temporarily in Workers KV. Glucose summaries are not stored in the shared cache."
+          : "Shared cache is inactive until the AI_LETTER_CACHE KV binding is configured."
+      },
       storage: {
         kind: state.kind,
         note: state.note,
@@ -1301,6 +1563,47 @@ export class GlucoUsageCounter extends DurableObject {
   }
 }
 
+
+async function serveSharedCachedLetter({
+  cacheRead,
+  fallbackReason = null,
+  usageState,
+  env,
+  config,
+  summary,
+  payload,
+  turnstileVerification
+}) {
+  const responseCacheResult = {
+    ...cacheRead,
+    status: fallbackReason ? "stale-fallback" : "fresh"
+  };
+  const generationResult = buildCachedGenerationResult(cacheRead);
+  const requestUsage = emptyRequestUsage();
+
+  recordSuccess({
+    usageState,
+    status: "cached",
+    requestUsage,
+    summary
+  });
+
+  const persistedUsageState = await persistUsageState(env, usageState, config);
+
+  return okResponse(buildSuccessPayload({
+    summary,
+    payload,
+    status: "cached",
+    usageState: persistedUsageState,
+    requestUsage,
+    config,
+    generationResult,
+    turnstileVerification,
+    cacheResult: responseCacheResult,
+    cacheFallbackReason: fallbackReason
+  }));
+}
+
 export default {
   async fetch(request, env = {}) {
     if (request.method === "OPTIONS") {
@@ -1314,7 +1617,8 @@ export default {
     if (url.pathname === "/api/gluco-letter/usage" && request.method === "GET") {
       return okResponse(buildUsageReport({
         state: usageState,
-        config
+        config,
+        cacheAvailable: getSharedCacheAvailability(env, config)
       }));
     }
 
@@ -1386,6 +1690,25 @@ export default {
       turnstileVerification
     });
 
+    const cacheRead = await readSharedCache({
+      env,
+      config,
+      summary
+    });
+
+    if (cacheRead.status === "fresh" && cacheRead.entry) {
+      return serveSharedCachedLetter({
+        cacheRead,
+        usageState,
+        env,
+        config,
+        summary,
+        payload,
+        turnstileVerification
+      });
+    }
+
+    const staleCacheAvailable = cacheRead.status === "stale" && Boolean(cacheRead.entry);
     const prototypeStatus = getPrototypeStatus(payload);
     const effectiveUsageState = applyDebugUsageOverrides(usageState, payload);
     const forcedGuardError = buildGuardError(prototypeStatus, {
@@ -1398,6 +1721,19 @@ export default {
     });
 
     if (forcedGuardError) {
+      if (staleCacheAvailable) {
+        return serveSharedCachedLetter({
+          cacheRead,
+          fallbackReason: prototypeStatus,
+          usageState,
+          env,
+          config,
+          summary,
+          payload,
+          turnstileVerification
+        });
+      }
+
       await persistUsageState(env, usageState, config);
       const { status, ...errorBody } = forcedGuardError;
       return errorResponse(errorBody, status);
@@ -1419,6 +1755,20 @@ export default {
         reason: guardBlock.reason,
         turnstileVerification
       });
+
+      if (staleCacheAvailable) {
+        return serveSharedCachedLetter({
+          cacheRead,
+          fallbackReason: guardBlock.status,
+          usageState,
+          env,
+          config,
+          summary,
+          payload,
+          turnstileVerification
+        });
+      }
+
       await persistUsageState(env, usageState, config);
       const { status, ...errorBody } = guardError;
       return errorResponse(errorBody, status);
@@ -1435,6 +1785,20 @@ export default {
       });
     } catch (error) {
       console.error("AI letter provider failed", error);
+
+      if (staleCacheAvailable) {
+        return serveSharedCachedLetter({
+          cacheRead,
+          fallbackReason: "provider_error",
+          usageState,
+          env,
+          config,
+          summary,
+          payload,
+          turnstileVerification
+        });
+      }
+
       await persistUsageState(env, usageState, config);
 
       return errorResponse({
@@ -1451,6 +1815,18 @@ export default {
     }
 
     const requestUsage = generationResult.usage || emptyRequestUsage();
+    const cacheWrite = prototypeStatus === "cached"
+      ? cacheRead
+      : await writeSharedCache({
+          env,
+          config,
+          summary,
+          generationResult
+        });
+
+    if (cacheWrite?.entry?.generatedAt) {
+      generationResult.generatedAt = cacheWrite.entry.generatedAt;
+    }
 
     recordSuccess({
       usageState,
@@ -1468,7 +1844,8 @@ export default {
       requestUsage,
       config,
       generationResult,
-      turnstileVerification
+      turnstileVerification,
+      cacheResult: cacheWrite
     }));
   }
 };

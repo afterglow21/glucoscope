@@ -43,8 +43,9 @@
   <p>AIの生成回数、トークン数、推定利用額、Turnstile成功・失敗などの運用情報を保存します。血糖値やAIお手紙本文そのものを利用カウンターには保存しません。</p>
 </section>
 <section class="trust-section">
-  <h2>ブラウザ内キャッシュ</h2>
-  <p>現在、保存済みAIお手紙は主に閲覧したブラウザのlocalStorageへ保存されます。共有KVキャッシュは今後の実装課題です。</p>
+  <h2>AIお手紙のキャッシュ</h2>
+  <p>保存済みAIお手紙は、閲覧したブラウザのlocalStorageと、Cloudflare Workers KVの共有キャッシュを使います。共有KVには生成済みのお手紙本文と必要最小限のメタ情報だけを保存し、送信された血糖サマリーそのものは保存しません。</p>
+  <p>同じ条件のお手紙は1時間以内なら再利用し、新しいAI生成を行いません。古いお手紙は生成失敗時などのフォールバックとして最大24時間だけ残し、その後は自動削除します。</p>
 </section>
 <section class="trust-section">
   <h2>将来の分析</h2>
@@ -69,6 +70,11 @@
 <section class="trust-section">
   <h2>Operational counters</h2>
   <p>Usage counts and estimated developer cost may be stored, but glucose values and letter text are not stored in the usage counter.</p>
+</section>
+<section class="trust-section">
+  <h2>AI letter cache</h2>
+  <p>Saved AI letters use browser localStorage and a shared Cloudflare Workers KV cache. KV stores only the generated letter and minimal metadata, not the submitted glucose summary.</p>
+  <p>The same letter is reused for one hour without a new AI generation. A stale fallback may remain for up to 24 hours and is then deleted automatically.</p>
 </section>
     </section>
 

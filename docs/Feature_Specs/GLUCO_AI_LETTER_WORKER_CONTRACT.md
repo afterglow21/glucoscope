@@ -1,7 +1,7 @@
 # GLUCO_AI_LETTER_WORKER_CONTRACT
 
-Version: 0.1 Draft  
-Status: Prototype contract  
+Version: 0.2 Draft
+Status: Production beta contract
 Related feature spec: `docs/Feature_Specs/GLUCO_AI_LETTER_API_SPEC.md`
 
 🍀 GlucoScope AI Letter Worker Response Contract
@@ -12,7 +12,7 @@ Related feature spec: `docs/Feature_Specs/GLUCO_AI_LETTER_API_SPEC.md`
 
 This document defines the first response contract between the GlucoScope frontend and the AI Letter Worker.
 
-The contract is intentionally stable before connecting OpenAI API, Turnstile, cache, or budget guard.
+The contract covers the production-beta OpenAI, Turnstile, Durable Object usage counter, and Workers KV shared-cache flow.
 
 The goal is to make the frontend ready for:
 
@@ -80,7 +80,6 @@ Future fields may include:
 
 - `turnstileToken`
 - `summaryHash`
-- `cacheKey`
 - `clientId`
 - `pageMode`
 
@@ -91,7 +90,7 @@ Future fields may include:
 ```json
 {
   "ok": true,
-  "version": "gluco-ai-letter-worker-response-v0.1",
+  "version": "gluco-ai-letter-worker-response-v0.2",
   "status": "success",
   "source": "prototype-worker",
   "clientMode": "worker-prototype",
@@ -107,6 +106,20 @@ Future fields may include:
       "key": "afternoon",
       "label": "昼のお手紙"
     }
+  },
+  "cache": {
+    "status": "stored",
+    "storage": "cloudflare-workers-kv",
+    "bindingAvailable": true,
+    "key": "gluco-letter:gluco-ai-letter-cache-v1:<sha256>",
+    "fresh": true,
+    "ageSeconds": 0,
+    "generatedAt": "2026-07-09T05:52:00.000Z",
+    "freshUntil": "2026-07-09T06:52:00.000Z",
+    "expiresAt": "2026-07-10T05:52:00.000Z",
+    "freshSeconds": 3600,
+    "retentionSeconds": 86400,
+    "fallbackReason": null
   },
   "usage": {
     "inputTokens": 0,
@@ -145,7 +158,12 @@ Future:
 
 ### `cached`
 
-A cached AI letter is returned.
+A cached AI letter is returned. `cache.status` explains why:
+
+- `fresh`: shared KV entry is under one hour old; no new OpenAI generation occurred.
+- `stale-fallback`: the entry is older than one hour but still within retention, and a new generation was blocked or failed.
+
+Cache hits use zero request tokens and do not consume a new-generation slot. Turnstile verification is still required before the Worker serves shared cache content.
 
 Frontend should show a gentle success message such as:
 
@@ -168,7 +186,7 @@ The rule-based comment and ChatGPT copy handoff must remain available.
 ```json
 {
   "ok": false,
-  "version": "gluco-ai-letter-worker-response-v0.1",
+  "version": "gluco-ai-letter-worker-response-v0.2",
   "status": "error",
   "code": "rate_limited",
   "message": "Daily AI generation limit reached.",
@@ -316,7 +334,7 @@ Prototype response:
 ```json
 {
   "ok": true,
-  "version": "gluco-ai-letter-worker-response-v0.1",
+  "version": "gluco-ai-letter-worker-response-v0.2",
   "status": "usage",
   "report": {
     "today": {
@@ -765,3 +783,37 @@ Polish:
 
 - The browser-only `いつものグルコのお話` body now matches the AI analysis result font size/line-height.
 - The GlucoScore message breaks after the first sentence for readability.
+
+---
+
+## 35. Shared Workers KV Cache
+
+Production binding:
+
+```toml
+[[kv_namespaces]]
+binding = "AI_LETTER_CACHE"
+id = "<Cloudflare namespace id>"
+```
+
+Cache configuration:
+
+```text
+AI_CACHE_ENABLED=true
+AI_CACHE_FRESH_SECONDS=3600
+AI_CACHE_RETENTION_SECONDS=86400
+```
+
+Request order:
+
+1. Validate JSON and summary.
+2. Verify Turnstile.
+3. Build an opaque SHA-256 cache key from page mode, language, period, slot, analysis mode, and displayed range.
+4. Return a fresh KV letter before applying generation limits.
+5. After one hour, apply daily, slot, and budget guards and try a new generation.
+6. If generation is blocked or the provider fails, return a retained stale entry when available.
+7. Store a successful new letter in KV and count it as a generation.
+
+The KV value stores generated letter text and minimal metadata only. It does not store the submitted glucose summary. Entries expire automatically after the configured retention period.
+
+Workers KV is eventually consistent across Cloudflare locations, so a newly written value can take a short time to become visible in another location.

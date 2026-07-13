@@ -99,8 +99,8 @@
         <div class="usage-detail-head"><span>🗃️</span><h2>保存状態</h2></div>
         <dl class="usage-data-list">
           <div><dt>利用カウンター</dt><dd id="usageStorageKind">--</dd></div>
-          <div><dt>AIお手紙キャッシュ</dt><dd>ブラウザ内</dd></div>
-          <div><dt>共有KVキャッシュ</dt><dd>準備中</dd></div>
+          <div><dt>ブラウザ内キャッシュ</dt><dd id="usageLocalCacheState">1時間</dd></div>
+          <div><dt>共有KVキャッシュ</dt><dd id="usageSharedCacheState">--</dd></div>
         </dl>
       </article>
 
@@ -127,13 +127,15 @@
     <section class="about-detail-grid about-detail-language-stack usage-explainer">
       <div class="card about-detail-card about-copy-jp" lang="ja">
         <h2>この数字が表すもの</h2>
-        <p>保存するのは、生成回数、トークン数、推定利用額、Turnstile確認、上限到達などの運用情報です。血糖値やAIお手紙本文を、利用カウンターとして保存するものではありません。</p>
+        <p>利用カウンターに保存するのは、生成回数、トークン数、推定利用額、Turnstile確認、上限到達などの運用情報です。血糖値やAIお手紙本文を、利用カウンターとして保存するものではありません。</p>
+        <p>共有KVキャッシュには、生成済みのお手紙本文と必要最小限のメタ情報だけを一時保存します。血糖サマリーそのものは保存せず、1時間以内は再利用し、最大24時間で自動削除します。</p>
         <p>推定利用額はOpenAIの利用状況から計算する開発者向けの目安です。閲覧者への請求ではありません。</p>
         <p>新規生成は朝・昼・夜それぞれ最大10回、1日最大30回です。5つの表示期間を2つの分析モードで試せることを想定しています。保存済みのお手紙を表示するだけの場合は、新規生成回数を消費しません。</p>
       </div>
       <div class="card about-detail-card about-copy-en" lang="en">
         <h2>What these numbers mean</h2>
         <p>The counter stores operational totals such as generations, tokens, estimated developer cost, Turnstile results, and limit events. It does not store glucose values or AI letter text.</p>
+        <p>The shared KV cache temporarily stores only the generated letter and minimal metadata. It does not store the glucose summary, reuses letters for one hour, and removes them automatically within 24 hours.</p>
         <p>Estimated cost is an operational estimate paid by the developer, not a charge to visitors.</p>
         <p>New generation is limited to 10 times in each morning, afternoon, and night slot, with a daily maximum of 30. Showing a saved letter does not consume a new-generation count.</p>
       </div>
@@ -190,6 +192,7 @@
           const month = report.month || {};
           const guard = report.guard || {};
           const storage = report.storage || {};
+          const sharedCache = report.cache || {};
           const dailyLimit = Number(guard.dailyGenerationLimit || 0);
           const todayCount = Number(today.aiGenerationCount || 0);
           const remaining = Number(guard.dailyGenerationRemaining ?? Math.max(0, dailyLimit - todayCount));
@@ -213,6 +216,13 @@
           setText("usageAfternoonLimit", `${Number(slotCounts.afternoon || 0)} / ${slotLimit}回`);
           setText("usageNightLimit", `${Number(slotCounts.night || 0)} / ${slotLimit}回`);
           setText("usageStorageKind", storageLabel(storage.kind));
+          setText("usageLocalCacheState", "1時間（端末内）");
+          setText(
+            "usageSharedCacheState",
+            sharedCache.bindingAvailable
+              ? `稼働中（KV / ${Math.round(Number(sharedCache.freshSeconds || 3600) / 3600)}時間）`
+              : "未接続"
+          );
           setText("usageDayKey", today.dayKey || "--");
           setText("usageMonthKey", month.monthKey || "--");
           setText("usageUpdatedAt", formatDateTime(storage.updatedAt));

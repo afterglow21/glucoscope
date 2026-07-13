@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "check": "node --check src/index.js",
+    "deploy:dry": "wrangler deploy --dry-run"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"

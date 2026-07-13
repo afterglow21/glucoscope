@@ -216,6 +216,8 @@ const translations = {
     aiLetterStatusReady: "",
     aiLetterStatusSuccess: "グルコのお手紙を表示しました🍀",
     aiLetterStatusCached: "前回のグルコAIお手紙を表示しました🍀",
+    aiLetterStatusSharedCache: "共有キャッシュに保存されたグルコAIお手紙を表示しました。新しいAI生成は行っていません🍀",
+    aiLetterStatusSharedCacheFallback: "新しいお手紙を作れなかったため、前に共有保存されたお手紙を表示しています🍀",
     aiLetterStatusLocalCache: "保存済みのグルコAIお手紙を表示しています🍀",
     aiLetterStatusFreshCache: "1時間以内に保存されたグルコAIお手紙を表示しました。新しいAI生成は行っていません🍀",
     aiLetterStatusLocalCacheAfterLimit: "今日の新しいお手紙は上限に達しました。保存済みのお手紙を表示しています🍀",
@@ -386,6 +388,8 @@ const translations = {
     aiLetterStatusReady: "Gluco can write using the selected reflection mode.",
     aiLetterStatusSuccess: "Gluco reflection displayed 🍀",
     aiLetterStatusCached: "Previous Gluco AI reflection displayed 🍀",
+    aiLetterStatusSharedCache: "A Gluco AI reflection from the shared cache was displayed. No new AI generation was used 🍀",
+    aiLetterStatusSharedCacheFallback: "A previously shared reflection is displayed because a new one could not be generated 🍀",
     aiLetterStatusLocalCache: "Saved Gluco AI reflection displayed 🍀",
     aiLetterStatusFreshCache: "A Gluco AI reflection saved within the last hour was displayed. No new AI generation was used 🍀",
     aiLetterStatusLocalCacheAfterLimit: "Today’s new reflection has reached its limit. A saved reflection is displayed 🍀",
@@ -2046,7 +2050,14 @@ function getAiLetterCacheAgeMs(item) {
 }
 
 function isAiLetterCacheFresh(item, maxAgeMs = AI_LETTER_LOCAL_CACHE_FRESH_MS) {
-  return Boolean(item && getAiLetterCacheAgeMs(item) < maxAgeMs);
+  if (!item) return false;
+
+  const freshUntil = Date.parse(item.freshUntil || "");
+  if (Number.isFinite(freshUntil)) {
+    return Date.now() < freshUntil;
+  }
+
+  return getAiLetterCacheAgeMs(item) < maxAgeMs;
 }
 
 function getFreshCachedAiLetter(summary = latestAiLetterSummary, mode = currentAiLetterMode) {
@@ -2071,7 +2082,10 @@ function scheduleAiLetterCacheButtonRefresh(summary = latestAiLetterSummary, mod
   const item = getCachedAiLetter(summary, mode);
   if (!item) return;
 
-  const remainingMs = AI_LETTER_LOCAL_CACHE_FRESH_MS - getAiLetterCacheAgeMs(item);
+  const freshUntil = Date.parse(item.freshUntil || "");
+  const remainingMs = Number.isFinite(freshUntil)
+    ? freshUntil - Date.now()
+    : AI_LETTER_LOCAL_CACHE_FRESH_MS - getAiLetterCacheAgeMs(item);
   if (remainingMs <= 0) return;
 
   aiLetterCacheRefreshTimer = window.setTimeout(() => {
@@ -2087,10 +2101,15 @@ function saveAiLetterLocalCache(summary, data, letterText, mode = currentAiLette
   const analysisMode = normalizeAiLetterMode(mode);
   const key = getAiLetterLocalCacheKey(summary, analysisMode);
 
+  const generatedAt = data?.letter?.generatedAt || new Date().toISOString();
+
   cache[key] = {
     text: letterText,
     analysisMode,
-    savedAt: new Date().toISOString(),
+    savedAt: generatedAt,
+    freshUntil: data?.cache?.freshUntil || "",
+    expiresAt: data?.cache?.expiresAt || "",
+    cacheStatus: data?.cache?.status || "",
     status: data?.status || "success",
     source: data?.source || "",
     provider: data?.letter?.provider || "",
@@ -2128,6 +2147,14 @@ function getAiLetterTextFromResponse(data) {
 
 function getAiLetterStatusKeyFromResponse(data) {
   if (!data || typeof data !== "object") return "aiLetterStatusSuccess";
+
+  if (data.cache?.status === "stale-fallback") {
+    return "aiLetterStatusSharedCacheFallback";
+  }
+
+  if (data.cache?.status === "fresh") {
+    return "aiLetterStatusSharedCache";
+  }
 
   if (data.status === "cached" || data.cached === true || data.letter?.cached === true) {
     return "aiLetterStatusCached";

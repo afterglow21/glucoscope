@@ -99,6 +99,23 @@ localStorage.removeItem("glucoscope.aiLetterWorkerEnabled.v1");
 localStorage.removeItem("glucoscope.aiLetterWorkerEndpoint.v1");
 ```
 
+## Shared AI letter cache
+
+The public demo uses a browser-local cache first and can also use a shared Cloudflare Workers KV cache.
+
+For the same page mode, language, period, morning/afternoon/night slot, analysis mode, and displayed range:
+
+- a letter younger than one hour is reused without a new OpenAI request,
+- cache displays do not consume a new-generation count,
+- the shared KV value stores only the generated letter and minimal metadata, not the glucose summary, and
+- entries expire automatically within 24 hours after remaining available as a gentle stale fallback.
+
+Production KV setup is documented in:
+
+```text
+workers/gluco-letter-worker/README.md
+```
+
 ## Worker CORS note
 
 The current Worker returns broad CORS headers for prototype testing.

@@ -197,7 +197,7 @@ An analysis snapshot may include:
 
 ### 5.1 Public demo shared cache
 
-For Kazuma's public sample page, AI results should be shared across visitors.
+For Kazuma's public sample page, AI results are shared across visitors through Cloudflare Workers KV.
 
 Example:
 
@@ -207,7 +207,28 @@ demo / today / 2026-07-06 / afternoon
 demo / today / 2026-07-06 / night
 ```
 
-If the morning AI letter already exists, visitors should receive the cached letter instead of causing a new OpenAI API call.
+If the morning AI letter already exists and is less than one hour old, visitors receive the cached letter instead of causing a new OpenAI API call.
+
+The production cache identity includes:
+
+- page mode
+- language
+- period
+- morning / afternoon / night slot
+- analysis mode
+- displayed range key
+
+The identity is SHA-256 hashed before it is used as a KV key. Raw glucose values are not included in the key.
+
+KV stores only:
+
+- generated letter text
+- language and analysis mode
+- original generation time
+- provider/model identifiers
+- slot identifier
+
+The glucose summary is not stored in the shared cache. The entry is fresh for one hour, may be used as a stale fallback for up to 24 hours, and is then removed automatically.
 
 ### 5.2 Cache display is not the same as new generation
 
@@ -221,9 +242,9 @@ Suggested wording:
 前回のグルコのお手紙を表示しています🍀
 ```
 
-### 5.3 One-hour browser cache refresh window
+### 5.3 One-hour two-layer cache refresh window
 
-Until the shared cache is implemented, the public page uses a browser-local cache.
+The public page uses a browser-local cache first and a shared Workers KV cache when the browser has no fresh local entry.
 
 For the same:
 
@@ -235,7 +256,7 @@ For the same:
 
 a saved AI letter that is less than one hour old should be shown without sending a new request to OpenAI.
 
-After one hour, the button should allow a new AI generation when the daily, slot, and budget guards still allow it. The older saved letter remains available as a fallback if the new request fails or the limit has been reached.
+After one hour, the button allows a new AI generation when the daily, slot, and budget guards still allow it. The older saved letter remains available locally and in KV as a fallback if the new request fails or the limit has been reached.
 
 Suggested button states:
 
@@ -640,7 +661,7 @@ Interesting for privacy-first future mode, but not recommended for initial publi
 ### Phase 4: Safety and cost controls
 
 - Add Turnstile validation
-- Add shared cache
+- Add shared cache (implemented with Workers KV; production verification required)
 - Add usage counters
 - Add monthly budget guard
 - Add emergency kill switch
@@ -666,7 +687,6 @@ Interesting for privacy-first future mode, but not recommended for initial publi
 - Which AI provider/model to use first
 - Exact monthly budget threshold
 - How to identify public demo mode
-- Where to store shared cache
 - Whether to start with admin endpoint or email report
 - Whether custom ranges should support AI in the first version
 - Whether AI analysis should be available to all visitors or only public demo visitors at first
