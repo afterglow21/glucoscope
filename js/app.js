@@ -39,7 +39,7 @@ let latestAiLetterSummary = null;
 let latestRuleCommentMetrics = null;
 let aiLetterRequestInFlight = false;
 let aiLetterCacheRefreshTimer = null;
-let unicornOpeningCheckCompleted = false;
+let lastUnicornEvaluatedMeasurementKey = null;
 let activeUnicornGlucoDecision = null;
 
 const GLUCO_NORMAL_MAX_ID = 50;
@@ -296,7 +296,7 @@ const translations = {
     luckyGlucoMet: "🍀 小さな幸運ラッキーグルコと出逢ったよ",
     unicornGlucoBadge: "🦄 ユニコーンをつかまえた！",
     unicornCollectionTitle: "🦄 ユニコーングルコ",
-    unicornCollectionLead: "サイトを開いたとき、最新の測定がぴったり100mg/dLだった日にだけ出会える、小さな幸運です。",
+    unicornCollectionLead: "サイトを開いているあいだ、最新の測定がぴったり100mg/dLになったときに出会える、小さな幸運です。",
     unicornCollectionNotMetToday: "今日はまだユニコーングルコと出会っていません。",
     unicornCollectionMetToday: "今日は「{title}」と出会ったよ🍀",
     unicornCollectionLocked: "まだ出会っていないユニコーングルコ",
@@ -478,7 +478,7 @@ const translations = {
     luckyGlucoMet: "🍀 You met a little Lucky Gluco today",
     unicornGlucoBadge: "🦄 You caught a unicorn!",
     unicornCollectionTitle: "🦄 Unicorn Gluco",
-    unicornCollectionLead: "A little-luck encounter available only when the latest reading is exactly 100 mg/dL as the site opens.",
+    unicornCollectionLead: "A little-luck encounter that may appear when a new latest reading reaches exactly 100 mg/dL while the site is open.",
     unicornCollectionNotMetToday: "You have not met a Unicorn Gluco today.",
     unicornCollectionMetToday: "Today you met “{title}” 🍀",
     unicornCollectionLocked: "Unicorn Gluco not met yet",
@@ -1609,7 +1609,13 @@ function pickUnicornGlucoItem(dateKey, measurementDate) {
   return pickGlucoItemFromPool(pool, `${dateKey}:unicorn:${measurementDate}:${seed}`);
 }
 
-function createTodayUnicornEncounter(latest, measuredAt, dateKey = getLocalDateKey()) {
+function getUnicornMeasurementKey(latest, measuredAt) {
+  const rawKey = latest?._id ?? latest?.date ?? latest?.dateString ?? measuredAt?.getTime?.();
+  if (rawKey === undefined || rawKey === null || rawKey === "") return null;
+  return String(rawKey);
+}
+
+function createTodayUnicornEncounter(latest, measuredAt, measurementKey, dateKey = getLocalDateKey()) {
   const stored = getStoredTodayUnicornDecision(dateKey);
   if (stored) return stored;
 
@@ -1617,10 +1623,13 @@ function createTodayUnicornEncounter(latest, measuredAt, dateKey = getLocalDateK
   const item = pickUnicornGlucoItem(dateKey, measurementDate);
   if (!item) return null;
 
+  const previousState = readUnicornGlucoState();
   writeUnicornGlucoState({
+    ...previousState,
     dailyDateKey: dateKey,
     dailyUnicornId: item.id,
     measurementDate,
+    lastEncounterMeasurementKey: measurementKey || null,
     encounteredAt: Date.now()
   });
   updateUnicornGlucoCollection(item, dateKey);
@@ -1635,21 +1644,41 @@ function createTodayUnicornEncounter(latest, measuredAt, dateKey = getLocalDateK
   return activeUnicornGlucoDecision;
 }
 
-function evaluateOpeningUnicornEncounter(latest, measuredAt, minutesAgo) {
+function evaluateLatestUnicornEncounter(latest, measuredAt, minutesAgo) {
   const dateKey = getLocalDateKey();
   const stored = getStoredTodayUnicornDecision(dateKey);
   if (stored) return stored;
-  if (unicornOpeningCheckCompleted) return null;
 
-  // This flag is set on the first successful latest-glucose response only.
-  // Later 60-second refreshes cannot unlock a Unicorn Gluco in this page session.
-  unicornOpeningCheckCompleted = true;
+  const measurementKey = getUnicornMeasurementKey(latest, measuredAt);
+  if (!measurementKey || measurementKey === lastUnicornEvaluatedMeasurementKey) return null;
+  lastUnicornEvaluatedMeasurementKey = measurementKey;
 
   const glucose = Number(latest?.sgv);
   const isFresh = Number.isFinite(minutesAgo) && minutesAgo >= 0 && minutesAgo < 30;
   if (!isFresh || glucose !== GLUCO_CELEBRATION_THRESHOLDS.unicornGlucose) return null;
 
-  return createTodayUnicornEncounter(latest, measuredAt, dateKey);
+  const state = readUnicornGlucoState();
+  if (state.lastEncounterMeasurementKey === measurementKey) return null;
+
+  return createTodayUnicornEncounter(latest, measuredAt, measurementKey, dateKey);
+}
+
+function updateCurrentGlucosePeek(latest, minutesAgo) {
+  const peekImage = document.getElementById("glucoPeekImage");
+  if (!peekImage) return;
+
+  const glucose = Number(latest?.sgv);
+  const isFresh = Number.isFinite(minutesAgo) && minutesAgo >= 0 && minutesAgo < 30;
+  const hasTodayEncounter = Boolean(getStoredTodayUnicornDecision(getLocalDateKey()));
+  const showUnicorn = isFresh
+    && glucose === GLUCO_CELEBRATION_THRESHOLDS.unicornGlucose
+    && hasTodayEncounter;
+
+  const targetSrc = showUnicorn ? peekImage.dataset.unicornSrc : peekImage.dataset.defaultSrc;
+  if (targetSrc && peekImage.getAttribute("src") !== targetSrc) {
+    peekImage.setAttribute("src", targetSrc);
+  }
+  peekImage.classList.toggle("is-unicorn", showUnicorn);
 }
 
 function renderUnicornGlucoDecision(decision, dateKey = getLocalDateKey()) {
@@ -4252,6 +4281,7 @@ async function loadLatestGlucose() {
     if (status) status.textContent = t("latestNoData");
     updateCurrentGlucoseColor(null);
     updateGlucoseDelta(null, null);
+    updateCurrentGlucosePeek(null, null);
     setLiveStatus("error", "NO DATA", t("noDataDetail"));
     updateHeaderUpdated(null);
     updateHealthBar(null, null, "waiting");
@@ -4270,10 +4300,11 @@ async function loadLatestGlucose() {
   updateHeaderUpdated(measuredAt);
   const now = new Date();
   const minutesAgo = Math.round((now - measuredAt) / 60000);
-  const unicornDecision = evaluateOpeningUnicornEncounter(latest, measuredAt, minutesAgo);
+  const unicornDecision = evaluateLatestUnicornEncounter(latest, measuredAt, minutesAgo);
   if (unicornDecision) {
     renderUnicornGlucoDecision(unicornDecision, getLocalDateKey());
   }
+  updateCurrentGlucosePeek(latest, minutesAgo);
 
   if (status) {
     status.textContent = currentLanguage === "en"

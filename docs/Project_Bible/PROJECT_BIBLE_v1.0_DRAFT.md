@@ -2998,14 +2998,15 @@ Unicorn Gluco is a local special-illustration and collection encounter.
 
 The trigger is intentionally narrow:
 
-- Evaluate only the first successful latest-glucose fetch after the page is opened.
+- Evaluate the first successful latest-glucose fetch and each newly received latest measurement while the page remains open.
 - The latest reading must be fresh under the same rule used for the LIVE display.
 - The reading must be exactly 100mg/dL.
 - Do not scan today's history or any past period for 100mg/dL.
-- Do not unlock the encounter when a page left open later refreshes from another value to 100mg/dL.
+- A page left open may unlock the encounter when a newly received latest measurement changes from another value to exactly 100mg/dL.
+- Do not repeatedly evaluate the same measurement during the refresh loop.
 - Allow at most one Unicorn Gluco per local calendar day.
 
-After an encounter, the selected Unicorn Gluco replaces the large illustration on the Letter tab for the rest of that day and is saved locally in Gluco Memories. The regular mobile glucose-tab illustration remains unchanged until a matching Unicorn Gluco UI asset is separately approved.
+After an encounter, the selected Unicorn Gluco replaces the large illustration on the Letter tab for the rest of that day and is saved locally in Gluco Memories. On the mobile glucose tab, the approved Unicorn Gluco peek illustration is shown only while the current fresh latest reading remains exactly 100mg/dL, then returns to the normal Gluco peek when the value changes.
 
 It is a playful community-inspired small-luck moment,
 not a medical reward, proof of good management, or pressure to aim for a specific number.
@@ -3016,17 +3017,18 @@ Do not add streaks, rankings, or mechanics that encourage chasing 100mg/dL.
 
 発動条件は、意図的に狭くします。
 
-- ページを開いたあと、最初に正常取得できた最新血糖だけを判定する。
+- ページを開いたあと、最初に正常取得できた最新血糖と、閲覧中に新しく届いた最新測定を判定する。
 - 最新血糖は、LIVE表示と同じ基準で十分に新しいデータであること。
 - その値が、ちょうど100mg/dLであること。
 - 今日や過去期間の履歴から100mg/dLを探さない。
-- ページを開いたまま別の値から100mg/dLへ更新されても、その閲覧中は新しく獲得しない。
+- ページを開いたまま別の値から100mg/dLへ更新された場合も、新しい最新測定であれば出逢いを獲得できる。
+- 1分ごとの更新処理で同じ測定を繰り返し判定しない。
 - ローカル日付ごとに1日1種類までとする。
 
 出逢った日は、
 お手紙タブの大きなグルコ画像を、その日のユニコーングルコへ差し替え、
 グルコとの想い出へブラウザ内保存します。
-血糖値タブの通常グルコ差し替えは、同じ構図の専用素材を別途確認してから追加します。
+血糖値タブでは、現在の新しい最新血糖が100mg/dLのあいだだけ、承認済みのひょっこりユニコーングルコへ差し替えます。100mg/dLではなくなった時点で通常のひょっこりグルコへ戻します。
 
 これは、
 1型糖尿病コミュニティで親しまれている遊び心を、

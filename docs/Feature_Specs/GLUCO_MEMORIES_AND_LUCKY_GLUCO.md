@@ -138,22 +138,22 @@ Unicorn Gluco is implemented as a local-only special encounter.
 
 Trigger rules:
 
-- Evaluate only the first successful latest-glucose response after each page load.
+- Evaluate the latest Nightscout entry on the first successful response and whenever a different latest measurement arrives while the page remains open.
 - Use only the current latest Nightscout entry; never scan today's history or another period.
 - The entry must be fresh under the LIVE rule (`< 30 minutes`).
 - The value must be exactly `100 mg/dL`.
-- If the first successful response is another value, later automatic refreshes in that page session cannot unlock an encounter.
-- A later new page load may unlock it if that opening value is 100mg/dL.
+- A page opened at another value may still unlock an encounter when a new latest measurement later becomes exactly 100mg/dL.
+- Do not evaluate the same measurement repeatedly, including across the minute refresh loop.
 - At most one illustration is selected per local calendar day.
 
 Display and storage:
 
 - Select an uncollected illustration first; after all ten are collected, select from the full set.
 - Keep the selected illustration fixed for the rest of that local day.
-- Replace the large Letter-tab Gluco illustration only; do not regenerate an AI letter.
+- Replace the large Letter-tab Gluco illustration for the rest of that day; do not regenerate an AI letter.
+- Replace the glucose-tab peek illustration only while the current fresh latest reading is exactly 100mg/dL; return to the normal peek immediately after the value changes.
 - Save the encounter and first-seen date in `localStorage`.
 - Show a separate 10-item Unicorn Gluco collection inside Gluco Memories.
-- The glucose-tab illustration replacement remains deferred until a matching approved asset exists.
 
 Wording:
 
