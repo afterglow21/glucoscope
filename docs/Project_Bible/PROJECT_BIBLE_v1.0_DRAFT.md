@@ -2961,6 +2961,13 @@ Duplicate Normal Gluco and Normal-days-since-Lucky bonuses reset when Lucky Gluc
 Gluco Memories may include local titles and optional sharing.
 Sharing should be opt-in and should not include medical data by default.
 
+The Memories page must make the collection experience easy to notice.
+It should explain that Gluco expressions are gradually collected,
+show visible progress,
+give friendly guidance for encounters not yet found,
+and describe special encounters without turning glucose into a target.
+The page should state clearly that the collection is not a judgment of good or bad glucose.
+
 Any future global ranking or shared leaderboard requires separate privacy design,
 explicit participation,
 user name handling,
@@ -3047,6 +3054,18 @@ No. 58 Lucky Gluco!
 
 シェアは利用する人が自分で選ぶものとし、
 初期状態では医療データを含めません。
+
+想い出ページでは、
+グルコの表情を少しずつ集めるコレクションであることを、
+初めて見る人にも分かる形で説明します。
+
+集まった数を見えるようにし、
+まだ出会っていないグルコにはやさしい案内を添え、
+通常グルコ、小さな幸運、特別な出逢いの違いを伝えます。
+
+その際も、
+血糖値の良し悪しを競うものではなく、
+毎日の振り返りに添える小さな楽しみであることを明記します。
 
 将来的に全体ランキングや共有ランキングを行う場合は、
 別途、プライバシー設計、

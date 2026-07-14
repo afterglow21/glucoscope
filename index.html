@@ -22,7 +22,7 @@
     })();
   </script>
   <title>GlucoScope</title>
-  <link rel="stylesheet" href="style.css?v=20260714-unicorn-gluco-2">
+  <link rel="stylesheet" href="style.css?v=20260714-memories-guide-1">
 </head>
 <body>
 
@@ -334,16 +334,37 @@
   <section class="card collection-card">
     <div class="collection-header">
       <div>
-        <div class="label" data-i18n-key="collectionTitle">🍀 Gluco Collection</div>
-        <p class="collection-lead" data-i18n-key="collectionLead">毎日出会ったGlucoを、ブラウザの中にそっと記録します。</p>
+        <div class="label" data-i18n-key="collectionTitle">🍀 グルコとの想い出</div>
+        <p class="collection-lead" data-i18n-key="collectionLead">グルコの表情を集める、やさしいコレクションです。</p>
       </div>
       <div class="collection-status">
+        <span class="collection-status-label" data-i18n-key="collectionProgressLabel">集まったグルコ</span>
         <div id="collectionProgress" class="collection-progress">0 / 70</div>
         <div id="collectionAchievement" class="collection-achievement">称号: --</div>
       </div>
     </div>
+
+    <section class="collection-guide" aria-labelledby="collectionGuideTitle">
+      <div class="collection-guide-icon" aria-hidden="true">🍀</div>
+      <div class="collection-guide-copy">
+        <h2 id="collectionGuideTitle" data-i18n-key="collectionGuideTitle">グルコとの想い出を集めよう</h2>
+        <p data-i18n-key="collectionGuideBody">GlucoScopeを使っていると、その日に出会ったグルコが少しずつ想い出に加わります。まだ出会っていない表情や、特別なタイミングだけ現れるグルコもいます。</p>
+        <p class="collection-guide-safety" data-i18n-key="collectionGuideSafety">血糖値の良し悪しを競うものではなく、毎日の振り返りに添える小さな楽しみです。</p>
+        <div class="collection-guide-points" aria-label="Collection types">
+          <span data-i18n-key="collectionGuideDaily">🌱 毎日の出会い</span>
+          <span data-i18n-key="collectionGuideLucky">🍀 小さな幸運</span>
+          <span data-i18n-key="collectionGuideSpecial">🦄 特別な出会い</span>
+        </div>
+      </div>
+    </section>
+
+    <div id="collectionNewNotice" class="collection-new-notice" role="status" aria-live="polite" hidden>
+      <span aria-hidden="true">🍀</span>
+      <strong data-i18n-key="collectionNewToday">今日、新しいグルコが想い出に加わりました。</strong>
+    </div>
+
     <div class="collection-summary">
-      <span id="collectionToday" data-i18n-key="collectionToday">今日のGlucoに会うと、ここに記録されます。</span>
+      <span id="collectionToday" data-i18n-key="collectionToday">出会ったグルコが、ここに少しずつ増えていきます。</span>
     </div>
     <div id="collectionGrid" class="collection-grid" aria-live="polite"></div>
 
@@ -351,10 +372,17 @@
       <div class="unicorn-collection-header">
         <div>
           <div id="unicornCollectionTitle" class="label" data-i18n-key="unicornCollectionTitle">🦄 ユニコーングルコ</div>
-          <p class="collection-lead" data-i18n-key="unicornCollectionLead">サイトを開いているあいだ、最新の測定がぴったり100mg/dLになったときに出会える、小さな幸運です。</p>
+          <p class="collection-lead" data-i18n-key="unicornCollectionLead">サイトを開いているあいだに、偶然出会えることがある特別なグルコです。</p>
         </div>
         <div id="unicornCollectionProgress" class="collection-progress">0 / 10</div>
       </div>
+
+      <details class="unicorn-collection-details">
+        <summary data-i18n-key="unicornCollectionHowToTitle">ユニコーングルコとの出会い方</summary>
+        <p data-i18n-key="unicornCollectionHowToBody">サイトを開いている間に、新しく届いた最新測定がぴったり100mg/dLになると、1日1種類まで出会えます。今日や過去の履歴から100mg/dLを探すことはありません。</p>
+        <p class="unicorn-collection-safety" data-i18n-key="unicornCollectionSafety">100mg/dLを目指すための仕組みではなく、たまたま出会えた小さな幸運です。</p>
+      </details>
+
       <div id="unicornCollectionToday" class="collection-summary" data-i18n-key="unicornCollectionNotMetToday">今日はまだユニコーングルコと出会っていません。</div>
       <div id="unicornCollectionGrid" class="collection-grid unicorn-collection-grid" aria-live="polite"></div>
     </section>
@@ -513,9 +541,6 @@
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js"></script>
-<script src="js/app.js?v=20260714-unicorn-gluco-2"></script>
-<!-- Cloudflare Web Analytics -->
-<script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "5dec761abbfe4147b1fecebc68f8e382"}'></script>
-<!-- End Cloudflare Web Analytics -->
+<script src="js/app.js?v=20260714-memories-guide-1"></script>
 </body>
 </html>

@@ -173,7 +173,28 @@ Design boundaries:
 
 ---
 
-## 9. Future Ideas
+## 9. Collection Page Discoverability
+
+The Memories page must clearly explain that it is a collection experience.
+
+Minimum presentation:
+
+- A short introduction above the grid explaining that Gluco expressions are gradually collected.
+- A visible collected-count indicator.
+- Friendly guidance on locked items so they are understood as encounters not yet found.
+- A clear distinction between everyday Gluco, Lucky Gluco, and special encounters.
+- A collapsible explanation of how Unicorn Gluco can be encountered.
+- A visible same-day notice when a newly collected illustration has been added.
+
+Safety wording must remain visible:
+
+- The collection is not a judgment of good or bad glucose.
+- Lucky or Unicorn Gluco is not a medical reward.
+- The feature should feel like a small companion experience, not a target, ranking, or pressure mechanic.
+
+---
+
+## 10. Future Ideas
 
 - Special celebration illustrations for titles
 - Seasonal Lucky Gluco

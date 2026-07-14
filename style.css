@@ -1453,6 +1453,91 @@ canvas{
   gap:8px;
 }
 
+.collection-status-label{
+  color:#b8c7de;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.04em;
+}
+
+.collection-guide{
+  margin:0 0 18px;
+  padding:20px;
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:16px;
+  border-radius:22px;
+  border:1px solid rgba(74,222,128,.20);
+  background:
+    radial-gradient(circle at 8% 12%, rgba(74,222,128,.16), transparent 34%),
+    rgba(15,23,42,.28);
+}
+
+.collection-guide-icon{
+  width:52px;
+  height:52px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:18px;
+  background:rgba(46,204,113,.14);
+  border:1px solid rgba(74,222,128,.20);
+  font-size:28px;
+}
+
+.collection-guide-copy h2{
+  margin:0 0 8px;
+  color:#f8fafc;
+  font-size:20px;
+  line-height:1.35;
+}
+
+.collection-guide-copy p{
+  margin:0;
+  color:#d7e1ef;
+  font-size:15px;
+  line-height:1.75;
+}
+
+.collection-guide-copy .collection-guide-safety{
+  margin-top:8px;
+  color:#aebed4;
+}
+
+.collection-guide-points{
+  margin-top:14px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.collection-guide-points span{
+  padding:7px 10px;
+  border-radius:999px;
+  background:rgba(255,255,255,.045);
+  border:1px solid rgba(255,255,255,.08);
+  color:#dce7f5;
+  font-size:12px;
+  font-weight:800;
+}
+
+.collection-new-notice{
+  margin:0 0 16px;
+  padding:12px 14px;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  border-radius:16px;
+  border:1px solid rgba(74,222,128,.26);
+  background:rgba(46,204,113,.12);
+  color:#dcfce7;
+  font-size:14px;
+}
+
+.collection-new-notice[hidden]{
+  display:none;
+}
+
 .collection-progress{
   padding:10px 16px;
   border-radius:999px;
@@ -1596,6 +1681,39 @@ canvas{
 
 .collection-item.locked .collection-number{
   color:#94a3b8;
+}
+
+.collection-locked-hint{
+  color:#7f91ac;
+  font-size:11px;
+  line-height:1.4;
+}
+
+.unicorn-collection-details{
+  margin:0 0 16px;
+  padding:0 16px;
+  border-radius:18px;
+  border:1px solid rgba(196,181,253,.20);
+  background:rgba(139,92,246,.07);
+}
+
+.unicorn-collection-details summary{
+  padding:14px 0;
+  cursor:pointer;
+  color:#ede9fe;
+  font-size:14px;
+  font-weight:900;
+}
+
+.unicorn-collection-details p{
+  margin:0 0 12px;
+  color:#c7d2e4;
+  font-size:13px;
+  line-height:1.7;
+}
+
+.unicorn-collection-details .unicorn-collection-safety{
+  color:#b8c7de;
 }
 
 .about-view{margin-top:20px;}
@@ -2456,6 +2574,25 @@ canvas{
 
   .collection-header{
     flex-direction:column;
+  }
+
+  .collection-status{
+    width:100%;
+    align-items:flex-start;
+  }
+
+  .collection-guide{
+    grid-template-columns:1fr;
+    padding:18px;
+  }
+
+  .collection-guide-icon{
+    width:46px;
+    height:46px;
+  }
+
+  .collection-guide-copy h2{
+    font-size:19px;
   }
 }
 
@@ -6240,8 +6377,8 @@ canvas{
 }
 
 
-/* Unicorn Gluco: a local, once-per-day encounter triggered only by the
-   first successful fresh latest-glucose fetch after opening the page. */
+/* Unicorn Gluco: a local, once-per-day encounter triggered by a fresh
+   latest reading received while the page is open. */
 .gluco-comment-avatar.unicorn-gluco{
   border-color:rgba(196,181,253,.62);
   background:

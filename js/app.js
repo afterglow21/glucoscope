@@ -286,9 +286,18 @@ const translations = {
     gmiSmall: "表示中の平均血糖から推定",
     lastUpdatedLabel: "最終更新",
     collectionTitle: "🍀 グルコとの想い出",
-    collectionLead: "毎日出会ったグルコを、ブラウザの中にそっと記録します。",
+    collectionLead: "グルコの表情を集める、やさしいコレクションです。",
+    collectionProgressLabel: "集まったグルコ",
+    collectionGuideTitle: "グルコとの想い出を集めよう",
+    collectionGuideBody: "GlucoScopeを使っていると、その日に出会ったグルコが少しずつ想い出に加わります。まだ出会っていない表情や、特別なタイミングだけ現れるグルコもいます。",
+    collectionGuideSafety: "血糖値の良し悪しを競うものではなく、毎日の振り返りに添える小さな楽しみです。",
+    collectionGuideDaily: "🌱 毎日の出会い",
+    collectionGuideLucky: "🍀 小さな幸運",
+    collectionGuideSpecial: "🦄 特別な出会い",
+    collectionNewToday: "今日、新しいグルコが想い出に加わりました。",
     collectionToday: "出会ったグルコが、ここに少しずつ増えていきます。",
-    collectionLocked: "まだ出会っていないGluco",
+    collectionLocked: "まだ出会っていないグルコ",
+    collectionLockedHint: "ゆっくり見つけてみよう",
     collectionFirstSeen: "初めて出会った日",
     collectionTimes: "回目",
     collectionProgress: "出会ったグルコ",
@@ -296,10 +305,14 @@ const translations = {
     luckyGlucoMet: "🍀 小さな幸運ラッキーグルコと出逢ったよ",
     unicornGlucoBadge: "🦄 ユニコーンをつかまえた！",
     unicornCollectionTitle: "🦄 ユニコーングルコ",
-    unicornCollectionLead: "サイトを開いているあいだ、最新の測定がぴったり100mg/dLになったときに出会える、小さな幸運です。",
+    unicornCollectionLead: "サイトを開いているあいだに、偶然出会えることがある特別なグルコです。",
+    unicornCollectionHowToTitle: "ユニコーングルコとの出会い方",
+    unicornCollectionHowToBody: "サイトを開いている間に、新しく届いた最新測定がぴったり100mg/dLになると、1日1種類まで出会えます。今日や過去の履歴から100mg/dLを探すことはありません。",
+    unicornCollectionSafety: "100mg/dLを目指すための仕組みではなく、たまたま出会えた小さな幸運です。",
     unicornCollectionNotMetToday: "今日はまだユニコーングルコと出会っていません。",
     unicornCollectionMetToday: "今日は「{title}」と出会ったよ🍀",
     unicornCollectionLocked: "まだ出会っていないユニコーングルコ",
+    unicornCollectionLockedHint: "いつかの小さな幸運を待ってみよう",
     unicornCollectionProgress: "出会ったユニコーングルコ",
     achievementLabel: "称号",
     periodToday: "今日",
@@ -467,10 +480,19 @@ const translations = {
     gmiDesc: "HbA1c estimate",
     gmiSmall: "Estimated from selected average",
     lastUpdatedLabel: "Last updated",
-    collectionTitle: "🍀 Gluco Collection",
-    collectionLead: "Gluco friends you meet each day are gently saved in this browser.",
-    collectionToday: "Meet today’s Gluco and it will be saved here.",
+    collectionTitle: "🍀 Gluco Memories",
+    collectionLead: "A gentle collection of Gluco expressions you meet over time.",
+    collectionProgressLabel: "Gluco collected",
+    collectionGuideTitle: "Collect memories with Gluco",
+    collectionGuideBody: "As you use GlucoScope, the Gluco you meet each day is gradually added to your memories. Some expressions are still waiting to be found, and a few appear only at special moments.",
+    collectionGuideSafety: "This is not a contest about good or bad glucose. It is a small bit of fun alongside everyday reflection.",
+    collectionGuideDaily: "🌱 Everyday encounters",
+    collectionGuideLucky: "🍀 Little luck",
+    collectionGuideSpecial: "🦄 Special encounters",
+    collectionNewToday: "A new Gluco was added to your memories today.",
+    collectionToday: "The Gluco you meet will gradually appear here.",
     collectionLocked: "Gluco not met yet",
+    collectionLockedHint: "Take your time finding this one",
     collectionFirstSeen: "First seen",
     collectionTimes: "time",
     collectionProgress: "Gluco met",
@@ -478,10 +500,14 @@ const translations = {
     luckyGlucoMet: "🍀 You met a little Lucky Gluco today",
     unicornGlucoBadge: "🦄 You caught a unicorn!",
     unicornCollectionTitle: "🦄 Unicorn Gluco",
-    unicornCollectionLead: "A little-luck encounter that may appear when a new latest reading reaches exactly 100 mg/dL while the site is open.",
+    unicornCollectionLead: "A special Gluco you may happen to meet while the site is open.",
+    unicornCollectionHowToTitle: "How to meet Unicorn Gluco",
+    unicornCollectionHowToBody: "While the site is open, a newly received latest reading of exactly 100 mg/dL can unlock one encounter per day. GlucoScope does not search today’s history or past periods for 100 mg/dL.",
+    unicornCollectionSafety: "This is not a reason to aim for 100 mg/dL. It is simply a small lucky moment you may happen to meet.",
     unicornCollectionNotMetToday: "You have not met a Unicorn Gluco today.",
     unicornCollectionMetToday: "Today you met “{title}” 🍀",
     unicornCollectionLocked: "Unicorn Gluco not met yet",
+    unicornCollectionLockedHint: "A little lucky moment may find you someday",
     unicornCollectionProgress: "Unicorn Gluco met",
     achievementLabel: "Title",
     periodToday: "Today",
@@ -4552,6 +4578,7 @@ function renderCollectionView() {
   const progress = document.getElementById("collectionProgress");
   const achievementEl = document.getElementById("collectionAchievement");
   const today = document.getElementById("collectionToday");
+  const newNotice = document.getElementById("collectionNewNotice");
   const unicornGrid = document.getElementById("unicornCollectionGrid");
   const unicornProgress = document.getElementById("unicornCollectionProgress");
   const unicornToday = document.getElementById("unicornCollectionToday");
@@ -4559,7 +4586,15 @@ function renderCollectionView() {
   if (!grid) return;
 
   const collection = readGlucoCollection();
+  const unicornCollection = readUnicornGlucoCollection();
   const collectedCount = Object.keys(collection).length;
+  const todayDateKey = getLocalDateKey();
+  const hasNewNormalToday = Object.values(collection).some((entry) => entry?.firstSeenDate === todayDateKey);
+  const hasNewUnicornToday = Object.values(unicornCollection).some((entry) => entry?.firstSeenDate === todayDateKey);
+
+  if (newNotice) {
+    newNotice.hidden = !(hasNewNormalToday || hasNewUnicornToday);
+  }
 
   if (progress) {
     progress.textContent = `${collectedCount} / ${dailyLetterGlucoImages.length}`;
@@ -4622,7 +4657,12 @@ function renderCollectionView() {
       countLine.textContent = formatEncounterLabel(collected.encounterCount);
       meta.replaceChildren(firstSeenLine, countLine);
     } else {
-      meta.textContent = t("collectionLocked");
+      const lockedLine = document.createElement("span");
+      lockedLine.textContent = t("collectionLocked");
+      const lockedHint = document.createElement("span");
+      lockedHint.className = "collection-locked-hint";
+      lockedHint.textContent = t("collectionLockedHint");
+      meta.replaceChildren(lockedLine, lockedHint);
     }
 
     item.appendChild(imageBox);
@@ -4634,7 +4674,6 @@ function renderCollectionView() {
 
   if (!unicornGrid) return;
 
-  const unicornCollection = readUnicornGlucoCollection();
   const unicornCount = Object.keys(unicornCollection).length;
   if (unicornProgress) {
     unicornProgress.textContent = `${unicornCount} / ${unicornGlucoItems.length}`;
@@ -4680,7 +4719,12 @@ function renderCollectionView() {
       countLine.textContent = formatEncounterLabel(collected.encounterCount);
       meta.replaceChildren(firstSeenLine, countLine);
     } else {
-      meta.textContent = t("unicornCollectionLocked");
+      const lockedLine = document.createElement("span");
+      lockedLine.textContent = t("unicornCollectionLocked");
+      const lockedHint = document.createElement("span");
+      lockedHint.className = "collection-locked-hint";
+      lockedHint.textContent = t("unicornCollectionLockedHint");
+      meta.replaceChildren(lockedLine, lockedHint);
     }
 
     item.appendChild(imageBox);
