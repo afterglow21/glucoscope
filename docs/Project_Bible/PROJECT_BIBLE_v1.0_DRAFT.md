@@ -2100,6 +2100,70 @@ GlucoScopeというプロジェクトを理解できる場所にします。
 
 ---
 
+## Public Web Analytics Boundary
+## 公開アクセス分析の境界
+
+### EN
+
+The public preview may use privacy-first web analytics
+to understand aggregate page visits and page performance.
+
+The initial implementation uses Cloudflare Web Analytics
+on public HTML pages.
+
+GlucoScope must not intentionally send the following
+as custom analytics events, event names, URLs, or additional analytics data:
+
+- Blood glucose values
+- GlucoScore
+- AI letter text
+- Nightscout URLs
+- API keys, endpoints, or authentication information
+- Health-related mobile tab actions
+
+Do not add a GlucoScope-specific visitor identifier.
+Do not use analytics to judge, rank, or pressure a person.
+The purpose is to understand the public site's overall reach and performance,
+not to follow an individual's glucose-management behavior.
+
+The public Privacy Notes must be updated whenever
+the analytics implementation or collected information changes.
+
+---
+
+### JP
+
+公開プレビューでは、
+ページ閲覧や表示性能の全体傾向を理解するために、
+プライバシーを重視したアクセス分析を利用できます。
+
+初期実装では、
+公開HTMLページにCloudflare Web Analyticsを導入します。
+
+次の情報を、
+独自のアクセス分析イベント、イベント名、URL、
+追加の分析データとして意図的に送ってはいけません。
+
+- 血糖値
+- GlucoScore
+- AIお手紙本文
+- Nightscout URL
+- APIキー、接続先、認証情報
+- 健康情報に結びつくスマホタブ操作
+
+GlucoScope独自の利用者識別IDは追加しません。
+アクセス分析を、
+人の評価、ランキング、プレッシャーのために使いません。
+
+目的は、
+公開サイト全体の届き方と表示品質を理解することであり、
+一人ひとりの血糖マネジメント行動を追いかけることではありません。
+
+アクセス分析の実装や扱う情報が変わる場合は、
+公開向けPrivacy Notesも必ず更新します。
+
+---
+
 ## Technical Support Boundary（技術支援の範囲）
 
 ### EN

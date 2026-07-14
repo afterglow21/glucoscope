@@ -136,6 +136,18 @@ CORS_LOCAL_ORIGINS="http://127.0.0.1:5500,http://localhost:5500"
 
 CORS limits which browser pages can read the API response. It is not a replacement for Turnstile, usage guards, secrets, or other server-side controls.
 
+## Cloudflare Web Analytics
+
+All public HTML pages include the Cloudflare Web Analytics beacon for aggregate page-view and performance monitoring. The archived `backup/` pages are intentionally excluded.
+
+GlucoScope does not add custom analytics events or a custom visitor identifier. Glucose values, GlucoScore, AI letter text, Nightscout URLs, API information, and mobile-tab actions must not be intentionally encoded into analytics event names or additional analytics data. Public-facing details are maintained in:
+
+```text
+pages/trust/privacy-notes.html
+```
+
+The Web Analytics token is a public site identifier embedded in HTML. It is not an API secret. OpenAI keys, Turnstile secrets, and other credentials must still remain outside the repository.
+
 ## Safe wording boundary
 
 GlucoScope should use:

@@ -48,8 +48,9 @@
   <p>同じ条件のお手紙は1時間以内なら再利用し、新しいAI生成を行いません。古いお手紙は生成失敗時などのフォールバックとして最大24時間だけ残し、その後は自動削除します。</p>
 </section>
 <section class="trust-section">
-  <h2>将来の分析</h2>
-  <p>Cloudflare Web Analytics等を導入する場合も、血糖値やAIお手紙本文をイベント名として送らず、ページ閲覧の全体傾向だけを見る方針です。</p>
+  <h2>公開ページのアクセス分析</h2>
+  <p>公開ページにはCloudflare Web Analyticsを導入し、ページ閲覧や表示性能の全体傾向を確認しています。個々の人をGlucoScope内で識別するための独自IDや、独自の行動追跡イベントは追加していません。</p>
+  <p>血糖値、GlucoScore、AIお手紙本文、Nightscout URL、API情報をアクセス分析のイベント名や追加データとして送る実装は行いません。スマホの各タブ操作も、健康情報を含む個別イベントとして追跡しません。</p>
 </section>
     </section>
 
@@ -76,6 +77,11 @@
   <p>Saved AI letters use browser localStorage and a shared Cloudflare Workers KV cache. KV stores only the generated letter and minimal metadata, not the submitted glucose summary.</p>
   <p>The same letter is reused for one hour without a new AI generation. A stale fallback may remain for up to 24 hours and is then deleted automatically.</p>
 </section>
+<section class="trust-section">
+  <h2>Public web analytics</h2>
+  <p>Public pages use Cloudflare Web Analytics to review aggregate page visits and performance. GlucoScope does not add a custom visitor ID or custom behavioral events.</p>
+  <p>Glucose values, GlucoScore, AI letter text, Nightscout URLs, and API information are not intentionally sent as analytics event names or additional analytics data. Mobile tab actions are not tracked as health-data events.</p>
+</section>
     </section>
 
     <section class="trust-related card">
@@ -87,5 +93,8 @@
   </div>
 </section>
   </main>
+<!-- Cloudflare Web Analytics -->
+<script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "5dec761abbfe4147b1fecebc68f8e382"}'></script>
+<!-- End Cloudflare Web Analytics -->
 </body>
 </html>
