@@ -5961,6 +5961,10 @@ canvas{
    - Use the empty grid cell to the right of Journal on the More tab
    ========================================================================== */
 
+.gluco-peek-decor{
+  display:none;
+}
+
 @media (max-width: 720px) and (orientation: portrait) and (hover: none) and (pointer: coarse){
   body.mobile-page-glucose #liveView .hero-current-card{
     position:relative;
@@ -5977,7 +5981,6 @@ canvas{
     position:absolute;
     right:4px;
     bottom:-1px;
-    display:block;
     width:min(40vw,166px);
     pointer-events:none;
     z-index:1;
@@ -6005,6 +6008,11 @@ canvas{
   }
 }
 
+@media (max-width: 480px) and (orientation: portrait) and (hover: none) and (pointer: coarse){
+  body.mobile-page-glucose .gluco-peek-decor{
+    display:block;
+  }
+}
 @media (max-width: 390px) and (orientation: portrait) and (hover: none) and (pointer: coarse){
   body.mobile-page-glucose #liveView .hero-current-card{
     padding-bottom:32px;
