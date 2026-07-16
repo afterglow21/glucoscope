@@ -8,14 +8,29 @@ test("accepts Gluco-style Japanese wording", () => {
   assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja"), []);
 });
 
-test("rejects polite Japanese sentence endings", () => {
-  const issues = getGeneratedLetterQualityIssues("グルコだよ🍀\nTIRは82％です。", "ja");
-  assert.ok(issues.includes("japanese_polite_ending"));
+test("does not discard readable Japanese because one polite ending appears", () => {
+  const text = "グルコだよ🍀\nTIRは82％です。\n落ち着いた時間も見えているよ。";
+  assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja"), []);
 });
 
-test("rejects internal lower camel case tokens", () => {
+test("does not require an exact opening string to display a safe letter", () => {
+  const text = "グルコだよ 🍀\n表示中の流れをやさしく見てみたよ。";
+  assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja"), []);
+});
+
+test("does not discard a safe letter only because it contains a Markdown heading", () => {
+  const text = "グルコだよ🍀\n## 全体の流れ\n落ち着いた時間が見えているよ。";
+  assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja"), []);
+});
+
+test("rejects leaked internal lower camel case tokens", () => {
   const issues = getGeneratedLetterQualityIssues("グルコだよ🍀\natLeast 1つの手がかりがあるよ。", "ja");
   assert.ok(issues.includes("internal_camel_case"));
+});
+
+test("rejects leaked dotted implementation keys", () => {
+  const issues = getGeneratedLetterQualityIssues("グルコだよ🍀\nsummary.metrics.tir を確認したよ。", "ja");
+  assert.ok(issues.includes("internal_dotted_key"));
 });
 
 test("allows public metric names such as GlucoScore", () => {
@@ -23,12 +38,11 @@ test("allows public metric names such as GlucoScore", () => {
   assert.deepEqual(issues, []);
 });
 
-test("rejects Markdown heading artifacts", () => {
-  const issues = getGeneratedLetterQualityIssues("グルコだよ🍀\n## 全体の流れ\n落ち着いた時間が見えているよ。", "ja");
-  assert.ok(issues.includes("markdown_heading"));
+test("rejects empty output", () => {
+  assert.deepEqual(getGeneratedLetterQualityIssues("   ", "ja"), ["empty_output"]);
 });
 
-test("does not apply Japanese voice checks to ordinary English output", () => {
+test("does not apply Japanese style rejection to ordinary English output", () => {
   const text = "Gluco is here 🍀\nThis is a gentle reflection.";
   assert.deepEqual(getGeneratedLetterQualityIssues(text, "en"), []);
 });
