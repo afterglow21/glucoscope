@@ -1,6 +1,7 @@
-const LOWER_CAMEL_CASE_PATTERN = /\b[a-z][a-z0-9]*[A-Z][A-Za-z0-9]*\b/g;
+const INTERNAL_IDENTIFIER_PATTERN = /\b(?:atLeast|celebrationClues|patternHints|latestGlucoseReading|sevenDayAverageScore|previousScore|modeLabel|slotLabel|rangeLabel|safeSummary|analysisMode|currentGlucose)\b/g;
 const INTERNAL_DOTTED_KEY_PATTERN = /\b(?:safeSummary|metrics|summary)\.[A-Za-z_$][A-Za-z0-9_$]*/g;
-const JSON_KEY_PATTERN = /["'](?:celebrationClues|patternHints|latestGlucoseReading|sevenDayAverageScore|previousScore|modeLabel|slotLabel|rangeLabel|atLeast)["']\s*:/g;
+const JSON_KEY_PATTERN = /["'](?:celebrationClues|patternHints|latestGlucoseReading|sevenDayAverageScore|previousScore|modeLabel|slotLabel|rangeLabel|atLeast|safeSummary|analysisMode|currentGlucose)["']\s*:/g;
+const UNNATURAL_JAPANESE_SUGGESTION_PATTERN = /(?:一緒に[^\r\n。！？]{0,24})?(?:しよう|していこう|続けていこう|見ていこう|見てみよう|進めていこう|やってみよう|振り返ってみよう|試してみよう)かも(?:ね|よ)?(?:[。．.!！?？]|\r?\n|$)/gu;
 
 export function getGeneratedLetterQualityIssues(text = "", language = "ja") {
   const normalizedText = String(text ?? "").trim();
@@ -11,15 +12,15 @@ export function getGeneratedLetterQualityIssues(text = "", language = "ja") {
     return [...issues];
   }
 
-  // Style preferences such as Japanese plain-form wording, the exact opening,
-  // and heading format remain prompt-level guidance. They should not cause an
-  // otherwise readable and safe Gluco letter to be discarded.
-  void language;
+  // Voice and layout remain prompt-level guidance. Blocking validation is
+  // limited to known implementation artifacts and a narrowly defined
+  // unnatural suggestion ending. Public units such as mg/dL and ordinary
+  // uncertainty wording such as "続くかも" remain accepted.
 
-  if (LOWER_CAMEL_CASE_PATTERN.test(normalizedText)) {
-    issues.add("internal_camel_case");
+  if (INTERNAL_IDENTIFIER_PATTERN.test(normalizedText)) {
+    issues.add("internal_identifier");
   }
-  LOWER_CAMEL_CASE_PATTERN.lastIndex = 0;
+  INTERNAL_IDENTIFIER_PATTERN.lastIndex = 0;
 
   if (INTERNAL_DOTTED_KEY_PATTERN.test(normalizedText)) {
     issues.add("internal_dotted_key");
@@ -30,6 +31,11 @@ export function getGeneratedLetterQualityIssues(text = "", language = "ja") {
     issues.add("json_key_artifact");
   }
   JSON_KEY_PATTERN.lastIndex = 0;
+
+  if (language === "ja" && UNNATURAL_JAPANESE_SUGGESTION_PATTERN.test(normalizedText)) {
+    issues.add("unnatural_japanese_suggestion");
+  }
+  UNNATURAL_JAPANESE_SUGGESTION_PATTERN.lastIndex = 0;
 
   return [...issues];
 }

@@ -50,7 +50,7 @@ Initial copy rules:
 These are language and experience rules, not medical grades or treatment targets.
 The prompt must praise the observed flow rather than the person's worth or presumed effort, and it must still mention important lower or higher periods gently.
 
-The shared-cache schema is `gluco-ai-letter-cache-v4`, which prevents incomplete or older cached wording from overriding the current output and voice rules.
+The shared-cache schema is `gluco-ai-letter-cache-v5`, which prevents incomplete or older cached wording from overriding the current output and voice rules, including the improved natural Japanese closing rules.
 
 ## Production CORS policy
 

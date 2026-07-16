@@ -8,6 +8,16 @@ test("accepts Gluco-style Japanese wording", () => {
   assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja"), []);
 });
 
+test("accepts the public glucose unit mg/dL in Japanese output", () => {
+  const text = "グルコだよ🍀\n平均血糖は132mg/dLで、表示中の流れをやさしく見返せるよ。";
+  assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja"), []);
+});
+
+test("accepts the public glucose unit mg/dL in English output", () => {
+  const text = "Gluco is here 🍀\nAverage glucose was 132mg/dL in the selected range.";
+  assert.deepEqual(getGeneratedLetterQualityIssues(text, "en"), []);
+});
+
 test("does not discard readable Japanese because one polite ending appears", () => {
   const text = "グルコだよ🍀\nTIRは82％です。\n落ち着いた時間も見えているよ。";
   assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja"), []);
@@ -23,9 +33,36 @@ test("does not discard a safe letter only because it contains a Markdown heading
   assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja"), []);
 });
 
-test("rejects leaked internal lower camel case tokens", () => {
+test("rejects the observed unnatural suggestion ending", () => {
+  const text = "グルコだよ🍀\n一緒にゆるく続けていこうかも。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("unnatural_japanese_suggestion"));
+});
+
+test("rejects another suggestion plus kamo combination", () => {
+  const text = "グルコだよ🍀\n明日も一緒に見てみようかもね。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("unnatural_japanese_suggestion"));
+});
+
+test("accepts a natural uncertain observation ending in kamo", () => {
+  const text = "グルコだよ🍀\n午後は高めの時間が少し続くかもしれないね。";
+  assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja"), []);
+});
+
+test("accepts a natural invitation without kamo", () => {
+  const text = "グルコだよ🍀\n明日も一緒にやさしく見ていこうね🍀";
+  assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja"), []);
+});
+
+test("rejects leaked internal identifier atLeast", () => {
   const issues = getGeneratedLetterQualityIssues("グルコだよ🍀\natLeast 1つの手がかりがあるよ。", "ja");
-  assert.ok(issues.includes("internal_camel_case"));
+  assert.ok(issues.includes("internal_identifier"));
+});
+
+test("rejects another known internal identifier", () => {
+  const issues = getGeneratedLetterQualityIssues("グルコだよ🍀\npatternHintsを見たよ。", "ja");
+  assert.ok(issues.includes("internal_identifier"));
 });
 
 test("rejects leaked dotted implementation keys", () => {
@@ -38,16 +75,16 @@ test("allows public metric names such as GlucoScore", () => {
   assert.deepEqual(issues, []);
 });
 
+test("allows other public mixed-case health terms", () => {
+  const text = "グルコだよ🍀\neGFRやHbA1cのような公開用語を内部変数とは扱わないよ。";
+  assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja"), []);
+});
+
 test("rejects empty output", () => {
   assert.deepEqual(getGeneratedLetterQualityIssues("   ", "ja"), ["empty_output"]);
 });
 
-test("does not apply Japanese style rejection to ordinary English output", () => {
-  const text = "Gluco is here 🍀\nThis is a gentle reflection.";
-  assert.deepEqual(getGeneratedLetterQualityIssues(text, "en"), []);
-});
-
-test("rejects internal lower camel case tokens in English output too", () => {
+test("rejects internal identifier in English output too", () => {
   const issues = getGeneratedLetterQualityIssues("Gluco is here 🍀\natLeast one clue is visible.", "en");
-  assert.ok(issues.includes("internal_camel_case"));
+  assert.ok(issues.includes("internal_identifier"));
 });
