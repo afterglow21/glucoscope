@@ -30,6 +30,8 @@ GitHub Pages
 - Gentle and detailed modes use separate OpenAI output limits.
 - If OpenAI reports `status: incomplete` because `max_output_tokens` was reached, the Worker retries once with a larger mode-specific limit.
 - Partial output is never returned or written to browser/KV cache.
+- Japanese output is checked for Gluco-style plain wording, and all output is checked for leaked variable names, JSON keys, or camelCase implementation terms.
+- If a complete first response fails those wording checks, the Worker retries once with a clean rewrite instruction. Text that still fails is not returned or cached.
 - Token and estimated-cost totals include both attempts when an automatic retry is needed.
 
 ## Positive recognition and Unicorn wording
@@ -48,7 +50,7 @@ Initial copy rules:
 These are language and experience rules, not medical grades or treatment targets.
 The prompt must praise the observed flow rather than the person's worth or presumed effort, and it must still mention important lower or higher periods gently.
 
-The shared-cache schema is `gluco-ai-letter-cache-v3`, which also prevents incomplete or older cached wording from overriding the current output rules.
+The shared-cache schema is `gluco-ai-letter-cache-v4`, which prevents incomplete or older cached wording from overriding the current output and voice rules.
 
 ## Production CORS policy
 
@@ -129,6 +131,8 @@ Workers KV is eventually consistent across Cloudflare locations. A newly written
 ```bash
 cd workers/gluco-letter-worker
 npm install
+npm run check
+npm run test:quality
 npm run dev
 ```
 

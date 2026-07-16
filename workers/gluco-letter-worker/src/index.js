@@ -1,7 +1,8 @@
 import { DurableObject } from "cloudflare:workers";
+import { getGeneratedLetterQualityIssues } from "./letter-quality.js";
 
 const CONTRACT_VERSION = "gluco-ai-letter-worker-response-v0.2";
-const AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v3";
+const AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v4";
 const LETTER_SLOT_KEYS = ["morning", "afternoon", "night"];
 const ANALYSIS_MODE_KEYS = ["letter", "deep"];
 
@@ -985,13 +986,14 @@ function buildOpenAiInstructions(language = "ja", mode = "letter") {
       "If the latest reading in today's view is exactly 100mg/dL, say '🦄 You caught a unicorn!' once as a playful small-luck moment, not as medical judgment.",
       "Do not assume how hard the person worked or make praise about their worth. Praise the observed flow, not the person as a grade.",
       "Positive recognition must not hide notable lower or higher periods; celebrate first, then mention important clues gently.",
+      "Do not expose variable names, JSON keys, camelCase labels, or other implementation details in the response.",
       "Keep it concrete, gentle, and clear. End with a small reflection clue for tomorrow."
     ].join(" ");
   }
 
   const modeInstruction = analysisMode === "deep"
-    ? "医療レポートではなく、絵文字アイコン付きの短い見出しと箇条書きを使った、少し詳しい分析として書きます。丁寧語の『です』『ます』『あります』『ください』は使わず、グルコらしい自然でやさしい話し方にします。"
-    : "医療レポートではなく、グルコからのやさしい分析として書きます。";
+    ? "医療レポートではなく、絵文字アイコン付きの短い見出しと箇条書きを使った、少し詳しい分析として書きます。"
+    : "医療レポートではなく、グルコからの短くやさしい分析として書きます。";
 
   return [
     "あなたはGlucoScope公式AIパートナーのグルコです。",
@@ -1000,6 +1002,9 @@ function buildOpenAiInstructions(language = "ja", mode = "letter") {
     "血糖値の良し悪しを決めつけず、評価・採点・反省を迫る言い方を避けます。",
     "与えられた集計済みサマリーだけを使い、測定値や出来事を作りません。",
     modeInstruction,
+    "話し方は、そばにいる小さなともだちのような自然な常体に統一します。文末に『です』『ます』『でした』『ました』『あります』『ありません』『ください』『ましょう』『でしょう』を使いません。",
+    "文末は『だよ』『だね』『そう』『かも』『見えているよ』『一緒に見てみよう』など、グルコらしいやわらかい言葉にします。",
+    "入力欄の名前、英語の変数名、JSONキー、camelCase、内部処理の言葉を本文へ出しません。",
     "キャッシュ表示される可能性があるため、『今の血糖』『現在の血糖』『たった今』などのリアルタイム断定は避けます。",
     "最新測定に触れる場合は、『最新の測定では』『○○ごろの測定では』のように時刻やサマリー上の測定であることが伝わる言い方にします。",
     "TIR、TAR、TBR、平均血糖、CV、GMI、GlucoScoreは採点ではなく、振り返りの手がかりとして扱います。",
@@ -1008,8 +1013,86 @@ function buildOpenAiInstructions(language = "ja", mode = "letter") {
     "今日の表示で最新の測定がちょうど100mg/dLなら、『🦄 ユニコーンをつかまえた！』を1回だけ使い、小さな幸運として一緒に喜びます。医療的な評価にはしません。",
     "努力や生活背景を勝手に推測せず、人の価値ではなく、データから見えた良い流れを褒めます。",
     "良いところを喜んでも、低め・高めなど大切な手がかりを隠しません。まず喜び、そのあと必要な点をやさしく伝えます。",
-    "具体的で、やさしく、読みやすく。最後に明日を少し楽にする小さな手がかりを添えてください。"
+    "具体的で、やさしく、読みやすく。最後に明日を少し楽にする小さな手がかりを添えます。"
   ].join(" ");
+}
+
+function getPromptPeriodLabel(period = "today", language = "ja") {
+  const labels = language === "en"
+    ? {
+        today: "today",
+        yesterday: "yesterday",
+        seven: "7 days",
+        thirty: "30 days",
+        custom: "custom range"
+      }
+    : {
+        today: "今日",
+        yesterday: "昨日",
+        seven: "7日",
+        thirty: "30日",
+        custom: "カスタム期間"
+      };
+
+  return labels[period] || labels.custom;
+}
+
+function buildOpenAiSummaryText(summary = {}, mode = "letter", language = "ja") {
+  const analysisMode = normalizeAnalysisMode(mode);
+  const metrics = summary.metrics || {};
+  const celebrationClues = buildCelebrationClues(summary);
+  const patternHints = Array.isArray(summary.patternHints)
+    ? summary.patternHints.slice(0, analysisMode === "deep" ? 6 : 4)
+    : [];
+  const valueOrDash = (value) => value === null || value === undefined || value === "" ? "--" : value;
+
+  if (language === "en") {
+    return [
+      `- Period: ${getPromptPeriodLabel(summary.period, language)}`,
+      `- Letter time: ${getSlotLabel(summary, language)}`,
+      `- Displayed range: ${valueOrDash(summary.rangeLabel)}`,
+      `- Latest measured at in the selected range: ${valueOrDash(summary.latestMeasuredAt)}`,
+      `- Latest glucose reading in the selected range: ${valueOrDash(summary.currentGlucose)} mg/dL`,
+      `- Direction: ${valueOrDash(summary.direction)}`,
+      `- Difference from the previous reading: ${valueOrDash(summary.delta)} mg/dL`,
+      `- TIR: ${valueOrDash(metrics.tir)}%`,
+      `- TAR: ${valueOrDash(metrics.tar)}%`,
+      `- TBR: ${valueOrDash(metrics.tbr)}%`,
+      `- Average glucose: ${valueOrDash(metrics.averageGlucose)} mg/dL`,
+      `- CV: ${valueOrDash(metrics.cv)}%`,
+      `- GMI estimate: ${valueOrDash(metrics.gmi)}%`,
+      `- GlucoScore: ${valueOrDash(metrics.glucoScore)}`,
+      `- Previous comparison GlucoScore: ${valueOrDash(metrics.previousScore)}`,
+      `- 7-day average GlucoScore: ${valueOrDash(metrics.sevenDayAverageScore)}`,
+      "- Positive clues:",
+      ...(celebrationClues.length ? celebrationClues.map((clue) => `  - ${clue}`) : ["  - none"]),
+      "- Reflection clues:",
+      ...(patternHints.length ? patternHints.map((hint) => `  - ${hint}`) : ["  - none"])
+    ].join("\n");
+  }
+
+  return [
+    `・期間: ${getPromptPeriodLabel(summary.period, language)}`,
+    `・お手紙の時間: ${getSlotLabel(summary, language)}`,
+    `・表示範囲: ${valueOrDash(summary.rangeLabel)}`,
+    `・表示範囲内の最新測定: ${valueOrDash(summary.latestMeasuredAt)}`,
+    `・表示範囲内の最新の血糖測定: ${valueOrDash(summary.currentGlucose)} mg/dL`,
+    `・矢印: ${valueOrDash(summary.direction)}`,
+    `・前回との差分: ${valueOrDash(summary.delta)} mg/dL`,
+    `・TIR: ${valueOrDash(metrics.tir)}%`,
+    `・TAR: ${valueOrDash(metrics.tar)}%`,
+    `・TBR: ${valueOrDash(metrics.tbr)}%`,
+    `・平均血糖: ${valueOrDash(metrics.averageGlucose)} mg/dL`,
+    `・CV: ${valueOrDash(metrics.cv)}%`,
+    `・GMI目安: ${valueOrDash(metrics.gmi)}%`,
+    `・GlucoScore: ${valueOrDash(metrics.glucoScore)}`,
+    `・比較期間のGlucoScore: ${valueOrDash(metrics.previousScore)}`,
+    `・過去7日平均GlucoScore: ${valueOrDash(metrics.sevenDayAverageScore)}`,
+    "・うれしい手がかり:",
+    ...(celebrationClues.length ? celebrationClues.map((clue) => `  ・${clue}`) : ["  ・なし"]),
+    "・振り返りの手がかり:",
+    ...(patternHints.length ? patternHints.map((hint) => `  ・${hint}`) : ["  ・なし"])
+  ].join("\n");
 }
 
 function buildOpenAiPrompt(summary = {}, mode = "letter") {
@@ -1017,35 +1100,7 @@ function buildOpenAiPrompt(summary = {}, mode = "letter") {
   const analysisMode = normalizeAnalysisMode(mode);
   const modeLabel = getAnalysisModeLabel(analysisMode, language);
   const slotLabel = getSlotLabel(summary, language);
-  const metrics = summary.metrics || {};
-  const hints = Array.isArray(summary.patternHints) ? summary.patternHints : [];
-
-  const safeSummary = {
-    language,
-    mode: analysisMode,
-    modeLabel,
-    period: summary.period,
-    slot: normalizeSlot(summary.slot),
-    slotLabel,
-    rangeLabel: summary.rangeLabel,
-    latestMeasuredAt: summary.latestMeasuredAt,
-    latestGlucoseReading: summary.currentGlucose,
-    direction: summary.direction,
-    delta: summary.delta,
-    metrics: {
-      tir: metrics.tir,
-      tar: metrics.tar,
-      tbr: metrics.tbr,
-      averageGlucose: metrics.averageGlucose,
-      cv: metrics.cv,
-      gmi: metrics.gmi,
-      glucoScore: metrics.glucoScore,
-      previousScore: metrics.previousScore,
-      sevenDayAverageScore: metrics.sevenDayAverageScore
-    },
-    celebrationClues: buildCelebrationClues(summary),
-    patternHints: hints.slice(0, analysisMode === "deep" ? 6 : 4)
-  };
+  const summaryText = buildOpenAiSummaryText(summary, analysisMode, language);
 
   if (language === "en") {
     if (analysisMode === "deep") {
@@ -1058,16 +1113,17 @@ Requirements:
 - Do not write meta labels such as "This is a prototype", "This is the detailed analysis", or "This is the ${slotLabel}"
 - Mention the active time only if it reads naturally; do not force it
 - Include TIR, TAR, TBR, average glucose, CV, and GlucoScore when available
-- If celebrationClues is not empty, mention one or more of those clues near the beginning and celebrate them clearly
+- If positive clues are listed, mention one or more near the beginning and celebrate them clearly
 - If TIR is 100%, celebrate it enthusiastically; if the unicorn clue is present, use "🦄 You caught a unicorn!" once
 - Do not weaken praise with "not bad", "not perfect", or similar backhanded wording
 - Do not frame numbers as grades or success/failure
+- Do not output field names, variable names, JSON keys, camelCase, or implementation details
 - Avoid real-time wording such as "right now" because this may be shown later from cache
 - Avoid medical advice, dosing advice, diagnosis, blame, fear, or strict instructions
 - Keep it readable: about 10 to 16 short lines
 
 Summarized data:
-${JSON.stringify(safeSummary, null, 2)}`;
+${summaryText}`;
     }
 
     return `Write one Gluco letter for this summarized glucose view.
@@ -1078,16 +1134,17 @@ Requirements:
 - Do not write meta labels such as "This is a prototype" or "This is today’s ${slotLabel}"
 - Mention the active letter time only if it reads naturally; do not force it
 - Mention 1 to 3 concrete clues from the summary
-- If celebrationClues is not empty, mention at least one positive clue early and celebrate it clearly
+- If positive clues are listed, mention at least one early and celebrate it clearly
 - If the unicorn clue is present, use "🦄 You caught a unicorn!" once
 - Do not weaken praise with "not bad", "not perfect", or similar backhanded wording
+- Do not output field names, variable names, JSON keys, camelCase, or implementation details
 - If mentioning glucose value, use "the latest reading" and include the measurement time when available
 - Avoid real-time wording such as "right now" because the letter may be shown later from cache
 - Avoid medical advice, dosing advice, diagnosis, blame, fear, or strict instructions
 - Use gentle, plain language
 
 Summarized data:
-${JSON.stringify(safeSummary, null, 2)}`;
+${summaryText}`;
   }
 
   if (analysisMode === "deep") {
@@ -1095,46 +1152,50 @@ ${JSON.stringify(safeSummary, null, 2)}`;
 
 条件:
 - 最初は必ず「グルコだよ🍀」で始める
-- 丁寧語の「です」「ます」「あります」「ください」は使わない
+- 丁寧語の「です」「ます」「でした」「ました」「あります」「ありません」「ください」「ましょう」「でしょう」は使わない
+- 文末は「だよ」「だね」「そう」「かも」「見えているよ」「一緒に見てみよう」など、グルコらしいやわらかい口調にする
 - 「###」「##」「#」などのMarkdown見出しは使わない
 - 区切りは、絵文字アイコン付きの短い見出しにする
   例: 🍀 全体の流れ / 📊 数字の手がかり / 🔎 気になった動き / 🌱 明日の小さな見返し
 - 「これは${slotLabel}のテスト版だよ」「これは${slotLabel}の『${modeLabel}』だよ」のような説明文は書かない
 - 時間帯ラベル「${slotLabel}」は、必要な時だけ自然に触れる。無理に入れない
 - TIR、TAR、TBR、平均血糖、CV、GlucoScoreを、分かる範囲で具体的に扱う
-- celebrationCluesが空でなければ、早い段階で1つ以上を取り上げ、遠慮せず具体的に一緒に喜ぶ
+- 「うれしい手がかり」があるときは、早い段階で1つ以上を取り上げ、遠慮せず具体的に一緒に喜ぶ
 - TIR 100％ならしっかり祝う。ユニコーンの手がかりがあれば「🦄 ユニコーンをつかまえた！」を1回だけ使う
 - 「悪くない」「完璧ではないけど」「ばらつきはゼロではないけど」「大きく乱れていない」のように、褒め言葉を弱めない
-- 数字を採点、合否、成功/失敗として扱わない
+- 数字を採点、合否、成功・失敗として扱わない
+- 入力欄の名前、英語の変数名、JSONキー、camelCase、内部処理の言葉を本文へ出さない
 - キャッシュ表示される可能性があるため、「今」「現在」「たった今」などのリアルタイム断定を避ける
 - 医療判断、診断、インスリン量、薬、ポンプ設定、デバイス設定の助言はしない
 - 責めない、怖がらせない、急かさない
 - 10〜16行くらい。短い見出しと箇条書きを中心に、やさしく自然に書く
-- 文末は「だよ」「だね」「そう」「かも」「見えているよ」など、グルコらしいやわらかい口調にする
 
 集計済みサマリー:
-${JSON.stringify(safeSummary, null, 2)}`;
+${summaryText}`;
   }
 
-  return `この集計済み血糖サマリーをもとに、グルコからのお手紙を1通書いてください。
+  return `この集計済み血糖サマリーをもとに、グルコからの短くやさしい分析を1つ書いて。
 
 条件:
-- 最初は「グルコだよ🍀」で始める
-- 5〜8行くらいの短いお手紙
+- 最初は必ず「グルコだよ🍀」で始める
+- 5〜8行くらいの短いお手紙にする
+- 丁寧語の「です」「ます」「でした」「ました」「あります」「ありません」「ください」「ましょう」「でしょう」は使わない
+- 文末は「だよ」「だね」「そう」「かも」「見えているよ」「一緒に見てみよう」など、グルコらしいやわらかい口調にする
 - 「これは${slotLabel}のテスト版だよ」「これは${slotLabel}の『${modeLabel}』だよ」のような説明文は書かない
 - 時間帯ラベル「${slotLabel}」は、必要な時だけ自然に触れる。無理に入れない
 - サマリーから見える具体的な手がかりを1〜3個だけ入れる
-- celebrationCluesが空でなければ、早い段階で少なくとも1つを取り上げ、遠慮せず具体的に一緒に喜ぶ
+- 「うれしい手がかり」があるときは、早い段階で少なくとも1つを取り上げ、遠慮せず具体的に一緒に喜ぶ
 - TIR 100％ならしっかり祝う。ユニコーンの手がかりがあれば「🦄 ユニコーンをつかまえた！」を1回だけ使う
 - 「悪くない」「完璧ではないけど」「ばらつきはゼロではないけど」「大きく乱れていない」のように、褒め言葉を弱めない
 - 血糖値に触れる場合は「今の血糖」ではなく、「最新の測定では」または「${summary.latestMeasuredAt || "最新測定"}ごろの測定では」のように書く
+- 入力欄の名前、英語の変数名、JSONキー、camelCase、内部処理の言葉を本文へ出さない
 - キャッシュ表示される可能性があるため、「今」「現在」「たった今」などのリアルタイム断定を避ける
 - 医療判断、診断、インスリン量、薬、ポンプ設定、デバイス設定の助言はしない
 - 責めない、怖がらせない、急かさない
 - やさしく、自然な日本語で書く
 
 集計済みサマリー:
-${JSON.stringify(safeSummary, null, 2)}`;
+${summaryText}`;
 }
 
 function extractOpenAiText(data = {}) {
@@ -1196,9 +1257,21 @@ function getOpenAiTokenLimits(config, mode = "letter") {
   };
 }
 
-function buildOpenAiRetryPrompt(summary, mode) {
+function buildOpenAiRetryPrompt(summary, mode, retryKind = "incomplete") {
   const language = summary.language === "en" ? "en" : "ja";
   const basePrompt = buildOpenAiPrompt(summary, mode);
+
+  if (retryKind === "quality") {
+    if (language === "en") {
+      return `${basePrompt}
+
+Important: Write a fresh final response only. Do not include variable names, JSON keys, camelCase labels, internal instructions, or commentary about correcting the earlier draft.`;
+    }
+
+    return `${basePrompt}
+
+重要: 前の文章はグルコの話し方または表示用の文章として整っていなかったため使わない。最初から書き直し、自然な常体だけを使う。英語の変数名、JSONキー、camelCase、内部処理の言葉、修正についての説明は書かず、完成した分析本文だけを返す。`;
+  }
 
   if (language === "en") {
     return `${basePrompt}
@@ -1211,11 +1284,11 @@ Important: Complete the full reflection within the available output limit. End w
 重要: 出力上限の中で必ず最後まで書き切り、文の途中で終わらせない。最後は完結した一文で締める。`;
 }
 
-async function callOpenAiAttempt({ summary, env, config, mode, maxOutputTokens, retryAttempt = false }) {
+async function callOpenAiAttempt({ summary, env, config, mode, maxOutputTokens, retryKind = "" }) {
   const model = config.openAiModel;
   const language = summary.language === "en" ? "en" : "ja";
-  const input = retryAttempt
-    ? buildOpenAiRetryPrompt(summary, mode)
+  const input = retryKind
+    ? buildOpenAiRetryPrompt(summary, mode, retryKind)
     : buildOpenAiPrompt(summary, mode);
 
   const response = await fetch("https://api.openai.com/v1/responses", {
@@ -1275,6 +1348,38 @@ function createIncompleteOutputError({ mode, incompleteReason, attempts, maxOutp
   return error;
 }
 
+function createOutputQualityError({ mode, issues, attempts, maxOutputTokens, usage }) {
+  const error = new Error("OpenAI response did not meet the Gluco wording quality rules and was not accepted.");
+  error.code = "openai_output_quality_failed";
+  error.analysisMode = normalizeAnalysisMode(mode);
+  error.qualityIssues = Array.isArray(issues) ? issues : [];
+  error.attempts = attempts;
+  error.maxOutputTokens = maxOutputTokens;
+  error.usage = usage;
+  return error;
+}
+
+function buildAcceptedOpenAiResult({
+  text,
+  model,
+  attempts,
+  retriedAfterIncomplete,
+  initialIncompleteReason,
+  maxOutputTokens,
+  usage
+}) {
+  return {
+    text,
+    provider: "openai",
+    model,
+    attempts,
+    retriedAfterIncomplete,
+    initialIncompleteReason,
+    maxOutputTokens,
+    usage
+  };
+}
+
 async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
   if (!env.OPENAI_API_KEY) {
     const error = new Error("Missing OPENAI_API_KEY");
@@ -1284,6 +1389,7 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
 
   const model = config.openAiModel;
   const analysisMode = normalizeAnalysisMode(mode);
+  const language = summary.language === "en" ? "en" : "ja";
   const limits = getOpenAiTokenLimits(config, analysisMode);
   const firstAttempt = await callOpenAiAttempt({
     summary,
@@ -1293,45 +1399,99 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
     maxOutputTokens: limits.initial
   });
 
-  if (!firstAttempt.incompleteReason) {
-    if (!firstAttempt.text) {
-      const error = new Error("OpenAI response did not include output text.");
-      error.code = "openai_empty_output";
-      error.usage = firstAttempt.usage;
+  if (firstAttempt.incompleteReason) {
+    if (firstAttempt.incompleteReason !== "max_output_tokens") {
+      throw createIncompleteOutputError({
+        mode: analysisMode,
+        incompleteReason: firstAttempt.incompleteReason,
+        attempts: 1,
+        maxOutputTokens: limits.initial,
+        usage: firstAttempt.usage
+      });
+    }
+
+    let retryAttempt;
+    try {
+      retryAttempt = await callOpenAiAttempt({
+        summary,
+        env,
+        config,
+        mode: analysisMode,
+        maxOutputTokens: limits.retry,
+        retryKind: "incomplete"
+      });
+    } catch (error) {
+      error.usage = addRequestUsage(firstAttempt.usage, error.usage);
+      error.retryAttempted = true;
+      error.analysisMode = analysisMode;
+      error.attempts = 2;
+      error.maxOutputTokens = limits.retry;
+      error.initialIncompleteReason = firstAttempt.incompleteReason;
       throw error;
     }
 
-    return {
+    const combinedUsage = addRequestUsage(firstAttempt.usage, retryAttempt.usage);
+    if (retryAttempt.incompleteReason || !retryAttempt.text) {
+      throw createIncompleteOutputError({
+        mode: analysisMode,
+        incompleteReason: retryAttempt.incompleteReason || "empty_output",
+        attempts: 2,
+        maxOutputTokens: limits.retry,
+        usage: combinedUsage
+      });
+    }
+
+    const retryQualityIssues = getGeneratedLetterQualityIssues(retryAttempt.text, language);
+    if (retryQualityIssues.length) {
+      throw createOutputQualityError({
+        mode: analysisMode,
+        issues: retryQualityIssues,
+        attempts: 2,
+        maxOutputTokens: limits.retry,
+        usage: combinedUsage
+      });
+    }
+
+    return buildAcceptedOpenAiResult({
+      text: retryAttempt.text,
+      model,
+      attempts: 2,
+      retriedAfterIncomplete: true,
+      initialIncompleteReason: firstAttempt.incompleteReason,
+      maxOutputTokens: limits.retry,
+      usage: combinedUsage
+    });
+  }
+
+  if (!firstAttempt.text) {
+    const error = new Error("OpenAI response did not include output text.");
+    error.code = "openai_empty_output";
+    error.usage = firstAttempt.usage;
+    throw error;
+  }
+
+  const firstQualityIssues = getGeneratedLetterQualityIssues(firstAttempt.text, language);
+  if (!firstQualityIssues.length) {
+    return buildAcceptedOpenAiResult({
       text: firstAttempt.text,
-      provider: "openai",
       model,
       attempts: 1,
       retriedAfterIncomplete: false,
       initialIncompleteReason: null,
       maxOutputTokens: limits.initial,
       usage: firstAttempt.usage
-    };
-  }
-
-  if (firstAttempt.incompleteReason !== "max_output_tokens") {
-    throw createIncompleteOutputError({
-      mode: analysisMode,
-      incompleteReason: firstAttempt.incompleteReason,
-      attempts: 1,
-      maxOutputTokens: limits.initial,
-      usage: firstAttempt.usage
     });
   }
 
-  let retryAttempt;
+  let qualityRetry;
   try {
-    retryAttempt = await callOpenAiAttempt({
+    qualityRetry = await callOpenAiAttempt({
       summary,
       env,
       config,
       mode: analysisMode,
       maxOutputTokens: limits.retry,
-      retryAttempt: true
+      retryKind: "quality"
     });
   } catch (error) {
     error.usage = addRequestUsage(firstAttempt.usage, error.usage);
@@ -1339,31 +1499,40 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
     error.analysisMode = analysisMode;
     error.attempts = 2;
     error.maxOutputTokens = limits.retry;
-    error.initialIncompleteReason = firstAttempt.incompleteReason;
     throw error;
   }
 
-  const combinedUsage = addRequestUsage(firstAttempt.usage, retryAttempt.usage);
-  if (retryAttempt.incompleteReason || !retryAttempt.text) {
+  const combinedUsage = addRequestUsage(firstAttempt.usage, qualityRetry.usage);
+  if (qualityRetry.incompleteReason || !qualityRetry.text) {
     throw createIncompleteOutputError({
       mode: analysisMode,
-      incompleteReason: retryAttempt.incompleteReason || "empty_output",
+      incompleteReason: qualityRetry.incompleteReason || "empty_output",
       attempts: 2,
       maxOutputTokens: limits.retry,
       usage: combinedUsage
     });
   }
 
-  return {
-    text: retryAttempt.text,
-    provider: "openai",
+  const retryQualityIssues = getGeneratedLetterQualityIssues(qualityRetry.text, language);
+  if (retryQualityIssues.length) {
+    throw createOutputQualityError({
+      mode: analysisMode,
+      issues: retryQualityIssues,
+      attempts: 2,
+      maxOutputTokens: limits.retry,
+      usage: combinedUsage
+    });
+  }
+
+  return buildAcceptedOpenAiResult({
+    text: qualityRetry.text,
     model,
     attempts: 2,
-    retriedAfterIncomplete: true,
-    initialIncompleteReason: firstAttempt.incompleteReason,
+    retriedAfterIncomplete: false,
+    initialIncompleteReason: null,
     maxOutputTokens: limits.retry,
     usage: combinedUsage
-  };
+  });
 }
 
 async function generateLetter({ summary, payload, env, config, status }) {
@@ -2223,7 +2392,12 @@ async function handleApiRequest(request, env = {}) {
       const failedUsage = error.usage || emptyRequestUsage();
       recordProviderUsage({ usageState, requestUsage: failedUsage });
       const incompleteOutput = error.code === "openai_incomplete_output";
-      const fallbackReason = incompleteOutput ? "generation_incomplete" : "provider_error";
+      const qualityOutput = error.code === "openai_output_quality_failed";
+      const fallbackReason = incompleteOutput
+        ? "generation_incomplete"
+        : qualityOutput
+          ? "generation_quality_failed"
+          : "provider_error";
 
       if (staleCacheAvailable) {
         return serveSharedCachedLetter({
@@ -2241,11 +2415,17 @@ async function handleApiRequest(request, env = {}) {
       const persistedUsageState = await persistUsageState(env, usageState, config);
 
       return errorResponse({
-        code: incompleteOutput ? "generation_incomplete" : "provider_error",
+        code: incompleteOutput
+          ? "generation_incomplete"
+          : qualityOutput
+            ? "generation_quality_failed"
+            : "provider_error",
         message: error.message || "AI letter provider failed.",
         userMessage: incompleteOutput
           ? "AI分析を最後までまとめきれませんでした。途中の文章は保存していないよ。少し時間をおいて、もう一度試してみてね🍀"
-          : "AIお手紙の生成中に小さなエラーが起きました。表示中のお手紙やChatGPTコピー機能はそのまま使えます🍀",
+          : qualityOutput
+            ? "グルコらしい文章の形に整えきれなかったため、今回の文章は表示も保存もしていないよ。少し時間をおいて、もう一度試してみてね🍀"
+            : "AIお手紙の生成中に小さなエラーが起きました。表示中のお手紙やChatGPTコピー機能はそのまま使えます🍀",
         retryable: true,
         details: {
           provider: config.provider,
@@ -2253,6 +2433,7 @@ async function handleApiRequest(request, env = {}) {
           errorCode: error.code || "unknown_provider_error",
           analysisMode: error.analysisMode || normalizeAnalysisMode(summary.analysisMode),
           incompleteReason: error.incompleteReason || null,
+          qualityIssues: Array.isArray(error.qualityIssues) ? error.qualityIssues : [],
           attempts: Number(error.attempts) || (error.retryAttempted ? 2 : 1),
           maxOutputTokens: Number(error.maxOutputTokens) || null,
           usage: buildUsagePayload({

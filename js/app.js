@@ -14,7 +14,7 @@ const LIVE_PERIOD_STORAGE_KEY = "glucoscope.livePeriod.v1";
 const CUSTOM_RANGE_STORAGE_KEY = "glucoscope.customRange.v1";
 const AI_LETTER_WORKER_ENDPOINT_STORAGE_KEY = "glucoscope.aiLetterWorkerEndpoint.v1";
 const AI_LETTER_WORKER_ENABLED_STORAGE_KEY = "glucoscope.aiLetterWorkerEnabled.v1";
-const AI_LETTER_LOCAL_CACHE_STORAGE_KEY = "glucoscope.aiLetterLocalCache.v3";
+const AI_LETTER_LOCAL_CACHE_STORAGE_KEY = "glucoscope.aiLetterLocalCache.v4";
 const AI_LETTER_MODE_STORAGE_KEY = "glucoscope.aiLetterMode.v1";
 const AI_LETTER_LOCAL_CACHE_MAX_ITEMS = 30;
 const AI_LETTER_LOCAL_CACHE_FRESH_MS = 60 * 60 * 1000;
@@ -37,9 +37,12 @@ const LOCAL_AI_LETTER_WORKER_ENDPOINT = "http://127.0.0.1:8787/api/gluco-letter"
 let currentLivePeriod = localStorage.getItem(LIVE_PERIOD_STORAGE_KEY) || "today";
 let currentAiLetterMode = localStorage.getItem(AI_LETTER_MODE_STORAGE_KEY) === "deep" ? "deep" : "letter";
 let latestAiLetterSummary = null;
+let aiLetterSummaryState = "loading";
+let aiLetterSummaryRangeIdentity = "";
 let latestRuleCommentMetrics = null;
 let aiLetterRequestInFlight = false;
 let aiLetterCacheRefreshTimer = null;
+let liveStatsRequestSequence = 0;
 let lastUnicornEvaluatedMeasurementKey = null;
 let activeUnicornGlucoDecision = null;
 
@@ -234,7 +237,9 @@ const translations = {
     aiLetterPanelBrowser: "いつものグルコ",
     aiLetterPanelAi: "AI分析",
     aiLetterPanelChat: "ChatGPT",
-    aiLetterButtonPreparing: "AI分析は準備中",
+    aiLetterButtonPreparing: "血糖データを確認中",
+    aiLetterButtonNoData: "この期間はデータなし",
+    aiLetterButtonUnavailable: "データを読み込めませんでした",
     aiLetterButtonReady: "AI分析を試す",
     aiLetterButtonCached: "保存済みの分析を表示",
     aiLetterButtonRefresh: "もう一度AI分析",
@@ -242,9 +247,11 @@ const translations = {
     aiLetterStatusGeneratingDeep: "しっかり分析を最後まで丁寧にまとめているよ。少しだけ待ってね🍀",
     aiLetterStatusRecoveredAfterRetry: "途中で切れないように整え直して、最後まで表示しました🍀",
     aiLetterStatusIncomplete: "AI分析を最後までまとめきれませんでした。途中の文章は保存していないよ。少し時間をおいて、もう一度試してみてね🍀",
-    aiLetterStatusPreparing: "AIお手紙の準備を確認しています。",
+    aiLetterStatusPreparing: "選んだ期間の血糖データを確認しているよ。",
     aiLetterStatusLocalOnly: "",
-    aiLetterStatusWaitingForSummary: "血糖サマリーを読み込むと、AIお手紙を試せます。",
+    aiLetterStatusWaitingForSummary: "選んだ期間の血糖サマリーを読み込んでいるよ。読み込み後にAI分析を使えるよ🍀",
+    aiLetterStatusNoData: "選んだ期間には、AI分析に使える血糖データがまだ見つからないよ。期間を変えると表示できることがあるよ🍀",
+    aiLetterStatusLoadError: "血糖データを読み込めなかったよ。少し時間をおいて、もう一度開いてみてね🍀",
     aiLetterStatusReady: "",
     aiLetterStatusSuccess: "グルコのお手紙を表示しました🍀",
     aiLetterStatusCached: "前回のグルコAIお手紙を表示しました🍀",
@@ -430,7 +437,9 @@ const translations = {
     aiLetterPanelBrowser: "Gluco story",
     aiLetterPanelAi: "AI analysis",
     aiLetterPanelChat: "ChatGPT",
-    aiLetterButtonPreparing: "AI analysis is preparing",
+    aiLetterButtonPreparing: "Checking glucose data",
+    aiLetterButtonNoData: "No data for this range",
+    aiLetterButtonUnavailable: "Could not load data",
     aiLetterButtonReady: "Try AI analysis",
     aiLetterButtonCached: "Show saved analysis",
     aiLetterButtonRefresh: "Run AI analysis again",
@@ -438,9 +447,11 @@ const translations = {
     aiLetterStatusGeneratingDeep: "Gluco is carefully completing the detailed analysis. This may take a little longer 🍀",
     aiLetterStatusRecoveredAfterRetry: "The reflection was regenerated so it could finish cleanly 🍀",
     aiLetterStatusIncomplete: "The AI analysis could not be completed. The partial text was not saved. Please try again later 🍀",
-    aiLetterStatusPreparing: "Checking whether AI letters are ready.",
+    aiLetterStatusPreparing: "Checking the glucose data for the selected range.",
     aiLetterStatusLocalOnly: "AI letters are not available in this view yet.",
-    aiLetterStatusWaitingForSummary: "AI letters will be available after the glucose summary loads.",
+    aiLetterStatusWaitingForSummary: "Loading the glucose summary for the selected range. AI analysis will be available when it is ready 🍀",
+    aiLetterStatusNoData: "No glucose data for AI analysis was found in the selected range yet. Another range may have data 🍀",
+    aiLetterStatusLoadError: "The glucose data could not be loaded. Please try again a little later 🍀",
     aiLetterStatusReady: "Gluco can write using the selected reflection mode.",
     aiLetterStatusSuccess: "Gluco reflection displayed 🍀",
     aiLetterStatusCached: "Previous Gluco AI reflection displayed 🍀",
@@ -2907,11 +2918,25 @@ function updateAiSlotDisplay() {
   slotBadge.textContent = `${getAiLetterSlot().label} / ${getAiLetterModeLabel()}`;
 }
 
-function setAiLetterSummary(summary) {
+function setAiLetterSummary(summary, state = summary ? "ready" : "loading") {
+  const previousIdentity = latestAiLetterSummary
+    ? getAiLetterLocalCacheKey(latestAiLetterSummary, currentAiLetterMode)
+    : "";
+  const nextIdentity = summary
+    ? getAiLetterLocalCacheKey(summary, currentAiLetterMode)
+    : "";
+  const summaryChanged = previousIdentity !== nextIdentity;
+
   latestAiLetterSummary = summary;
+  aiLetterSummaryState = state;
+
+  if (summaryChanged) {
+    showAiLetterResult("");
+  }
+
   updateAiLetterControls();
 
-  if (!hasVisibleAiLetterResult()) {
+  if (summary && !hasVisibleAiLetterResult()) {
     showCachedAiLetter(summary);
   }
 }
@@ -2954,8 +2979,14 @@ function updateAiLetterControls(statusKey = null, statusType = "", options = {})
       aiButton.textContent = t("aiLetterButtonCached");
     } else if (workerEnabled && hasSummary && hasCachedCurrentMode) {
       aiButton.textContent = t("aiLetterButtonRefresh");
+    } else if (workerEnabled && hasSummary) {
+      aiButton.textContent = t("aiLetterButtonReady");
+    } else if (aiLetterSummaryState === "no-data") {
+      aiButton.textContent = t("aiLetterButtonNoData");
+    } else if (aiLetterSummaryState === "error") {
+      aiButton.textContent = t("aiLetterButtonUnavailable");
     } else {
-      aiButton.textContent = workerEnabled && hasSummary ? t("aiLetterButtonReady") : t("aiLetterButtonPreparing");
+      aiButton.textContent = t("aiLetterButtonPreparing");
     }
 
     scheduleAiLetterCacheButtonRefresh(latestAiLetterSummary, currentAiLetterMode);
@@ -2972,6 +3003,10 @@ function updateAiLetterControls(statusKey = null, statusType = "", options = {})
 
     if (!workerEnabled) {
       setElementTextOrHide(aiStatus, t("aiLetterStatusLocalOnly"));
+    } else if (!hasSummary && aiLetterSummaryState === "no-data") {
+      setElementTextOrHide(aiStatus, t("aiLetterStatusNoData"));
+    } else if (!hasSummary && aiLetterSummaryState === "error") {
+      setElementTextOrHide(aiStatus, t("aiLetterStatusLoadError"));
     } else if (!hasSummary) {
       setElementTextOrHide(aiStatus, t("aiLetterStatusWaitingForSummary"));
     } else {
@@ -4412,18 +4447,36 @@ function updateDisplayedMetrics({ tir, tar, tbr, avg, cv, gmi }) {
 }
 
 async function loadDailyStats() {
+  const requestSequence = ++liveStatsRequestSequence;
+  const requestedPeriod = currentLivePeriod;
+  const now = Date.now();
+  const periodRange = getLivePeriodRange(requestedPeriod, now);
+  const { rangeStart, rangeEnd, durationMs } = periodRange;
+  const requestedCacheRangeKey = getAiLetterCacheRangeKey(requestedPeriod, rangeStart, rangeEnd);
+  const requestedSummaryIdentity = `${currentLanguage}:${requestedPeriod}:${requestedCacheRangeKey}`;
+  const isStaleRequest = () => (
+    requestSequence !== liveStatsRequestSequence
+    || requestedPeriod !== currentLivePeriod
+  );
+
+  if (aiLetterSummaryRangeIdentity !== requestedSummaryIdentity) {
+    aiLetterSummaryRangeIdentity = requestedSummaryIdentity;
+    showAiLetterResult("");
+    setAiLetterSummary(null, "loading");
+  }
+
   try {
     const latest = await loadLatestGlucose();
     const deviceStatus = await loadDeviceStatus().catch(() => []);
+
+    if (isStaleRequest()) return;
+
     updateHealthBar(latest, deviceStatus, latest ? "connected" : "waiting");
 
-    const now = Date.now();
-    const periodRange = getLivePeriodRange(currentLivePeriod, now);
-    const { rangeStart, rangeEnd, durationMs } = periodRange;
     const { previousRangeStart, previousRangeEnd } = getPreviousLivePeriodRange(periodRange);
     const sevenDaysAgo = now - (7 * 24 * 60 * 60 * 1000);
-    const showTodayComparison = currentLivePeriod === "today";
-    const showTreatmentsForRange = shouldShowTreatmentEvents(currentLivePeriod, durationMs);
+    const showTodayComparison = requestedPeriod === "today";
+    const showTreatmentsForRange = shouldShowTreatmentEvents(requestedPeriod, durationMs);
 
     updatePeriodButtons();
     updateChartRangeLabel(rangeStart, rangeEnd);
@@ -4434,6 +4487,8 @@ async function loadDailyStats() {
       fetchEntriesInRange(sevenDaysAgo, now, 3000),
       showTreatmentsForRange ? loadTreatmentEvents(rangeStart, rangeEnd) : Promise.resolve([])
     ]);
+
+    if (isStaleRequest()) return;
 
     const entries = Array.isArray(entriesRaw) ? entriesRaw : [];
     const previousEntries = Array.isArray(previousEntriesRaw) ? previousEntriesRaw : [];
@@ -4447,7 +4502,7 @@ async function loadDailyStats() {
       treatmentEvents: treatments,
       rangeStart,
       rangeEnd,
-      periodKey: currentLivePeriod
+      periodKey: requestedPeriod
     });
 
     const values = getSgvValuesInRange(entries, rangeStart, rangeEnd);
@@ -4455,8 +4510,8 @@ async function loadDailyStats() {
     if (values.length === 0) {
       latestRuleCommentMetrics = null;
       document.getElementById("comment").textContent = t("noDailyData");
-      setAiLetterSummary(null);
-      updateScoreMetaDisplay(null, null, null, currentLivePeriod);
+      setAiLetterSummary(null, "no-data");
+      updateScoreMetaDisplay(null, null, null, requestedPeriod);
       return;
     }
 
@@ -4487,9 +4542,9 @@ async function loadDailyStats() {
 
     const previousScore = calculateGlucoScoreForEntries(previousEntries, previousRangeStart, previousRangeEnd);
     const sevenDayAverageScore = calculateSevenDayAverageGlucoScore(sevenDayEntries, now);
-    updateScoreMetaDisplay(glucoScore.score, previousScore, sevenDayAverageScore, currentLivePeriod);
+    updateScoreMetaDisplay(glucoScore.score, previousScore, sevenDayAverageScore, requestedPeriod);
 
-    if (currentLivePeriod === "today") {
+    if (requestedPeriod === "today") {
       setDailyLetterGlucoImage({
         score: glucoScore.score,
         tir,
@@ -4506,11 +4561,15 @@ async function loadDailyStats() {
 
     updateDisplayedMetrics({ tir, tar, tbr, avg, cv, gmi });
 
+    const latestInRange = [...entries]
+      .filter((entry) => Number.isFinite(getEntryTime(entry)))
+      .sort((a, b) => getEntryTime(b) - getEntryTime(a))[0] || null;
+
     setAiLetterSummary(buildAiLetterSummary({
-      periodKey: currentLivePeriod,
+      periodKey: requestedPeriod,
       rangeStart,
       rangeEnd,
-      latest,
+      latest: latestInRange,
       entries,
       tir,
       tar,
@@ -4533,12 +4592,14 @@ async function loadDailyStats() {
       glucoScore: glucoScore.score,
       previousScore,
       sevenDayAverageScore,
-      currentGlucose: latest?.sgv ?? null,
-      periodKey: currentLivePeriod
+      currentGlucose: latestInRange?.sgv ?? null,
+      periodKey: requestedPeriod
     };
     updateRuleCommentDisplay();
 
   } catch (error) {
+    if (isStaleRequest()) return;
+
     console.error(error);
     setLiveStatus("error", "OFFLINE", t("statusError"));
     updateHealthBar(null, null, "error");
@@ -4546,8 +4607,8 @@ async function loadDailyStats() {
     document.getElementById("status").textContent = t("statusError");
     updateCurrentGlucoseColor(null);
     updateGlucoseDelta(null, null);
-    updateScoreMetaDisplay(null, null, null, currentLivePeriod);
-    setAiLetterSummary(null);
+    updateScoreMetaDisplay(null, null, null, requestedPeriod);
+    setAiLetterSummary(null, "error");
     latestRuleCommentMetrics = null;
     document.getElementById("comment").textContent = t("commentLoadingError");
   }
