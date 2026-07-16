@@ -31,7 +31,8 @@ const GLUCO_CELEBRATION_THRESHOLDS = Object.freeze({
 });
 const TURNSTILE_SITE_KEY = "0x4AAAAAADyftbRcWQW23mEa";
 const TURNSTILE_SCRIPT_ID = "glucoscope-turnstile-script";
-const DEFAULT_AI_LETTER_WORKER_ENDPOINT = "http://127.0.0.1:8787/api/gluco-letter";
+const PRODUCTION_AI_LETTER_WORKER_ENDPOINT = "https://gluco-letter-worker.afterglow21.workers.dev/api/gluco-letter";
+const LOCAL_AI_LETTER_WORKER_ENDPOINT = "http://127.0.0.1:8787/api/gluco-letter";
 
 let currentLivePeriod = localStorage.getItem(LIVE_PERIOD_STORAGE_KEY) || "today";
 let currentAiLetterMode = localStorage.getItem(AI_LETTER_MODE_STORAGE_KEY) === "deep" ? "deep" : "letter";
@@ -2195,17 +2196,33 @@ function formatDateTime(date) {
 }
 
 
+function isLocalAiLetterDevelopmentHost() {
+  return window.location.hostname === "localhost"
+    || window.location.hostname === "127.0.0.1";
+}
+
 function getAiLetterWorkerEndpoint() {
   const params = new URLSearchParams(window.location.search);
-  const queryEndpoint = params.get("aiWorkerEndpoint");
-  if (queryEndpoint) return queryEndpoint;
 
-  return localStorage.getItem(AI_LETTER_WORKER_ENDPOINT_STORAGE_KEY) || DEFAULT_AI_LETTER_WORKER_ENDPOINT;
+  if (isLocalAiLetterDevelopmentHost()) {
+    const queryEndpoint = params.get("aiWorkerEndpoint");
+    if (queryEndpoint) return queryEndpoint;
+
+    return localStorage.getItem(AI_LETTER_WORKER_ENDPOINT_STORAGE_KEY)
+      || LOCAL_AI_LETTER_WORKER_ENDPOINT;
+  }
+
+  return PRODUCTION_AI_LETTER_WORKER_ENDPOINT;
 }
 
 function isAiLetterWorkerEnabled() {
   const params = new URLSearchParams(window.location.search);
-  return params.has("debugAiWorker") || localStorage.getItem(AI_LETTER_WORKER_ENABLED_STORAGE_KEY) === "true";
+
+  if (params.has("disableAiWorker")) return false;
+  if (!isLocalAiLetterDevelopmentHost()) return true;
+
+  return params.has("debugAiWorker")
+    || localStorage.getItem(AI_LETTER_WORKER_ENABLED_STORAGE_KEY) === "true";
 }
 
 function setElementTextOrHide(element, text = "") {

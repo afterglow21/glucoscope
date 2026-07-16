@@ -62,42 +62,49 @@ This check looks for common secret value patterns. Documentation may mention sec
 
 ## AI letter Worker on GitHub Pages
 
-The frontend does not call OpenAI directly.
-It calls the Cloudflare Worker endpoint for AI letters.
+The frontend never calls OpenAI directly. It calls the production Cloudflare
+Worker endpoint:
 
-For local development, the default endpoint is:
+```text
+https://gluco-letter-worker.afterglow21.workers.dev/api/gluco-letter
+```
+
+The public GitHub Pages site enables AI letters by default. It does not require
+`debugAiWorker`, `aiWorkerEndpoint`, or browser-local configuration.
+
+The following protections remain active:
+
+- Cloudflare Turnstile
+- Worker-side time-slot and daily generation limits
+- browser-local and shared one-hour cache behavior
+- Usage Dashboard and estimated-cost recording
+- budget stops and safe error fallbacks
+- medical and AI safety wording
+
+For privacy, deployed public pages always use the production Worker endpoint.
+The `aiWorkerEndpoint` query parameter and browser-local endpoint override are
+accepted only on `localhost` or `127.0.0.1`.
+
+For local development, the default endpoint remains:
 
 ```text
 http://127.0.0.1:8787/api/gluco-letter
 ```
 
-For a GitHub Pages preview, use a URL parameter so the deployed page can call the public Worker without changing source code yet:
+Enable the local AI button with either:
 
 ```text
-https://<github-user>.github.io/<repository-name>/index.html?debugAiWorker=1&aiWorkerEndpoint=https%3A%2F%2F<worker-domain>%2Fapi%2Fgluco-letter#live
+?debugAiWorker=1
 ```
 
-Replace `<worker-domain>` with the deployed Cloudflare Worker domain.
-
-Alternative browser-local setup for testing:
+or:
 
 ```js
 localStorage.setItem("glucoscope.aiLetterWorkerEnabled.v1", "true");
-localStorage.setItem("glucoscope.aiLetterWorkerEndpoint.v1", "https://<worker-domain>/api/gluco-letter");
 ```
 
-Then reload:
-
-```text
-https://<github-user>.github.io/<repository-name>/index.html#live
-```
-
-To reset local AI Worker settings:
-
-```js
-localStorage.removeItem("glucoscope.aiLetterWorkerEnabled.v1");
-localStorage.removeItem("glucoscope.aiLetterWorkerEndpoint.v1");
-```
+On a local host only, `aiWorkerEndpoint` or
+`glucoscope.aiLetterWorkerEndpoint.v1` may override the local endpoint.
 
 ## Shared AI letter cache
 
