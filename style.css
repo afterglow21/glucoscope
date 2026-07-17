@@ -6727,25 +6727,59 @@ canvas{
       inset 0 0 32px rgba(167,243,208,.045);
   }
 
-  body.mobile-page-glucose .hero-current-card.is-unicorn-moment #glucoseValue{
-    /* unicorn-mint-gold-value */
-    color:#baf7dc;
-    text-shadow:
-      0 0 13px rgba(110,231,183,.20),
-      0 0 22px rgba(251,191,36,.08);
+  body.mobile-page-glucose .hero-current-card.is-unicorn-moment .current-main{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto auto;
+    align-items:start;
+    justify-content:center;
+    gap:0 clamp(3px,1.4vw,7px);
+    width:100%;
+    max-width:100%;
+    padding:0 clamp(1px,1vw,4px);
+    overflow:visible;
   }
 
-  @supports ((-webkit-background-clip:text) or (background-clip:text)){
-    body.mobile-page-glucose .hero-current-card.is-unicorn-moment #glucoseValue{
-      background:linear-gradient(112deg,#a7f3d0 3%,#6ee7b7 38%,#fef3c7 67%,#fbbf24 100%);
-      -webkit-background-clip:text;
-      background-clip:text;
-      -webkit-text-fill-color:transparent;
-      filter:
-        drop-shadow(0 0 9px rgba(110,231,183,.20))
-        drop-shadow(0 0 14px rgba(251,191,36,.10));
-      text-shadow:none;
-    }
+  body.mobile-page-glucose .hero-current-card.is-unicorn-moment .current-value-wrap{
+    justify-self:center;
+    min-width:0;
+    padding-right:clamp(42px,11vw,54px);
+    overflow:visible;
+  }
+
+  body.mobile-page-glucose .hero-current-card.is-unicorn-moment #glucoseValue{
+    /* unicorn-gentle-gold-value */
+    display:block;
+    max-width:none;
+    padding-right:.055em;
+    overflow:visible;
+    color:#f4d477;
+    background:none;
+    -webkit-text-fill-color:currentColor;
+    filter:none;
+    text-shadow:
+      0 0 11px rgba(253,230,138,.16),
+      0 0 20px rgba(110,231,183,.09);
+  }
+
+  body.mobile-page-glucose .hero-current-card.is-unicorn-moment .current-delta{
+    top:clamp(2px,.8vw,4px);
+    right:0;
+  }
+
+  body.mobile-page-glucose .hero-current-card.is-unicorn-moment .arrow{
+    align-self:start;
+    margin-top:clamp(8px,2.2vw,12px);
+    font-size:clamp(34px,9vw,44px);
+    line-height:.86;
+    white-space:nowrap;
+  }
+
+  body.mobile-page-glucose .hero-current-card.is-unicorn-moment .unit{
+    align-self:start;
+    margin:clamp(13px,3.2vw,17px) 0 0;
+    font-size:clamp(12px,3.3vw,15px);
+    line-height:1;
+    white-space:nowrap;
   }
 
   body.mobile-page-glucose .hero-current-card.is-unicorn-moment .current-delta{
@@ -6842,6 +6876,38 @@ canvas{
     right:9px;
     padding:5px 8px;
     font-size:10px;
+  }
+
+  body.mobile-page-glucose .hero-current-card.is-unicorn-moment .current-main{
+    gap:0 3px;
+    padding-right:1px;
+    padding-left:1px;
+  }
+
+  body.mobile-page-glucose .hero-current-card.is-unicorn-moment .current-value-wrap{
+    padding-right:42px;
+  }
+
+  body.mobile-page-glucose .hero-current-card.is-unicorn-moment #glucoseValue{
+    font-size:clamp(66px,20vw,78px);
+    letter-spacing:-.05em;
+  }
+
+  body.mobile-page-glucose .hero-current-card.is-unicorn-moment .current-delta{
+    min-width:38px;
+    max-width:46px;
+    padding:3px 5px;
+    font-size:12px;
+  }
+
+  body.mobile-page-glucose .hero-current-card.is-unicorn-moment .arrow{
+    margin-top:8px;
+    font-size:32px;
+  }
+
+  body.mobile-page-glucose .hero-current-card.is-unicorn-moment .unit{
+    margin-top:12px;
+    font-size:11px;
   }
 }
 
