@@ -1,8 +1,8 @@
 import { DurableObject } from "cloudflare:workers";
-import { getGeneratedLetterQualityIssues } from "./letter-quality.js";
+import { getGeneratedLetterQualityIssues, isUnicornEligibleSummary } from "./letter-quality.js";
 
 const CONTRACT_VERSION = "gluco-ai-letter-worker-response-v0.2";
-const AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v5";
+const AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v6";
 const LETTER_SLOT_KEYS = ["morning", "afternoon", "night"];
 const ANALYSIS_MODE_KEYS = ["letter", "deep"];
 
@@ -843,10 +843,11 @@ function buildCelebrationClues(summary = {}) {
   const cv = Number(metrics.cv);
   const latestGlucose = Number(summary.currentGlucose ?? summary.latestGlucoseReading);
   const isTodayView = summary.period === "today";
+  const unicornEligible = isUnicornEligibleSummary(summary);
   const clues = [];
 
   if (language === "en") {
-    if (isTodayView && latestGlucose === 100) {
+    if (unicornEligible) {
       clues.push("🦄 You caught a unicorn! The latest reading is exactly 100mg/dL — a small lucky GlucoScope moment worth smiling about.");
     } else if (isTodayView && Number.isFinite(latestGlucose) && latestGlucose >= 90 && latestGlucose <= 110) {
       clues.push(`The latest reading is ${latestGlucose}mg/dL, nicely close to 100 — a lovely little moment in the flow.`);
@@ -869,7 +870,7 @@ function buildCelebrationClues(summary = {}) {
     return clues;
   }
 
-  if (isTodayView && latestGlucose === 100) {
+  if (unicornEligible) {
     clues.push("🦄 ユニコーンをつかまえた！ 最新の測定はぴったり100mg/dL。小さな幸運に出会えたね🍀");
   } else if (isTodayView && Number.isFinite(latestGlucose) && latestGlucose >= 90 && latestGlucose <= 110) {
     clues.push(`最新の測定は${latestGlucose}mg/dLで、100に近いきれいな数字が見えているよ。ちょっとうれしい瞬間だね🍀`);
@@ -982,8 +983,9 @@ function buildOpenAiInstructions(language = "ja", mode = "letter") {
       "When mentioning the latest glucose value, say 'the latest reading' or include the provided measurement time.",
       "Treat TIR, TAR, TBR, average glucose, CV, GMI, and GlucoScore as reflection clues, not grades.",
       "When the summary contains positive clues, celebrate them clearly and early instead of minimizing them with phrases like 'not bad', 'not perfect', or 'not too wavy'.",
-      "TIR of 100% deserves enthusiastic celebration. TIR of 75% or higher and CV below 30% should receive specific positive recognition when present.",
-      "If the latest reading in today's view is exactly 100mg/dL, say '🦄 You caught a unicorn!' once as a playful small-luck moment, not as medical judgment.",
+      "TIR of 100% deserves enthusiastic celebration as a TIR result. TIR 100% never creates or implies a unicorn.",
+      "Unicorn wording is allowed only when the latest reading in today's view is exactly 100mg/dL. TIR 100%, average glucose 100mg/dL, and GlucoScore 100 never qualify.",
+      "When unicorn wording is allowed, connect it explicitly to the latest 100mg/dL reading in a separate sentence or bullet, never to TIR.",
       "Do not assume how hard the person worked or make praise about their worth. Praise the observed flow, not the person as a grade.",
       "Positive recognition must not hide notable lower or higher periods; celebrate first, then mention important clues gently.",
       "Do not expose variable names, JSON keys, camelCase labels, or other implementation details in the response.",
@@ -1011,8 +1013,9 @@ function buildOpenAiInstructions(language = "ja", mode = "letter") {
     "最新測定に触れる場合は、『最新の測定では』『○○ごろの測定では』のように時刻やサマリー上の測定であることが伝わる言い方にします。",
     "TIR、TAR、TBR、平均血糖、CV、GMI、GlucoScoreは採点ではなく、振り返りの手がかりとして扱います。",
     "良い手がかりがあるときは、文章の早い段階で、遠慮せず具体的に一緒に喜びます。『悪くない』『完璧ではないけど』『ばらつきはゼロではないけど』『大きく乱れていない』のように、褒め言葉を弱める言い方はしません。",
-    "TIR 100％はしっかり祝います。TIR 75％以上やCV 30％未満も、該当するときは何が良いのかを具体的に伝えます。",
-    "今日の表示で最新の測定がちょうど100mg/dLなら、『🦄 ユニコーンをつかまえた！』を1回だけ使い、小さな幸運として一緒に喜びます。医療的な評価にはしません。",
+    "TIR 100％はTIRのきれいな流れとしてしっかり祝います。ただし、TIR 100％をユニコーンの理由にはしません。",
+    "ユニコーンは、今日の表示範囲内の最新測定がちょうど100mg/dLのときだけです。TIR 100％、平均血糖100mg/dL、GlucoScore 100はユニコーン条件ではありません。",
+    "ユニコーンを使える場合も、最新測定100mg/dLの手がかりとして独立した文または箇条書きで伝え、TIRとは結びつけません。",
     "努力や生活背景を勝手に推測せず、人の価値ではなく、データから見えた良い流れを褒めます。",
     "良いところを喜んでも、低め・高めなど大切な手がかりを隠しません。まず喜び、そのあと必要な点をやさしく伝えます。",
     "具体的で、やさしく、読みやすく。最後に明日を少し楽にする小さな手がかりを添えます。"
@@ -1055,6 +1058,7 @@ function buildOpenAiSummaryText(summary = {}, mode = "letter", language = "ja") 
       `- Displayed range: ${valueOrDash(summary.rangeLabel)}`,
       `- Latest measured at in the selected range: ${valueOrDash(summary.latestMeasuredAt)}`,
       `- Latest glucose reading in the selected range: ${valueOrDash(summary.currentGlucose)} mg/dL`,
+      `- Unicorn eligibility: ${isUnicornEligibleSummary(summary) ? "eligible — today's latest reading is exactly 100mg/dL" : "not eligible — do not use unicorn wording"}`,
       `- Direction: ${valueOrDash(summary.direction)}`,
       `- Difference from the previous reading: ${valueOrDash(summary.delta)} mg/dL`,
       `- TIR: ${valueOrDash(metrics.tir)}%`,
@@ -1079,6 +1083,7 @@ function buildOpenAiSummaryText(summary = {}, mode = "letter", language = "ja") 
     `・表示範囲: ${valueOrDash(summary.rangeLabel)}`,
     `・表示範囲内の最新測定: ${valueOrDash(summary.latestMeasuredAt)}`,
     `・表示範囲内の最新の血糖測定: ${valueOrDash(summary.currentGlucose)} mg/dL`,
+    `・ユニコーン判定: ${isUnicornEligibleSummary(summary) ? "対象（今日の最新測定が100mg/dL）" : "対象外（ユニコーン表現を使わない）"}`,
     `・矢印: ${valueOrDash(summary.direction)}`,
     `・前回との差分: ${valueOrDash(summary.delta)} mg/dL`,
     `・TIR: ${valueOrDash(metrics.tir)}%`,
@@ -1116,7 +1121,9 @@ Requirements:
 - Mention the active time only if it reads naturally; do not force it
 - Include TIR, TAR, TBR, average glucose, CV, and GlucoScore when available
 - If positive clues are listed, mention one or more near the beginning and celebrate them clearly
-- If TIR is 100%, celebrate it enthusiastically; if the unicorn clue is present, use "🦄 You caught a unicorn!" once
+- Celebrate TIR 100% enthusiastically as a TIR result only; it never means unicorn
+- Follow the "Unicorn eligibility" line exactly and never infer unicorn from TIR, average glucose, or GlucoScore
+- If eligible, connect unicorn wording to the latest 100mg/dL reading in a separate sentence or bullet, never to TIR
 - Do not weaken praise with "not bad", "not perfect", or similar backhanded wording
 - Do not frame numbers as grades or success/failure
 - Do not output field names, variable names, JSON keys, camelCase, or implementation details
@@ -1137,7 +1144,8 @@ Requirements:
 - Mention the active letter time only if it reads naturally; do not force it
 - Mention 1 to 3 concrete clues from the summary
 - If positive clues are listed, mention at least one early and celebrate it clearly
-- If the unicorn clue is present, use "🦄 You caught a unicorn!" once
+- Celebrate TIR 100% as a TIR result only; it never means unicorn
+- Follow the "Unicorn eligibility" line exactly. If eligible, connect unicorn wording only to the latest 100mg/dL reading and keep it separate from TIR
 - Do not weaken praise with "not bad", "not perfect", or similar backhanded wording
 - Do not output field names, variable names, JSON keys, camelCase, or implementation details
 - If mentioning glucose value, use "the latest reading" and include the measurement time when available
@@ -1165,7 +1173,9 @@ ${summaryText}`;
 - 時間帯ラベル「${slotLabel}」は、必要な時だけ自然に触れる。無理に入れない
 - TIR、TAR、TBR、平均血糖、CV、GlucoScoreを、分かる範囲で具体的に扱う
 - 「うれしい手がかり」があるときは、早い段階で1つ以上を取り上げ、遠慮せず具体的に一緒に喜ぶ
-- TIR 100％ならしっかり祝う。ユニコーンの手がかりがあれば「🦄 ユニコーンをつかまえた！」を1回だけ使う
+- TIR 100％はTIRのきれいな流れとしてしっかり祝うが、ユニコーンの理由にはしない
+- 「ユニコーン判定」を必ず守り、対象外ならユニコーンの言葉や🦄を使わない
+- 対象の場合も「最新測定が100mg/dL」という独立した手がかりとして書き、TIRと同じ文や箇条書きで結びつけない
 - 「悪くない」「完璧ではないけど」「ばらつきはゼロではないけど」「大きく乱れていない」のように、褒め言葉を弱めない
 - 数字を採点、合否、成功・失敗として扱わない
 - 入力欄の名前、英語の変数名、JSONキー、camelCase、内部処理の言葉を本文へ出さない
@@ -1192,7 +1202,9 @@ ${summaryText}`;
 - 時間帯ラベル「${slotLabel}」は、必要な時だけ自然に触れる。無理に入れない
 - サマリーから見える具体的な手がかりを1〜3個だけ入れる
 - 「うれしい手がかり」があるときは、早い段階で少なくとも1つを取り上げ、遠慮せず具体的に一緒に喜ぶ
-- TIR 100％ならしっかり祝う。ユニコーンの手がかりがあれば「🦄 ユニコーンをつかまえた！」を1回だけ使う
+- TIR 100％はTIRのきれいな流れとしてしっかり祝うが、ユニコーンの理由にはしない
+- 「ユニコーン判定」を必ず守り、対象外ならユニコーンの言葉や🦄を使わない
+- 対象の場合も「最新測定が100mg/dL」という独立した手がかりとして書き、TIRと同じ文や箇条書きで結びつけない
 - 「悪くない」「完璧ではないけど」「ばらつきはゼロではないけど」「大きく乱れていない」のように、褒め言葉を弱めない
 - 血糖値に触れる場合は「今の血糖」ではなく、「最新の測定では」または「${summary.latestMeasuredAt || "最新測定"}ごろの測定では」のように書く
 - 入力欄の名前、英語の変数名、JSONキー、camelCase、内部処理の言葉を本文へ出さない
@@ -1278,7 +1290,7 @@ Important: Write a fresh final response only. Do not include variable names, JSO
 
     return `${basePrompt}
 
-重要: 前の文章はグルコの話し方または表示用の文章として整っていなかったため使わない。最初から書き直し、自然な常体だけを使う。英語の変数名、JSONキー、camelCase、内部処理の言葉、修正についての説明は書かない。「〜しようかも」「〜していこうかも」「〜見てみようかも」は使わず、最後は「一緒に見ていこうね🍀」のような自然で迷いのない一文にして、完成した分析本文だけを返す。`;
+重要: 前の文章はグルコの話し方または表示用の文章として整っていなかったため使わない。最初から書き直し、自然な常体だけを使う。英語の変数名、JSONキー、camelCase、内部処理の言葉、修正についての説明は書かない。「〜しようかも」「〜していこうかも」「〜見てみようかも」は使わない。ユニコーン判定を必ず守り、TIR 100％をユニコーンの理由にしない。最後は「一緒に見ていこうね🍀」のような自然で迷いのない一文にして、完成した分析本文だけを返す。`;
   }
 
   if (language === "en") {
@@ -1399,6 +1411,9 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
   const analysisMode = normalizeAnalysisMode(mode);
   const language = summary.language === "en" ? "en" : "ja";
   const limits = getOpenAiTokenLimits(config, analysisMode);
+  const qualityOptions = {
+    allowUnicorn: isUnicornEligibleSummary(summary)
+  };
   const firstAttempt = await callOpenAiAttempt({
     summary,
     env,
@@ -1449,7 +1464,7 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
       });
     }
 
-    const retryQualityIssues = getGeneratedLetterQualityIssues(retryAttempt.text, language);
+    const retryQualityIssues = getGeneratedLetterQualityIssues(retryAttempt.text, language, qualityOptions);
     if (retryQualityIssues.length) {
       throw createOutputQualityError({
         mode: analysisMode,
@@ -1478,7 +1493,7 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
     throw error;
   }
 
-  const firstQualityIssues = getGeneratedLetterQualityIssues(firstAttempt.text, language);
+  const firstQualityIssues = getGeneratedLetterQualityIssues(firstAttempt.text, language, qualityOptions);
   if (!firstQualityIssues.length) {
     return buildAcceptedOpenAiResult({
       text: firstAttempt.text,
@@ -1521,7 +1536,7 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
     });
   }
 
-  const retryQualityIssues = getGeneratedLetterQualityIssues(qualityRetry.text, language);
+  const retryQualityIssues = getGeneratedLetterQualityIssues(qualityRetry.text, language, qualityOptions);
   if (retryQualityIssues.length) {
     throw createOutputQualityError({
       mode: analysisMode,

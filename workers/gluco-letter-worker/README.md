@@ -45,12 +45,14 @@ Initial copy rules:
 - TIR = 100% is celebrated enthusiastically.
 - CV < 30% is described as calm and steady.
 - CV < 24% receives especially warm recognition for very small variation.
-- If today's latest reading is exactly 100mg/dL, the letter may say `🦄 ユニコーンをつかまえた！` once.
+- Unicorn wording is allowed only when today's latest reading is exactly 100mg/dL.
+- TIR 100%, average glucose 100mg/dL, and GlucoScore 100 never qualify as a unicorn.
+- TIR celebration and unicorn wording must remain separate clues; the letter must never say or imply that TIR 100% caused a unicorn.
 
 These are language and experience rules, not medical grades or treatment targets.
 The prompt must praise the observed flow rather than the person's worth or presumed effort, and it must still mention important lower or higher periods gently.
 
-The shared-cache schema is `gluco-ai-letter-cache-v5`, which prevents incomplete or older cached wording from overriding the current output and voice rules, including the improved natural Japanese closing rules.
+The shared-cache schema is `gluco-ai-letter-cache-v6`, which prevents incomplete or older cached wording from overriding the current output and voice rules, including the strict unicorn eligibility rule.
 
 ## Production CORS policy
 

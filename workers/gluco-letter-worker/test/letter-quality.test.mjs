@@ -1,7 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { getGeneratedLetterQualityIssues } from "../src/letter-quality.js";
+import {
+  getGeneratedLetterQualityIssues,
+  isUnicornEligibleSummary
+} from "../src/letter-quality.js";
 
 test("accepts Gluco-style Japanese wording", () => {
   const text = "グルコだよ🍀\nTIRは82％で、落ち着いた時間がしっかり見えているよ。\n明日も流れをやさしく見てみよう。";
@@ -87,4 +90,93 @@ test("rejects empty output", () => {
 test("rejects internal identifier in English output too", () => {
   const issues = getGeneratedLetterQualityIssues("Gluco is here 🍀\natLeast one clue is visible.", "en");
   assert.ok(issues.includes("internal_identifier"));
+});
+
+test("unicorn is eligible only for today's latest reading of exactly 100mg/dL", () => {
+  assert.equal(isUnicornEligibleSummary({
+    period: "today",
+    currentGlucose: 100,
+    metrics: { tir: 82 }
+  }), true);
+});
+
+test("numeric-string 100 is accepted for the latest reading", () => {
+  assert.equal(isUnicornEligibleSummary({
+    period: "today",
+    currentGlucose: "100"
+  }), true);
+});
+
+test("TIR 100 alone does not qualify as a unicorn", () => {
+  assert.equal(isUnicornEligibleSummary({
+    period: "today",
+    currentGlucose: 111,
+    metrics: { tir: 100 }
+  }), false);
+});
+
+test("average glucose 100 alone does not qualify as a unicorn", () => {
+  assert.equal(isUnicornEligibleSummary({
+    period: "today",
+    currentGlucose: 111,
+    metrics: { averageGlucose: 100 }
+  }), false);
+});
+
+test("GlucoScore 100 alone does not qualify as a unicorn", () => {
+  assert.equal(isUnicornEligibleSummary({
+    period: "today",
+    currentGlucose: 111,
+    metrics: { glucoScore: 100 }
+  }), false);
+});
+
+test("a latest reading of 100 outside today's view does not qualify", () => {
+  assert.equal(isUnicornEligibleSummary({
+    period: "yesterday",
+    currentGlucose: 100
+  }), false);
+});
+
+test("rejects unicorn wording when the summary is not eligible", () => {
+  const text = "グルコだよ🍀\n🦄 ユニコーンをつかまえた！";
+  const issues = getGeneratedLetterQualityIssues(text, "ja", {
+    allowUnicorn: false
+  });
+  assert.ok(issues.includes("unqualified_unicorn"));
+});
+
+test("allows unicorn wording when the summary is eligible and wording is separate from TIR", () => {
+  const text = "グルコだよ🍀\n🦄 ユニコーンをつかまえた！ 最新の測定は100mg/dLだったよ。";
+  assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja", {
+    allowUnicorn: true
+  }), []);
+});
+
+test("rejects the observed TIR-to-unicorn causal wording even when unicorn is otherwise eligible", () => {
+  const text = "グルコだよ🍀\nTIRが100％だから、🦄 ユニコーンをつかまえた！";
+  const issues = getGeneratedLetterQualityIssues(text, "ja", {
+    allowUnicorn: true
+  });
+  assert.ok(issues.includes("tir_unicorn_coupling"));
+});
+
+test("allows TIR and unicorn as separate independent clues when eligible", () => {
+  const text = [
+    "グルコだよ🍀",
+    "TIRは100％！ 表示中の測定がすべて目標範囲の中だよ。",
+    "🦄 ユニコーンをつかまえた！ 最新の測定は100mg/dLだったよ。"
+  ].join("\n");
+
+  assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja", {
+    allowUnicorn: true
+  }), []);
+});
+
+test("rejects English unicorn wording when the summary is not eligible", () => {
+  const text = "Gluco is here 🍀\n🦄 You caught a unicorn!";
+  const issues = getGeneratedLetterQualityIssues(text, "en", {
+    allowUnicorn: false
+  });
+  assert.ok(issues.includes("unqualified_unicorn"));
 });
