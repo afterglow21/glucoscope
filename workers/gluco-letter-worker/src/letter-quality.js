@@ -5,6 +5,24 @@ const UNNATURAL_JAPANESE_SUGGESTION_PATTERN = /(?:一緒に[^\r\n。！？]{0,24
 const UNICORN_WORDING_PATTERN = /(?:🦄|ユニコーン|\bunicorn\b)/giu;
 const TIR_UNICORN_COUPLING_PATTERN = /(?:\bTIR\b[^\r\n。！？]{0,80}(?:🦄|ユニコーン|\bunicorn\b)|(?:🦄|ユニコーン|\bunicorn\b)[^\r\n。！？]{0,80}\bTIR\b)/giu;
 
+function getJapaneseSentenceSegments(text = "") {
+  return String(text ?? "")
+    .replace(/\r\n?/g, "\n")
+    .split(/(?<=[。！？!?])|\n+/u)
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+}
+
+function hasRepeatedTogetherInAdjacentClosingSentences(text = "") {
+  const closingSegments = getJapaneseSentenceSegments(text).slice(-3);
+
+  return closingSegments.some((segment, index) => (
+    index < closingSegments.length - 1
+    && segment.includes("一緒に")
+    && closingSegments[index + 1].includes("一緒に")
+  ));
+}
+
 export function isUnicornEligibleSummary(summary = {}) {
   const latestGlucose = Number(summary.currentGlucose ?? summary.latestGlucoseReading);
 
@@ -52,6 +70,10 @@ export function getGeneratedLetterQualityIssues(
     issues.add("unnatural_japanese_suggestion");
   }
   UNNATURAL_JAPANESE_SUGGESTION_PATTERN.lastIndex = 0;
+
+  if (language === "ja" && hasRepeatedTogetherInAdjacentClosingSentences(normalizedText)) {
+    issues.add("repeated_together_closing");
+  }
 
   const containsUnicornWording = UNICORN_WORDING_PATTERN.test(normalizedText);
   UNICORN_WORDING_PATTERN.lastIndex = 0;

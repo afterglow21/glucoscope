@@ -58,6 +58,38 @@ test("accepts a natural invitation without kamo", () => {
   assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja"), []);
 });
 
+test("rejects repeated together wording in adjacent closing sentences", () => {
+  const text = [
+    "グルコだよ🍀",
+    "GlucoScoreは比較期間より控えめに見えていて、その手がかりを一緒に辿っていこうね。",
+    "一緒に見ていこうね🍀"
+  ].join("\n");
+
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("repeated_together_closing"));
+});
+
+test("accepts one together invitation followed by a different closing", () => {
+  const text = [
+    "グルコだよ🍀",
+    "どこに表れているか一緒に辿っていこうね。",
+    "明日もやさしく振り返ってみよう🍀"
+  ].join("\n");
+
+  assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja"), []);
+});
+
+test("does not reject two together phrases when another sentence separates them", () => {
+  const text = [
+    "グルコだよ🍀",
+    "最初の手がかりは一緒に見てみよう。",
+    "数字の流れを急がず振り返れるとよさそうだね。",
+    "明日も一緒に見ていこうね🍀"
+  ].join("\n");
+
+  assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja"), []);
+});
+
 test("rejects leaked internal identifier atLeast", () => {
   const issues = getGeneratedLetterQualityIssues("グルコだよ🍀\natLeast 1つの手がかりがあるよ。", "ja");
   assert.ok(issues.includes("internal_identifier"));

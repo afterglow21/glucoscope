@@ -6727,7 +6727,7 @@ canvas{
       inset 0 0 32px rgba(167,243,208,.045);
   }
 
-  body.mobile-page-glucose .hero-current-card.is-unicorn-moment .current-main{
+  body.mobile-page-glucose .hero-current-card .current-main{
     display:grid;
     grid-template-columns:minmax(0,1fr) auto auto;
     align-items:start;
@@ -6739,7 +6739,7 @@ canvas{
     overflow:visible;
   }
 
-  body.mobile-page-glucose .hero-current-card.is-unicorn-moment .current-value-wrap{
+  body.mobile-page-glucose .hero-current-card .current-value-wrap{
     justify-self:center;
     min-width:0;
     padding-right:clamp(42px,11vw,54px);
@@ -6761,12 +6761,12 @@ canvas{
       0 0 20px rgba(110,231,183,.09);
   }
 
-  body.mobile-page-glucose .hero-current-card.is-unicorn-moment .current-delta{
+  body.mobile-page-glucose .hero-current-card .current-delta{
     top:clamp(2px,.8vw,4px);
     right:0;
   }
 
-  body.mobile-page-glucose .hero-current-card.is-unicorn-moment .arrow{
+  body.mobile-page-glucose .hero-current-card .arrow{
     align-self:start;
     margin-top:clamp(8px,2.2vw,12px);
     font-size:clamp(34px,9vw,44px);
@@ -6774,7 +6774,7 @@ canvas{
     white-space:nowrap;
   }
 
-  body.mobile-page-glucose .hero-current-card.is-unicorn-moment .unit{
+  body.mobile-page-glucose .hero-current-card .unit{
     align-self:start;
     margin:clamp(13px,3.2vw,17px) 0 0;
     font-size:clamp(12px,3.3vw,15px);
@@ -6878,13 +6878,13 @@ canvas{
     font-size:10px;
   }
 
-  body.mobile-page-glucose .hero-current-card.is-unicorn-moment .current-main{
+  body.mobile-page-glucose .hero-current-card .current-main{
     gap:0 3px;
     padding-right:1px;
     padding-left:1px;
   }
 
-  body.mobile-page-glucose .hero-current-card.is-unicorn-moment .current-value-wrap{
+  body.mobile-page-glucose .hero-current-card .current-value-wrap{
     padding-right:42px;
   }
 
@@ -6893,19 +6893,19 @@ canvas{
     letter-spacing:-.05em;
   }
 
-  body.mobile-page-glucose .hero-current-card.is-unicorn-moment .current-delta{
+  body.mobile-page-glucose .hero-current-card .current-delta{
     min-width:38px;
     max-width:46px;
     padding:3px 5px;
     font-size:12px;
   }
 
-  body.mobile-page-glucose .hero-current-card.is-unicorn-moment .arrow{
+  body.mobile-page-glucose .hero-current-card .arrow{
     margin-top:8px;
     font-size:32px;
   }
 
-  body.mobile-page-glucose .hero-current-card.is-unicorn-moment .unit{
+  body.mobile-page-glucose .hero-current-card .unit{
     margin-top:12px;
     font-size:11px;
   }
