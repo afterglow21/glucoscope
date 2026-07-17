@@ -4,6 +4,10 @@ const JSON_KEY_PATTERN = /["'](?:celebrationClues|patternHints|latestGlucoseRead
 const UNNATURAL_JAPANESE_SUGGESTION_PATTERN = /(?:一緒に[^\r\n。！？]{0,24})?(?:しよう|していこう|続けていこう|見ていこう|見てみよう|進めていこう|やってみよう|振り返ってみよう|試してみよう)かも(?:ね|よ)?(?:[。．.!！?？]|\r?\n|$)/gu;
 const UNICORN_WORDING_PATTERN = /(?:🦄|ユニコーン|\bunicorn\b)/giu;
 const TIR_UNICORN_COUPLING_PATTERN = /(?:\bTIR\b[^\r\n。！？]{0,80}(?:🦄|ユニコーン|\bunicorn\b)|(?:🦄|ユニコーン|\bunicorn\b)[^\r\n。！？]{0,80}\bTIR\b)/giu;
+const BLAME_WEIGHTED_METRIC_PATTERN = /(?:\bTBR\b|\bTAR\b|\bCV\b)[^\r\n。！？]{0,36}(?:も(?:ある|あった|見える|見えている|残っている)|高すぎる|悪い|問題(?:だ|がある)?)/giu;
+const DEFICIT_METRIC_PATTERN = /(?:\bTIR\b|\bGlucoScore\b)[^\r\n。！？]{0,36}(?:しか(?:ない|なかった)|まだ(?:低い|少ない)?|低すぎる|悪い|問題(?:だ|がある)?)/giu;
+const JUDGMENTAL_METRIC_PREFIX_PATTERN = /(?:残念ながら|まだ)[^\r\n。！？]{0,28}(?:\bTIR\b|\bTAR\b|\bTBR\b|\bCV\b|\bGlucoScore\b)/giu;
+const ISOLATED_METRIC_EXCLAMATION_PATTERN = /^(?:[・-]\s*)?(?:TIR|TAR|TBR|CV|GlucoScore)[^\r\n。！？!?]{0,30}[！!]\s*$/gmu;
 
 function getJapaneseSentenceSegments(text = "") {
   return String(text ?? "")
@@ -74,6 +78,26 @@ export function getGeneratedLetterQualityIssues(
   if (language === "ja" && hasRepeatedTogetherInAdjacentClosingSentences(normalizedText)) {
     issues.add("repeated_together_closing");
   }
+
+  if (language === "ja" && BLAME_WEIGHTED_METRIC_PATTERN.test(normalizedText)) {
+    issues.add("blame_weighted_metric");
+  }
+  BLAME_WEIGHTED_METRIC_PATTERN.lastIndex = 0;
+
+  if (language === "ja" && DEFICIT_METRIC_PATTERN.test(normalizedText)) {
+    issues.add("deficit_weighted_metric");
+  }
+  DEFICIT_METRIC_PATTERN.lastIndex = 0;
+
+  if (language === "ja" && JUDGMENTAL_METRIC_PREFIX_PATTERN.test(normalizedText)) {
+    issues.add("judgmental_metric_prefix");
+  }
+  JUDGMENTAL_METRIC_PREFIX_PATTERN.lastIndex = 0;
+
+  if (language === "ja" && ISOLATED_METRIC_EXCLAMATION_PATTERN.test(normalizedText)) {
+    issues.add("isolated_metric_exclamation");
+  }
+  ISOLATED_METRIC_EXCLAMATION_PATTERN.lastIndex = 0;
 
   const containsUnicornWording = UNICORN_WORDING_PATTERN.test(normalizedText);
   UNICORN_WORDING_PATTERN.lastIndex = 0;

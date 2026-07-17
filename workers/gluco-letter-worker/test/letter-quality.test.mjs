@@ -90,6 +90,42 @@ test("does not reject two together phrases when another sentence separates them"
   assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja"), []);
 });
 
+
+
+test("rejects blame-weighted TBR wording", () => {
+  const text = "グルコだよ🍀\nTBRは5.9％もあるから、低めだった時間を見返そう。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("blame_weighted_metric"));
+});
+
+test("accepts factual TBR wording with a gentle reflection clue", () => {
+  const text = "グルコだよ🍀\nTBRは5.9％だったよ。低めだった時間を、責めずにやさしく振り返る手がかりにしてみよう🍀";
+  assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja"), []);
+});
+
+test("rejects deficit-weighted TIR wording", () => {
+  const text = "グルコだよ🍀\nTIRは66％しかないね。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("deficit_weighted_metric"));
+});
+
+test("rejects judgmental metric prefixes", () => {
+  const text = "グルコだよ🍀\n残念ながらTARは18％だったよ。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("judgmental_metric_prefix"));
+});
+
+test("rejects a metric-only exclamation line", () => {
+  const text = "グルコだよ🍀\nTIRは94.1％！\n表示中のほとんどが目標範囲の中だよ。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("isolated_metric_exclamation"));
+});
+
+test("accepts a metric connected to its meaning in the same line", () => {
+  const text = "グルコだよ🍀\nTIRは94.1％で、表示中のほとんどが目標範囲の中に入っているよ。";
+  assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja"), []);
+});
+
 test("rejects leaked internal identifier atLeast", () => {
   const issues = getGeneratedLetterQualityIssues("グルコだよ🍀\natLeast 1つの手がかりがあるよ。", "ja");
   assert.ok(issues.includes("internal_identifier"));

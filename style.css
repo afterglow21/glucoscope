@@ -6930,3 +6930,43 @@ canvas{
     transition:none;
   }
 }
+
+/* Compassion and First Message readability v1 */
+@media (max-width:480px){
+  body.mobile-page-more .about-first-message-brand{
+    padding:30px 22px 32px;
+  }
+
+  body.mobile-page-more .about-brand-statement{
+    margin-bottom:28px;
+    font-size:clamp(42px,12vw,52px);
+    line-height:1.03;
+    letter-spacing:-1.25px;
+  }
+
+  body.mobile-page-more .about-brand-copy{
+    max-width:31em;
+    margin:0 auto 24px;
+  }
+
+  body.mobile-page-more .about-brand-copy p{
+    margin:0 0 18px;
+    color:#e6eef8;
+    font-size:clamp(16px,4.25vw,18px);
+    line-height:1.9;
+    letter-spacing:.01em;
+    line-break:strict;
+    word-break:normal;
+    text-wrap:pretty;
+  }
+
+  body.mobile-page-more .about-brand-copy p:last-child{
+    margin-bottom:0;
+  }
+
+  body.mobile-page-more .about-brand-quote{
+    margin-top:28px!important;
+    font-size:clamp(17px,4.8vw,20px)!important;
+    line-height:1.58!important;
+  }
+}

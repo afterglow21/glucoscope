@@ -32,6 +32,7 @@ GitHub Pages
 - Partial output is never returned or written to browser/KV cache.
 - Japanese output is checked for Gluco-style plain wording, and all output is checked for leaked variable names, JSON keys, or camelCase implementation terms.
 - Adjacent closing sentences are also checked so the Japanese invitation word `一緒に` is not repeated back-to-back.
+- Japanese output is checked for blame-weighted metric phrasing such as `TBRは5.9%もある`, deficit wording such as `TIRは66%しかない`, and metric-only exclamation lines.
 - If a complete first response fails those wording checks, the Worker retries once with a clean rewrite instruction. Text that still fails is not returned or cached.
 - Token and estimated-cost totals include both attempts when an automatic retry is needed.
 
@@ -53,7 +54,15 @@ Initial copy rules:
 These are language and experience rules, not medical grades or treatment targets.
 The prompt must praise the observed flow rather than the person's worth or presumed effort, and it must still mention important lower or higher periods gently.
 
-The shared-cache schema is `gluco-ai-letter-cache-v7`, which prevents incomplete or older cached wording from overriding the current output and voice rules, including the strict unicorn eligibility and natural closing rules.
+## Compassion-first wording
+
+- TBR of 1% or higher and TIR of 70% or lower are writing cues for extra care, not medical judgments or grades.
+- When either cue is present, the letter acknowledges that the period may have felt demanding before offering a next reflection.
+- The wording does not assume symptoms, effort, or personal failure. It prefers phrases such as `今日はここまで、おつかれさま` and `大変な時間もあったかもしれないね`.
+- Concerning metrics are stated as facts. The letter avoids blame-weighted words such as `も`, `しか`, `まだ`, `残念ながら`, `高すぎる`, `低すぎる`, `悪い`, and `問題` around those values.
+- A metric is not left as a standalone exclamation line; the same sentence explains the gentle reflection clue.
+
+The shared-cache schema is `gluco-ai-letter-cache-v8`, which prevents incomplete or older cached wording from overriding the current compassion, unicorn, and natural-closing rules.
 
 ## Production CORS policy
 
