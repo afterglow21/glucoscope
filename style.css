@@ -6664,3 +6664,203 @@ canvas{
     padding-top:20px;
   }
 }
+
+/* Unicorn 100 visual moment v1 */
+/* Unicorn 100 visual moment v1
+   A soft, celebratory state shown only for a fresh current 100mg/dL reading.
+   The debug query changes presentation only and never unlocks a collection item. */
+
+.unicorn-visual-debug-banner{
+  position:fixed;
+  top:max(8px, env(safe-area-inset-top));
+  left:50%;
+  z-index:5000;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  transform:translateX(-50%);
+  padding:7px 9px 7px 12px;
+  border:1px solid rgba(196,181,253,.48);
+  border-radius:999px;
+  background:rgba(15,23,42,.92);
+  color:#ede9fe;
+  box-shadow:0 10px 30px rgba(0,0,0,.34);
+  backdrop-filter:blur(12px);
+  font-size:11px;
+  font-weight:900;
+  line-height:1;
+  white-space:nowrap;
+}
+
+.unicorn-visual-debug-banner[hidden]{
+  display:none;
+}
+
+.unicorn-visual-debug-banner button{
+  min-height:26px;
+  padding:4px 9px;
+  border:1px solid rgba(167,243,208,.34);
+  border-radius:999px;
+  background:rgba(52,211,153,.13);
+  color:#d1fae5;
+  font:inherit;
+  cursor:pointer;
+}
+
+.unicorn-moment-badge{
+  display:none;
+}
+
+@media (max-width:480px) and (orientation:portrait) and (hover:none) and (pointer:coarse){
+  body.mobile-page-glucose #liveView .hero-current-card.is-unicorn-moment{
+    /* unicorn-soft-panel-glow */
+    border:1px solid rgba(167,243,208,.58);
+    background:
+      radial-gradient(circle at 82% 78%, rgba(196,181,253,.17), transparent 31%),
+      radial-gradient(circle at 20% 16%, rgba(110,231,183,.12), transparent 43%),
+      linear-gradient(150deg, rgba(167,243,208,.055), rgba(196,181,253,.06)),
+      #202b3d;
+    box-shadow:
+      0 0 0 1px rgba(196,181,253,.22),
+      0 0 25px rgba(110,231,183,.15),
+      0 0 42px rgba(196,181,253,.11),
+      inset 0 0 32px rgba(167,243,208,.045);
+  }
+
+  body.mobile-page-glucose .hero-current-card.is-unicorn-moment #glucoseValue{
+    /* unicorn-mint-gold-value */
+    color:#baf7dc;
+    text-shadow:
+      0 0 13px rgba(110,231,183,.20),
+      0 0 22px rgba(251,191,36,.08);
+  }
+
+  @supports ((-webkit-background-clip:text) or (background-clip:text)){
+    body.mobile-page-glucose .hero-current-card.is-unicorn-moment #glucoseValue{
+      background:linear-gradient(112deg,#a7f3d0 3%,#6ee7b7 38%,#fef3c7 67%,#fbbf24 100%);
+      -webkit-background-clip:text;
+      background-clip:text;
+      -webkit-text-fill-color:transparent;
+      filter:
+        drop-shadow(0 0 9px rgba(110,231,183,.20))
+        drop-shadow(0 0 14px rgba(251,191,36,.10));
+      text-shadow:none;
+    }
+  }
+
+  body.mobile-page-glucose .hero-current-card.is-unicorn-moment .current-delta{
+    border-color:rgba(253,230,138,.52);
+    background:linear-gradient(135deg,rgba(16,185,129,.25),rgba(251,191,36,.20));
+    color:#fef3c7;
+    box-shadow:
+      0 0 0 1px rgba(167,243,208,.10),
+      0 0 14px rgba(251,191,36,.12);
+  }
+
+  body.mobile-page-glucose .unicorn-moment-badge:not([hidden]){
+    position:absolute;
+    top:12px;
+    right:12px;
+    z-index:4;
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    padding:6px 10px;
+    border:1px solid rgba(253,230,138,.48);
+    border-radius:999px;
+    background:
+      linear-gradient(135deg,rgba(16,185,129,.18),rgba(196,181,253,.14)),
+      rgba(15,23,42,.74);
+    color:#fef3c7;
+    box-shadow:
+      0 0 15px rgba(110,231,183,.10),
+      0 0 20px rgba(196,181,253,.08);
+    backdrop-filter:blur(8px);
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.025em;
+    line-height:1;
+    white-space:nowrap;
+  }
+
+  body.mobile-page-glucose .unicorn-moment-badge-icon{
+    font-size:13px;
+  }
+
+  body.mobile-page-glucose .gluco-peek-decor.is-unicorn-moment{
+    z-index:2;
+    overflow:visible;
+  }
+
+  body.mobile-page-glucose .gluco-peek-image{
+    transition:
+      transform .24s ease,
+      filter .24s ease;
+  }
+
+  body.mobile-page-glucose .gluco-peek-image.is-unicorn{
+    position:relative;
+    z-index:2;
+    transform:translate(2px,2px) scale(1.2);
+    transform-origin:100% 100%;
+    filter:
+      drop-shadow(0 7px 9px rgba(0,0,0,.19))
+      drop-shadow(0 0 11px rgba(196,181,253,.13));
+  }
+
+  body.mobile-page-glucose .gluco-peek-decor.is-unicorn-moment::before,
+  body.mobile-page-glucose .gluco-peek-decor.is-unicorn-moment::after{
+    position:absolute;
+    z-index:3;
+    pointer-events:none;
+    line-height:1;
+    text-shadow:0 0 8px currentColor;
+    animation:unicorn-sparkle-twinkle 2.4s ease-in-out infinite alternate;
+  }
+
+  body.mobile-page-glucose .gluco-peek-decor.is-unicorn-moment::before{
+    content:"✦";
+    top:12%;
+    left:5%;
+    color:#fde68a;
+    font-size:11px;
+  }
+
+  body.mobile-page-glucose .gluco-peek-decor.is-unicorn-moment::after{
+    content:"✧";
+    top:1%;
+    right:12%;
+    color:#ddd6fe;
+    font-size:9px;
+    animation-delay:.65s;
+  }
+}
+
+@media (max-width:390px) and (orientation:portrait) and (hover:none) and (pointer:coarse){
+  body.mobile-page-glucose .unicorn-moment-badge:not([hidden]){
+    top:9px;
+    right:9px;
+    padding:5px 8px;
+    font-size:10px;
+  }
+}
+
+@keyframes unicorn-sparkle-twinkle{
+  from{
+    opacity:.46;
+    transform:scale(.82) rotate(-5deg);
+  }
+  to{
+    opacity:1;
+    transform:scale(1.12) rotate(5deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  body.mobile-page-glucose .gluco-peek-image,
+  body.mobile-page-glucose .gluco-peek-decor.is-unicorn-moment::before,
+  body.mobile-page-glucose .gluco-peek-decor.is-unicorn-moment::after{
+    animation:none;
+    transition:none;
+  }
+}

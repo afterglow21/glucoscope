@@ -1306,6 +1306,54 @@ function isLocalDebugEnvironment() {
     || host === "127.0.0.1";
 }
 
+function isUnicornVisualDebugRequested() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("debugUnicorn") === "1";
+  } catch (error) {
+    return false;
+  }
+}
+
+function applyUnicornVisualDebugValues() {
+  if (!isUnicornVisualDebugRequested()) return;
+
+  const glucoseValue = document.getElementById("glucoseValue");
+  const glucoseArrow = document.getElementById("glucoseArrow");
+
+  if (glucoseValue) {
+    glucoseValue.textContent = String(GLUCO_CELEBRATION_THRESHOLDS.unicornGlucose);
+  }
+  if (glucoseArrow) {
+    glucoseArrow.textContent = directionMap.Flat;
+  }
+
+  updateRangeStatus(GLUCO_CELEBRATION_THRESHOLDS.unicornGlucose);
+  updateGlucoseDelta(GLUCO_CELEBRATION_THRESHOLDS.unicornGlucose, 99);
+}
+
+function setupUnicornVisualDebugPreview() {
+  const debugRequested = isUnicornVisualDebugRequested();
+  const banner = document.getElementById("unicornVisualDebugBanner");
+  const closeButton = document.getElementById("unicornVisualDebugClose");
+
+  document.body.classList.toggle("unicorn-visual-debug", debugRequested);
+  if (banner) banner.hidden = !debugRequested;
+
+  closeButton?.addEventListener("click", () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("debugUnicorn");
+    if (!url.hash) url.hash = "#glucose";
+    window.location.assign(url.toString());
+  });
+
+  if (debugRequested) {
+    window.requestAnimationFrame(() => {
+      updateCurrentGlucosePeek({ sgv: GLUCO_CELEBRATION_THRESHOLDS.unicornGlucose }, 0);
+    });
+  }
+}
+
 function isForceLuckyDebugRequested(dateKey) {
   if (!isLocalDebugEnvironment()) return false;
 
@@ -1707,18 +1755,33 @@ function updateCurrentGlucosePeek(latest, minutesAgo) {
   const peekImage = document.getElementById("glucoPeekImage");
   if (!peekImage) return;
 
+  const debugRequested = isUnicornVisualDebugRequested();
   const glucose = Number(latest?.sgv);
   const isFresh = Number.isFinite(minutesAgo) && minutesAgo >= 0 && minutesAgo < 30;
   const hasTodayEncounter = Boolean(getStoredTodayUnicornDecision(getLocalDateKey()));
-  const showUnicorn = isFresh
+  const showUnicorn = debugRequested || (
+    isFresh
     && glucose === GLUCO_CELEBRATION_THRESHOLDS.unicornGlucose
-    && hasTodayEncounter;
+    && hasTodayEncounter
+  );
 
   const targetSrc = showUnicorn ? peekImage.dataset.unicornSrc : peekImage.dataset.defaultSrc;
   if (targetSrc && peekImage.getAttribute("src") !== targetSrc) {
     peekImage.setAttribute("src", targetSrc);
   }
+
+  const peekDecor = peekImage.closest(".gluco-peek-decor");
+  const currentCard = peekImage.closest(".hero-current-card");
+  const luckyBadge = document.getElementById("unicornMomentBadge");
+
   peekImage.classList.toggle("is-unicorn", showUnicorn);
+  peekDecor?.classList.toggle("is-unicorn-moment", showUnicorn);
+  currentCard?.classList.toggle("is-unicorn-moment", showUnicorn);
+  if (luckyBadge) luckyBadge.hidden = !showUnicorn;
+
+  if (debugRequested) {
+    applyUnicornVisualDebugValues();
+  }
 }
 
 function renderUnicornGlucoDecision(decision, dateKey = getLocalDateKey()) {
@@ -5053,6 +5116,7 @@ function setupViewTabs() {
 setupViewTabs();
 setupLanguageSwitch();
 setupMobileDisplayMode();
+setupUnicornVisualDebugPreview();
 setupMobileApp();
 setupPeriodSwitch();
 applyLanguage();
