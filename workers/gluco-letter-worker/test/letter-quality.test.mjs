@@ -160,6 +160,68 @@ test("rejects internal identifier in English output too", () => {
   assert.ok(issues.includes("internal_identifier"));
 });
 
+
+
+test("rejects leaked compassion-priority wording", () => {
+  const text = "グルコだよ🍀\nいたわり優先が対象になっているよ。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("internal_writing_guidance"));
+});
+
+test("rejects vague average atmosphere wording", () => {
+  const text = "グルコだよ🍀\nGMI目安は5.2％で、平均の雰囲気がそれほど荒れていないよ。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("vague_metric_metaphor"));
+});
+
+test("rejects vague return-strength wording", () => {
+  const text = "グルコだよ🍀\n過去7日平均の中では、戻りの力も感じるね。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("vague_metric_metaphor"));
+});
+
+test("rejects turning lower time into reassurance", () => {
+  const text = "グルコだよ🍀\n低めの時間を後からそっと見る場所にしておくと安心材料になるよ。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("vague_metric_metaphor"));
+  assert.ok(issues.includes("low_time_as_reassurance"));
+});
+
+test("rejects minimizing TBR with a little", () => {
+  const text = "グルコだよ🍀\nTBRは16.0％で、低めの時間が少し増えている流れだね。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("tbr_minimizing_wording"));
+  assert.ok(issues.includes("unsupported_metric_change"));
+});
+
+test("rejects unsupported change wording around TBR", () => {
+  const text = "グルコだよ🍀\nTBRは16.0％で、低めの時間が増えているね。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("unsupported_metric_change"));
+});
+
+test("rejects GMI interpretation as calm or stable", () => {
+  const text = "グルコだよ🍀\nGMIは5.2％で、全体が安定しているよ。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("gmi_overinterpretation"));
+});
+
+test("accepts factual GMI wording", () => {
+  const text = "グルコだよ🍀\nGMIの目安は5.2％だったよ。平均血糖から計算した参考値として、ほかの数字と一緒に見てみようね。";
+  assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja"), []);
+});
+
+test("accepts factual TBR wording without minimizing it", () => {
+  const text = "グルコだよ🍀\nTBRは16.0％だったよ。低めだった時間がまとまって見えているね。今日はここまで、おつかれさま🍀";
+  assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja"), []);
+});
+
+test("rejects observed unnatural delta metaphor", () => {
+  const text = "グルコだよ🍀\n前回との差分は-4mg/dLで、小さくまとまる動きが見えているよ。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("vague_metric_metaphor"));
+});
+
 test("unicorn is eligible only for today's latest reading of exactly 100mg/dL", () => {
   assert.equal(isUnicornEligibleSummary({
     period: "today",

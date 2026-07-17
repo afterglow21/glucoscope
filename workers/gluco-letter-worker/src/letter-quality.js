@@ -8,6 +8,12 @@ const BLAME_WEIGHTED_METRIC_PATTERN = /(?:\bTBR\b|\bTAR\b|\bCV\b)[^\r\n。！？
 const DEFICIT_METRIC_PATTERN = /(?:\bTIR\b|\bGlucoScore\b)[^\r\n。！？]{0,36}(?:しか(?:ない|なかった)|まだ(?:低い|少ない)?|低すぎる|悪い|問題(?:だ|がある)?)/giu;
 const JUDGMENTAL_METRIC_PREFIX_PATTERN = /(?:残念ながら|まだ)[^\r\n。！？]{0,28}(?:\bTIR\b|\bTAR\b|\bTBR\b|\bCV\b|\bGlucoScore\b)/giu;
 const ISOLATED_METRIC_EXCLAMATION_PATTERN = /^(?:[・-]\s*)?(?:TIR|TAR|TBR|CV|GlucoScore)[^\r\n。！？!?]{0,30}[！!]\s*$/gmu;
+const INTERNAL_WRITING_GUIDANCE_PATTERN = /(?:いたわり優先|非公開の書き方指示|文章づくりの注意|Compassion priority|Private writing guidance)/giu;
+const VAGUE_METRIC_METAPHOR_PATTERN = /(?:平均(?:血糖)?の雰囲気|戻りの力|後からそっと見る場所|見る場所にしておく|小さくまとまる動き|低め寄りの景色|全体の景色)/gu;
+const TBR_MINIMIZING_PATTERN = /\bTBR\b[^\r\n。！？]{0,48}(?:少し|ちょっと|わずか)/giu;
+const LOW_TIME_REASSURANCE_PATTERN = /(?:\bTBR\b|低めの時間)[^\r\n。！？]{0,64}安心材料/giu;
+const GMI_OVERINTERPRETATION_PATTERN = /\bGMI\b[^\r\n。！？]{0,64}(?:荒れて|荒れ|穏やか|安定|落ち着)/giu;
+const UNSUPPORTED_METRIC_CHANGE_PATTERN = /(?:\bTIR\b|\bTAR\b|\bTBR\b|\bCV\b)[^\r\n。！？]{0,48}(?:増えている|増えた|減っている|減った|戻っている|戻った)/giu;
 
 function getJapaneseSentenceSegments(text = "") {
   return String(text ?? "")
@@ -98,6 +104,36 @@ export function getGeneratedLetterQualityIssues(
     issues.add("isolated_metric_exclamation");
   }
   ISOLATED_METRIC_EXCLAMATION_PATTERN.lastIndex = 0;
+
+  if (language === "ja" && INTERNAL_WRITING_GUIDANCE_PATTERN.test(normalizedText)) {
+    issues.add("internal_writing_guidance");
+  }
+  INTERNAL_WRITING_GUIDANCE_PATTERN.lastIndex = 0;
+
+  if (language === "ja" && VAGUE_METRIC_METAPHOR_PATTERN.test(normalizedText)) {
+    issues.add("vague_metric_metaphor");
+  }
+  VAGUE_METRIC_METAPHOR_PATTERN.lastIndex = 0;
+
+  if (language === "ja" && TBR_MINIMIZING_PATTERN.test(normalizedText)) {
+    issues.add("tbr_minimizing_wording");
+  }
+  TBR_MINIMIZING_PATTERN.lastIndex = 0;
+
+  if (language === "ja" && LOW_TIME_REASSURANCE_PATTERN.test(normalizedText)) {
+    issues.add("low_time_as_reassurance");
+  }
+  LOW_TIME_REASSURANCE_PATTERN.lastIndex = 0;
+
+  if (language === "ja" && GMI_OVERINTERPRETATION_PATTERN.test(normalizedText)) {
+    issues.add("gmi_overinterpretation");
+  }
+  GMI_OVERINTERPRETATION_PATTERN.lastIndex = 0;
+
+  if (language === "ja" && UNSUPPORTED_METRIC_CHANGE_PATTERN.test(normalizedText)) {
+    issues.add("unsupported_metric_change");
+  }
+  UNSUPPORTED_METRIC_CHANGE_PATTERN.lastIndex = 0;
 
   const containsUnicornWording = UNICORN_WORDING_PATTERN.test(normalizedText);
   UNICORN_WORDING_PATTERN.lastIndex = 0;

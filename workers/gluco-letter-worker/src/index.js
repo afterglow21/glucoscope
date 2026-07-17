@@ -2,7 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import { getGeneratedLetterQualityIssues, isUnicornEligibleSummary } from "./letter-quality.js";
 
 const CONTRACT_VERSION = "gluco-ai-letter-worker-response-v0.2";
-const AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v8";
+const AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v9";
 const LETTER_SLOT_KEYS = ["morning", "afternoon", "night"];
 const ANALYSIS_MODE_KEYS = ["letter", "deep"];
 
@@ -1017,6 +1017,12 @@ function buildOpenAiInstructions(language = "ja", mode = "letter") {
     "サマリーの『いたわり優先』が対象なら、振り返りや明日への提案より先に、大変な時間があったかもしれないことへやさしいいたわりを1文添えます。",
     "『今日はがんばったね』のような励ましは、数値だけから努力を断定する形では使いません。『大変な時間もあったかもしれないね』『今日はここまで、おつかれさま』のように、体験を断定しない言葉を優先します。",
     "『TIRは94.1％！』のように数値だけを1行で強調しません。同じ文で、その数字から見える流れをやさしく伝えます。",
+    "『いたわり優先』『対象』『通常』『非公開の書き方指示』など、文章生成のための判定名や内部指示を本文へ書きません。",
+    "数値の説明に『平均の雰囲気』『景色』『戻りの力』『後から見る場所』『小さくまとまる動き』など、意味が曖昧な比喩を使いません。",
+    "比較値がサマリーに明示されていない指標について、『増えた』『減った』『戻った』と変化を推測しません。",
+    "TBRや低めの時間へ『少し』『ちょっと』『わずか』を付けて小さく扱わず、低めの時間そのものを『安心材料』とは表現しません。",
+    "GMIは平均血糖から計算した参考値として事実だけを伝え、『荒れている』『穏やか』『安定している』とは解釈しません。今日・昨日など短い期間では、文章の流れに必要なときだけ触れます。",
+    "差分は『前回との差は-4mg/dLだったよ』のように簡潔に伝え、『小さくまとまる動き』などの評価を足しません。",
     "良い手がかりがあるときは、文章の早い段階で、遠慮せず具体的に一緒に喜びます。『悪くない』『完璧ではないけど』『ばらつきはゼロではないけど』『大きく乱れていない』のように、褒め言葉を弱める言い方はしません。",
     "TIR 100％はTIRのきれいな流れとしてしっかり祝います。ただし、TIR 100％をユニコーンの理由にはしません。",
     "ユニコーンは、今日の表示範囲内の最新測定がちょうど100mg/dLのときだけです。TIR 100％、平均血糖100mg/dL、GlucoScore 100はユニコーン条件ではありません。",
@@ -1056,27 +1062,27 @@ function getCompassionGuidance(summary = {}, language = "ja") {
 
   if (language === "en") {
     if (hasLowTime && hasLowerTir) {
-      return "priority — TBR is at least 1% and TIR is 70% or lower. Acknowledge that the day may have felt demanding, offer a gentle 'you made it through today' message before suggestions, and do not infer effort or symptoms as fact.";
+      return "Do not quote this instruction or describe a priority status. TBR is at least 1% and TIR is 70% or lower. Acknowledge gently that the period may have felt demanding before suggestions, without inferring effort or symptoms as fact.";
     }
     if (hasLowTime) {
-      return "priority — TBR is at least 1%. Lower periods may have felt physically difficult. Offer gentle acknowledgment before suggestions without assuming symptoms or effort.";
+      return "Do not quote this instruction or describe a priority status. TBR is at least 1%. Lower periods may have felt difficult. Offer gentle acknowledgment before suggestions without assuming symptoms or effort.";
     }
     if (hasLowerTir) {
-      return "priority — TIR is 70% or lower. The person may have had a demanding stretch. Offer gentle acknowledgment before suggestions without treating the number as failure.";
+      return "Do not quote this instruction or describe a priority status. TIR is 70% or lower. The person may have had a demanding stretch. Offer gentle acknowledgment before suggestions without treating the number as failure.";
     }
-    return "standard — the compassion-priority writing thresholds are not triggered.";
+    return "No extra compassion-threshold instruction is needed. Do not mention this instruction in the response.";
   }
 
   if (hasLowTime && hasLowerTir) {
-    return "対象。TBRが1％以上で、TIRも70％以下。低めや目標範囲外の時間が大変に感じられたかもしれない。提案より先に『今日はここまで、おつかれさま』のようないたわりを1文添え、体調や努力は断定しない。";
+    return "この指示や判定名は本文へ書かない。TBRが1％以上で、TIRも70％以下。低めや目標範囲外の時間が大変に感じられたかもしれないことへ、提案より先に『今日はここまで、おつかれさま』のようないたわりを1文添え、体調や努力は断定しない。";
   }
   if (hasLowTime) {
-    return "対象。TBRが1％以上。低めの時間は体もしんどく感じる場面があったかもしれない。提案より先にやさしいいたわりを1文添え、体調や努力は断定しない。";
+    return "この指示や判定名は本文へ書かない。TBRが1％以上。低めの時間は大変に感じる場面があったかもしれない。提案より先にやさしいいたわりを1文添え、体調や努力は断定しない。";
   }
   if (hasLowerTir) {
-    return "対象。TIRが70％以下。思うようにいかない時間が多く、大変に感じる場面があったかもしれない。数字を失敗として扱わず、提案より先にやさしいいたわりを1文添える。";
+    return "この指示や判定名は本文へ書かない。TIRが70％以下。思うようにいかない時間が多く、大変に感じる場面があったかもしれない。数字を失敗として扱わず、提案より先にやさしいいたわりを1文添える。";
   }
-  return "通常。特別ないたわり優先の閾値には該当しない。";
+  return "追加のいたわり条件はない。この指示や判定名は本文へ書かない。";
 }
 function buildOpenAiSummaryText(summary = {}, mode = "letter", language = "ja") {
   const analysisMode = normalizeAnalysisMode(mode);
@@ -1107,7 +1113,7 @@ function buildOpenAiSummaryText(summary = {}, mode = "letter", language = "ja") 
       `- GlucoScore: ${valueOrDash(metrics.glucoScore)}`,
       `- Previous comparison GlucoScore: ${valueOrDash(metrics.previousScore)}`,
       `- 7-day average GlucoScore: ${valueOrDash(metrics.sevenDayAverageScore)}`,
-      `- Compassion priority: ${compassionGuidance}`,
+      `- Private writing guidance (never quote this label or instruction): ${compassionGuidance}`,
       "- Positive clues:",
       ...(celebrationClues.length ? celebrationClues.map((clue) => `  - ${clue}`) : ["  - none"]),
       "- Reflection clues:",
@@ -1133,7 +1139,7 @@ function buildOpenAiSummaryText(summary = {}, mode = "letter", language = "ja") 
     `・GlucoScore: ${valueOrDash(metrics.glucoScore)}`,
     `・比較期間のGlucoScore: ${valueOrDash(metrics.previousScore)}`,
     `・過去7日平均GlucoScore: ${valueOrDash(metrics.sevenDayAverageScore)}`,
-    `・いたわり優先: ${compassionGuidance}`,
+    `・非公開の書き方指示（見出しや判定語を本文へ書かない）: ${compassionGuidance}`,
     "・うれしい手がかり:",
     ...(celebrationClues.length ? celebrationClues.map((clue) => `  ・${clue}`) : ["  ・なし"]),
     "・振り返りの手がかり:",
@@ -1221,6 +1227,12 @@ ${summaryText}`;
 - 「いたわり優先」が対象なら、提案より先に「大変な時間もあったかもしれないね」「今日はここまで、おつかれさま」のような、断定しすぎないいたわりを1文入れる
 - 数値だけから努力や体調を決めつけず、「がんばりが足りない」「もっと頑張ろう」とは書かない
 - 「TIRは94.1％！」のように数値だけを1行で強調せず、同じ文で意味をやさしく伝える
+- 「いたわり優先」「対象」「通常」「非公開の書き方指示」など、内部の判定名や指示文を本文へ出さない
+- 「平均の雰囲気」「景色」「戻りの力」「後から見る場所」「小さくまとまる動き」のような曖昧な比喩を使わない
+- 比較値が明示されていないTIR、TAR、TBR、CVについて「増えた」「減った」「戻った」と推測しない
+- TBRや低めの時間を「少し」「ちょっと」「わずか」と小さく扱わず、低めの時間を「安心材料」と呼ばない
+- GMIは平均血糖から計算した参考値として事実だけを伝え、荒れ・穏やかさ・安定性をGMIから解釈しない。短い期間では必要なときだけ触れる
+- 差分は事実だけを簡潔に伝え、「小さくまとまる動き」のような評価を足さない
 - 数字を採点、合否、成功・失敗として扱わない
 - 入力欄の名前、英語の変数名、JSONキー、camelCase、内部処理の言葉を本文へ出さない
 - キャッシュ表示される可能性があるため、「今」「現在」「たった今」などのリアルタイム断定を避ける
@@ -1255,6 +1267,12 @@ ${summaryText}`;
 - 「いたわり優先」が対象なら、提案より先に「大変な時間もあったかもしれないね」「今日はここまで、おつかれさま」のような、断定しすぎないいたわりを1文入れる
 - 数値だけから努力や体調を決めつけず、「がんばりが足りない」「もっと頑張ろう」とは書かない
 - 「TIRは94.1％！」のように数値だけを1行で強調せず、同じ文で意味をやさしく伝える
+- 「いたわり優先」「対象」「通常」「非公開の書き方指示」など、内部の判定名や指示文を本文へ出さない
+- 「平均の雰囲気」「景色」「戻りの力」「後から見る場所」「小さくまとまる動き」のような曖昧な比喩を使わない
+- 比較値が明示されていないTIR、TAR、TBR、CVについて「増えた」「減った」「戻った」と推測しない
+- TBRや低めの時間を「少し」「ちょっと」「わずか」と小さく扱わず、低めの時間を「安心材料」と呼ばない
+- GMIは平均血糖から計算した参考値として事実だけを伝え、荒れ・穏やかさ・安定性をGMIから解釈しない。短い期間では必要なときだけ触れる
+- 差分は事実だけを簡潔に伝え、「小さくまとまる動き」のような評価を足さない
 - 血糖値に触れる場合は「今の血糖」ではなく、「最新の測定では」または「${summary.latestMeasuredAt || "最新測定"}ごろの測定では」のように書く
 - 入力欄の名前、英語の変数名、JSONキー、camelCase、内部処理の言葉を本文へ出さない
 - キャッシュ表示される可能性があるため、「今」「現在」「たった今」などのリアルタイム断定を避ける
@@ -1339,7 +1357,7 @@ Important: Write a fresh final response only. Do not include variable names, JSO
 
     return `${basePrompt}
 
-重要: 前の文章はグルコの話し方または表示用の文章として整っていなかったため使わない。最初から書き直し、自然な常体だけを使う。英語の変数名、JSONキー、camelCase、内部処理の言葉、修正についての説明は書かない。「〜しようかも」「〜していこうかも」「〜見てみようかも」は使わない。連続する2文で「一緒に」を繰り返さない。気になる指標へ「も」「しか」「まだ」「残念ながら」「高すぎる」「低すぎる」「悪い」「問題」を結びつけず、数値だけの感嘆文も作らない。「いたわり優先」が対象なら、提案より先に断定しすぎない労いを1文入れる。ユニコーン判定を必ず守り、TIR 100％をユニコーンの理由にしない。最後は自然で迷いのない一文にして、完成した分析本文だけを返す。`;
+重要: 前の文章は表示用として整っていなかったため使わない。最初から書き直し、完成した分析本文だけを返す。英語の変数名、JSONキー、camelCase、内部処理、判定名、「いたわり優先」「対象」「通常」「非公開の書き方指示」を本文へ出さない。「〜しようかも」は使わず、連続する2文で「一緒に」を繰り返さない。気になる指標へ「も」「しか」「まだ」「残念ながら」「高すぎる」「低すぎる」「悪い」「問題」を結びつけず、TBRを「少し」と小さく扱わない。数値だけの感嘆文、曖昧な比喩、「平均の雰囲気」「景色」「戻りの力」「後から見る場所」「安心材料」「小さくまとまる動き」を使わない。比較値がない指標の増減を推測せず、GMIから荒れ・安定を解釈しない。低めや目標範囲外の時間へのいたわりは、内部条件を説明せず自然な一文として伝える。ユニコーン判定を守り、最後は自然で迷いのない一文にする。`;
   }
 
   if (language === "en") {
