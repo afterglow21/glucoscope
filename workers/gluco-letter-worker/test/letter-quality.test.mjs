@@ -323,6 +323,62 @@ test("rejects a one-point GlucoScore comparison in a short letter", () => {
   assert.ok(issues.includes("minor_score_difference_overemphasized"));
 });
 
+
+
+test("rejects the observed target-time optimization directive", () => {
+  const text = "グルコだよ🍀\n最後に、次の1日も「目標の時間を増やす」ことだけ意識して進めてみようね🍀";
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("metric_optimization_directive"));
+  assert.ok(issues.includes("single_focus_directive"));
+});
+
+test("rejects a directive to reduce TBR", () => {
+  const text = "グルコだよ🍀\n次はTBRを減らすことを目指そうね。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(
+    issues.includes("metric_optimization_directive")
+    || issues.includes("metric_target_invitation")
+  );
+});
+
+test("rejects a directive to maintain GlucoScore", () => {
+  const text = "グルコだよ🍀\nGlucoScoreを維持することを意識して進めてみようね。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("metric_optimization_directive"));
+});
+
+test("rejects a single-focus instruction without a metric name", () => {
+  const text = "グルコだよ🍀\n明日はこのことだけ意識して過ごしてみようね。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("single_focus_directive"));
+});
+
+test("rejects a metric target invitation", () => {
+  const text = "グルコだよ🍀\n目標範囲の時間を増やせるようにしていこうね。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(
+    issues.includes("metric_optimization_directive")
+    || issues.includes("metric_target_invitation")
+  );
+});
+
+test("accepts factual TIR recognition without turning it into a goal", () => {
+  const text = "グルコだよ🍀\nTIRは98.2％で、目標範囲で過ごせた時間がしっかり見えているよ。";
+  assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja"), []);
+});
+
+test("accepts a reflection-based closing", () => {
+  const text = "グルコだよ🍀\n今日の数字を急いで答えにしなくて大丈夫だよ。余裕があるときに、今日の流れをそっと振り返ってみようね🍀";
+  assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja"), []);
+});
+
+test("accepts compassion before one gentle reflection", () => {
+  const text = "グルコだよ🍀\nTBRは1.8％だったよ。大変に感じる時間もあったかもしれないね。今日はここまで、おつかれさま🍀\n余裕があるときに、その時間帯をそっと振り返ってみようね。";
+  assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja", {
+    compassionRequired: true
+  }), []);
+});
+
 test("unicorn is eligible only for today's latest reading of exactly 100mg/dL", () => {
   assert.equal(isUnicornEligibleSummary({
     period: "today",
