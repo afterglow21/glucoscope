@@ -222,6 +222,107 @@ test("rejects observed unnatural delta metaphor", () => {
   assert.ok(issues.includes("vague_metric_metaphor"));
 });
 
+
+
+test("rejects causal TBR wording before reflection advice", () => {
+  const text = "グルコだよ🍀\nTBRは12.9％だから、低めの時間を見返してみようね。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("tbr_causal_connector"));
+});
+
+test("rejects reading a trend from one delta value", () => {
+  const text = "グルコだよ🍀\n前回との差は+2mg/dLで、急に大きくは動いていない流れだね。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("delta_trend_overinterpretation"));
+});
+
+test("accepts a factual delta sentence", () => {
+  const text = "グルコだよ🍀\n前回との差は+2mg/dLだったよ。";
+  assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja"), []);
+});
+
+test("rejects awkward fixed-amount wording", () => {
+  const text = "グルコだよ🍀\nTBRは12.9％で、低めの時間が一定ぶんあるよ。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("awkward_metric_phrasing"));
+});
+
+test("rejects awkward GMI reference wording", () => {
+  const text = "グルコだよ🍀\nGMIは5.2％で、参考値として押さえられるよ。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("awkward_metric_phrasing"));
+});
+
+test("rejects the same metric repeated in separate sections", () => {
+  const text = [
+    "グルコだよ🍀",
+    "📊 数字の手がかり",
+    "TIRは87.1％で、目標範囲で過ごせた時間がしっかりあるよ。",
+    "🌟 うれしい手がかり",
+    "TIRは87.1％で、積み重なりが見えているよ🍀"
+  ].join("\n");
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("repeated_metric_across_sections"));
+});
+
+test("allows one comparison sentence to name GlucoScore twice", () => {
+  const text = "グルコだよ🍀\nGlucoScoreは74で、比較期間のGlucoScore 73とほぼ同じだったよ。";
+  assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja", {
+    analysisMode: "deep",
+    minorScoreDifference: true
+  }), []);
+});
+
+test("rejects two adjacent closing invitations", () => {
+  const text = [
+    "グルコだよ🍀",
+    "余裕があるときに、低めだった時間帯をそっと見返してみようね🍀",
+    "一緒に見ていこうね🍀"
+  ].join("\n");
+  const issues = getGeneratedLetterQualityIssues(text, "ja");
+  assert.ok(issues.includes("repeated_closing_invitation"));
+});
+
+test("requires compassion when the summary requests it", () => {
+  const text = "グルコだよ🍀\nTBRは12.9％だったよ。低めだった時間帯を見返してみようね。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja", {
+    compassionRequired: true
+  });
+  assert.ok(issues.includes("missing_compassion_acknowledgment"));
+});
+
+test("rejects compassion placed after the first reflection invitation", () => {
+  const text = "グルコだよ🍀\n低めだった時間帯を見返してみようね。大変な時間もあったかもしれないね。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja", {
+    compassionRequired: true
+  });
+  assert.ok(issues.includes("compassion_after_reflection_invitation"));
+});
+
+test("accepts compassion before a reflection invitation", () => {
+  const text = "グルコだよ🍀\nTBRは12.9％だったよ。大変な時間もあったかもしれないね。今日はここまで、おつかれさま🍀\n余裕があるときに、低めだった時間帯をそっと見返してみようね。";
+  assert.deepEqual(getGeneratedLetterQualityIssues(text, "ja", {
+    compassionRequired: true
+  }), []);
+});
+
+test("rejects GMI in today or yesterday reflections", () => {
+  const text = "グルコだよ🍀\nGMIの目安は5.2％だったよ。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja", {
+    period: "today"
+  });
+  assert.ok(issues.includes("short_range_gmi_mention"));
+});
+
+test("rejects a one-point GlucoScore comparison in a short letter", () => {
+  const text = "グルコだよ🍀\nGlucoScoreは比較期間より1高く見えているよ。";
+  const issues = getGeneratedLetterQualityIssues(text, "ja", {
+    analysisMode: "letter",
+    minorScoreDifference: true
+  });
+  assert.ok(issues.includes("minor_score_difference_overemphasized"));
+});
+
 test("unicorn is eligible only for today's latest reading of exactly 100mg/dL", () => {
   assert.equal(isUnicornEligibleSummary({
     period: "today",

@@ -14,6 +14,12 @@ const TBR_MINIMIZING_PATTERN = /\bTBR\b[^\r\n。！？]{0,48}(?:少し|ちょっ
 const LOW_TIME_REASSURANCE_PATTERN = /(?:\bTBR\b|低めの時間)[^\r\n。！？]{0,64}安心材料/giu;
 const GMI_OVERINTERPRETATION_PATTERN = /\bGMI\b[^\r\n。！？]{0,64}(?:荒れて|荒れ|穏やか|安定|落ち着)/giu;
 const UNSUPPORTED_METRIC_CHANGE_PATTERN = /(?:\bTIR\b|\bTAR\b|\bTBR\b|\bCV\b)[^\r\n。！？]{0,48}(?:増えている|増えた|減っている|減った|戻っている|戻った)/giu;
+const TBR_CAUSAL_CONNECTOR_PATTERN = /\bTBR\b[^\r\n。！？]{0,40}(?:だから|なので|のため)/giu;
+const DELTA_TREND_OVERINTERPRETATION_PATTERN = /(?:前回との差(?:分)?|差分)[^\r\n。！？]{0,72}(?:流れ|動き|急に大きく)/gu;
+const AWKWARD_METRIC_PHRASING_PATTERN = /(?:一定ぶん|押さえられる|低め寄りにまとまっている|比較期間より\s*1(?:だけ)?(?:高|低)く|1(?:だけ)?(?:高|低)く見えている)/gu;
+const COMPASSION_ACKNOWLEDGMENT_PATTERN = /(?:大変[^\r\n。！？]{0,36}かもしれない|しんど[^\r\n。！？]{0,36}かもしれない|今日はここまで[、,]?\s*おつかれさま|おつかれさま)/u;
+const REFLECTION_INVITATION_PATTERN = /(?:見返して|振り返って|見てみよう|見ていこう|眺めてみよう|思い出してみよう|たどってみよう|辿ってみよう)/u;
+const PUBLIC_METRIC_NAMES = ["TIR", "TAR", "TBR", "CV", "GMI", "GlucoScore"];
 
 function getJapaneseSentenceSegments(text = "") {
   return String(text ?? "")
@@ -31,6 +37,38 @@ function hasRepeatedTogetherInAdjacentClosingSentences(text = "") {
     && segment.includes("一緒に")
     && closingSegments[index + 1].includes("一緒に")
   ));
+}
+
+function hasRepeatedAdjacentClosingInvitations(text = "") {
+  const closingSegments = getJapaneseSentenceSegments(text).slice(-3);
+
+  return closingSegments.some((segment, index) => (
+    index < closingSegments.length - 1
+    && REFLECTION_INVITATION_PATTERN.test(segment)
+    && REFLECTION_INVITATION_PATTERN.test(closingSegments[index + 1])
+  ));
+}
+
+function getMetricsRepeatedAcrossSegments(text = "") {
+  const segments = getJapaneseSentenceSegments(text);
+
+  return PUBLIC_METRIC_NAMES.filter((metricName) => (
+    segments.filter((segment) => segment.includes(metricName)).length > 1
+  ));
+}
+
+function getCompassionPlacementIssue(text = "", options = {}) {
+  if (options?.compassionRequired !== true) return null;
+
+  const compassionIndex = String(text ?? "").search(COMPASSION_ACKNOWLEDGMENT_PATTERN);
+  if (compassionIndex < 0) return "missing_compassion_acknowledgment";
+
+  const invitationIndex = String(text ?? "").search(REFLECTION_INVITATION_PATTERN);
+  if (invitationIndex >= 0 && invitationIndex < compassionIndex) {
+    return "compassion_after_reflection_invitation";
+  }
+
+  return null;
 }
 
 export function isUnicornEligibleSummary(summary = {}) {
@@ -134,6 +172,49 @@ export function getGeneratedLetterQualityIssues(
     issues.add("unsupported_metric_change");
   }
   UNSUPPORTED_METRIC_CHANGE_PATTERN.lastIndex = 0;
+
+  if (language === "ja" && TBR_CAUSAL_CONNECTOR_PATTERN.test(normalizedText)) {
+    issues.add("tbr_causal_connector");
+  }
+  TBR_CAUSAL_CONNECTOR_PATTERN.lastIndex = 0;
+
+  if (language === "ja" && DELTA_TREND_OVERINTERPRETATION_PATTERN.test(normalizedText)) {
+    issues.add("delta_trend_overinterpretation");
+  }
+  DELTA_TREND_OVERINTERPRETATION_PATTERN.lastIndex = 0;
+
+  if (language === "ja" && AWKWARD_METRIC_PHRASING_PATTERN.test(normalizedText)) {
+    issues.add("awkward_metric_phrasing");
+  }
+  AWKWARD_METRIC_PHRASING_PATTERN.lastIndex = 0;
+
+  if (language === "ja" && hasRepeatedAdjacentClosingInvitations(normalizedText)) {
+    issues.add("repeated_closing_invitation");
+  }
+
+  if (language === "ja") {
+    const repeatedMetrics = getMetricsRepeatedAcrossSegments(normalizedText);
+    if (repeatedMetrics.length) {
+      issues.add("repeated_metric_across_sections");
+    }
+
+    const compassionPlacementIssue = getCompassionPlacementIssue(normalizedText, options);
+    if (compassionPlacementIssue) {
+      issues.add(compassionPlacementIssue);
+    }
+
+    if (["today", "yesterday"].includes(options?.period) && /\bGMI\b/iu.test(normalizedText)) {
+      issues.add("short_range_gmi_mention");
+    }
+
+    if (
+      options?.analysisMode === "letter"
+      && options?.minorScoreDifference === true
+      && /\bGlucoScore\b/iu.test(normalizedText)
+    ) {
+      issues.add("minor_score_difference_overemphasized");
+    }
+  }
 
   const containsUnicornWording = UNICORN_WORDING_PATTERN.test(normalizedText);
   UNICORN_WORDING_PATTERN.lastIndex = 0;

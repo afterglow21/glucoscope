@@ -2,7 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import { getGeneratedLetterQualityIssues, isUnicornEligibleSummary } from "./letter-quality.js";
 
 const CONTRACT_VERSION = "gluco-ai-letter-worker-response-v0.2";
-const AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v9";
+const AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v10";
 const LETTER_SLOT_KEYS = ["morning", "afternoon", "night"];
 const ANALYSIS_MODE_KEYS = ["letter", "deep"];
 
@@ -1023,6 +1023,12 @@ function buildOpenAiInstructions(language = "ja", mode = "letter") {
     "TBRや低めの時間へ『少し』『ちょっと』『わずか』を付けて小さく扱わず、低めの時間そのものを『安心材料』とは表現しません。",
     "GMIは平均血糖から計算した参考値として事実だけを伝え、『荒れている』『穏やか』『安定している』とは解釈しません。今日・昨日など短い期間では、文章の流れに必要なときだけ触れます。",
     "差分は『前回との差は-4mg/dLだったよ』のように簡潔に伝え、『小さくまとまる動き』などの評価を足しません。",
+    "TBRは『TBRは12.9％だったよ』と事実として区切り、『だから』『なので』で振り返りの提案へ直結させません。いたわりが必要なときは、どの提案より先に自然な労いを置きます。",
+    "前回との差分は1回の測定差としてだけ伝え、そこから『急に大きく動いていない流れ』『落ち着いた動き』など、時間的な傾向を推測しません。",
+    "同じ指標を複数の見出しや段落で繰り返しません。うれしい点は、その指標を最初に説明する文の中で一緒に伝えます。",
+    "『一定ぶん』『参考値として押さえられる』『比較期間より1だけ高い』『低め寄りにまとまっている』のような不自然な言い回しを使いません。",
+    "今日・昨日の短い期間ではGMIを本文へ出しません。GlucoScoreが比較期間と1以内の差なら、短いお手紙では省略し、しっかり分析で触れる場合も『ほぼ同じ』と簡潔に伝えます。",
+    "振り返りの提案や締めの呼びかけは最後に1つだけ置き、似た意味の『見返してみようね』『一緒に見ていこうね』を続けません。",
     "良い手がかりがあるときは、文章の早い段階で、遠慮せず具体的に一緒に喜びます。『悪くない』『完璧ではないけど』『ばらつきはゼロではないけど』『大きく乱れていない』のように、褒め言葉を弱める言い方はしません。",
     "TIR 100％はTIRのきれいな流れとしてしっかり祝います。ただし、TIR 100％をユニコーンの理由にはしません。",
     "ユニコーンは、今日の表示範囲内の最新測定がちょうど100mg/dLのときだけです。TIR 100％、平均血糖100mg/dL、GlucoScore 100はユニコーン条件ではありません。",
@@ -1084,11 +1090,53 @@ function getCompassionGuidance(summary = {}, language = "ja") {
   }
   return "追加のいたわり条件はない。この指示や判定名は本文へ書かない。";
 }
+function getConciseMetricGuidance(summary = {}, mode = "letter", language = "ja") {
+  const metrics = summary.metrics || {};
+  const currentScore = Number(metrics.glucoScore);
+  const previousScore = Number(metrics.previousScore);
+  const scoreDifference = Number.isFinite(currentScore) && Number.isFinite(previousScore)
+    ? currentScore - previousScore
+    : null;
+  const isShortRange = summary.period === "today" || summary.period === "yesterday";
+  const hasMinorScoreDifference = Number.isFinite(scoreDifference) && Math.abs(scoreDifference) <= 1;
+
+  if (language === "en") {
+    const guidance = [
+      "Mention each metric in only one sentence or section.",
+      "Treat a single delta as one measurement difference, not as a trend.",
+      "Use only one closing reflection invitation."
+    ];
+    if (isShortRange) guidance.push("Omit GMI from today and yesterday reflections.");
+    if (hasMinorScoreDifference) {
+      guidance.push(mode === "letter"
+        ? "Omit the GlucoScore comparison because the difference is only one point or less."
+        : "If mentioning the GlucoScore comparison, describe it simply as nearly the same and do not emphasize the one-point difference.");
+    }
+    return guidance.join(" ");
+  }
+
+  const guidance = [
+    "同じ指標は1つの文または1つの箇条書きだけで扱い、別の見出しで繰り返さない。",
+    "差分は1回の測定差として事実だけを伝え、流れや傾向を推測しない。",
+    "振り返りの提案と締めの呼びかけは合わせて1つだけにする。"
+  ];
+  if (isShortRange) guidance.push("今日・昨日ではGMIを本文へ出さない。");
+  if (hasMinorScoreDifference) {
+    guidance.push(mode === "letter"
+      ? "GlucoScoreの比較差は1以内なので、短いお手紙では触れない。"
+      : "GlucoScoreの比較差は1以内。触れる場合は『ほぼ同じ』とだけ伝え、1点差を強調しない。");
+  }
+  return guidance.join(" ");
+}
+
 function buildOpenAiSummaryText(summary = {}, mode = "letter", language = "ja") {
   const analysisMode = normalizeAnalysisMode(mode);
   const metrics = summary.metrics || {};
   const celebrationClues = buildCelebrationClues(summary);
-  const compassionGuidance = getCompassionGuidance(summary, language);
+  const privateWritingGuidance = [
+    getCompassionGuidance(summary, language),
+    getConciseMetricGuidance(summary, analysisMode, language)
+  ].filter(Boolean).join(" ");
   const patternHints = Array.isArray(summary.patternHints)
     ? summary.patternHints.slice(0, analysisMode === "deep" ? 6 : 4)
     : [];
@@ -1113,7 +1161,7 @@ function buildOpenAiSummaryText(summary = {}, mode = "letter", language = "ja") 
       `- GlucoScore: ${valueOrDash(metrics.glucoScore)}`,
       `- Previous comparison GlucoScore: ${valueOrDash(metrics.previousScore)}`,
       `- 7-day average GlucoScore: ${valueOrDash(metrics.sevenDayAverageScore)}`,
-      `- Private writing guidance (never quote this label or instruction): ${compassionGuidance}`,
+      `- Private writing guidance (never quote this label or instruction): ${privateWritingGuidance}`,
       "- Positive clues:",
       ...(celebrationClues.length ? celebrationClues.map((clue) => `  - ${clue}`) : ["  - none"]),
       "- Reflection clues:",
@@ -1139,7 +1187,7 @@ function buildOpenAiSummaryText(summary = {}, mode = "letter", language = "ja") 
     `・GlucoScore: ${valueOrDash(metrics.glucoScore)}`,
     `・比較期間のGlucoScore: ${valueOrDash(metrics.previousScore)}`,
     `・過去7日平均GlucoScore: ${valueOrDash(metrics.sevenDayAverageScore)}`,
-    `・非公開の書き方指示（見出しや判定語を本文へ書かない）: ${compassionGuidance}`,
+    `・非公開の書き方指示（見出しや判定語を本文へ書かない）: ${privateWritingGuidance}`,
     "・うれしい手がかり:",
     ...(celebrationClues.length ? celebrationClues.map((clue) => `  ・${clue}`) : ["  ・なし"]),
     "・振り返りの手がかり:",
@@ -1233,6 +1281,12 @@ ${summaryText}`;
 - TBRや低めの時間を「少し」「ちょっと」「わずか」と小さく扱わず、低めの時間を「安心材料」と呼ばない
 - GMIは平均血糖から計算した参考値として事実だけを伝え、荒れ・穏やかさ・安定性をGMIから解釈しない。短い期間では必要なときだけ触れる
 - 差分は事実だけを簡潔に伝え、「小さくまとまる動き」のような評価を足さない
+- TBRの数値を「だから」「なので」で提案へつなげず、いたわりが必要な場合は提案より先に自然な労いを置く
+- 前回との差分1点だけから「流れ」「動き」「傾向」を推測しない
+- 同じ指標を別の見出しで繰り返さず、良い点も最初の説明文の中で一緒に伝える
+- 「一定ぶん」「押さえられる」「1だけ高く見えている」「低め寄りにまとまっている」のような不自然な言い方を使わない
+- 今日・昨日ではGMIを本文へ出さない。GlucoScoreの比較差が1以内なら、短いお手紙では省略し、しっかり分析でも「ほぼ同じ」とだけ伝える
+- 振り返りの提案と最後の呼びかけを二重にせず、似た意味の締めを1つだけにする
 - 数字を採点、合否、成功・失敗として扱わない
 - 入力欄の名前、英語の変数名、JSONキー、camelCase、内部処理の言葉を本文へ出さない
 - キャッシュ表示される可能性があるため、「今」「現在」「たった今」などのリアルタイム断定を避ける
@@ -1273,6 +1327,12 @@ ${summaryText}`;
 - TBRや低めの時間を「少し」「ちょっと」「わずか」と小さく扱わず、低めの時間を「安心材料」と呼ばない
 - GMIは平均血糖から計算した参考値として事実だけを伝え、荒れ・穏やかさ・安定性をGMIから解釈しない。短い期間では必要なときだけ触れる
 - 差分は事実だけを簡潔に伝え、「小さくまとまる動き」のような評価を足さない
+- TBRの数値を「だから」「なので」で提案へつなげず、いたわりが必要な場合は提案より先に自然な労いを置く
+- 前回との差分1点だけから「流れ」「動き」「傾向」を推測しない
+- 同じ指標を別の見出しで繰り返さず、良い点も最初の説明文の中で一緒に伝える
+- 「一定ぶん」「押さえられる」「1だけ高く見えている」「低め寄りにまとまっている」のような不自然な言い方を使わない
+- 今日・昨日ではGMIを本文へ出さない。GlucoScoreの比較差が1以内なら、短いお手紙では省略し、しっかり分析でも「ほぼ同じ」とだけ伝える
+- 振り返りの提案と最後の呼びかけを二重にせず、似た意味の締めを1つだけにする
 - 血糖値に触れる場合は「今の血糖」ではなく、「最新の測定では」または「${summary.latestMeasuredAt || "最新測定"}ごろの測定では」のように書く
 - 入力欄の名前、英語の変数名、JSONキー、camelCase、内部処理の言葉を本文へ出さない
 - キャッシュ表示される可能性があるため、「今」「現在」「たった今」などのリアルタイム断定を避ける
@@ -1357,7 +1417,7 @@ Important: Write a fresh final response only. Do not include variable names, JSO
 
     return `${basePrompt}
 
-重要: 前の文章は表示用として整っていなかったため使わない。最初から書き直し、完成した分析本文だけを返す。英語の変数名、JSONキー、camelCase、内部処理、判定名、「いたわり優先」「対象」「通常」「非公開の書き方指示」を本文へ出さない。「〜しようかも」は使わず、連続する2文で「一緒に」を繰り返さない。気になる指標へ「も」「しか」「まだ」「残念ながら」「高すぎる」「低すぎる」「悪い」「問題」を結びつけず、TBRを「少し」と小さく扱わない。数値だけの感嘆文、曖昧な比喩、「平均の雰囲気」「景色」「戻りの力」「後から見る場所」「安心材料」「小さくまとまる動き」を使わない。比較値がない指標の増減を推測せず、GMIから荒れ・安定を解釈しない。低めや目標範囲外の時間へのいたわりは、内部条件を説明せず自然な一文として伝える。ユニコーン判定を守り、最後は自然で迷いのない一文にする。`;
+重要: 前の文章は表示用として整っていなかったため使わない。最初から書き直し、完成した分析本文だけを返す。内部処理や判定名を出さず、気になる指標を責める言葉や曖昧な比喩を使わない。TBRを「だから」「なので」で提案へ直結させず、いたわりが必要な場合は振り返りの提案より先に自然な労いを置く。前回との差分1点から流れや傾向を推測しない。同じ指標を複数の見出しで繰り返さず、良い点も最初の説明文にまとめる。「一定ぶん」「押さえられる」「1だけ高く見えている」「低め寄りにまとまっている」を使わない。今日・昨日ではGMIを省き、GlucoScoreの比較差が1以内なら短いお手紙では省略する。振り返りの提案と締めを二重にせず、最後の呼びかけは1つだけにする。ユニコーン判定を守り、自然な本文だけを返す。`;
   }
 
   if (language === "en") {
@@ -1478,8 +1538,21 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
   const analysisMode = normalizeAnalysisMode(mode);
   const language = summary.language === "en" ? "en" : "ja";
   const limits = getOpenAiTokenLimits(config, analysisMode);
+  const metrics = summary.metrics || {};
+  const tir = Number(metrics.tir);
+  const tbr = Number(metrics.tbr);
+  const currentScore = Number(metrics.glucoScore);
+  const previousScore = Number(metrics.previousScore);
   const qualityOptions = {
-    allowUnicorn: isUnicornEligibleSummary(summary)
+    allowUnicorn: isUnicornEligibleSummary(summary),
+    analysisMode,
+    period: summary.period,
+    compassionRequired: (Number.isFinite(tbr) && tbr >= 1) || (Number.isFinite(tir) && tir <= 70),
+    minorScoreDifference: (
+      Number.isFinite(currentScore)
+      && Number.isFinite(previousScore)
+      && Math.abs(currentScore - previousScore) <= 1
+    )
   };
   const firstAttempt = await callOpenAiAttempt({
     summary,

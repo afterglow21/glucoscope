@@ -35,6 +35,7 @@ GitHub Pages
 - Japanese output is checked for blame-weighted metric phrasing such as `TBRは5.9%もある`, deficit wording such as `TIRは66%しかない`, and metric-only exclamation lines.
 - Internal writing labels such as `いたわり優先` are never allowed in the displayed letter.
 - The quality guard rejects observed vague metric metaphors, minimizing TBR wording, unsupported increase/decrease claims, GMI over-interpretation, and descriptions that turn lower periods into an `安心材料`.
+- The quality guard also rejects causal `TBR ... だから` phrasing, trend claims derived from a single delta, repeated metrics across sections, missing or late compassion acknowledgments, duplicate closing invitations, GMI in today/yesterday reflections, and overemphasis of a one-point GlucoScore comparison in a short letter.
 - If a complete first response fails those wording checks, the Worker retries once with a clean rewrite instruction. Text that still fails is not returned or cached.
 - Token and estimated-cost totals include both attempts when an automatic retry is needed.
 
@@ -64,7 +65,7 @@ The prompt must praise the observed flow rather than the person's worth or presu
 - Concerning metrics are stated as facts. The letter avoids blame-weighted words such as `も`, `しか`, `まだ`, `残念ながら`, `高すぎる`, `低すぎる`, `悪い`, and `問題` around those values.
 - A metric is not left as a standalone exclamation line; the same sentence explains the gentle reflection clue.
 
-The shared-cache schema is `gluco-ai-letter-cache-v9`, which prevents older cached wording from overriding the current compassion, language-precision, unicorn, and natural-closing rules.
+The shared-cache schema is `gluco-ai-letter-cache-v10`, which prevents older cached wording from overriding the current compassion, concise-metric, language-precision, unicorn, and natural-closing rules.
 
 ## Production CORS policy
 
