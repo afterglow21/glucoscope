@@ -13,6 +13,48 @@ Cloudflare Pages may be considered later, but the current priority is to publish
 The AI letter API continues to run through Cloudflare Worker.
 Provider API keys must stay server-side in the Worker environment and must never be committed to GitHub or placed in frontend JavaScript.
 
+## User Foundation 0.1
+
+The root page remains Kazuma's public demo. The experimental user-data route is:
+
+```text
+user.html
+```
+
+or:
+
+```text
+index.html?mode=user
+```
+
+In user mode, a setup dialog accepts a Gluroo Global Connect or other Nightscout-compatible URL and an API Secret/read token. The connection must return a valid glucose entry before it can be saved.
+
+Privacy and safety boundaries:
+
+- connection details stay in the selected browser `localStorage` or `sessionStorage`;
+- the browser reads the compatible API directly;
+- glucose history and connection details are not stored in Kazuma's Azure account, Cloudflare KV, or Durable Objects;
+- no CGM manufacturer, CareLink, LibreLinkUp, or Gluroo account password is requested;
+- browser storage is not an encrypted vault, so shared devices should use session-only storage or delete the connection after use;
+- Worker-generated AI letters are disabled in user mode until per-user cache and usage isolation are complete;
+- the local Gluco reflection and copy-to-ChatGPT path remain available.
+
+Run the adapter tests with:
+
+```bash
+node --check js/data-source.js
+node --check js/app.js
+node --test test/data-source.test.mjs
+```
+
+The full design and acceptance boundary are documented in:
+
+```text
+docs/Feature_Specs/USER_DATA_SOURCE_FOUNDATION.md
+```
+
+This phase changes only the static GitHub Pages frontend. It does not require a Cloudflare Worker deployment.
+
 ## GitHub Pages setup
 
 Use the repository root as the GitHub Pages source.
@@ -146,7 +188,9 @@ CORS limits which browser pages can read the API response. It is not a replaceme
 
 ## Cloudflare Web Analytics
 
-All public HTML pages include the Cloudflare Web Analytics beacon for aggregate page-view and performance monitoring. The archived `backup/` pages are intentionally excluded.
+Public-demo HTML pages use a local privacy-gated loader for Cloudflare Web Analytics aggregate page-view and performance monitoring. The loader does not fetch the analytics beacon when `mode=user` is active, when either GlucoScope user-connection storage key exists, or when browser storage cannot be checked. This applies across the same-origin About and Trust pages as well as the main page. The archived `backup/` pages and setup guides are excluded.
+
+Chart.js 4.5.1 is vendored under `vendor/chart.js/` with its MIT license. The user-data page therefore does not execute the chart runtime from a third-party CDN in the same origin context as browser-stored connection details.
 
 GlucoScope does not add custom analytics events or a custom visitor identifier. Glucose values, GlucoScore, AI letter text, Nightscout URLs, API information, and mobile-tab actions must not be intentionally encoded into analytics event names or additional analytics data. Public-facing details are maintained in:
 
@@ -172,3 +216,20 @@ AI letters are supportive reflections, not medical judgment.
 Gluco should also celebrate clearly when the summarized data contains a genuinely positive clue. TIR of 75% or higher, CV below 30%, and a latest reading near 100mg/dL may receive specific positive recognition. TIR of 100% should be celebrated enthusiastically. When today's latest reading is exactly 100mg/dL, Gluco may say `🦄 ユニコーンをつかまえた！` as a playful small-luck moment. These are writing rules, not medical grades, treatment targets, or judgments of the person.
 
 Unicorn Gluco illustrations are also available as a local collection encounter. The browser watches only newly received latest-glucose entries while the page is open; it never searches historical data for 100mg/dL. A fresh new reading of exactly 100mg/dL can unlock one encounter per local day. The Letter-tab illustration stays Unicorn Gluco for that day without a new AI request, while the glucose-tab peek switches to Unicorn Gluco only while the current fresh reading remains 100mg/dL.
+
+
+## User Foundation 0.3
+
+The user-mode onboarding is designed for people with little technical knowledge, including older smartphone users.
+
+- `index.html?mode=user` presents two clearly numbered routes and states that only one is needed.
+- Tapping a route card advances immediately; there is no separate “select, then continue” button.
+- Method 1 is the recommended Gluroo route for the current FreeStyle Libre 2 and Dexcom G7 proof of concept.
+- Method 2 is for people who already use their own Nightscout environment or can build and maintain one.
+- Guardian / MiniMed 780G is not presented as a beginner Gluroo route. kazuma's current iPhone example uses Guardian Monitor plus a self-managed Nightscout environment.
+- The main setup uses `接続先URL` and `接続用の合言葉`; internal terms stay in implementation and developer diagnostics.
+- The screenshot guide is maintained separately at `guides/gluroo-setup/` so Gluroo screen changes can be updated without redesigning the dashboard.
+- Guide screenshots are displayed without fixed-position overlays. Numbered steps and captions identify what to look for without risking marker drift across devices.
+- Separate preparation pages explain Dexcom Share and LibreLinkUp account setup. Real-device screenshots remain pending device verification.
+- A plain-language Nightscout explanation and kazuma's Guardian architecture example are available at `guides/nightscout-about/`.
+- User-mode connection details and glucose history remain outside Kazuma's Azure, KV, and Durable Objects.

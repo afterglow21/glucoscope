@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Privacy Notes / プライバシーノート | GlucoScope</title>
-  <link rel="stylesheet" href="../../style.css?v=20260711-trust-usage-1">
+  <link rel="stylesheet" href="../../style.css?v=20260721-user-foundation-2">
 </head>
 <body class="about-detail-body trust-document-body">
   <main class="about-detail-wrap trust-document-wrap">
@@ -31,6 +31,16 @@
   <p>現在のページはKazuma自身のNightscoutデータを表示する公開サンプルです。公開URLを知る人は表示内容を閲覧できます。</p>
 </section>
 <section class="trust-section">
+  <h2>ユーザー版の接続情報</h2>
+  <p>User Foundation 0.3では、GlurooまたはNightscoutの接続先URLと接続用の合言葉を、利用する人が選んだスマートフォンやパソコンの中だけに保存します。GlucoScopeのWorker、Kazuma個人のAzure、Cloudflare KV、Durable Objectsには保存しません。</p>
+  <p>端末内の保存は、特別な暗号化金庫ではありません。家族などと共用している端末では「この端末に保存する」をオフにするか、利用後に保存した接続を削除してください。</p>
+  <p>Apple、Google、Gluroo、Dexcom、Libreなどのログインパスワードを、GlucoScopeへ入力してもらうことはありません。</p>
+</section>
+<section class="trust-section">
+  <h2>ユーザー版のAI</h2>
+  <p>現在の共有AIキャッシュは公開デモ向けのため、利用者ごとの分離が完成するまで、ユーザー版からGlucoScopeのAI Workerへ血糖サマリーを送りません。ブラウザ内のいつものお話と、利用者自身がChatGPTへ渡すためのコピー機能は利用できます。</p>
+</section>
+<section class="trust-section">
   <h2>APIキーをブラウザへ置かない</h2>
   <p>OpenAI APIキーとTurnstileの秘密鍵はCloudflare WorkerのSecretとして管理し、GitHub PagesのHTMLやJavaScriptには置きません。</p>
 </section>
@@ -49,7 +59,8 @@
 </section>
 <section class="trust-section">
   <h2>公開ページのアクセス分析</h2>
-  <p>公開ページにはCloudflare Web Analyticsを導入し、ページ閲覧や表示性能の全体傾向を確認しています。個々の人をGlucoScope内で識別するための独自IDや、独自の行動追跡イベントは追加していません。</p>
+  <p>公開デモなどの公開ページにはCloudflare Web Analyticsを導入し、ページ閲覧や表示性能の全体傾向を確認しています。ただし、ユーザーモード中だけでなく、接続情報がこのブラウザに保存されている間は、AboutやTrustを含むGlucoScope内のページでWeb Analyticsのビーコンを読み込みません。保存状態を安全に確認できない場合も読み込みません。個々の人をGlucoScope内で識別するための独自IDや、独自の行動追跡イベントも追加していません。</p>
+  <p>ユーザー版で使うChart.jsはGlucoScope内に同梱し、接続情報や血糖データを扱うページで外部CDNのグラフ用JavaScriptを実行しない構成にしています。</p>
   <p>血糖値、GlucoScore、AIお手紙本文、Nightscout URL、API情報をアクセス分析のイベント名や追加データとして送る実装は行いません。スマホの各タブ操作も、健康情報を含む個別イベントとして追跡しません。</p>
 </section>
     </section>
@@ -59,6 +70,16 @@
       <section class="trust-section">
   <h2>Public preview</h2>
   <p>The current public sample displays Kazuma’s own Nightscout data to anyone who has the URL.</p>
+</section>
+<section class="trust-section">
+  <h2>User connection details</h2>
+  <p>In User Foundation 0.3, the Gluroo or Nightscout connection URL and passphrase stay only on the selected phone or computer. They are not stored in the GlucoScope Worker, Kazuma's Azure account, Cloudflare KV, or Durable Objects.</p>
+  <p>Device storage is not a dedicated encrypted vault. On a shared device, turn off Save on this device or remove the saved connection after use.</p>
+  <p>GlucoScope does not ask for Apple, Google, Gluroo, Dexcom, Libre, or other manufacturer login passwords.</p>
+</section>
+<section class="trust-section">
+  <h2>User-mode AI</h2>
+  <p>The current shared AI cache is for the public demo. Until per-user isolation is complete, user-mode summaries are not sent to the GlucoScope AI Worker. The local Gluco reflection and copy-to-ChatGPT path remain available.</p>
 </section>
 <section class="trust-section">
   <h2>Secrets stay server-side</h2>
@@ -79,7 +100,8 @@
 </section>
 <section class="trust-section">
   <h2>Public web analytics</h2>
-  <p>Public pages use Cloudflare Web Analytics to review aggregate page visits and performance. GlucoScope does not add a custom visitor ID or custom behavioral events.</p>
+  <p>Public-demo pages use Cloudflare Web Analytics to review aggregate page visits and performance. The analytics beacon is not loaded in user mode, while a GlucoScope user connection remains in local or session browser storage, or when that storage state cannot be checked. This applies across same-origin About and Trust pages. GlucoScope does not add a custom visitor ID or custom behavioral events.</p>
+  <p>Chart.js is served from a reviewed local copy on the user-data page instead of running the chart library from a third-party CDN.</p>
   <p>Glucose values, GlucoScore, AI letter text, Nightscout URLs, and API information are not intentionally sent as analytics event names or additional analytics data. Mobile tab actions are not tracked as health-data events.</p>
 </section>
     </section>
@@ -94,7 +116,7 @@
 </section>
   </main>
 <!-- Cloudflare Web Analytics -->
-<script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "5dec761abbfe4147b1fecebc68f8e382"}'></script>
+<script src="../../js/analytics-loader.js?v=20260721-user-foundation-3-2"></script>
 <!-- End Cloudflare Web Analytics -->
 </body>
 </html>
