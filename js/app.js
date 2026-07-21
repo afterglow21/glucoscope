@@ -979,7 +979,7 @@ function clearDataSourceSpecificBrowserState() {
 }
 
 function buildUserModeUrl(hash = "glucose") {
-  const url = new URL("index.html", window.location.href);
+  const url = new URL("./", window.location.href);
   url.search = "?mode=user";
   url.hash = hash;
   return url.toString();
@@ -5531,7 +5531,9 @@ function setMobilePage(page = "glucose", options = {}) {
   updateMobileNavState(resolvedPage);
 
   if (options.updateHash !== false) {
-    window.history.replaceState(null, "", `#${resolvedPage}`);
+    const nextUrl = new URL(window.location.href);
+    nextUrl.hash = resolvedPage;
+    window.history.replaceState(null, "", nextUrl.toString());
   }
 
   if (resolvedPage === "graph") {

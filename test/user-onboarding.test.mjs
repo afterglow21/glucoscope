@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const index = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const userEntry = await readFile(new URL("../user.html", import.meta.url), "utf8");
 const app = await readFile(new URL("../js/app.js", import.meta.url), "utf8");
 const css = await readFile(new URL("../style.css", import.meta.url), "utf8");
 const guideCss = await readFile(new URL("../guides/guide.css", import.meta.url), "utf8");
@@ -160,6 +161,26 @@ test("verified connection can start user mode from the onboarding button", () =>
   assert.match(saveHandler, /window\.location\.href = buildUserModeUrl\("glucose"\)/);
 });
 
+
+test("user mode survives static-server canonical URLs and mobile tab changes", () => {
+  assert.match(userEntry, /new URL\("\.\/", window\.location\.href\)/);
+  assert.match(userEntry, /href="\.\/\?mode=user#glucose"/);
+
+  const buildUrlStart = app.indexOf("function buildUserModeUrl");
+  const buildUrlEnd = app.indexOf("function handleDataSourceSave", buildUrlStart);
+  const buildUrl = app.slice(buildUrlStart, buildUrlEnd);
+  assert.match(buildUrl, /new URL\("\.\/", window\.location\.href\)/);
+  assert.match(buildUrl, /url\.search = "\?mode=user"/);
+
+  const mobileStart = app.indexOf("function setMobilePage");
+  const mobileEnd = app.indexOf("function syncMobileApp", mobileStart);
+  const mobileHandler = app.slice(mobileStart, mobileEnd);
+  assert.match(mobileHandler, /const nextUrl = new URL\(window\.location\.href\)/);
+  assert.match(mobileHandler, /nextUrl\.hash = resolvedPage/);
+  assert.match(mobileHandler, /window\.history\.replaceState\(null, "", nextUrl\.toString\(\)\)/);
+  assert.doesNotMatch(mobileHandler, /replaceState\(null, "", `#\$\{resolvedPage\}`\)/);
+});
+
 test("disabled AI analysis explains the actual local or user-foundation state", () => {
   assert.match(app, /aiLetterButtonLocalDisabled: "ローカル確認ではAI分析は停止中"/);
   assert.match(app, /aiLetterButtonUserFoundation: "ユーザー版AI分析は準備中"/);
@@ -181,8 +202,27 @@ test("connection deletion confirmation remains visible before reload", () => {
   assert.match(deleteHandler, /window\.setTimeout\(\(\) => window\.location\.reload\(\), 1500\)/);
 });
 
+
+test("guide return links preserve user mode on canonical directory URLs", () => {
+  for (const html of [glurooGuide, dexcomGuide, libreGuide, nightscoutGuide]) {
+    assert.doesNotMatch(html, /\.\.\/\.\.\/index\.html\?mode=user/);
+  }
+
+  assert.match(glurooGuide, /href="\.\.\/\.\.\/\?mode=user&amp;source=gluroo#glucose"/);
+  assert.match(nightscoutGuide, /href="\.\.\/\.\.\/\?mode=user&amp;source=nightscout#glucose"/);
+  assert.match(glurooGuide, /href="\.\.\/\.\.\/\?mode=user#glucose"/);
+  assert.match(nightscoutGuide, /href="\.\.\/\.\.\/\?mode=user#glucose"/);
+  assert.match(dexcomGuide, /href="\.\.\/\.\.\/\?mode=user#glucose"/);
+  assert.match(libreGuide, /href="\.\.\/\.\.\/\?mode=user#glucose"/);
+
+  assert.equal(
+    new URL("../../?mode=user&source=gluroo#glucose", "https://example.test/guides/gluroo-setup/").toString(),
+    "https://example.test/?mode=user&source=gluroo#glucose"
+  );
+});
+
 test("current cache and CSS markers are present", () => {
-  assert.match(index, /20260721-user-foundation-3-4/);
+  assert.match(index, /20260721-user-foundation-3-5/);
   assert.match(guideCss, /User Foundation 0\.3\.1/);
   assert.match(css, /User Foundation 0\.3/);
 });

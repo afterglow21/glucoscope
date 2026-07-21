@@ -7,7 +7,7 @@
   <title>GlucoScope User</title>
   <script>
     (() => {
-      const target = new URL("index.html", window.location.href);
+      const target = new URL("./", window.location.href);
       target.searchParams.set("mode", "user");
       target.hash = window.location.hash || "#glucose";
       window.location.replace(target.toString());
@@ -15,6 +15,6 @@
   </script>
 </head>
 <body>
-  <p><a href="index.html?mode=user#glucose">GlucoScopeを開く</a></p>
+  <p><a href="./?mode=user#glucose">GlucoScopeを開く</a></p>
 </body>
 </html>
