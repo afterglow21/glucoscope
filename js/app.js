@@ -306,6 +306,8 @@ const translations = {
     aiLetterPanelAi: "AI分析",
     aiLetterPanelChat: "ChatGPT",
     aiLetterButtonPreparing: "血糖データを確認中",
+    aiLetterButtonLocalDisabled: "ローカル確認ではAI分析は停止中",
+    aiLetterButtonUserFoundation: "ユーザー版AI分析は準備中",
     aiLetterButtonNoData: "この期間はデータなし",
     aiLetterButtonUnavailable: "データを読み込めませんでした",
     aiLetterButtonReady: "AI分析を試す",
@@ -316,7 +318,7 @@ const translations = {
     aiLetterStatusRecoveredAfterRetry: "途中で切れないように整え直して、最後まで表示しました🍀",
     aiLetterStatusIncomplete: "AI分析を最後までまとめきれませんでした。途中の文章は保存していないよ。少し時間をおいて、もう一度試してみてね🍀",
     aiLetterStatusPreparing: "選んだ期間の血糖データを確認しているよ。",
-    aiLetterStatusLocalOnly: "",
+    aiLetterStatusLocalOnly: "ローカル確認ではAI分析を停止しています。公開ページでの動作は、マージ後に確認します🍀",
     aiLetterStatusWaitingForSummary: "選んだ期間の血糖サマリーを読み込んでいるよ。読み込み後にAI分析を使えるよ🍀",
     aiLetterStatusNoData: "選んだ期間には、AI分析に使える血糖データがまだ見つからないよ。期間を変えると表示できることがあるよ🍀",
     aiLetterStatusLoadError: "血糖データを読み込めなかったよ。少し時間をおいて、もう一度開いてみてね🍀",
@@ -568,6 +570,8 @@ const translations = {
     aiLetterPanelAi: "AI analysis",
     aiLetterPanelChat: "ChatGPT",
     aiLetterButtonPreparing: "Checking glucose data",
+    aiLetterButtonLocalDisabled: "AI analysis is off in local preview",
+    aiLetterButtonUserFoundation: "User AI analysis is coming later",
     aiLetterButtonNoData: "No data for this range",
     aiLetterButtonUnavailable: "Could not load data",
     aiLetterButtonReady: "Try AI analysis",
@@ -578,7 +582,7 @@ const translations = {
     aiLetterStatusRecoveredAfterRetry: "The reflection was regenerated so it could finish cleanly 🍀",
     aiLetterStatusIncomplete: "The AI analysis could not be completed. The partial text was not saved. Please try again later 🍀",
     aiLetterStatusPreparing: "Checking the glucose data for the selected range.",
-    aiLetterStatusLocalOnly: "AI letters are not available in this view yet.",
+    aiLetterStatusLocalOnly: "AI analysis is disabled in local preview. Check the published page after merging 🍀",
     aiLetterStatusWaitingForSummary: "Loading the glucose summary for the selected range. AI analysis will be available when it is ready 🍀",
     aiLetterStatusNoData: "No glucose data for AI analysis was found in the selected range yet. Another range may have data 🍀",
     aiLetterStatusLoadError: "The glucose data could not be loaded. Please try again a little later 🍀",
@@ -1022,7 +1026,7 @@ function handleDataSourceDelete() {
   if (deleteButton) deleteButton.hidden = true;
   if (saveButton) saveButton.disabled = true;
   if (isUserDataSourceMode()) {
-    window.setTimeout(() => window.location.reload(), 350);
+    window.setTimeout(() => window.location.reload(), 1500);
   }
 }
 
@@ -3560,6 +3564,10 @@ function updateAiLetterControls(statusKey = null, statusType = "", options = {})
 
     if (aiLetterRequestInFlight) {
       aiButton.textContent = t("aiLetterButtonLoading");
+    } else if (!workerEnabled) {
+      aiButton.textContent = t(isUserDataSourceMode()
+        ? "aiLetterButtonUserFoundation"
+        : "aiLetterButtonLocalDisabled");
     } else if (workerEnabled && hasSummary && hasFreshCachedCurrentMode) {
       aiButton.textContent = t("aiLetterButtonCached");
     } else if (workerEnabled && hasSummary && hasCachedCurrentMode) {

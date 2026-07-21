@@ -160,8 +160,29 @@ test("verified connection can start user mode from the onboarding button", () =>
   assert.match(saveHandler, /window\.location\.href = buildUserModeUrl\("glucose"\)/);
 });
 
-test("User Foundation 0.3.1 cache and CSS markers are present", () => {
-  assert.match(index, /20260721-user-foundation-3-3/);
+test("disabled AI analysis explains the actual local or user-foundation state", () => {
+  assert.match(app, /aiLetterButtonLocalDisabled: "ローカル確認ではAI分析は停止中"/);
+  assert.match(app, /aiLetterButtonUserFoundation: "ユーザー版AI分析は準備中"/);
+
+  const controlsStart = app.indexOf("function updateAiLetterControls");
+  const controlsEnd = app.indexOf("function forceEnableAiLetterButtonSoon", controlsStart);
+  const controls = app.slice(controlsStart, controlsEnd);
+
+  assert.match(controls, /else if \(!workerEnabled\)/);
+  assert.match(controls, /isUserDataSourceMode\(\)[\s\S]*aiLetterButtonUserFoundation[\s\S]*aiLetterButtonLocalDisabled/);
+});
+
+test("connection deletion confirmation remains visible before reload", () => {
+  const deleteStart = app.indexOf("function handleDataSourceDelete");
+  const deleteEnd = app.indexOf("function showDataSourceSetupRequiredState", deleteStart);
+  const deleteHandler = app.slice(deleteStart, deleteEnd);
+
+  assert.match(deleteHandler, /setDataSourceTestStatus\(t\("dataSourceDeleted"\), "success"\)/);
+  assert.match(deleteHandler, /window\.setTimeout\(\(\) => window\.location\.reload\(\), 1500\)/);
+});
+
+test("current cache and CSS markers are present", () => {
+  assert.match(index, /20260721-user-foundation-3-4/);
   assert.match(guideCss, /User Foundation 0\.3\.1/);
   assert.match(css, /User Foundation 0\.3/);
 });
