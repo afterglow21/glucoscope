@@ -145,8 +145,23 @@ test("guide HTML does not contain real credential strings", () => {
   }
 });
 
+
+test("verified connection can start user mode from the onboarding button", () => {
+  assert.match(
+    app,
+    /dataSourceSaveButton"\)\?\.addEventListener\("click", handleDataSourceSave\)/
+  );
+
+  const saveHandlerStart = app.indexOf("function handleDataSourceSave");
+  const saveHandlerEnd = app.indexOf("function handleDataSourceDelete", saveHandlerStart);
+  const saveHandler = app.slice(saveHandlerStart, saveHandlerEnd);
+
+  assert.match(saveHandler, /if \(isUserDataSourceMode\(\)\) \{[\s\S]*window\.location\.reload\(\)/);
+  assert.match(saveHandler, /window\.location\.href = buildUserModeUrl\("glucose"\)/);
+});
+
 test("User Foundation 0.3.1 cache and CSS markers are present", () => {
-  assert.match(index, /20260721-user-foundation-3-1/);
+  assert.match(index, /20260721-user-foundation-3-3/);
   assert.match(guideCss, /User Foundation 0\.3\.1/);
   assert.match(css, /User Foundation 0\.3/);
 });

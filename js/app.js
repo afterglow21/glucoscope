@@ -993,6 +993,15 @@ function handleDataSourceSave(event) {
       persist: document.getElementById("dataSourcePersist")?.checked !== false
     });
     clearDataSourceSpecificBrowserState();
+
+    // user.html already opens this exact user-mode URL. Assigning the same URL
+    // may be treated as a same-document navigation, so reload explicitly after
+    // saving. This lets the newly stored connection become the active source.
+    if (isUserDataSourceMode()) {
+      window.location.reload();
+      return;
+    }
+
     window.location.href = buildUserModeUrl("glucose");
   } catch (error) {
     console.warn("Could not save data source", error);
@@ -1057,6 +1066,7 @@ function setupDataSourceFoundation() {
   document.getElementById("dataSourceBackButton")?.addEventListener("click", showDataSourceChooseStep);
   document.getElementById("dataSourceTestButton")?.addEventListener("click", handleDataSourceTest);
   document.getElementById("dataSourceDeleteButton")?.addEventListener("click", handleDataSourceDelete);
+  document.getElementById("dataSourceSaveButton")?.addEventListener("click", handleDataSourceSave);
   form?.addEventListener("submit", handleDataSourceSave);
 
   providerInputs.forEach((input) => input.addEventListener("change", () => {
