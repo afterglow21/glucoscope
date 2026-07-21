@@ -1,0 +1,113 @@
+/* GlucoScope step-by-step guides */
+:root{
+  color-scheme:light;
+  --guide-ink:#24354a;
+  --guide-muted:#5d7088;
+  --guide-green:#2f9367;
+  --guide-green-deep:#237452;
+  --guide-green-soft:#eef9f3;
+  --guide-border:#d7e6de;
+  --guide-paper:#ffffff;
+  --guide-bg:#f3f8f5;
+  --guide-warn:#fff8e6;
+  --guide-warn-border:#e6cf8d;
+}
+*{box-sizing:border-box}
+html{font-size:18px;scroll-behavior:smooth}
+body{
+  margin:0;
+  background:var(--guide-bg);
+  color:var(--guide-ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;
+  line-height:1.8;
+}
+a{color:#176da8;text-underline-offset:3px}
+button,a{touch-action:manipulation}
+.guide-wrap{width:min(920px,100%);margin:0 auto;padding:20px 18px 64px}
+.guide-topbar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:18px}
+.guide-brand{font-weight:800;color:var(--guide-green-deep);text-decoration:none}
+.guide-back{font-size:.9rem}
+.guide-hero,.guide-card{
+  background:var(--guide-paper);
+  border:1px solid var(--guide-border);
+  border-radius:22px;
+}
+.guide-hero{padding:28px;margin-bottom:18px}
+.guide-kicker{margin:0 0 6px;color:var(--guide-green-deep);font-weight:800;font-size:.85rem}
+h1{margin:0 0 10px;font-size:clamp(1.55rem,6vw,2.3rem);line-height:1.35}
+h2{font-size:1.35rem;line-height:1.45;margin:0 0 8px}
+h3{font-size:1.08rem;margin:0 0 6px}
+p{margin:0 0 12px}
+.guide-lead{font-size:1.05rem}
+.guide-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.guide-chip{display:inline-flex;padding:5px 10px;border-radius:999px;background:var(--guide-green-soft);color:var(--guide-green-deep);font-size:.82rem;font-weight:700}
+.guide-callout{margin:18px 0;padding:18px;border:1px solid var(--guide-border);border-radius:18px;background:var(--guide-green-soft)}
+.guide-warning{background:var(--guide-warn);border-color:var(--guide-warn-border)}
+.guide-primary-link{display:flex;align-items:center;justify-content:center;min-height:54px;padding:12px 18px;border-radius:14px;background:var(--guide-green);color:#fff;text-decoration:none;font-weight:800;text-align:center}
+.guide-primary-link:hover{background:var(--guide-green-deep)}
+.guide-secondary-links{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;font-size:.9rem}
+.guide-toc{padding:20px 24px;margin-bottom:18px}
+.guide-toc ol{margin:8px 0 0;padding-left:1.4em}
+.guide-step{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,380px);gap:26px;align-items:start;padding:26px;margin-bottom:18px}
+.guide-step-number{display:inline-grid;place-items:center;width:42px;height:42px;border-radius:50%;background:var(--guide-green);color:#fff;font-weight:900;margin-bottom:10px}
+.guide-step-copy ul{padding-left:1.35em;margin:10px 0}
+.guide-step-copy li{margin-bottom:8px}
+.guide-shot{margin:0}
+.guide-shot img{display:block;width:100%;height:auto;border:1px solid var(--guide-border);border-radius:18px;background:#fff}
+.guide-shot figcaption{margin-top:8px;color:var(--guide-muted);font-size:.82rem;text-align:center}
+.guide-note{color:var(--guide-muted);font-size:.9rem}
+.guide-footer{margin-top:22px;padding:22px;text-align:left}
+.guide-footer p:last-child{margin-bottom:0}
+.guide-checklist{display:grid;gap:10px;margin:12px 0 0;padding:0;list-style:none}
+.guide-checklist li{padding-left:30px;position:relative}
+.guide-checklist li::before{content:"✓";position:absolute;left:0;top:0;color:var(--guide-green);font-weight:900}
+@media(max-width:720px){
+  html{font-size:17px}
+  .guide-wrap{padding:12px 10px 46px}
+  .guide-hero,.guide-step,.guide-toc,.guide-footer{border-radius:18px;padding:19px}
+  .guide-step{grid-template-columns:1fr;gap:16px}
+  .guide-step-copy{order:1}
+  .guide-shot{order:2;width:min(100%,430px);margin:0 auto}
+  .guide-topbar{padding:2px 4px}
+}
+@media(max-width:380px){
+  html{font-size:16px}
+  .guide-secondary-links{display:grid}
+}
+
+
+/* User Foundation 0.3.1: stable screenshot layout and sensor guides */
+.guide-narrow{width:min(760px,100%)}
+.guide-shot-image{position:relative;overflow:hidden;border-radius:18px}
+.guide-shot-image>img{border-radius:18px}
+.guide-sensor-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}
+.guide-sensor-link{display:grid;gap:5px;padding:16px;border:1px solid var(--guide-border);border-radius:16px;background:#fff;color:var(--guide-ink);text-decoration:none}
+.guide-sensor-link:hover{border-color:var(--guide-green);background:var(--guide-green-soft)}
+.guide-sensor-link strong{color:var(--guide-green-deep)}
+.guide-sensor-link span{font-size:.88rem;color:var(--guide-muted)}
+.guide-footer-return{margin-top:18px}
+.guide-simple-steps{padding:24px;margin-bottom:18px}
+.guide-simple-steps>ol{display:grid;gap:22px;margin:0;padding:0;list-style:none;counter-reset:guide-simple}
+.guide-simple-steps>ol>li{position:relative;padding-left:58px;counter-increment:guide-simple}
+.guide-simple-steps>ol>li::before{content:counter(guide-simple);position:absolute;left:0;top:0;display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:var(--guide-green);color:#fff;font-weight:900}
+.guide-simple-steps h2{font-size:1.12rem}
+.guide-architecture{padding:26px;margin-bottom:18px;scroll-margin-top:18px}
+.guide-flow{display:grid;justify-items:center;gap:8px;margin:22px 0}
+.guide-flow-node{width:min(100%,520px);display:grid;gap:4px;padding:15px 18px;border:1px solid var(--guide-border);border-radius:15px;background:#fff;text-align:center}
+.guide-flow-node strong{color:var(--guide-ink)}
+.guide-flow-node span{color:var(--guide-muted);font-size:.86rem}
+.guide-flow-node-accent{border-color:#7bc7a2;background:var(--guide-green-soft)}
+.guide-flow-arrow{color:var(--guide-green-deep);font-size:28px;font-weight:900;line-height:1}
+.guide-flow-row{width:min(100%,720px);display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:9px}
+.guide-flow-link{color:var(--guide-green-deep);font-size:25px;font-weight:900}
+.guide-details{margin-top:20px;border-top:1px solid var(--guide-border);padding-top:18px}
+.guide-details summary{cursor:pointer;color:var(--guide-green-deep);font-weight:900}
+.guide-tech-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+.guide-tech-grid>div{display:grid;gap:3px;padding:13px;border:1px solid var(--guide-border);border-radius:13px;background:#fff}
+.guide-tech-grid span{font-size:.82rem;color:var(--guide-muted)}
+@media(max-width:720px){
+  .guide-sensor-links,.guide-tech-grid{grid-template-columns:1fr}
+  .guide-flow-row{grid-template-columns:1fr;justify-items:center}
+  .guide-flow-link{transform:rotate(90deg)}
+  .guide-simple-steps{padding:20px 18px}
+}

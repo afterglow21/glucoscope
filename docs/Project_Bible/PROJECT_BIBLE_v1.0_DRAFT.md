@@ -1571,6 +1571,196 @@ GlucoScopeが今後もNightscoutだけに対応する、
 
 ---
 
+## Current User Foundation 0.1 Decision
+## 現在のUser Foundation 0.1方針
+
+### EN
+
+The first broadly usable foundation should not require every person
+to build Azure, a database, and Nightscout by themselves.
+
+It should also not place every person's glucose data
+inside Kazuma's personal Azure or Cloudflare environment.
+
+User Foundation 0.1 therefore uses a browser-local connection
+to a Nightscout-compatible data source.
+
+The first setup choices are:
+
+- Gluroo Global Connect
+- An existing Nightscout environment
+
+The URL and API Secret or read token are stored only
+in the person's selected browser storage.
+The browser reads the data source directly.
+GlucoScope does not store those connection details
+or the person's glucose history in Kazuma's cloud.
+
+The same-origin browser boundary must also be protected.
+While a user connection exists in local or session storage,
+no GlucoScope page on that origin loads the web analytics beacon.
+If storage state cannot be checked, analytics stays disabled.
+The chart runtime on the user-data page is served from a reviewed local file,
+not from a third-party CDN script.
+
+Gluroo is treated as an interoperability proof of concept,
+not as a guarantee that every device, operating system,
+or historical-data range will work.
+Connection failures, CORS restrictions, missing data,
+and incompatible response formats must be shown honestly and gently.
+
+The current shared AI-letter cache was designed for Kazuma's public demo.
+Until per-user cache isolation, usage limits, privacy boundaries,
+and cost controls are complete,
+Worker-generated AI letters remain disabled in user mode.
+The local rule-based Gluco message and the copy-to-ChatGPT path may remain available.
+
+This decision is the current standard path for testing.
+Manual Azure and Nightscout construction may remain an advanced option,
+but it is not the default onboarding path for general users.
+
+---
+
+### JP
+
+広く使ってもらうための最初の土台では、
+利用する人それぞれに、
+Azure、データベース、Nightscoutの構築を求めません。
+
+一方で、
+利用する人全員の血糖データを、
+Kazuma個人のAzureやCloudflare環境へ集約する形にも始めからしません。
+
+そのためUser Foundation 0.1では、
+**Nightscout互換のデータソースへ、利用する人のブラウザから直接つなぐ方式**を採用します。
+
+最初の接続候補は次の2つです。
+
+- Gluroo Global Connect
+- すでに利用しているNightscout環境
+
+Nightscout互換URLとAPI Secretまたは読み取り用トークンは、
+利用する人が選んだブラウザストレージだけに保存します。
+ブラウザがデータソースを直接読み取り、
+GlucoScopeは接続情報や血糖履歴を
+Kazuma個人のクラウドへ保存しません。
+
+同一サイト内のブラウザ境界も守ります。
+接続情報がlocalStorageまたはsessionStorageに残っている間は、
+GlucoScope内のどのページでもアクセス解析を読み込みません。
+保存状態を安全に確認できない場合も、解析は停止します。
+ユーザー版のグラフ処理は第三者CDNの実行コードに依存せず、
+確認済みのローカルファイルを使います。
+
+Gluroo連携は、
+すべての機器、OS、取得期間での動作を保証するものではなく、
+まず相互接続性を確かめるためのPoCとして扱います。
+接続失敗、CORS制限、データ欠損、未対応形式は、
+隠さず、やさしく伝えます。
+
+現在のAIお手紙共有キャッシュは、
+Kazumaの公開デモを前提に設計されています。
+利用者ごとのキャッシュ分離、利用上限、プライバシー境界、費用管理が整うまでは、
+ユーザー版からWorkerによるAIお手紙生成を行いません。
+ブラウザ内の「いつものグルコのお話」と、
+自分でChatGPTへ渡すためのコピー機能は利用できる形を維持します。
+
+これを、現在の検証における標準ルートとします。
+AzureやNightscoutを自分で構築する方法は上級者向けの選択肢として残せますが、
+一般利用者の標準導線にはしません。
+
+---
+
+## Beginner-First User Foundation 0.3
+## IT用語を前提にしないUser Foundation 0.3
+
+### EN
+
+The general-user setup must assume that a person may have little or no technical knowledge.
+A person should not need to understand APIs, CORS, localStorage, sessionStorage, cloud servers, or databases to begin.
+
+The first screen asks only how the person wants to connect. It states that one route is enough and presents two numbered cards:
+
+- Method 1: Gluroo, as the recommended beginner route for the current Libre 2 and Dexcom G7 proof of concept;
+- Method 2: an existing Nightscout environment, clearly marked as advanced;
+- the public demo remains available as a separate link.
+
+Tapping a route card should advance directly. Do not require a person to select a card and then find a separate continue button.
+
+The Gluroo guide starts with installing the app from the App Store and uses replaceable screenshots on a separate HTML page. The dashboard links to the guide instead of embedding version-dependent Gluroo screens into the main product.
+
+Visible labels use everyday language such as connection URL, connection passphrase, save on this device, and check the connection. The original Gluroo labels may be shown only as small hints so that the person can match the two screens.
+
+Gluroo is an external service. GlucoScope must state that its availability, pricing, screens, features, and connection behavior may change, and that GlucoScope does not operate Gluroo.
+
+The beginner route must state its device boundary honestly. Guardian / MiniMed 780G is not shown as a simple Gluroo route. Its current example is separated into an advanced Nightscout architecture page. Dexcom Share and LibreLinkUp receive separate preparation guides, and CGM manufacturer passwords are never entered into GlucoScope.
+
+Do not place fixed-position focus markers over guide screenshots. Their positions can drift across devices or after image replacement. Use numbered steps, short captions, and plain-language instructions; keep screenshots as replaceable assets.
+
+Limited-life CGM sensors should be activated only after the onboarding, guide, connection test, and graph path are ready. A participant should complete setup on their own phone without sending credentials to the developer.
+
+---
+
+### JP
+
+一般利用者向けの導入では、
+利用する人にITの知識がほとんどない可能性を前提にします。
+
+使い始めるために、
+API、CORS、localStorage、sessionStorage、クラウドサーバー、データベースなどを
+理解してもらうことを求めません。
+
+最初の画面では、
+「どちらか1つでよい」と伝え、
+番号を付けた2つの方法を示します。
+
+- 方法①：現在のLibre 2・Dexcom G7検証で、初めての人におすすめするGluroo
+- 方法②：自分のNightscout環境をすでに持っている人、または構築・保守できる上級者向けNightscout
+- 公開デモは別の導線として残す
+
+方法のカードを押したら、
+そのまま次へ進めるようにします。
+「選んだあと、別の進むボタンを探す」操作は求めません。
+
+Glurooの案内は、
+App Storeからアプリを入れるところから始めます。
+画面キャプチャは、
+GlucoScope本体へ直接埋め込まず、
+差し替え可能な独立HTMLガイドとして管理します。
+
+利用者に見せる言葉は、
+「接続先URL」
+「接続用の合言葉」
+「この端末に保存する」
+「つながるか確認する」
+など、日常の言葉を優先します。
+
+Gluroo画面と照らし合わせるために必要な場合だけ、
+Nightscout URL、API Secret Tokenなどの元の表示名を
+小さな補足として残します。
+
+GlurooはGlucoScopeとは別に運営される外部サービスです。
+利用条件、料金、画面、機能、接続方法は変更される可能性があり、
+GlucoScopeはGlurooの運営や変更へ関与しません。
+
+対応範囲は正直に示します。
+Guardian／MiniMed 780Gは、
+現在のかんたん接続では利用できないことを明記します。
+現在の構成例は、上級者向けNightscoutページへ分けます。
+Dexcom ShareとLibreLinkUpは別の準備ガイドを用意し、
+CGMメーカーのパスワードをGlucoScopeへ入力させません。
+
+スクリーンショットには、
+端末や画像差し替えで位置がずれる固定の枠を重ねません。
+番号付きの手順、短い説明、画像下の文章で、見る場所を伝えます。
+
+使用期限があるテスト用CGMは、
+入口、画像ガイド、接続確認、グラフ表示までの土台が整ってから装着します。
+テスト参加者は自分のスマートフォンで設定を進め、
+URL、合言葉、メーカーの認証情報を開発者へ送らない形で検証します。
+
+---
+
 ## Connection Levels（連携レベル）
 
 ### EN
@@ -1579,6 +1769,10 @@ GlucoScope should prepare several levels of data connection,
 because different people have different technical environments,
 skills,
 and comfort levels.
+
+These levels describe future support options.
+For the current general-user proof of concept,
+the browser-local Gluroo or Nightscout-compatible route above is the standard path.
 
 The higher the level,
 the more technical knowledge and self-setup are required.
@@ -1620,6 +1814,10 @@ GlucoScopeでは、
 スキル、  
 不安の大きさが違うことを前提に、  
 複数の連携レベルを考えます。
+
+ここで示すレベルは、将来の支援方法の選択肢です。
+現在の一般利用者向けPoCでは、
+前項のブラウザ内Gluroo／Nightscout互換接続を標準ルートとします。
 
 レベルが上がるほど、  
 必要なITスキルや、  
@@ -2109,7 +2307,11 @@ The public preview may use privacy-first web analytics
 to understand aggregate page visits and page performance.
 
 The initial implementation uses Cloudflare Web Analytics
-on public HTML pages.
+on public HTML pages through a local privacy-gated loader.
+The beacon must not load in user mode, while either user-connection
+browser-storage key exists, or when storage state cannot be checked.
+This rule applies to every page on the same GlucoScope origin,
+including About and Trust pages.
 
 GlucoScope must not intentionally send the following
 as custom analytics events, event names, URLs, or additional analytics data:
@@ -2139,6 +2341,10 @@ the analytics implementation or collected information changes.
 
 初期実装では、
 公開HTMLページにCloudflare Web Analyticsを導入します。
+ただし、ローカルのプライバシー判定用ローダーを通し、
+ユーザーモード中、接続情報の保存キーが1つでも存在する間、
+または保存状態を安全に確認できない場合は読み込みません。
+このルールはAbout、Trustを含む同一GlucoScopeサイト内の全ページに適用します。
 
 次の情報を、
 独自のアクセス分析イベント、イベント名、URL、
@@ -3209,4 +3415,3 @@ Gluco may celebrate first, then gently mention other clues that deserve attentio
 
 血糖は、あなたを責めるための数字じゃないよ。
 明日を少し楽にするための、ちいさな手がかりだよ。
-

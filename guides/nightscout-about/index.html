@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>Nightscoutとは？ | GlucoScope</title>
+  <link rel="stylesheet" href="../guide.css?v=20260721-user-foundation-3-1">
+</head>
+<body>
+  <main class="guide-wrap">
+    <nav class="guide-topbar" aria-label="ガイドのナビゲーション">
+      <a class="guide-brand" href="../../index.html?mode=user">🍀 GlucoScope</a>
+      <a class="guide-back" href="../../index.html?mode=user">接続画面へ戻る</a>
+    </nav>
+
+    <header class="guide-hero">
+      <p class="guide-kicker">方法②・上級者向け</p>
+      <h1>Nightscoutとは？</h1>
+      <p class="guide-lead">血糖データをインターネット上へ保存し、スマートフォンやパソコン、ほかのアプリから見られるようにする仕組みです。</p>
+    </header>
+
+    <section class="guide-card guide-step">
+      <div class="guide-step-copy">
+        <span class="guide-step-number">1</span>
+        <h2>自分専用のデータ置き場を用意します</h2>
+        <p>Nightscoutを自分で使い始めるには、インターネット上で動くアプリと、血糖データを保存する場所を準備します。</p>
+        <p>クラウドサービス、データベース、パスワード、安全な公開設定などの知識が必要です。</p>
+      </div>
+      <div class="guide-callout">
+        <h3>たとえるなら</h3>
+        <p>Nightscoutは、自分の血糖データを置く「鍵の付いた個人用ウェブサイト」のようなものです。</p>
+      </div>
+    </section>
+
+    <section class="guide-callout guide-warning">
+      <h2>GlucoScopeでは上級者向けです</h2>
+      <p>この方法は、<strong>自分のNightscout環境をすでに使っている方</strong>、または自分で環境を構築・保守できる方を対象にしています。</p>
+      <p>Nightscoutを初めて聞いた方には、FreeStyle Libre 2またはDexcom G7からGlurooを使う方法①をおすすめします。</p>
+    </section>
+
+    <section id="guardian-example" class="guide-card guide-architecture">
+      <p class="guide-kicker">参考：kazumaの現在の構成</p>
+      <h2>Guardian／MiniMed 780Gからつなぐ例</h2>
+      <p>Guardianは現在のかんたん接続では利用できません。kazumaのiPhone環境では、次のように複数の外部サービスを組み合わせています。</p>
+
+      <div class="guide-flow" aria-label="GuardianからGlucoScopeまでのデータの流れ">
+        <div class="guide-flow-node"><strong>MiniMed 780G<br>Guardian</strong><span>血糖・ポンプの元データ</span></div>
+        <div class="guide-flow-arrow" aria-hidden="true">↓</div>
+        <div class="guide-flow-node"><strong>MiniMed Mobile<br>CareLink</strong><span>メーカー側のアプリとクラウド</span></div>
+        <div class="guide-flow-arrow" aria-hidden="true">↓</div>
+        <div class="guide-flow-node"><strong>Guardian Monitor</strong><span>Nightscoutへ同期する外部アプリ</span></div>
+        <div class="guide-flow-arrow" aria-hidden="true">↓</div>
+        <div class="guide-flow-row">
+          <div class="guide-flow-node"><strong>Nightscout</strong><span>Azure App ServiceのFreeプランを利用</span></div>
+          <div class="guide-flow-link" aria-hidden="true">↔</div>
+          <div class="guide-flow-node"><strong>MongoDB Atlas</strong><span>無料クラスターへ履歴を保存</span></div>
+        </div>
+        <div class="guide-flow-arrow" aria-hidden="true">↓</div>
+        <div class="guide-flow-node guide-flow-node-accent"><strong>GlucoScope</strong><span>GitHub Pagesから表示</span></div>
+      </div>
+
+      <div class="guide-callout guide-warning">
+        <h3>料金と保守について</h3>
+        <p>Guardian Monitorは無料で入手できますが、アプリ内購入があります。Nightscout同期を含む利用条件や料金は、アプリ内の最新表示を確認してください。</p>
+        <p>AzureとMongoDB Atlasには無料プランがありますが、利用上限・停止条件・仕様変更があります。無料での継続を保証する構成ではありません。</p>
+      </div>
+
+      <details class="guide-details">
+        <summary>GlucoScopeを支える技術も見る</summary>
+        <div class="guide-tech-grid">
+          <div><strong>GitHub</strong><span>ソースコードを管理</span></div>
+          <div><strong>GitHub Pages</strong><span>GlucoScope本体の画面を配信</span></div>
+          <div><strong>Cloudflare Worker</strong><span>AIお手紙のAPI</span></div>
+          <div><strong>Turnstile</strong><span>AI機能の不正利用対策</span></div>
+          <div><strong>KV</strong><span>AIお手紙の共有キャッシュ</span></div>
+          <div><strong>Durable Objects</strong><span>利用回数と推定費用を記録</span></div>
+          <div><strong>OpenAI</strong><span>AIお手紙を生成</span></div>
+          <div><strong>Cloudflare Pages</strong><span>別機能のSocial Share Studioを配信</span></div>
+          <div><strong>Stripe</strong><span>任意の開発支援。血糖データは送らない</span></div>
+        </div>
+      </details>
+    </section>
+
+    <section class="guide-card guide-footer">
+      <h2>自分のNightscout環境をすでに使っている方</h2>
+      <p>ご自身のNightscout URLと、読み取り用トークンまたはAPI Secretを使ってGlucoScopeへ接続できます。</p>
+      <p>接続情報は他の人へ送らず、ご自身の端末で直接入力してください。</p>
+      <a class="guide-primary-link" href="../../index.html?mode=user&amp;source=nightscout">Nightscout接続へ進む</a>
+      <div class="guide-secondary-links">
+        <a href="https://nightscout.github.io/nightscout/new_user/" target="_blank" rel="noopener noreferrer">Nightscout公式ドキュメント（英語・外部サイト）</a>
+        <a href="https://apps.apple.com/jp/app/guardian-monitor/id1546989938" target="_blank" rel="noopener noreferrer">Guardian Monitor（App Store・外部サイト）</a>
+      </div>
+      <a class="guide-primary-link guide-footer-return" href="../../index.html?mode=user">GlucoScopeの接続画面へ戻る</a>
+    </section>
+  </main>
+</body>
+</html>
