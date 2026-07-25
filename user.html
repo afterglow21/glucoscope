@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>GlucoScope User</title>
+  <script>
+    (() => {
+      const target = new URL("./", window.location.href);
+      target.searchParams.set("mode", "user");
+      target.hash = window.location.hash || "#glucose";
+      window.location.replace(target.toString());
+    })();
+  </script>
+</head>
+<body>
+  <p><a href="./?mode=user#glucose">GlucoScopeを開く</a></p>
+</body>
+</html>

@@ -556,6 +556,19 @@ In early development,
 GlucoScope should avoid storing other users' blood glucose data
 in Kazuma's personal cloud environment.
 
+In User Foundation 0.3,
+a Nightscout-compatible URL and credential stay only
+in the person's selected browser storage.
+They are not sent to the GlucoScope AI Worker,
+and Worker-generated AI letters remain disabled in user mode
+until per-user isolation is complete.
+
+Because same-origin JavaScript can share the browser-storage boundary,
+GlucoScope must not load the analytics beacon while a user connection is stored.
+The chart runtime used on the user-data page must be served locally,
+not executed from a third-party CDN.
+If storage state cannot be checked, analytics must remain off.
+
 Privacy details should be defined separately
 in Privacy Notes or a privacy policy.
 
@@ -575,6 +588,20 @@ GlucoScopeは、
 初期開発では、  
 他の利用者の血糖データを、  
 Kazuma個人のクラウド環境に保存することは避けます。
+
+User Foundation 0.3では、
+Nightscout互換URLと認証情報を、
+利用する人が選んだブラウザストレージだけに保存します。
+GlucoScopeのAI Workerへは送りません。
+また、利用者ごとの分離が整うまでは、
+ユーザー版でWorkerによるAIお手紙生成を行いません。
+
+同じGlucoScopeサイト内で動くJavaScriptは、
+ブラウザ保存領域を共有できるため、
+接続情報が保存されている間はアクセス解析を読み込みません。
+ユーザー版で必要なグラフ処理も外部CDNから実行せず、
+確認済みのローカルファイルを使います。
+保存状態を安全に確認できない場合も、アクセス解析は停止します。
 
 プライバシーに関する詳しい方針は、  
 Privacy Notesまたはプライバシーポリシーで別途定義します。
@@ -622,6 +649,33 @@ GlucoScopeは、
 すべての機器、  
 センサー、  
 サービスが常に対応できると約束しません。
+
+一般利用者向けの接続テストでは、
+利用する人自身の端末で設定を進めます。
+
+次の情報を、
+開発者、家族、SNS、メッセージアプリへ送ることを求めません。
+
+- Gluroo Global Connect URL
+- API Secretまたは読み取り用トークン
+- CGMメーカーのID・パスワード
+- Apple IDまたはGoogleアカウントの認証情報
+- 個人が特定できる血糖履歴のスクリーンショット
+
+不具合確認には、
+成功・失敗、端末、ブラウザ、表示されたやさしいエラー文など、
+必要最小限の結果だけを利用します。
+
+一般利用者向けのGluroo案内は、
+現在はFreeStyle LibreとDexcom G7を対象にします。
+Guardian／MiniMed 780Gを、
+簡単に接続できる方法として案内しません。
+
+Dexcom ShareまたはLibreLinkUpの認証情報は、
+Glurooへ入力するものであり、
+GlucoScopeへ入力させません。
+パスワードが分からない場合は表示を探させず、
+各サービスの正規の再設定方法を案内します。
 
 ---
 

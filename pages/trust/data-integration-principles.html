@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Data Integration Principles / データ連携原則 | GlucoScope</title>
-  <link rel="stylesheet" href="../../style.css?v=20260711-trust-usage-1">
+  <link rel="stylesheet" href="../../style.css?v=20260721-user-foundation-2">
 </head>
 <body class="about-detail-body trust-document-body">
   <main class="about-detail-wrap trust-document-wrap">
@@ -29,6 +29,25 @@
       <section class="trust-section">
   <h2>まずはNightscoutから</h2>
   <p>現在は、開発と公開プレビューで現実的な入口としてNightscout形式のデータを使っています。ただし、GlucoScopeをNightscoutだけに固定するものではありません。</p>
+</section>
+<section class="trust-section">
+  <h2>User Foundation 0.3</h2>
+  <p>一般利用者向けの最初の検証では、利用者ごとにAzureを構築するのではなく、Glurooまたは既存のNightscoutへ、その人の端末からつなぎます。</p>
+  <p>接続先URLと接続用の合言葉は、選んだスマートフォンやパソコンの中だけに保存します。Kazuma個人のクラウドへ接続情報や血糖履歴を集約しません。</p>
+  <p>接続情報が保存されている間は、AboutやTrustを含む同じGlucoScopeサイト内でアクセス解析を読み込みません。ユーザー版のグラフ処理も、外部CDNではなくGlucoScope内に同梱したファイルを使います。</p>
+</section>
+<section class="trust-section">
+  <h2>方法①はGluroo、方法②はNightscout</h2>
+  <p>どちらか1つを選べばよいことを明記し、方法のカードを押すと直接次へ進めます。Glurooは現在のLibre・Dexcom G7検証で初めての方に案内し、Nightscoutは自分の環境をすでに使っている方や、構築・保守できる上級者向けとして分けます。</p>
+</section>
+<section class="trust-section">
+  <h2>Guardianは上級者向け</h2>
+  <p>Guardian／MiniMed 780Gは、現在のかんたん接続の対象外です。外部アプリと自分専用のNightscout環境を使う構成例を、初心者向けの入口とは分けて案内します。</p>
+</section>
+<section class="trust-section">
+  <h2>Gluroo連携は実機検証中</h2>
+  <p>GlurooはGlucoScopeとは別に運営される外部サービスです。現在は無料でテスト利用できますが、今後、料金、機能、画面、接続方法が変わる場合があります。</p>
+  <p>機器、スマートフォン、取得できる期間、通信条件、データ形式によってつながらない場合があります。DexcomとLibreを実際につないだ確認が終わるまでは、動作を保証せず、確認できた範囲をそのまま案内します。</p>
 </section>
 <section class="trust-section">
   <h2>複数の連携ルート</h2>
@@ -59,6 +78,21 @@
   <p>Nightscout is the current practical starting point, not a permanent lock-in.</p>
 </section>
 <section class="trust-section">
+  <h2>User Foundation 0.3</h2>
+  <p>The first general-user proof of concept connects a person's device to Gluroo or an existing Nightscout environment. It does not require a separate Azure build for each person.</p>
+  <p>The connection URL and passphrase stay only on the selected phone or computer. GlucoScope does not collect them or the person's glucose history in Kazuma's personal cloud.</p>
+  <p>While a connection is stored, analytics is not loaded on same-origin GlucoScope pages, including About and Trust. The user-data page also uses a locally vendored chart runtime instead of a third-party CDN script.</p>
+</section>
+<section class="trust-section">
+  <h2>Beginner-first setup</h2>
+  <p>The screen says that only one route is needed. Tapping Method 1 opens the Gluroo preparation path for the current Libre and Dexcom G7 proof of concept. Method 2 is for people who already use or maintain their own Nightscout environment. Guardian is kept in a separate advanced example.</p>
+</section>
+<section class="trust-section">
+  <h2>Gluroo is under real-device testing</h2>
+  <p>Gluroo is an external service operated separately from GlucoScope. It is currently available for testing at no cost, but its pricing, features, screens, and connection methods may change.</p>
+  <p>Device, phone, history, network, and data-format differences may prevent connection. GlucoScope will state what has and has not been verified with real Dexcom and Libre data.</p>
+</section>
+<section class="trust-section">
   <h2>Multiple paths</h2>
   <p>Future adapters may support MiniMed, Dexcom, Libre, CSV, and manual input.</p>
 </section>
@@ -82,7 +116,7 @@
 </section>
   </main>
 <!-- Cloudflare Web Analytics -->
-<script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "5dec761abbfe4147b1fecebc68f8e382"}'></script>
+<script src="../../js/analytics-loader.js?v=20260721-user-foundation-3-2"></script>
 <!-- End Cloudflare Web Analytics -->
 </body>
 </html>

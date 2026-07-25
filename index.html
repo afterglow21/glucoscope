@@ -22,13 +22,148 @@
     })();
   </script>
   <title>GlucoScope</title>
-  <link rel="stylesheet" href="style.css?v=20260718-compassion-about-1">
+  <link rel="stylesheet" href="style.css?v=20260721-user-foundation-3">
 </head>
 <body>
 
 <div id="unicornVisualDebugBanner" class="unicorn-visual-debug-banner" hidden>
   <span>🧪 ユニコーン表示プレビュー</span>
   <button id="unicornVisualDebugClose" type="button">終了</button>
+</div>
+
+<div id="dataSourceDialog" class="data-source-dialog" role="dialog" aria-modal="true" aria-labelledby="dataSourceDialogTitle" hidden>
+  <div class="data-source-dialog-card">
+    <button id="dataSourceDialogClose" class="data-source-dialog-close" type="button" aria-label="閉じる">×</button>
+
+    <div class="data-source-dialog-hero">
+      <img src="assets/gluco/about/gluco-data-link.png" alt="" class="data-source-dialog-gluco" width="220" height="220">
+      <div>
+        <h2 id="dataSourceDialogTitle" data-i18n-key="dataSourceDialogTitle">GlucoScopeをはじめる</h2>
+        <p data-i18n-key="dataSourceDialogLead">自分の血糖データをつないで、やさしく振り返る準備をします。</p>
+      </div>
+    </div>
+
+    <div id="dataSourceChoosePanel" class="data-source-choose-panel">
+      <p class="data-source-step-lead">
+        <strong data-i18n-key="dataSourceChooseLead">血糖データのつなぎ方を、どちらか1つ選びます。</strong>
+        <span data-i18n-key="dataSourceChooseHint">方法①または方法②のカードを押すと、次へ進みます。</span>
+      </p>
+
+      <div class="data-source-provider-fieldset" role="group" aria-labelledby="dataSourceProviderLegend">
+        <h3 id="dataSourceProviderLegend" data-i18n-key="dataSourceProviderLegend">つなぎ方を選ぶ</h3>
+        <input type="radio" name="dataSourceProvider" value="gluroo" checked hidden>
+        <input type="radio" name="dataSourceProvider" value="nightscout" hidden>
+
+        <button id="dataSourceGlurooChoice" type="button" class="data-source-provider-option data-source-provider-recommended" data-provider="gluroo">
+          <span class="data-source-method-badge" data-i18n-key="dataSourceMethod1">方法①</span>
+          <span class="data-source-recommend-badge" data-i18n-key="dataSourceRecommended">おすすめ</span>
+          <strong data-i18n-key="dataSourceGlurooTitle">Glurooでつなぐ</strong>
+          <small data-i18n-key="dataSourceGlurooNote">FreeStyle Libre 2またはDexcom G7を使っている方へ。スマートフォンだけで準備できます。</small>
+          <span class="data-source-choice-action" data-i18n-key="dataSourceChoiceAction">ここを押して次へ</span>
+        </button>
+
+        <button id="dataSourceNightscoutChoice" type="button" class="data-source-provider-option" data-provider="nightscout">
+          <span class="data-source-method-badge" data-i18n-key="dataSourceMethod2">方法②</span>
+          <strong data-i18n-key="dataSourceNightscoutTitle">Nightscoutにつなぐ</strong>
+          <small data-i18n-key="dataSourceNightscoutNote">自分のNightscout環境をすでに使っている方、または自分で構築・保守できる上級者向けです。</small>
+          <span class="data-source-choice-action" data-i18n-key="dataSourceChoiceAction">ここを押して次へ</span>
+        </button>
+      </div>
+
+      <div class="data-source-guardian-note">
+        <strong data-i18n-key="dataSourceGuardianTitle">Guardian／MiniMed 780Gを使っている方へ</strong>
+        <p data-i18n-key="dataSourceGuardianLead">Guardianは現在のかんたん接続では利用できません。別のアプリと、自分専用のNightscout環境を準備する上級者向けの方法があります。</p>
+        <a href="guides/nightscout-about/#guardian-example" data-i18n-key="dataSourceGuardianLink">kazumaのGuardian接続例を見る</a>
+      </div>
+
+      <div class="data-source-choose-actions data-source-demo-only">
+        <a class="data-source-demo-link" href="index.html" data-i18n-key="dataSourceDemoLink">まず公開デモを見る</a>
+      </div>
+    </div>
+
+    <div id="dataSourceGlurooPrepPanel" class="data-source-gluroo-prep-panel" hidden>
+      <button id="dataSourceGlurooPrepBackButton" class="data-source-back-button" type="button" data-i18n-key="dataSourceBackButton">← つなぎ方を選び直す</button>
+
+      <div class="data-source-prep-card">
+        <span class="data-source-method-badge" data-i18n-key="dataSourceMethod1">方法①</span>
+        <h3 data-i18n-key="dataSourceGlurooPrepTitle">Glurooを準備します</h3>
+        <p data-i18n-key="dataSourceGlurooPrepLead">初めての方は、画像付きの日本語ガイドを見ながら進めてください。App Storeから入れるところから案内します。</p>
+        <p class="data-source-supported-note" data-i18n-key="dataSourceGlurooSupportedNote">この案内は、FreeStyle Libre 2とDexcom G7を対象に準備しています。</p>
+        <a class="data-source-primary-guide-link" href="guides/gluroo-setup/" data-i18n-key="dataSourceGlurooGuideLink">画像を見ながらGlurooを準備する</a>
+      </div>
+
+      <div class="data-source-external-note">
+        <strong data-i18n-key="dataSourceExternalTitle">Glurooは外部サービスです</strong>
+        <p data-i18n-key="dataSourceExternalLead">現在は無料でテスト利用できます。今後、料金や機能、画面、接続方法が変わる場合があります。</p>
+      </div>
+
+      <div class="data-source-prep-actions">
+        <button id="dataSourceGlurooConnectButton" type="button" class="data-source-primary-button" data-i18n-key="dataSourceGlurooConnectButton">Glurooの準備ができたので、接続へ進む</button>
+        <a class="data-source-demo-link" href="index.html" data-i18n-key="dataSourceDemoLink">まず公開デモを見る</a>
+      </div>
+    </div>
+
+    <div id="dataSourceConnectPanel" class="data-source-connect-panel" hidden>
+      <button id="dataSourceBackButton" class="data-source-back-button" type="button" data-i18n-key="dataSourceBackButton">← つなぎ方を選び直す</button>
+
+      <form id="dataSourceForm" class="data-source-form" novalidate>
+        <div id="dataSourceGlurooHelp" class="data-source-help">
+          <strong data-i18n-key="dataSourceGlurooHelpTitle">Glurooの準備が終わった方</strong>
+          <p data-i18n-key="dataSourceGlurooHelpLead">Glurooに表示された2つの情報を、下の欄へ貼り付けます。</p>
+        </div>
+
+        <div id="dataSourceNightscoutHelp" class="data-source-help data-source-help-advanced" hidden>
+          <strong data-i18n-key="dataSourceNightscoutHelpTitle">自分のNightscout環境をすでに使っている方</strong>
+          <p data-i18n-key="dataSourceNightscoutHelpLead">ご自身のNightscout URLと読み取り用の情報を、下の欄へ貼り付けます。新しく環境を作るところから始める方法は上級者向けです。</p>
+          <a href="guides/nightscout-about/" data-i18n-key="dataSourceNightscoutAboutLink">Nightscoutとは？</a>
+        </div>
+
+        <div class="data-source-notice">
+          <strong data-i18n-key="dataSourceLocalOnlyTitle">入力した情報の保存について</strong>
+          <p>
+            <span data-i18n-key="dataSourceLocalOnlyLine1">接続先URLと接続用の合言葉は、GlucoScopeのサーバーには保存しません。</span>
+            <span data-i18n-key="dataSourceLocalOnlyLine2">家族などと共用している端末では、「この端末に保存する」をオフにしてください。</span>
+          </p>
+        </div>
+
+        <label class="data-source-field">
+          <span data-i18n-key="dataSourceUrlLabel">接続先URL</span>
+          <input id="dataSourceUrl" type="url" inputmode="url" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="https://...">
+          <small data-i18n-key="dataSourceUrlHelp">Glurooでは「Nightscout URL」と表示されています。</small>
+        </label>
+
+        <label class="data-source-field">
+          <span data-i18n-key="dataSourceSecretLabel">接続用の合言葉</span>
+          <span class="data-source-secret-row">
+            <input id="dataSourceSecret" type="password" autocomplete="off" autocapitalize="none" spellcheck="false">
+            <button id="dataSourceSecretToggle" type="button" class="data-source-secret-toggle" data-i18n-key="dataSourceSecretShow">表示</button>
+          </span>
+          <small data-i18n-key="dataSourceSecretHelp">Glurooでは「API Secret Token」と表示されています。Apple・Google・CGMメーカーのパスワードは入力しません。</small>
+        </label>
+
+        <label class="data-source-save-option">
+          <input id="dataSourcePersist" type="checkbox" checked>
+          <span>
+            <strong data-i18n-key="dataSourcePersistLabel">この端末に保存する</strong>
+            <small data-i18n-key="dataSourcePersistHelp">オフにすると、画面を閉じたあとにもう一度入力が必要です。</small>
+          </span>
+        </label>
+
+        <div class="data-source-test-row">
+          <button id="dataSourceTestButton" type="button" class="data-source-secondary-button" data-i18n-key="dataSourceTestButton">つながるか確認する</button>
+          <div id="dataSourceTestStatus" class="data-source-test-status" aria-live="polite" data-i18n-key="dataSourceTestWaiting">上の2つを貼り付けて、つながるか確認します。</div>
+        </div>
+
+        <div class="data-source-actions">
+          <button id="dataSourceSaveButton" type="submit" class="data-source-primary-button" disabled data-i18n-key="dataSourceSaveButton">GlucoScopeを始める</button>
+          <button id="dataSourceDeleteButton" type="button" class="data-source-danger-button" data-i18n-key="dataSourceDeleteButton" hidden>この端末に保存した接続を削除</button>
+          <a class="data-source-demo-link" href="index.html" data-i18n-key="dataSourceDemoLink">まず公開デモを見る</a>
+        </div>
+      </form>
+    </div>
+
+    <p class="data-source-safety-note" data-i18n-key="dataSourceSafetyNote">GlucoScopeは日々の振り返りを支えるサポートツールです。治療判断、アラート、最新の機器状態は、元のCGM・ポンプアプリを確認してください。</p>
+  </div>
 </div>
 
 <div class="dashboard">
@@ -69,10 +204,13 @@
     <button class="view-tab" data-view="about" data-i18n-key="tabAbout">✨ About</button>
   </nav>
 
-  <div class="language-switch" aria-label="Language switch">
-    <span data-i18n-key="languageLabel">Language</span>
-    <button type="button" class="language-button active" data-language="ja">日本語</button>
-    <button type="button" class="language-button" data-language="en">English</button>
+  <div class="view-toolbar-actions">
+    <button id="dataSourceButton" type="button" class="data-source-toolbar-button">🔗 <span data-i18n-key="dataSourceButtonDemo">自分のデータで試す</span></button>
+    <div class="language-switch" aria-label="Language switch">
+      <span data-i18n-key="languageLabel">Language</span>
+      <button type="button" class="language-button active" data-language="ja">日本語</button>
+      <button type="button" class="language-button" data-language="en">English</button>
+    </div>
   </div>
 </div>
 
@@ -311,6 +449,10 @@
         <img src="assets/gluco/ui/gluco-peek-clover.png?v=20260713-transparent-2" alt="" class="mobile-more-gluco-image" width="772" height="547">
       </div>
     </div>
+    <button id="mobileDataSourceButton" type="button" class="mobile-data-source-button">
+      <span aria-hidden="true">🔗</span>
+      <span><strong data-i18n-key="mobileMoreDataSource">データ接続</strong><small data-i18n-key="mobileMoreDataSourceNote">Gluroo / Nightscout</small></span>
+    </button>
     <div class="mobile-more-language">
       <span data-i18n-key="languageLabel">Language</span>
       <button type="button" class="language-button active" data-language="ja">日本語</button>
@@ -556,14 +698,15 @@
 
 <button id="mobileViewReturnButton" type="button" class="mobile-view-return-button" data-i18n-key="mobileReturnViewButton" hidden>📱 スマホ表示に戻す</button>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="vendor/chart.js/chart.umd.min.js?v=4.5.1"></script>
 <script src="js/api.js"></script>
+<script src="js/data-source.js?v=20260721-user-foundation-3-2"></script>
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/app.js?v=20260718-ai-language-quality-4"></script>
-<!-- Cloudflare Web Analytics -->
-<script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "5dec761abbfe4147b1fecebc68f8e382"}'></script>
+<script src="js/ui.js?v=20260721-user-foundation-3"></script>
+<script src="js/app.js?v=20260721-user-foundation-3-5"></script>
+<!-- Cloudflare Web Analytics: loaded only when no user connection is stored -->
+<script src="js/analytics-loader.js?v=20260721-user-foundation-3-2"></script>
 <!-- End Cloudflare Web Analytics -->
 </body>
 </html>

@@ -1,4 +1,10 @@
-const NIGHTSCOUT_URL = "https://kazuma-nightscoutweb.azurewebsites.net";
+const dataSourceManager = window.GlucoScopeDataSource || null;
+let activeDataSourceConfig = dataSourceManager?.getActiveConfig?.() || null;
+let activeDataSourceAdapter = activeDataSourceConfig && dataSourceManager
+  ? dataSourceManager.createAdapter(activeDataSourceConfig)
+  : null;
+let dataRefreshTimer = null;
+let testedDataSourceConfig = null;
 
 let glucoseChart = null;
 let currentLanguage = localStorage.getItem("glucoscope.language.v1") || "ja";
@@ -206,6 +212,68 @@ const translations = {
     mobileMoreSupportDevelopment: "開発支援",
     mobileMoreDeveloperStatus: "Developer Status",
     mobileMoreUsageDashboard: "Usage Dashboard",
+    dataSourceButtonDemo: "自分のデータで試す",
+    dataSourceButtonUser: "データ接続",
+    mobileMoreDataSource: "データ接続",
+    mobileMoreDataSourceNote: "Gluroo / Nightscout",
+    dataSourceDialogTitle: "GlucoScopeをはじめる",
+    dataSourceDialogLead: "自分の血糖データをつないで、やさしく振り返る準備をします。",
+    dataSourceChooseLead: "血糖データのつなぎ方を、どちらか1つ選びます。",
+    dataSourceChooseHint: "方法①または方法②のカードを押すと、次へ進みます。",
+    dataSourceProviderLegend: "つなぎ方を選ぶ",
+    dataSourceMethod1: "方法①",
+    dataSourceMethod2: "方法②",
+    dataSourceChoiceAction: "ここを押して次へ",
+    dataSourceRecommended: "おすすめ",
+    dataSourceGlurooTitle: "Glurooでつなぐ",
+    dataSourceGlurooNote: "FreeStyle Libre 2またはDexcom G7を使っている方へ。スマートフォンだけで準備できます。",
+    dataSourceNightscoutTitle: "Nightscoutにつなぐ",
+    dataSourceNightscoutNote: "自分のNightscout環境をすでに使っている方、または自分で構築・保守できる上級者向けです。",
+    dataSourceGuardianTitle: "Guardian／MiniMed 780Gを使っている方へ",
+    dataSourceGuardianLead: "Guardianは現在のかんたん接続では利用できません。別のアプリと、自分専用のNightscout環境を準備する上級者向けの方法があります。",
+    dataSourceGuardianLink: "kazumaのGuardian接続例を見る",
+    dataSourceGlurooPrepTitle: "Glurooを準備します",
+    dataSourceGlurooPrepLead: "初めての方は、画像付きの日本語ガイドを見ながら進めてください。App Storeから入れるところから案内します。",
+    dataSourceGlurooSupportedNote: "この案内は、FreeStyle Libre 2とDexcom G7を対象に準備しています。",
+    dataSourceGlurooConnectButton: "Glurooの準備ができたので、接続へ進む",
+    dataSourceBackButton: "← つなぎ方を選び直す",
+    dataSourceGlurooGuideLink: "画像を見ながらGlurooを準備する",
+    dataSourceNightscoutAboutLink: "Nightscoutとは？",
+    dataSourceExternalTitle: "Glurooは外部サービスです",
+    dataSourceExternalLead: "現在は無料でテスト利用できます。今後、料金や機能、画面、接続方法が変わる場合があります。",
+    dataSourceGlurooHelpTitle: "Glurooの準備が終わった方",
+    dataSourceGlurooHelpLead: "Glurooに表示された2つの情報を、下の欄へ貼り付けます。",
+    dataSourceGlurooOfficialLink: "Gluroo公式FAQ（英語・外部サイト）",
+    dataSourceNightscoutHelpTitle: "自分のNightscout環境をすでに使っている方",
+    dataSourceNightscoutHelpLead: "ご自身のNightscout URLと読み取り用の情報を、下の欄へ貼り付けます。新しく環境を作るところから始める方法は上級者向けです。",
+    dataSourceLocalOnlyTitle: "入力した情報の保存について",
+    dataSourceLocalOnlyLine1: "接続先URLと接続用の合言葉は、GlucoScopeのサーバーには保存しません。",
+    dataSourceLocalOnlyLine2: "家族などと共用している端末では、「この端末に保存する」をオフにしてください。",
+    dataSourceUrlLabel: "接続先URL",
+    dataSourceUrlHelp: "Glurooでは「Nightscout URL」と表示されています。",
+    dataSourceSecretLabel: "接続用の合言葉",
+    dataSourceSecretShow: "表示",
+    dataSourceSecretHide: "隠す",
+    dataSourceSecretHelp: "Glurooでは「API Secret Token」と表示されています。Apple・Google・CGMメーカーのパスワードは入力しません。",
+    dataSourcePersistLabel: "この端末に保存する",
+    dataSourcePersistHelp: "オフにすると、画面を閉じたあとにもう一度入力が必要です。",
+    dataSourceTestButton: "つながるか確認する",
+    dataSourceTesting: "つながるか確認しているよ…",
+    dataSourceTestWaiting: "上の2つを貼り付けて、つながるか確認します。",
+    dataSourceTestSuccess: "つながりました。最新の血糖データを確認できたよ🍀",
+    dataSourceTestNoData: "接続先には届きましたが、血糖データはまだ見つかりませんでした。まずGlurooに血糖値が表示されているか確認してみてね。",
+    dataSourceTestAuthError: "接続用の情報を確認できませんでした。2つの情報をもう一度コピーして貼り付けてみてね。",
+    dataSourceTestCorsError: "このブラウザからデータを受け取れませんでした。通信方法の確認が必要です。表示された内容を開発者へお知らせください。",
+    dataSourceTestFormatError: "届いたデータを、GlucoScopeではまだ読み取れませんでした。対応状況を確認します。",
+    dataSourceTestGenericError: "つながるか確認できませんでした。少し時間をおいて、もう一度試してみてね。",
+    dataSourceSaveButton: "GlucoScopeを始める",
+    dataSourceDeleteButton: "この端末に保存した接続を削除",
+    dataSourceDemoLink: "まず公開デモを見る",
+    dataSourceSafetyNote: "GlucoScopeは日々の振り返りを支えるサポートツールです。治療判断、アラート、最新の機器状態は、元のCGM・ポンプアプリを確認してください。",
+    dataSourceSetupRequired: "最初にデータ接続を設定してね🍀",
+    dataSourceConnectedLabel: "接続中",
+    dataSourceDeleted: "保存した接続を削除しました。",
+    aiLetterStatusUserFoundation: "ユーザー版のAI分析は、利用者ごとのキャッシュ分離と利用上限を整えてから公開します。いつものグルコのお話とChatGPTコピーは使えます🍀",
     mobileSimpleModeButton: "🍀 やさしい表示",
     mobileDetailModeButton: "📊 詳しく見る",
     mobileSimpleCurrentEyebrow: "いまの血糖",
@@ -238,6 +306,8 @@ const translations = {
     aiLetterPanelAi: "AI分析",
     aiLetterPanelChat: "ChatGPT",
     aiLetterButtonPreparing: "血糖データを確認中",
+    aiLetterButtonLocalDisabled: "ローカル確認ではAI分析は停止中",
+    aiLetterButtonUserFoundation: "ユーザー版AI分析は準備中",
     aiLetterButtonNoData: "この期間はデータなし",
     aiLetterButtonUnavailable: "データを読み込めませんでした",
     aiLetterButtonReady: "AI分析を試す",
@@ -248,7 +318,7 @@ const translations = {
     aiLetterStatusRecoveredAfterRetry: "途中で切れないように整え直して、最後まで表示しました🍀",
     aiLetterStatusIncomplete: "AI分析を最後までまとめきれませんでした。途中の文章は保存していないよ。少し時間をおいて、もう一度試してみてね🍀",
     aiLetterStatusPreparing: "選んだ期間の血糖データを確認しているよ。",
-    aiLetterStatusLocalOnly: "",
+    aiLetterStatusLocalOnly: "ローカル確認ではAI分析を停止しています。公開ページでの動作は、マージ後に確認します🍀",
     aiLetterStatusWaitingForSummary: "選んだ期間の血糖サマリーを読み込んでいるよ。読み込み後にAI分析を使えるよ🍀",
     aiLetterStatusNoData: "選んだ期間には、AI分析に使える血糖データがまだ見つからないよ。期間を変えると表示できることがあるよ🍀",
     aiLetterStatusLoadError: "血糖データを読み込めなかったよ。少し時間をおいて、もう一度開いてみてね🍀",
@@ -406,6 +476,68 @@ const translations = {
     mobileMoreSupportDevelopment: "Support Development",
     mobileMoreDeveloperStatus: "Developer Status",
     mobileMoreUsageDashboard: "Usage Dashboard",
+    dataSourceButtonDemo: "Try your own data",
+    dataSourceButtonUser: "Data connection",
+    mobileMoreDataSource: "Data connection",
+    mobileMoreDataSourceNote: "Gluroo / Nightscout",
+    dataSourceDialogTitle: "Start GlucoScope",
+    dataSourceDialogLead: "Connect your own glucose data and prepare for a gentle reflection.",
+    dataSourceChooseLead: "Choose one way to connect your glucose data.",
+    dataSourceChooseHint: "Tap Method 1 or Method 2 to continue.",
+    dataSourceProviderLegend: "Choose how to connect",
+    dataSourceMethod1: "Method 1",
+    dataSourceMethod2: "Method 2",
+    dataSourceChoiceAction: "Tap to continue",
+    dataSourceRecommended: "Recommended",
+    dataSourceGlurooTitle: "Connect with Gluroo",
+    dataSourceGlurooNote: "For FreeStyle Libre 2 or Dexcom G7 users. You can prepare this route on a smartphone.",
+    dataSourceNightscoutTitle: "Connect Nightscout",
+    dataSourceNightscoutNote: "For people who already use their own Nightscout environment, or advanced users who can build and maintain one.",
+    dataSourceGuardianTitle: "For Guardian / MiniMed 780G users",
+    dataSourceGuardianLead: "Guardian is not available through the current beginner connection. An advanced route using another app and your own Nightscout environment is required.",
+    dataSourceGuardianLink: "See kazuma’s Guardian connection example",
+    dataSourceGlurooPrepTitle: "Prepare Gluroo",
+    dataSourceGlurooPrepLead: "The Japanese picture guide starts with installing Gluroo from the App Store.",
+    dataSourceGlurooSupportedNote: "The current guide is being prepared for FreeStyle Libre 2 and Dexcom G7.",
+    dataSourceGlurooConnectButton: "Gluroo is ready — continue to connection",
+    dataSourceBackButton: "← Choose another option",
+    dataSourceGlurooGuideLink: "Set up Gluroo with pictures",
+    dataSourceNightscoutAboutLink: "What is Nightscout?",
+    dataSourceExternalTitle: "Gluroo is an external service",
+    dataSourceExternalLead: "It is currently available for testing at no cost. Pricing, features, screens, or connection methods may change.",
+    dataSourceGlurooHelpTitle: "For people who have prepared Gluroo",
+    dataSourceGlurooHelpLead: "Paste the two items shown in Gluroo into the fields below.",
+    dataSourceGlurooOfficialLink: "Gluroo official FAQ (external site)",
+    dataSourceNightscoutHelpTitle: "For people who already use their own Nightscout environment",
+    dataSourceNightscoutHelpLead: "Paste your Nightscout URL and read credential below. Building a new environment from scratch is an advanced route.",
+    dataSourceLocalOnlyTitle: "About saving the information you enter",
+    dataSourceLocalOnlyLine1: "The connection URL and passphrase are not stored on the GlucoScope server.",
+    dataSourceLocalOnlyLine2: "On a device shared with family or others, turn off Save on this device.",
+    dataSourceUrlLabel: "Connection URL",
+    dataSourceUrlHelp: "Gluroo labels this Nightscout URL.",
+    dataSourceSecretLabel: "Connection passphrase",
+    dataSourceSecretShow: "Show",
+    dataSourceSecretHide: "Hide",
+    dataSourceSecretHelp: "Gluroo labels this API Secret Token. Do not enter an Apple, Google, or CGM manufacturer password.",
+    dataSourcePersistLabel: "Save on this device",
+    dataSourcePersistHelp: "When off, you will need to enter it again after closing the page.",
+    dataSourceTestButton: "Check the connection",
+    dataSourceTesting: "Checking the connection…",
+    dataSourceTestWaiting: "Paste the two items above, then check the connection.",
+    dataSourceTestSuccess: "Connected. The latest glucose entry was found 🍀",
+    dataSourceTestNoData: "The source responded, but no glucose data was found. First check that Gluroo is displaying a glucose value.",
+    dataSourceTestAuthError: "The connection information could not be confirmed. Copy and paste both items again.",
+    dataSourceTestCorsError: "This browser could not receive the data. The connection method needs review. Please share the displayed result with the developer.",
+    dataSourceTestFormatError: "GlucoScope received data that it cannot read yet. Compatibility needs review.",
+    dataSourceTestGenericError: "The connection could not be confirmed. Please try again later.",
+    dataSourceSaveButton: "Start GlucoScope",
+    dataSourceDeleteButton: "Delete the connection saved on this device",
+    dataSourceDemoLink: "View the public demo first",
+    dataSourceSafetyNote: "GlucoScope supports everyday reflection. Check the original CGM or pump app for treatment decisions, alerts, and current device status.",
+    dataSourceSetupRequired: "Connect a data source first 🍀",
+    dataSourceConnectedLabel: "Connected",
+    dataSourceDeleted: "The saved connection was deleted.",
+    aiLetterStatusUserFoundation: "AI analysis for the user version will open after per-user cache isolation and usage limits are ready. Gluco’s local story and ChatGPT copy are available 🍀",
     mobileSimpleModeButton: "🍀 Simple view",
     mobileDetailModeButton: "📊 Details",
     mobileSimpleCurrentEyebrow: "Current glucose",
@@ -438,6 +570,8 @@ const translations = {
     aiLetterPanelAi: "AI analysis",
     aiLetterPanelChat: "ChatGPT",
     aiLetterButtonPreparing: "Checking glucose data",
+    aiLetterButtonLocalDisabled: "AI analysis is off in local preview",
+    aiLetterButtonUserFoundation: "User AI analysis is coming later",
     aiLetterButtonNoData: "No data for this range",
     aiLetterButtonUnavailable: "Could not load data",
     aiLetterButtonReady: "Try AI analysis",
@@ -448,7 +582,7 @@ const translations = {
     aiLetterStatusRecoveredAfterRetry: "The reflection was regenerated so it could finish cleanly 🍀",
     aiLetterStatusIncomplete: "The AI analysis could not be completed. The partial text was not saved. Please try again later 🍀",
     aiLetterStatusPreparing: "Checking the glucose data for the selected range.",
-    aiLetterStatusLocalOnly: "AI letters are not available in this view yet.",
+    aiLetterStatusLocalOnly: "AI analysis is disabled in local preview. Check the published page after merging 🍀",
     aiLetterStatusWaitingForSummary: "Loading the glucose summary for the selected range. AI analysis will be available when it is ready 🍀",
     aiLetterStatusNoData: "No glucose data for AI analysis was found in the selected range yet. Another range may have data 🍀",
     aiLetterStatusLoadError: "The glucose data could not be loaded. Please try again a little later 🍀",
@@ -587,6 +721,395 @@ function t(key) {
   }
 
   return key;
+}
+
+function isUserDataSourceMode() {
+  return dataSourceManager?.getLaunchMode?.() === "user";
+}
+
+function hasActiveDataSource() {
+  return Boolean(activeDataSourceAdapter && activeDataSourceConfig);
+}
+
+function getActiveDataSourceLabel() {
+  if (!activeDataSourceConfig) {
+    return currentLanguage === "en" ? "Data source" : "データ接続";
+  }
+
+  return dataSourceManager?.getProviderLabel?.(activeDataSourceConfig.provider, currentLanguage)
+    || (activeDataSourceConfig.provider === "gluroo" ? "Gluroo" : "Nightscout");
+}
+
+function requireActiveDataSourceAdapter() {
+  if (!activeDataSourceAdapter) {
+    const error = new Error("Data source setup is required.");
+    error.code = "data_source_required";
+    throw error;
+  }
+  return activeDataSourceAdapter;
+}
+
+
+function getDataSourceFormConfig() {
+  const provider = document.querySelector('input[name="dataSourceProvider"]:checked')?.value || "gluroo";
+  return {
+    provider,
+    baseUrl: document.getElementById("dataSourceUrl")?.value || "",
+    credential: document.getElementById("dataSourceSecret")?.value || "",
+    credentialType: "auto",
+    authStrategy: "auto",
+    persist: document.getElementById("dataSourcePersist")?.checked !== false
+  };
+}
+
+function setDataSourceTestStatus(message, type = "") {
+  const status = document.getElementById("dataSourceTestStatus");
+  if (!status) return;
+  status.classList.remove("success", "error", "pending");
+  if (type) status.classList.add(type);
+  status.textContent = message;
+}
+
+function getDataSourceErrorMessage(error) {
+  const messages = {
+    missing_url: "dataSourceTestGenericError",
+    invalid_url: "dataSourceTestGenericError",
+    https_required: "dataSourceTestGenericError",
+    authentication_failed: "dataSourceTestAuthError",
+    cors_or_network: "dataSourceTestCorsError",
+    request_timeout: "dataSourceTestCorsError",
+    no_glucose_data: "dataSourceTestNoData",
+    incompatible_entry_format: "dataSourceTestFormatError"
+  };
+  return t(messages[error?.code] || "dataSourceTestGenericError");
+}
+
+function updateDataSourceProviderHelp() {
+  const provider = document.querySelector('input[name="dataSourceProvider"]:checked')?.value || "gluroo";
+  const glurooHelp = document.getElementById("dataSourceGlurooHelp");
+  const nightscoutHelp = document.getElementById("dataSourceNightscoutHelp");
+  if (glurooHelp) glurooHelp.hidden = provider !== "gluroo";
+  if (nightscoutHelp) nightscoutHelp.hidden = provider !== "nightscout";
+}
+
+function showDataSourceChooseStep() {
+  const choosePanel = document.getElementById("dataSourceChoosePanel");
+  const prepPanel = document.getElementById("dataSourceGlurooPrepPanel");
+  const connectPanel = document.getElementById("dataSourceConnectPanel");
+  if (choosePanel) choosePanel.hidden = false;
+  if (prepPanel) prepPanel.hidden = true;
+  if (connectPanel) connectPanel.hidden = true;
+  testedDataSourceConfig = null;
+}
+
+function showDataSourceGlurooPrepStep() {
+  const choosePanel = document.getElementById("dataSourceChoosePanel");
+  const prepPanel = document.getElementById("dataSourceGlurooPrepPanel");
+  const connectPanel = document.getElementById("dataSourceConnectPanel");
+  if (choosePanel) choosePanel.hidden = true;
+  if (prepPanel) prepPanel.hidden = false;
+  if (connectPanel) connectPanel.hidden = true;
+  testedDataSourceConfig = null;
+}
+
+function showDataSourceConnectStep() {
+  const choosePanel = document.getElementById("dataSourceChoosePanel");
+  const prepPanel = document.getElementById("dataSourceGlurooPrepPanel");
+  const connectPanel = document.getElementById("dataSourceConnectPanel");
+  if (choosePanel) choosePanel.hidden = true;
+  if (prepPanel) prepPanel.hidden = true;
+  if (connectPanel) connectPanel.hidden = false;
+  updateDataSourceProviderHelp();
+  invalidateDataSourceTest();
+  window.setTimeout(() => document.getElementById("dataSourceUrl")?.focus(), 0);
+}
+
+function selectDataSourceProvider(provider) {
+  const resolvedProvider = provider === "nightscout" ? "nightscout" : "gluroo";
+  const input = document.querySelector(`input[name="dataSourceProvider"][value="${resolvedProvider}"]`);
+  if (input) input.checked = true;
+  updateDataSourceProviderHelp();
+  if (resolvedProvider === "gluroo") {
+    showDataSourceGlurooPrepStep();
+  } else {
+    showDataSourceConnectStep();
+  }
+}
+
+function invalidateDataSourceTest() {
+  testedDataSourceConfig = null;
+  const saveButton = document.getElementById("dataSourceSaveButton");
+  if (saveButton) saveButton.disabled = true;
+  setDataSourceTestStatus(t("dataSourceTestWaiting"));
+}
+
+function populateDataSourceForm(config = null) {
+  const resolved = config || activeDataSourceConfig || null;
+  const provider = resolved?.provider === "nightscout" ? "nightscout" : "gluroo";
+  const providerInput = document.querySelector(`input[name="dataSourceProvider"][value="${provider}"]`);
+  if (providerInput) providerInput.checked = true;
+
+  const urlInput = document.getElementById("dataSourceUrl");
+  const secretInput = document.getElementById("dataSourceSecret");
+  const persistInput = document.getElementById("dataSourcePersist");
+  const deleteButton = document.getElementById("dataSourceDeleteButton");
+
+  if (urlInput) urlInput.value = resolved?.mode === "user" ? resolved.baseUrl || "" : "";
+  if (secretInput) {
+    secretInput.value = resolved?.mode === "user" ? resolved.credential || "" : "";
+    secretInput.type = "password";
+  }
+  if (persistInput) persistInput.checked = resolved?.mode === "user" ? resolved.persist !== false : true;
+  if (deleteButton) deleteButton.hidden = !dataSourceManager?.readUserConfig?.();
+
+  testedDataSourceConfig = null;
+  const saveButton = document.getElementById("dataSourceSaveButton");
+  if (saveButton) saveButton.disabled = true;
+  if (resolved?.mode === "user") {
+    showDataSourceConnectStep();
+  } else {
+    const sourceFromGuide = new URLSearchParams(window.location.search).get("source");
+    if (sourceFromGuide === "gluroo" || sourceFromGuide === "nightscout") {
+      const sourceInput = document.querySelector(`input[name="dataSourceProvider"][value="${sourceFromGuide}"]`);
+      if (sourceInput) sourceInput.checked = true;
+      showDataSourceConnectStep();
+    } else {
+      showDataSourceChooseStep();
+    }
+  }
+  updateDataSourceProviderHelp();
+  const resolvedLabel = resolved?.mode === "user"
+    ? dataSourceManager?.getProviderLabel?.(resolved.provider, currentLanguage)
+      || (resolved.provider === "gluroo" ? "Gluroo" : "Nightscout")
+    : "";
+  setDataSourceTestStatus(
+    resolved?.mode === "user"
+      ? `${t("dataSourceConnectedLabel")}: ${resolvedLabel}`
+      : t("dataSourceTestWaiting")
+  );
+}
+
+function updateDataSourceUiLabels() {
+  const userMode = isUserDataSourceMode();
+  const toolbarButton = document.getElementById("dataSourceButton");
+  const toolbarLabel = toolbarButton?.querySelector("span");
+  if (toolbarLabel) toolbarLabel.textContent = t(userMode ? "dataSourceButtonUser" : "dataSourceButtonDemo");
+  if (toolbarButton) {
+    toolbarButton.title = userMode && activeDataSourceConfig
+      ? `${t("dataSourceConnectedLabel")}: ${getActiveDataSourceLabel()}`
+      : t(userMode ? "dataSourceButtonUser" : "dataSourceButtonDemo");
+  }
+
+  const mobileButton = document.getElementById("mobileDataSourceButton");
+  const mobileStrong = mobileButton?.querySelector("strong");
+  const mobileSmall = mobileButton?.querySelector("small");
+  if (mobileStrong) mobileStrong.textContent = t("mobileMoreDataSource");
+  if (mobileSmall) {
+    mobileSmall.textContent = userMode && activeDataSourceConfig
+      ? `${getActiveDataSourceLabel()} · ${t("dataSourceConnectedLabel")}`
+      : t("mobileMoreDataSourceNote");
+  }
+
+  const secretToggle = document.getElementById("dataSourceSecretToggle");
+  const secretInput = document.getElementById("dataSourceSecret");
+  if (secretToggle) secretToggle.textContent = t(secretInput?.type === "text" ? "dataSourceSecretHide" : "dataSourceSecretShow");
+}
+
+function openDataSourceDialog(options = {}) {
+  const dialog = document.getElementById("dataSourceDialog");
+  if (!dialog) return;
+  const required = options.required === true;
+  dialog.dataset.required = required ? "true" : "false";
+  dialog.hidden = false;
+  document.body.classList.add("data-source-dialog-open");
+
+  const closeButton = document.getElementById("dataSourceDialogClose");
+  if (closeButton) closeButton.hidden = required;
+  populateDataSourceForm(dataSourceManager?.readUserConfig?.());
+  updateDataSourceUiLabels();
+}
+
+function closeDataSourceDialog() {
+  const dialog = document.getElementById("dataSourceDialog");
+  if (!dialog || dialog.dataset.required === "true") return;
+  dialog.hidden = true;
+  document.body.classList.remove("data-source-dialog-open");
+}
+
+async function handleDataSourceTest() {
+  const testButton = document.getElementById("dataSourceTestButton");
+  const saveButton = document.getElementById("dataSourceSaveButton");
+  if (!dataSourceManager) {
+    setDataSourceTestStatus(t("dataSourceTestGenericError"), "error");
+    return;
+  }
+
+  testedDataSourceConfig = null;
+  if (saveButton) saveButton.disabled = true;
+  if (testButton) testButton.disabled = true;
+  setDataSourceTestStatus(t("dataSourceTesting"), "pending");
+
+  try {
+    const candidate = dataSourceManager.sanitizeConfig(getDataSourceFormConfig());
+    const result = await dataSourceManager.createAdapter(candidate).testConnection();
+    testedDataSourceConfig = dataSourceManager.sanitizeConfig({
+      ...candidate,
+      authStrategy: result.strategy
+    });
+    if (saveButton) saveButton.disabled = false;
+    const measuredAt = new Date(result.latest.measuredAt);
+    const detail = Number.isFinite(measuredAt.getTime())
+      ? ` ${result.latest.glucose} mg/dL · ${formatDateTime(measuredAt)}`
+      : "";
+    setDataSourceTestStatus(`${t("dataSourceTestSuccess")}${detail}`, "success");
+  } catch (error) {
+    console.warn("Data source connection test failed", error?.code || error?.message);
+    setDataSourceTestStatus(getDataSourceErrorMessage(error), "error");
+  } finally {
+    if (testButton) testButton.disabled = false;
+  }
+}
+
+function clearDataSourceSpecificBrowserState() {
+  try {
+    localStorage.removeItem(AI_LETTER_LOCAL_CACHE_STORAGE_KEY);
+  } catch (error) {
+    console.warn("Could not clear local AI cache", error);
+  }
+}
+
+function buildUserModeUrl(hash = "glucose") {
+  const url = new URL("./", window.location.href);
+  url.search = "?mode=user";
+  url.hash = hash;
+  return url.toString();
+}
+
+function handleDataSourceSave(event) {
+  event?.preventDefault?.();
+  if (!testedDataSourceConfig || !dataSourceManager) {
+    setDataSourceTestStatus(t("dataSourceTestWaiting"), "error");
+    return;
+  }
+
+  try {
+    dataSourceManager.saveUserConfig(testedDataSourceConfig, {
+      persist: document.getElementById("dataSourcePersist")?.checked !== false
+    });
+    clearDataSourceSpecificBrowserState();
+
+    // user.html already opens this exact user-mode URL. Assigning the same URL
+    // may be treated as a same-document navigation, so reload explicitly after
+    // saving. This lets the newly stored connection become the active source.
+    if (isUserDataSourceMode()) {
+      window.location.reload();
+      return;
+    }
+
+    window.location.href = buildUserModeUrl("glucose");
+  } catch (error) {
+    console.warn("Could not save data source", error);
+    setDataSourceTestStatus(t("dataSourceTestGenericError"), "error");
+  }
+}
+
+function handleDataSourceDelete() {
+  if (!dataSourceManager) return;
+  dataSourceManager.clearUserConfig();
+  clearDataSourceSpecificBrowserState();
+  activeDataSourceConfig = null;
+  activeDataSourceAdapter = null;
+  testedDataSourceConfig = null;
+  setDataSourceTestStatus(t("dataSourceDeleted"), "success");
+  const deleteButton = document.getElementById("dataSourceDeleteButton");
+  const saveButton = document.getElementById("dataSourceSaveButton");
+  if (deleteButton) deleteButton.hidden = true;
+  if (saveButton) saveButton.disabled = true;
+  if (isUserDataSourceMode()) {
+    window.setTimeout(() => window.location.reload(), 1500);
+  }
+}
+
+function showDataSourceSetupRequiredState() {
+  const providerLabel = currentLanguage === "en" ? "Data source" : "データ接続";
+  setLiveStatus("pending", "SETUP", t("dataSourceSetupRequired"));
+  updateHealthBar(null, null, "waiting");
+  updateHeaderUpdated(null);
+  updateCurrentGlucoseColor(null);
+  updateGlucoseDelta(null, null);
+  const status = document.getElementById("status");
+  if (status) status.textContent = t("dataSourceSetupRequired");
+  const comment = document.getElementById("comment");
+  if (comment) comment.textContent = t("dataSourceSetupRequired");
+  const liveIndicator = document.getElementById("liveIndicator");
+  if (liveIndicator) liveIndicator.title = `${providerLabel}: ${t("dataSourceSetupRequired")}`;
+  setAiLetterSummary(null, "loading");
+  updateAiLetterControls();
+}
+
+function setupDataSourceFoundation() {
+  const dialog = document.getElementById("dataSourceDialog");
+  const form = document.getElementById("dataSourceForm");
+  const providerInputs = document.querySelectorAll('input[name="dataSourceProvider"]');
+  const changeInputs = [
+    document.getElementById("dataSourceUrl"),
+    document.getElementById("dataSourceSecret")
+  ].filter(Boolean);
+
+  document.getElementById("dataSourceButton")?.addEventListener("click", () => {
+    openDataSourceDialog({ required: isUserDataSourceMode() && !hasActiveDataSource() });
+  });
+  document.getElementById("mobileDataSourceButton")?.addEventListener("click", () => {
+    openDataSourceDialog({ required: isUserDataSourceMode() && !hasActiveDataSource() });
+  });
+  document.getElementById("dataSourceDialogClose")?.addEventListener("click", closeDataSourceDialog);
+  document.getElementById("dataSourceGlurooChoice")?.addEventListener("click", () => selectDataSourceProvider("gluroo"));
+  document.getElementById("dataSourceNightscoutChoice")?.addEventListener("click", () => selectDataSourceProvider("nightscout"));
+  document.getElementById("dataSourceGlurooConnectButton")?.addEventListener("click", showDataSourceConnectStep);
+  document.getElementById("dataSourceGlurooPrepBackButton")?.addEventListener("click", showDataSourceChooseStep);
+  document.getElementById("dataSourceBackButton")?.addEventListener("click", showDataSourceChooseStep);
+  document.getElementById("dataSourceTestButton")?.addEventListener("click", handleDataSourceTest);
+  document.getElementById("dataSourceDeleteButton")?.addEventListener("click", handleDataSourceDelete);
+  document.getElementById("dataSourceSaveButton")?.addEventListener("click", handleDataSourceSave);
+  form?.addEventListener("submit", handleDataSourceSave);
+
+  providerInputs.forEach((input) => input.addEventListener("change", () => {
+    updateDataSourceProviderHelp();
+    if (!document.getElementById("dataSourceConnectPanel")?.hidden) invalidateDataSourceTest();
+  }));
+  changeInputs.forEach((input) => input.addEventListener("input", invalidateDataSourceTest));
+
+  document.getElementById("dataSourceSecretToggle")?.addEventListener("click", () => {
+    const input = document.getElementById("dataSourceSecret");
+    if (!input) return;
+    input.type = input.type === "password" ? "text" : "password";
+    updateDataSourceUiLabels();
+  });
+
+  dialog?.addEventListener("click", (event) => {
+    if (event.target === dialog) closeDataSourceDialog();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !dialog?.hidden) closeDataSourceDialog();
+  });
+
+  updateDataSourceUiLabels();
+  if (isUserDataSourceMode()) document.body.classList.add("user-data-source-mode");
+
+  if (isUserDataSourceMode() && !hasActiveDataSource()) {
+    showDataSourceSetupRequiredState();
+    openDataSourceDialog({ required: true });
+    return false;
+  }
+
+  return hasActiveDataSource();
+}
+
+function startDataRefresh() {
+  if (!hasActiveDataSource()) return;
+  if (dataRefreshTimer) window.clearInterval(dataRefreshTimer);
+  loadDailyStats();
+  dataRefreshTimer = window.setInterval(loadDailyStats, 60000);
 }
 
 function injectAiLetterLayoutStyles() {
@@ -2033,6 +2556,7 @@ function applyLanguage() {
   safelyUpdateLetterControls();
   updateRuleCommentDisplay();
   updateAiLetterControls();
+  updateDataSourceUiLabels();
   syncMobileApp();
 }
 
@@ -2042,7 +2566,8 @@ function setLanguage(language) {
   currentLanguage = language;
   localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
   applyLanguage();
-  loadDailyStats();
+  if (hasActiveDataSource()) loadDailyStats();
+  else if (isUserDataSourceMode()) showDataSourceSetupRequiredState();
 }
 
 function setupLanguageSwitch() {
@@ -2292,6 +2817,7 @@ function getAiLetterWorkerEndpoint() {
 function isAiLetterWorkerEnabled() {
   const params = new URLSearchParams(window.location.search);
 
+  if (isUserDataSourceMode()) return false;
   if (params.has("disableAiWorker")) return false;
   if (!isLocalAiLetterDevelopmentHost()) return true;
 
@@ -3038,6 +3564,10 @@ function updateAiLetterControls(statusKey = null, statusType = "", options = {})
 
     if (aiLetterRequestInFlight) {
       aiButton.textContent = t("aiLetterButtonLoading");
+    } else if (!workerEnabled) {
+      aiButton.textContent = t(isUserDataSourceMode()
+        ? "aiLetterButtonUserFoundation"
+        : "aiLetterButtonLocalDisabled");
     } else if (workerEnabled && hasSummary && hasFreshCachedCurrentMode) {
       aiButton.textContent = t("aiLetterButtonCached");
     } else if (workerEnabled && hasSummary && hasCachedCurrentMode) {
@@ -3065,7 +3595,7 @@ function updateAiLetterControls(statusKey = null, statusType = "", options = {})
     aiStatus.classList.remove("success", "error");
 
     if (!workerEnabled) {
-      setElementTextOrHide(aiStatus, t("aiLetterStatusLocalOnly"));
+      setElementTextOrHide(aiStatus, t(isUserDataSourceMode() ? "aiLetterStatusUserFoundation" : "aiLetterStatusLocalOnly"));
     } else if (!hasSummary && aiLetterSummaryState === "no-data") {
       setElementTextOrHide(aiStatus, t("aiLetterStatusNoData"));
     } else if (!hasSummary && aiLetterSummaryState === "error") {
@@ -3246,7 +3776,7 @@ function buildAiLetterSummary({ periodKey, rangeStart, rangeEnd, latest, entries
 
   return {
     version: "gluco-ai-letter-summary-v0.1",
-    pageMode: "kazuma-public-demo",
+    pageMode: isUserDataSourceMode() ? "glucoscope-user-foundation" : "kazuma-public-demo",
     language: currentLanguage,
     period: periodKey,
     slot: slot.key,
@@ -3428,7 +3958,7 @@ async function handleAiLetterRequest(mode = currentAiLetterMode, options = {}) {
   }
 
   if (!isAiLetterWorkerEnabled()) {
-    setAiLetterPanelStatus("aiLetterStatusLocalOnly", "error");
+    setAiLetterPanelStatus(isUserDataSourceMode() ? "aiLetterStatusUserFoundation" : "aiLetterStatusLocalOnly", "error");
     return;
   }
 
@@ -4387,27 +4917,27 @@ function updateHealthBar(latestEntry = null, deviceStatus = null, connectionStat
     );
   }
 
+  const providerLabel = getActiveDataSourceLabel();
+  const connectionTitle = currentLanguage === "en"
+    ? `${providerLabel} connection status`
+    : `${providerLabel}接続状況`;
   if (connectionState === "error") {
-    setHealthItem(cloudEl, t("cloudError"), "health-error", currentLanguage === "en" ? "NightScout connection status" : "NightScout接続状況");
+    setHealthItem(cloudEl, t("cloudError"), "health-error", connectionTitle);
   } else if (connectionState === "connected") {
-    setHealthItem(cloudEl, t("cloudConnected"), "health-online", currentLanguage === "en" ? "NightScout connection status" : "NightScout接続状況");
+    setHealthItem(cloudEl, t("cloudConnected"), "health-online", connectionTitle);
   } else {
-    setHealthItem(cloudEl, t("cloudWaiting"), "health-muted", currentLanguage === "en" ? "NightScout connection status" : "NightScout接続状況");
+    setHealthItem(cloudEl, t("cloudWaiting"), "health-muted", connectionTitle);
   }
 }
 
 async function loadDeviceStatus() {
-  return fetchJson(`${NIGHTSCOUT_URL}/api/v1/devicestatus.json?count=1`, []);
+  const result = await requireActiveDataSourceAdapter().fetchDeviceStatus();
+  return Array.isArray(result?.data) ? result.data : [];
 }
 
 async function fetchEntriesInRange(rangeStart, rangeEnd, count = 1000) {
-  return fetchJson(`${NIGHTSCOUT_URL}/api/v1/entries/sgv.json?find[date][$gte]=${Math.round(rangeStart)}&find[date][$lte]=${Math.round(rangeEnd)}&count=${count}`, []);
-}
-
-async function fetchJson(url, fallback = []) {
-  const response = await fetch(url);
-  if (!response.ok) return fallback;
-  return response.json();
+  const result = await requireActiveDataSourceAdapter().fetchEntries(rangeStart, rangeEnd, count);
+  return Array.isArray(result?.data) ? result.data : [];
 }
 
 async function loadLatestGlucose() {
@@ -4415,12 +4945,10 @@ async function loadLatestGlucose() {
   const glucoseArrow = document.getElementById("glucoseArrow");
   const status = document.getElementById("status");
   const lastUpdate = document.getElementById("lastUpdate");
-  const response = await fetch(`${NIGHTSCOUT_URL}/api/v1/entries.json?count=2`);
-  if (!response.ok) throw new Error(`Latest glucose request failed: ${response.status}`);
+  const result = await requireActiveDataSourceAdapter().fetchLatest(2);
+  const data = Array.isArray(result?.data) ? result.data : [];
 
-  const data = await response.json();
-
-  if (!data || data.length === 0) {
+  if (!data.length) {
     if (status) status.textContent = t("latestNoData");
     updateCurrentGlucoseColor(null);
     updateGlucoseDelta(null, null);
@@ -4433,16 +4961,29 @@ async function loadLatestGlucose() {
 
   const latest = data[0];
   const previous = data[1];
+  const latestGlucose = Number(latest.sgv ?? latest.glucose ?? latest.mgdl);
+  const previousGlucose = Number(previous?.sgv ?? previous?.glucose ?? previous?.mgdl);
+  const latestDate = Number(latest.date)
+    || Date.parse(latest.dateString || latest.created_at || "");
 
-  if (glucoseValue) glucoseValue.textContent = latest.sgv ?? "--";
+  if (!Number.isFinite(latestGlucose) || !Number.isFinite(latestDate)) {
+    const error = new Error("The latest glucose entry is not compatible.");
+    error.code = "incompatible_entry_format";
+    throw error;
+  }
+
+  latest.sgv = latestGlucose;
+  latest.date = latestDate;
+  if (previous && Number.isFinite(previousGlucose)) previous.sgv = previousGlucose;
+
+  if (glucoseValue) glucoseValue.textContent = latestGlucose;
   if (glucoseArrow) glucoseArrow.textContent = directionMap[latest.direction] ?? "→";
-  updateRangeStatus(Number(latest.sgv));
-  updateGlucoseDelta(latest.sgv, previous?.sgv);
+  updateRangeStatus(latestGlucose);
+  updateGlucoseDelta(latestGlucose, previous?.sgv);
 
-  const measuredAt = new Date(latest.date);
+  const measuredAt = new Date(latestDate);
   updateHeaderUpdated(measuredAt);
-  const now = new Date();
-  const minutesAgo = Math.round((now - measuredAt) / 60000);
+  const minutesAgo = Math.round((Date.now() - measuredAt.getTime()) / 60000);
   const unicornDecision = evaluateLatestUnicornEncounter(latest, measuredAt, minutesAgo);
   if (unicornDecision) {
     renderUnicornGlucoDecision(unicornDecision, getLocalDateKey());
@@ -4455,14 +4996,19 @@ async function loadLatestGlucose() {
       : `${minutesAgo}${t("updatedMinutesAgo")} / ${latest.direction ?? t("latestUnknown")}`;
   }
 
-  if (lastUpdate) {
-    lastUpdate.textContent = `${t("lastUpdatedLabel")}: ${formatDateTime(measuredAt)}`;
-  }
+  if (lastUpdate) lastUpdate.textContent = `${t("lastUpdatedLabel")}: ${formatDateTime(measuredAt)}`;
 
+  const providerLabel = getActiveDataSourceLabel();
   if (minutesAgo >= 30) {
     setLiveStatus("stale", "STALE", currentLanguage === "en" ? `Last data is ${minutesAgo} minutes old` : `最終データは${minutesAgo}分前です`);
   } else {
-    setLiveStatus("online", "LIVE", currentLanguage === "en" ? `Nightscout connected / ${minutesAgo} min ago` : `Nightscout接続中 / ${minutesAgo}分前に更新`);
+    setLiveStatus(
+      "online",
+      "LIVE",
+      currentLanguage === "en"
+        ? `${providerLabel} connected / updated ${minutesAgo} min ago`
+        : `${providerLabel}接続中 / ${minutesAgo}分前に更新`
+    );
   }
 
   const currentLastUpdate = document.getElementById("currentLastUpdate");
@@ -4474,19 +5020,14 @@ async function loadLatestGlucose() {
   }
 
   const graphLastUpdateValue = document.getElementById("graphLastUpdateValue");
-  if (graphLastUpdateValue) {
-    graphLastUpdateValue.textContent = formatDateTime(measuredAt);
-  }
+  if (graphLastUpdateValue) graphLastUpdateValue.textContent = formatDateTime(measuredAt);
 
   return latest;
 }
 
 async function loadTreatmentEvents(rangeStart, rangeEnd) {
-  const startIso = encodeURIComponent(new Date(rangeStart).toISOString());
-  const url = `${NIGHTSCOUT_URL}/api/v1/treatments.json?find[created_at][$gte]=${startIso}&count=1000`;
-  const treatments = await fetchJson(url, []);
-
-  if (!Array.isArray(treatments)) return [];
+  const result = await requireActiveDataSourceAdapter().fetchTreatments(rangeStart, rangeEnd, 1000);
+  const treatments = Array.isArray(result?.data) ? result.data : [];
 
   return treatments.filter((treatment) => {
     const time = getTreatmentTime(treatment);
@@ -4510,6 +5051,11 @@ function updateDisplayedMetrics({ tir, tar, tbr, avg, cv, gmi }) {
 }
 
 async function loadDailyStats() {
+  if (!hasActiveDataSource()) {
+    if (isUserDataSourceMode()) showDataSourceSetupRequiredState();
+    return;
+  }
+
   const requestSequence = ++liveStatsRequestSequence;
   const requestedPeriod = currentLivePeriod;
   const now = Date.now();
@@ -4664,16 +5210,17 @@ async function loadDailyStats() {
     if (isStaleRequest()) return;
 
     console.error(error);
-    setLiveStatus("error", "OFFLINE", t("statusError"));
+    const sourceErrorMessage = getDataSourceErrorMessage(error);
+    setLiveStatus("error", "OFFLINE", sourceErrorMessage);
     updateHealthBar(null, null, "error");
     updateHeaderUpdated(null);
-    document.getElementById("status").textContent = t("statusError");
+    document.getElementById("status").textContent = sourceErrorMessage;
     updateCurrentGlucoseColor(null);
     updateGlucoseDelta(null, null);
     updateScoreMetaDisplay(null, null, null, requestedPeriod);
     setAiLetterSummary(null, "error");
     latestRuleCommentMetrics = null;
-    document.getElementById("comment").textContent = t("commentLoadingError");
+    document.getElementById("comment").textContent = sourceErrorMessage;
   }
 }
 
@@ -4984,7 +5531,9 @@ function setMobilePage(page = "glucose", options = {}) {
   updateMobileNavState(resolvedPage);
 
   if (options.updateHash !== false) {
-    window.history.replaceState(null, "", `#${resolvedPage}`);
+    const nextUrl = new URL(window.location.href);
+    nextUrl.hash = resolvedPage;
+    window.history.replaceState(null, "", nextUrl.toString());
   }
 
   if (resolvedPage === "graph") {
@@ -4997,6 +5546,14 @@ function setMobilePage(page = "glucose", options = {}) {
 
 function syncMobileApp() {
   syncMobileRangeSummary();
+}
+
+function buildDisplayModeUrl(displayMode, hash) {
+  const url = new URL(window.location.href);
+  url.searchParams.set("display", displayMode);
+  if (isUserDataSourceMode()) url.searchParams.set("mode", "user");
+  url.hash = hash;
+  return url.toString();
 }
 
 function setupMobileDisplayMode() {
@@ -5012,7 +5569,7 @@ function setupMobileDisplayMode() {
       } catch (error) {
         console.warn("Could not save mobile display mode", error);
       }
-      window.location.href = `${window.location.pathname}?display=mobile#more`;
+      window.location.href = buildDisplayModeUrl("mobile", "more");
     });
   }
 
@@ -5022,7 +5579,7 @@ function setupMobileDisplayMode() {
     } catch (error) {
       console.warn("Could not save desktop display mode", error);
     }
-    window.location.href = `${window.location.pathname}?display=desktop#live`;
+    window.location.href = buildDisplayModeUrl("desktop", "live");
   });
 }
 
@@ -5122,13 +5679,23 @@ setupPeriodSwitch();
 applyLanguage();
 updateClock();
 renderStoredDailyLetterGlucoImage();
-setLiveStatus("pending", "CHECKING", "Nightscoutの最新データを確認中");
-updateHealthBar(null, null, "waiting");
-updateAiLetterControls();
-loadDailyStats();
 setupDatePickerButtons();
 setupChatGptHandoff();
 setupAiLetterPrototype();
 
+const dataSourceReady = setupDataSourceFoundation();
+if (dataSourceReady) {
+  const providerLabel = getActiveDataSourceLabel();
+  setLiveStatus(
+    "pending",
+    "CHECKING",
+    currentLanguage === "en"
+      ? `Checking the latest data from ${providerLabel}`
+      : `${providerLabel}の最新データを確認中`
+  );
+  updateHealthBar(null, null, "waiting");
+  updateAiLetterControls();
+  startDataRefresh();
+}
+
 setInterval(updateClock, 1000);
-setInterval(loadDailyStats, 60000);
