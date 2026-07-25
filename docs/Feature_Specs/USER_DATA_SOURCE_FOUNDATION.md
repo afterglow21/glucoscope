@@ -1,8 +1,8 @@
-# User Data Source Foundation 0.3.2
+# User Data Source Foundation 0.3.4
 
 ## Purpose
 
-User Data Source Foundation 0.3.2 is the beginner-facing base for allowing a person other than Kazuma to open GlucoScope and connect their own glucose data without building an Azure environment for GlucoScope.
+User Data Source Foundation 0.3.4 is the beginner-facing base for allowing a person other than Kazuma to open GlucoScope and connect their own glucose data without building an Azure environment for GlucoScope.
 
 The first supported path is a **Nightscout-compatible data source**. The setup screen names these two routes:
 
@@ -25,7 +25,7 @@ The existing root `index.html` without `mode=user` remains Kazuma's public demo.
 
 ## Privacy boundary
 
-For User Foundation 0.3.2:
+For User Foundation 0.3.4:
 
 - The data-source URL and credential are stored only in the selected browser storage.
 - They are not sent to the GlucoScope AI Worker.
@@ -64,7 +64,7 @@ A failed direct request may mean:
 - browser CORS rules do not allow direct access;
 - the response format is not compatible yet.
 
-User Foundation 0.3.2 does not introduce a credential-bearing Cloudflare proxy. A proxy may be considered later only after destination restrictions, secret handling, abuse prevention, request limits, logging boundaries, and deletion behavior are designed.
+User Foundation 0.3.4 does not introduce a credential-bearing Cloudflare proxy. A proxy may be considered later only after destination restrictions, secret handling, abuse prevention, request limits, logging boundaries, and deletion behavior are designed.
 
 ## AI boundary
 
@@ -112,10 +112,9 @@ Connection errors, missing data, old data, and unsupported formats should be sho
 - JavaScript syntax checks and adapter tests pass.
 - No Worker deployment is required for this phase.
 
-
 ## Beginner-first onboarding rule
 
-User Foundation 0.3.2 assumes that a person may use a smartphone every day while having little or no knowledge of servers, APIs, cloud platforms, or browser storage.
+User Foundation 0.3.4 assumes that a person may use a smartphone every day while having little or no knowledge of servers, APIs, cloud platforms, browser storage, or which similarly named diabetes app should be opened next.
 
 The visible setup flow therefore:
 
@@ -126,7 +125,14 @@ The visible setup flow therefore:
 - uses a separate, screenshot-based HTML guide beginning with App Store installation;
 - gives Nightscout a separate plain-language explanation and identifies it as an advanced route;
 - uses one action per screen where practical, with large controls and short paragraphs;
-- explains that the connection details are stored only on the selected device, and separates the shared-device warning onto its own line.
+- explains that the connection details are stored only on the selected device, and separates the shared-device warning onto its own line;
+- treats each displayed onboarding screen as its own numbered step or explicit screen checkpoint instead of summarizing several screens as “answer what you can”;
+- states exactly when an optional `SKIP`, `Not now`, or `Later` action may be used;
+- separately identifies screens that must not be skipped, including CGM selection, sign-in, CGM connection, and Global Connect;
+- places an `今開くアプリ` card before every app switch;
+- shows the exact App Store name and current developer name so a person can verify the app even when its icon changes;
+- never assumes that a person can distinguish FreeStyle LibreLink, LibreLinkUp, Gluroo, and Mail by name alone;
+- incorporates independent field-test feedback before calling the onboarding complete.
 
 ## External-service maintenance boundary
 
@@ -141,7 +147,6 @@ The public setup and guide must state that:
 - screenshots are maintained as replaceable guide assets rather than embedded throughout the main dashboard.
 
 The guide shows its last review date and supported test environment. A Gluroo screen change should require updating the guide and its image assets, not redesigning the GlucoScope dashboard.
-
 
 ## Device-route boundary
 
@@ -171,15 +176,20 @@ The Dexcom guide explains:
 
 The Libre guide explains:
 
+- identify `FreeStyle LibreLink – JP` by its exact App Store name and developer before opening it;
 - add a LibreLinkUp connection from the Libre app;
+- switch to Mail and open the invitation;
+- identify `LibreLinkUp` by its exact App Store name and developer;
 - create or use the invited LibreLinkUp account;
 - confirm that readings are visible in LibreLinkUp;
-- use the LibreLinkUp email and password in Gluroo;
+- switch back to Gluroo and use the LibreLinkUp email and password there;
 - reset the password when it is unknown rather than attempting to display it.
 
 ## Screenshot maintenance
 
-Guide screenshots remain separate, replaceable assets. Fixed-position focus boxes are not placed over screenshots because their position can drift across screen sizes or image revisions. Numbered step headings, short captions, and plain-language instructions identify what to look for. A future screenshot may be edited as a separate public copy only when a stable visual marker is needed.
+Guide screenshots remain separate, replaceable assets. Fixed-position focus boxes are not placed over screenshots because their position can drift across screen sizes or image revisions. Numbered step headings, short captions, and plain-language instructions identify what to look for.
+
+Every source screenshot that represents a distinct screen or user decision should have a corresponding step or screen checkpoint. Optional screens must not disappear into a broad summary. The reviewed iPhone Gluroo 2.0.5 source set contains 34 screens from App Store search through Global Connect URL/token confirmation; CGM-specific Dexcom and Libre screens are documented as alternative branches rather than actions every person must complete. The guide must display the reviewed date/version and clearly warn that Gluroo updates, CGM choice, answers, language, and region may change the screen, wording, order, or whether a screen appears. When an exact app-icon image is not available as a reviewed local asset, the guide must not draw a look-alike and present it as official. It should instead show a clearly labeled app-identification card, exact app name, developer name, and official App Store link until the reviewed icon or screenshot is added.
 
 ## Real-device test gate
 
@@ -190,6 +200,7 @@ Dexcom and Libre sensors should not be activated only to test unfinished onboard
 3. local storage and deletion flow;
 4. live connection test;
 5. current glucose and graph rendering path;
-6. a result checklist that records browser, device, current value, 24-hour, 7-day, and 30-day outcomes without sharing credentials.
+6. a result checklist that records browser, device, current value, 24-hour, 7-day, and 30-day outcomes without sharing credentials;
+7. an independent participant can identify each app, complete optional SKIP screens, and reach the connection test without real-time coaching.
 
 A test participant should perform setup on their own phone and should not send the URL, API Secret, manufacturer credentials, or raw health-data screenshots to the developer.

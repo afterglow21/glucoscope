@@ -12,6 +12,7 @@ const dexcomGuide = await readFile(new URL("../guides/dexcom-share/index.html", 
 const libreGuide = await readFile(new URL("../guides/librelinkup/index.html", import.meta.url), "utf8");
 const nightscoutGuide = await readFile(new URL("../guides/nightscout-about/index.html", import.meta.url), "utf8");
 
+// Existing user-foundation coverage.
 test("user onboarding says only one numbered connection method is needed", () => {
   assert.match(index, /どちらか1つ選びます/);
   assert.doesNotMatch(index, /1．血糖データのつなぎ方/);
@@ -71,11 +72,43 @@ test("local-only notice separates the server and shared-device messages", () => 
   assert.match(app, /共用している端末/);
 });
 
-test("Gluroo guide starts at App Store and uses the correct animal", () => {
-  assert.match(glurooGuide, /App StoreからGlurooを入れる/);
+test("Gluroo guide starts at App Store and identifies the correct app", () => {
+  assert.match(glurooGuide, /App StoreでGlurooを探します/);
   assert.match(glurooGuide, /カンガルーの絵/);
+  assert.match(glurooGuide, /Gluroo Diabetes Logger/);
+  assert.match(glurooGuide, /Gluroo Imaginations Inc\./);
   assert.doesNotMatch(glurooGuide, /鹿の絵/);
-  assert.match(glurooGuide, /あとから決めたい項目は、今は入力しなくて大丈夫です/);
+});
+
+test("field-test revision gives every optional screen an explicit SKIP rule", () => {
+  const stepNumbers = glurooGuide.match(/guide-step-number/g) || [];
+  assert.ok(stepNumbers.length >= 34);
+  assert.match(glurooGuide, /SKIPしてよい/);
+  assert.match(glurooGuide, /飛ばさない/);
+  assert.match(glurooGuide, /プロフィールの必須項目を入力します/);
+  assert.match(glurooGuide, /利用目的を1つ以上選びます/);
+  assert.match(glurooGuide, /通知の案内を進みます/);
+  assert.doesNotMatch(glurooGuide, /表示される質問へ、分かる範囲で答えます/);
+});
+
+
+test("Gluroo guide maps the reviewed 34-screen source set and warns about version changes", () => {
+  const stepImages = glurooGuide.match(/images\/steps\/\d{2}-[a-z0-9-]+\.webp/g) || [];
+  assert.equal(new Set(stepImages).size, 34);
+  assert.match(glurooGuide, /Gluroo 2\.0\.5/);
+  assert.match(glurooGuide, /バージョンや仕様/);
+  assert.match(glurooGuide, /画面の見た目、文言、順番、表示される画面が変わる可能性/);
+  assert.match(glurooGuide, /Set up later/);
+  assert.match(glurooGuide, /基礎リマインダーをスキップ/);
+  assert.match(glurooGuide, /スキップして後でやる/);
+  assert.match(glurooGuide, /今はスキップ/);
+  assert.match(glurooGuide, /API Secret Header \(SHA1\)は使いません/);
+});
+
+test("public guide images are lazy loaded and describe redaction", () => {
+  assert.match(glurooGuide, /loading="lazy"/);
+  assert.match(glurooGuide, /公開用画像では、秘密の接続情報を隠しています/);
+  assert.match(glurooGuide, /接続情報は公開用に非表示/);
 });
 
 test("Gluroo guide no longer links to GotCGM", () => {
@@ -101,10 +134,27 @@ test("Dexcom Share preparation guide explains account identity and password rese
   assert.match(dexcomGuide, /GlucoScopeへDexcomのパスワードを入力することはありません/);
 });
 
-test("LibreLinkUp preparation guide explains invitation and credentials", () => {
+test("Libre guide identifies each app before switching", () => {
   assert.match(glurooGuide, /\.\.\/librelinkup/);
+  assert.match(libreGuide, /FreeStyle LibreLink – JP/);
+  assert.match(libreGuide, /Abbott Labs/);
+  assert.match(libreGuide, /LibreLinkUp/);
+  assert.match(libreGuide, /Newyu, Inc/);
+  assert.match(libreGuide, /Gluroo Diabetes Logger/);
+  assert.match(libreGuide, /今から開くアプリ|STEP 1〜6で開くアプリ/);
+  assert.match(libreGuide, /アプリアイコンは更新で変わる/);
+  assert.match(libreGuide, /id1449296861/);
+  assert.match(libreGuide, /id1234323923/);
+  assert.match(guideCss, /\.guide-app-now/);
+  assert.match(libreGuide, /guide-app-store-icon-link/);
+  assert.match(libreGuide, /gluroo-app-store\.webp/);
+  assert.match(guideCss, /\.guide-app-icon-image/);
+});
+
+test("LibreLinkUp preparation guide explains invitation and credentials", () => {
   assert.match(libreGuide, /接続するアプリ/);
-  assert.match(libreGuide, /LibreLinkUpアプリに自分の血糖値が表示/);
+  assert.match(libreGuide, /招待メール/);
+  assert.match(libreGuide, /LibreLinkUpに自分の血糖値が表示/);
   assert.match(libreGuide, /LibreLinkUpへ登録したメールアドレス/);
   assert.match(libreGuide, /再設定/);
   assert.match(libreGuide, /GlucoScopeへLibreLinkUpのパスワードを入力することはありません/);
@@ -146,32 +196,23 @@ test("guide HTML does not contain real credential strings", () => {
   }
 });
 
-
 test("verified connection can start user mode from the onboarding button", () => {
-  assert.match(
-    app,
-    /dataSourceSaveButton"\)\?\.addEventListener\("click", handleDataSourceSave\)/
-  );
-
+  assert.match(app, /dataSourceSaveButton"\)\?\.addEventListener\("click", handleDataSourceSave\)/);
   const saveHandlerStart = app.indexOf("function handleDataSourceSave");
   const saveHandlerEnd = app.indexOf("function handleDataSourceDelete", saveHandlerStart);
   const saveHandler = app.slice(saveHandlerStart, saveHandlerEnd);
-
   assert.match(saveHandler, /if \(isUserDataSourceMode\(\)\) \{[\s\S]*window\.location\.reload\(\)/);
   assert.match(saveHandler, /window\.location\.href = buildUserModeUrl\("glucose"\)/);
 });
 
-
 test("user mode survives static-server canonical URLs and mobile tab changes", () => {
   assert.match(userEntry, /new URL\("\.\/", window\.location\.href\)/);
   assert.match(userEntry, /href="\.\/\?mode=user#glucose"/);
-
   const buildUrlStart = app.indexOf("function buildUserModeUrl");
   const buildUrlEnd = app.indexOf("function handleDataSourceSave", buildUrlStart);
   const buildUrl = app.slice(buildUrlStart, buildUrlEnd);
   assert.match(buildUrl, /new URL\("\.\/", window\.location\.href\)/);
   assert.match(buildUrl, /url\.search = "\?mode=user"/);
-
   const mobileStart = app.indexOf("function setMobilePage");
   const mobileEnd = app.indexOf("function syncMobileApp", mobileStart);
   const mobileHandler = app.slice(mobileStart, mobileEnd);
@@ -184,11 +225,9 @@ test("user mode survives static-server canonical URLs and mobile tab changes", (
 test("disabled AI analysis explains the actual local or user-foundation state", () => {
   assert.match(app, /aiLetterButtonLocalDisabled: "ローカル確認ではAI分析は停止中"/);
   assert.match(app, /aiLetterButtonUserFoundation: "ユーザー版AI分析は準備中"/);
-
   const controlsStart = app.indexOf("function updateAiLetterControls");
   const controlsEnd = app.indexOf("function forceEnableAiLetterButtonSoon", controlsStart);
   const controls = app.slice(controlsStart, controlsEnd);
-
   assert.match(controls, /else if \(!workerEnabled\)/);
   assert.match(controls, /isUserDataSourceMode\(\)[\s\S]*aiLetterButtonUserFoundation[\s\S]*aiLetterButtonLocalDisabled/);
 });
@@ -197,32 +236,44 @@ test("connection deletion confirmation remains visible before reload", () => {
   const deleteStart = app.indexOf("function handleDataSourceDelete");
   const deleteEnd = app.indexOf("function showDataSourceSetupRequiredState", deleteStart);
   const deleteHandler = app.slice(deleteStart, deleteEnd);
-
   assert.match(deleteHandler, /setDataSourceTestStatus\(t\("dataSourceDeleted"\), "success"\)/);
   assert.match(deleteHandler, /window\.setTimeout\(\(\) => window\.location\.reload\(\), 1500\)/);
 });
-
 
 test("guide return links preserve user mode on canonical directory URLs", () => {
   for (const html of [glurooGuide, dexcomGuide, libreGuide, nightscoutGuide]) {
     assert.doesNotMatch(html, /\.\.\/\.\.\/index\.html\?mode=user/);
   }
-
   assert.match(glurooGuide, /href="\.\.\/\.\.\/\?mode=user&amp;source=gluroo#glucose"/);
   assert.match(nightscoutGuide, /href="\.\.\/\.\.\/\?mode=user&amp;source=nightscout#glucose"/);
   assert.match(glurooGuide, /href="\.\.\/\.\.\/\?mode=user#glucose"/);
   assert.match(nightscoutGuide, /href="\.\.\/\.\.\/\?mode=user#glucose"/);
   assert.match(dexcomGuide, /href="\.\.\/\.\.\/\?mode=user#glucose"/);
   assert.match(libreGuide, /href="\.\.\/\.\.\/\?mode=user#glucose"/);
-
   assert.equal(
     new URL("../../?mode=user&source=gluroo#glucose", "https://example.test/guides/gluroo-setup/").toString(),
     "https://example.test/?mode=user&source=gluroo#glucose"
   );
 });
 
+
+
+test("field feedback copy and red-frame navigation are reflected", () => {
+  assert.match(glurooGuide, /分からない内容は、分かる範囲で入力して「継続する」/);
+  assert.match(glurooGuide, /アボット フリースタイル リブレのバリエーション/);
+  assert.match(glurooGuide, /インスリンペンを利用している方は「InPen」を選択してください/);
+  assert.match(glurooGuide, /GlucoScopeとの接続には必要ありません/);
+  assert.match(glurooGuide, /AppleまたはGoogleのどちらでも構いません/);
+  assert.match(glurooGuide, /Dexcom G7の準備ガイドを開く/);
+  assert.match(glurooGuide, /上部の「コピー」を押します/);
+  assert.match(glurooGuide, /背景の黒い部分をタップ/);
+  assert.match(glurooGuide, /34-home-finish\.webp/);
+  assert.doesNotMatch(glurooGuide, /URLと合言葉が表示されるまで待ちます/);
+  assert.doesNotMatch(glurooGuide, /左上の「×」で閉じます/);
+});
+
 test("current cache and CSS markers are present", () => {
   assert.match(index, /20260721-user-foundation-3-5/);
-  assert.match(guideCss, /User Foundation 0\.3\.1/);
+  assert.match(guideCss, /User Foundation 0\.3\.3/);
   assert.match(css, /User Foundation 0\.3/);
 });

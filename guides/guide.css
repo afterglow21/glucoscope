@@ -14,24 +14,14 @@
 }
 *{box-sizing:border-box}
 html{font-size:18px;scroll-behavior:smooth}
-body{
-  margin:0;
-  background:var(--guide-bg);
-  color:var(--guide-ink);
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;
-  line-height:1.8;
-}
+body{margin:0;background:var(--guide-bg);color:var(--guide-ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;line-height:1.8}
 a{color:#176da8;text-underline-offset:3px}
 button,a{touch-action:manipulation}
 .guide-wrap{width:min(920px,100%);margin:0 auto;padding:20px 18px 64px}
 .guide-topbar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:18px}
 .guide-brand{font-weight:800;color:var(--guide-green-deep);text-decoration:none}
 .guide-back{font-size:.9rem}
-.guide-hero,.guide-card{
-  background:var(--guide-paper);
-  border:1px solid var(--guide-border);
-  border-radius:22px;
-}
+.guide-hero,.guide-card{background:var(--guide-paper);border:1px solid var(--guide-border);border-radius:22px}
 .guide-hero{padding:28px;margin-bottom:18px}
 .guide-kicker{margin:0 0 6px;color:var(--guide-green-deep);font-weight:800;font-size:.85rem}
 h1{margin:0 0 10px;font-size:clamp(1.55rem,6vw,2.3rem);line-height:1.35}
@@ -48,7 +38,7 @@ p{margin:0 0 12px}
 .guide-secondary-links{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;font-size:.9rem}
 .guide-toc{padding:20px 24px;margin-bottom:18px}
 .guide-toc ol{margin:8px 0 0;padding-left:1.4em}
-.guide-step{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,380px);gap:26px;align-items:start;padding:26px;margin-bottom:18px}
+.guide-step{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,380px);gap:26px;align-items:start;padding:26px;margin-bottom:18px;scroll-margin-top:18px}
 .guide-step-number{display:inline-grid;place-items:center;width:42px;height:42px;border-radius:50%;background:var(--guide-green);color:#fff;font-weight:900;margin-bottom:10px}
 .guide-step-copy ul{padding-left:1.35em;margin:10px 0}
 .guide-step-copy li{margin-bottom:8px}
@@ -70,11 +60,7 @@ p{margin:0 0 12px}
   .guide-shot{order:2;width:min(100%,430px);margin:0 auto}
   .guide-topbar{padding:2px 4px}
 }
-@media(max-width:380px){
-  html{font-size:16px}
-  .guide-secondary-links{display:grid}
-}
-
+@media(max-width:380px){html{font-size:16px}.guide-secondary-links{display:grid}}
 
 /* User Foundation 0.3.1: stable screenshot layout and sensor guides */
 .guide-narrow{width:min(760px,100%)}
@@ -111,3 +97,70 @@ p{margin:0 0 12px}
   .guide-flow-link{transform:rotate(90deg)}
   .guide-simple-steps{padding:20px 18px}
 }
+
+/* User Foundation 0.3.3: beginner field-test revision */
+.guide-field-note{border-width:2px}
+.guide-progress{margin:-5px 0 8px;color:var(--guide-green-deep);font-size:.78rem;font-weight:800}
+.guide-chapter{margin:34px 0 16px;padding:18px 22px;border-left:6px solid var(--guide-green);border-radius:0 18px 18px 0;background:#e7f6ee;scroll-margin-top:18px}
+.guide-chapter p{margin:0;color:var(--guide-green-deep);font-size:.78rem;font-weight:900;letter-spacing:.08em}
+.guide-chapter h2{margin:1px 0 0}
+.guide-step-action{display:grid;gap:2px;margin:12px 0;padding:12px 14px;border:1px solid #9ccdb3;border-radius:14px;background:var(--guide-green-soft)}
+.guide-step-action strong{color:var(--guide-green-deep);font-size:.78rem}
+.guide-step-action span{font-weight:800}
+.guide-step-optional{border-color:var(--guide-warn-border);background:var(--guide-warn)}
+.guide-step-optional strong{color:#8a681d}
+.guide-skip-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}
+.guide-skip-card{padding:14px;border:1px solid var(--guide-border);border-radius:14px;background:#fff}
+.guide-skip-card strong{display:block;margin-bottom:5px}
+.guide-skip-card p{margin:0;font-size:.9rem}
+.guide-skip-ok{border-color:#9ccdb3}
+.guide-skip-ok strong{color:var(--guide-green-deep)}
+.guide-skip-required{border-color:#d9a46e}
+.guide-skip-required strong{color:#8d4e18}
+.guide-no-shot{min-height:180px;display:grid;place-content:center;gap:7px;padding:22px;border:2px dashed var(--guide-border);border-radius:18px;background:#fafdfb;text-align:center;color:var(--guide-muted)}
+.guide-no-shot strong{color:var(--guide-green-deep);font-size:1.05rem}
+.guide-no-shot span{font-size:.86rem}
+.guide-app-now,.guide-app-card{display:flex;align-items:center;gap:14px;border:1px solid var(--guide-border);border-radius:18px;background:#fff}
+.guide-app-now{margin:18px 0;padding:15px 18px;box-shadow:0 6px 18px rgba(36,53,74,.05)}
+.guide-app-now>div,.guide-app-card>div{display:grid;min-width:0}
+.guide-app-now small,.guide-app-card small{color:var(--guide-green-deep);font-weight:900}
+.guide-app-now strong,.guide-app-card strong{line-height:1.35}
+.guide-app-now span:not(.guide-app-icon),.guide-app-card span:not(.guide-app-icon){color:var(--guide-muted);font-size:.8rem}
+.guide-app-icon{flex:0 0 auto;display:grid;place-items:center;width:58px;height:58px;border-radius:15px;color:#fff;font-weight:900;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
+.guide-app-icon-gluroo{background:linear-gradient(145deg,#7156a8,#3e2f78)}
+.guide-app-icon-libre{background:linear-gradient(145deg,#ffd83d,#ee9c20);color:#27384d}
+.guide-app-icon-linkup{background:linear-gradient(145deg,#31a7d3,#19729e)}
+.guide-app-icon-mail{background:linear-gradient(145deg,#59a9ee,#246fb6)}
+.guide-app-compare{display:grid;gap:10px;margin-top:14px}
+.guide-app-card{padding:12px}
+.guide-app-card.compact{min-height:180px;justify-content:center;padding:20px}
+.guide-app-card.compact .guide-app-icon{width:72px;height:72px;border-radius:19px;font-size:1.2rem}
+.guide-detailed-steps>ol{counter-reset:inherit}
+.guide-detailed-steps .guide-primary-link{margin-top:12px}
+@media(max-width:720px){
+  .guide-skip-grid{grid-template-columns:1fr}
+  .guide-app-now{position:sticky;top:6px;z-index:4;padding:11px 13px;border-radius:15px}
+  .guide-app-now .guide-app-icon{width:46px;height:46px;border-radius:12px}
+  .guide-no-shot{min-height:135px}
+  .guide-chapter{margin-top:28px;padding:15px 17px}
+}
+
+
+/* User Foundation 0.3.4: full 34-screen Gluroo guide */
+.guide-version-warning{background:#eef5ff;border-color:#bfd2ea}
+.guide-version-warning h2{color:#294e78}
+.guide-step-heading{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.guide-step-heading .guide-step-number{margin-bottom:0}
+.guide-step-badge{display:inline-flex;align-items:center;min-height:30px;padding:3px 10px;border-radius:999px;background:var(--guide-green-soft);border:1px solid var(--guide-border);color:var(--guide-green-deep);font-size:.78rem;font-weight:800}
+.guide-shot-full{width:min(100%,380px);margin-inline:auto}
+.guide-shot-full img{box-shadow:0 8px 28px rgba(36,53,74,.10)}
+.guide-anchor{display:block;position:relative;top:-12px;visibility:hidden}
+@media(max-width:720px){.guide-shot-full{width:min(100%,430px)}}
+
+
+/* User Foundation 0.3.5: reviewed red-frame captures and official app identity */
+.guide-app-icon-image{flex:0 0 auto;display:block;width:58px;height:58px;object-fit:cover;border-radius:15px;border:1px solid var(--guide-border);box-shadow:0 3px 10px rgba(36,53,74,.10)}
+.guide-app-store-icon-link{flex:0 0 auto;display:grid;place-items:center;width:58px;height:58px;border-radius:15px;background:#f5f5f7;border:1px solid #d8d8dc;color:#1d1d1f;text-decoration:none;box-shadow:0 3px 10px rgba(36,53,74,.08)}
+.guide-app-store-icon-placeholder{font-size:.65rem!important;line-height:1.05!important;font-weight:900;text-align:center;color:#1d1d1f!important}
+.guide-app-store-icon-link:focus-visible{outline:3px solid #4e9bd6;outline-offset:3px}
+@media(max-width:720px){.guide-app-icon-image,.guide-app-store-icon-link{width:46px;height:46px;border-radius:12px}}
