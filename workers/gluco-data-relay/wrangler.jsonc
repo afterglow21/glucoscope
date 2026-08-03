@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "glucoscope-data-relay",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-03",
+  "workers_dev": false,
+  "observability": {
+    "enabled": false
+  },
+  "vars": {
+    "RELAY_ENABLED": "false",
+    "CORS_ALLOWED_ORIGINS": "https://afterglow21.github.io",
+    "CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN": "false",
+    "GLUROO_HOST_SUFFIX": ".ns.gluroo.com",
+    "MAX_ENTRIES": "12000",
+    "MAX_RANGE_DAYS": "31",
+    "MAX_REQUEST_BYTES": "8192",
+    "MAX_UPSTREAM_BYTES": "6291456",
+    "UPSTREAM_TIMEOUT_MS": "15000"
+  }
+}
