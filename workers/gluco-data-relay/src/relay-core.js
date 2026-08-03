@@ -8,12 +8,25 @@ const DEFAULTS = Object.freeze({
   maxRequestBytes: 8_192,
   maxUpstreamBytes: 6 * 1024 * 1024,
   upstreamTimeoutMs: 15_000,
+  turnstileExpectedHostname: "afterglow21.github.io",
+  turnstileExpectedAction: "glucoscope-data-relay",
+  turnstileTimeoutMs: 5_000,
+  ticketTtlSeconds: 3_600,
+  sessionDailyLimit: 250,
+  globalWarningDaily: 20_000,
+  globalHardDaily: 50_000,
 });
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_CREDENTIAL_LENGTH = 4_096;
 const MAX_SOURCE_URL_LENGTH = 2_048;
-const ALLOWED_KEYS = new Set(["sourceUrl", "credential", "from", "to", "limit"]);
+const MAX_TICKET_LENGTH = 2_048;
+const MAX_TURNSTILE_TOKEN_LENGTH = 2_048;
+const TICKET_CLOCK_SKEW_SECONDS = 30;
+const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+const ENTRY_KEYS = new Set(["sourceUrl", "credential", "from", "to", "limit", "relayTicket"]);
+const SESSION_KEYS = new Set(["turnstileToken"]);
+const TICKET_KEYS = new Set(["v", "sid", "iat", "exp", "scope", "origin"]);
 const ALLOWED_DIRECTIONS = new Set([
   "DoubleUp",
   "SingleUp",
@@ -53,6 +66,17 @@ export function readConfig(env = {}) {
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean);
+  const globalHardDaily = parsePositiveInteger(
+    env.GLOBAL_HARD_DAILY,
+    DEFAULTS.globalHardDaily,
+    { max: 1_000_000 },
+  );
+  const globalWarningDaily = Math.min(
+    parsePositiveInteger(env.GLOBAL_WARNING_DAILY, DEFAULTS.globalWarningDaily, {
+      max: 1_000_000,
+    }),
+    globalHardDaily,
+  );
 
   return Object.freeze({
     allowedOrigins,
@@ -75,11 +99,38 @@ export function readConfig(env = {}) {
       DEFAULTS.upstreamTimeoutMs,
       { max: 60_000 },
     ),
+    turnstileExpectedHostname: String(
+      env.TURNSTILE_EXPECTED_HOSTNAME || DEFAULTS.turnstileExpectedHostname,
+    ).toLowerCase(),
+    turnstileExpectedAction: String(
+      env.TURNSTILE_EXPECTED_ACTION || DEFAULTS.turnstileExpectedAction,
+    ),
+    turnstileTimeoutMs: parsePositiveInteger(
+      env.TURNSTILE_TIMEOUT_MS,
+      DEFAULTS.turnstileTimeoutMs,
+      { max: 30_000 },
+    ),
+    ticketTtlSeconds: parsePositiveInteger(
+      env.RELAY_TICKET_TTL_SECONDS,
+      DEFAULTS.ticketTtlSeconds,
+      { min: 300, max: 7_200 },
+    ),
+    sessionDailyLimit: parsePositiveInteger(
+      env.SESSION_DAILY_LIMIT,
+      DEFAULTS.sessionDailyLimit,
+      { max: 10_000 },
+    ),
+    globalWarningDaily,
+    globalHardDaily,
   });
 }
 
 export function validateSourceUrl(rawSourceUrl, hostSuffix = DEFAULTS.glurooHostSuffix) {
-  if (typeof rawSourceUrl !== "string" || rawSourceUrl.length < 1 || rawSourceUrl.length > MAX_SOURCE_URL_LENGTH) {
+  if (
+    typeof rawSourceUrl !== "string" ||
+    rawSourceUrl.length < 1 ||
+    rawSourceUrl.length > MAX_SOURCE_URL_LENGTH
+  ) {
     throw new RelayError("invalid_request");
   }
 
@@ -121,13 +172,25 @@ function parseIsoDate(value) {
   return { timestamp, iso: new Date(timestamp).toISOString() };
 }
 
-export function validateRelayPayload(payload, config = readConfig()) {
+function validateTicketString(value) {
+  if (
+    typeof value !== "string" ||
+    value.length < 20 ||
+    value.length > MAX_TICKET_LENGTH ||
+    /[\u0000-\u0020\u007f]/u.test(value)
+  ) {
+    throw new RelayError("relay_ticket_invalid", 403);
+  }
+  return value;
+}
+
+export function validateRelayPayload(payload, config = readConfig(), { requireTicket = false } = {}) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new RelayError("invalid_request");
   }
 
   for (const key of Object.keys(payload)) {
-    if (!ALLOWED_KEYS.has(key)) throw new RelayError("invalid_request");
+    if (!ENTRY_KEYS.has(key)) throw new RelayError("invalid_request");
   }
 
   const sourceUrl = validateSourceUrl(payload.sourceUrl, config.glurooHostSuffix);
@@ -162,13 +225,36 @@ export function validateRelayPayload(payload, config = readConfig()) {
     to = parsedTo.iso;
   }
 
+  let relayTicket;
+  if (payload.relayTicket !== undefined) relayTicket = validateTicketString(payload.relayTicket);
+  if (requireTicket && !relayTicket) throw new RelayError("relay_ticket_invalid", 403);
+
   return Object.freeze({
     sourceUrl,
     credential: payload.credential,
     limit,
     from,
     to,
+    relayTicket,
   });
+}
+
+export function validateSessionPayload(payload) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new RelayError("invalid_request");
+  }
+  for (const key of Object.keys(payload)) {
+    if (!SESSION_KEYS.has(key)) throw new RelayError("invalid_request");
+  }
+  if (
+    typeof payload.turnstileToken !== "string" ||
+    payload.turnstileToken.length < 1 ||
+    payload.turnstileToken.length > MAX_TURNSTILE_TOKEN_LENGTH ||
+    /[\u0000-\u001f\u007f]/u.test(payload.turnstileToken)
+  ) {
+    throw new RelayError("turnstile_failed", 403);
+  }
+  return Object.freeze({ turnstileToken: payload.turnstileToken });
 }
 
 export function buildUpstreamUrl(payload, config = readConfig()) {
@@ -355,6 +441,244 @@ export async function fetchGlurooEntries(payload, config = readConfig(), fetchIm
   return normalizeEntries(parsed, validated.limit);
 }
 
+function requireSecret(value, minimumLength = 16) {
+  if (typeof value !== "string" || value.length < minimumLength || /[\u0000-\u001f\u007f]/u.test(value)) {
+    throw new RelayError("relay_temporarily_paused", 503);
+  }
+  return value;
+}
+
+function bytesToBase64Url(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/gu, "-").replace(/\//gu, "_").replace(/=+$/gu, "");
+}
+
+function base64UrlToBytes(value) {
+  if (typeof value !== "string" || !/^[A-Za-z0-9_-]+$/u.test(value)) {
+    throw new RelayError("relay_ticket_invalid", 403);
+  }
+  const padded = value.replace(/-/gu, "+").replace(/_/gu, "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
+  let binary;
+  try {
+    binary = atob(padded);
+  } catch {
+    throw new RelayError("relay_ticket_invalid", 403);
+  }
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+}
+
+async function importHmacKey(secret, usages) {
+  return crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    usages,
+  );
+}
+
+export async function issueRelayTicket({
+  origin,
+  secret,
+  config = readConfig(),
+  nowMs = Date.now(),
+  randomUUID = () => crypto.randomUUID(),
+}) {
+  const signingSecret = requireSecret(secret, 32);
+  if (!config.allowedOrigins.includes(origin)) throw new RelayError("invalid_request", 403);
+
+  const issuedAt = Math.floor(nowMs / 1000);
+  const payload = Object.freeze({
+    v: 1,
+    sid: randomUUID(),
+    iat: issuedAt,
+    exp: issuedAt + config.ticketTtlSeconds,
+    scope: "entries",
+    origin,
+  });
+  const encodedPayload = bytesToBase64Url(new TextEncoder().encode(JSON.stringify(payload)));
+  const key = await importHmacKey(signingSecret, ["sign"]);
+  const signature = new Uint8Array(
+    await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(encodedPayload)),
+  );
+
+  return Object.freeze({
+    ticket: `${encodedPayload}.${bytesToBase64Url(signature)}`,
+    expiresAt: new Date(payload.exp * 1000).toISOString(),
+    expiresInSeconds: config.ticketTtlSeconds,
+  });
+}
+
+export async function verifyRelayTicket({
+  ticket,
+  origin,
+  secret,
+  config = readConfig(),
+  nowMs = Date.now(),
+}) {
+  const signingSecret = requireSecret(secret, 32);
+  validateTicketString(ticket);
+  const parts = ticket.split(".");
+  if (parts.length !== 2 || !parts[0] || !parts[1]) {
+    throw new RelayError("relay_ticket_invalid", 403);
+  }
+
+  const payloadBytes = base64UrlToBytes(parts[0]);
+  const signatureBytes = base64UrlToBytes(parts[1]);
+  let payload;
+  try {
+    payload = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(payloadBytes));
+  } catch {
+    throw new RelayError("relay_ticket_invalid", 403);
+  }
+
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new RelayError("relay_ticket_invalid", 403);
+  }
+  if (Object.keys(payload).length !== TICKET_KEYS.size) {
+    throw new RelayError("relay_ticket_invalid", 403);
+  }
+  for (const key of Object.keys(payload)) {
+    if (!TICKET_KEYS.has(key)) throw new RelayError("relay_ticket_invalid", 403);
+  }
+
+  const key = await importHmacKey(signingSecret, ["verify"]);
+  const validSignature = await crypto.subtle.verify(
+    "HMAC",
+    key,
+    signatureBytes,
+    new TextEncoder().encode(parts[0]),
+  );
+  if (!validSignature) throw new RelayError("relay_ticket_invalid", 403);
+
+  const nowSeconds = Math.floor(nowMs / 1000);
+  if (
+    payload.v !== 1 ||
+    payload.scope !== "entries" ||
+    payload.origin !== origin ||
+    !config.allowedOrigins.includes(payload.origin) ||
+    typeof payload.sid !== "string" ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(payload.sid) ||
+    !Number.isSafeInteger(payload.iat) ||
+    !Number.isSafeInteger(payload.exp) ||
+    payload.iat > nowSeconds + TICKET_CLOCK_SKEW_SECONDS ||
+    payload.exp <= nowSeconds ||
+    payload.exp <= payload.iat ||
+    payload.exp - payload.iat > config.ticketTtlSeconds
+  ) {
+    throw new RelayError("relay_ticket_invalid", 403);
+  }
+
+  return Object.freeze(payload);
+}
+
+export async function verifyTurnstileToken(
+  turnstileToken,
+  env,
+  config = readConfig(env),
+  fetchImpl = fetch,
+) {
+  const validated = validateSessionPayload({ turnstileToken });
+  const secret = requireSecret(env.TURNSTILE_SECRET_KEY, 16);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), config.turnstileTimeoutMs);
+
+  let response;
+  try {
+    response = await fetchImpl(TURNSTILE_VERIFY_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ secret, response: validated.turnstileToken }),
+      redirect: "error",
+      cache: "no-store",
+      signal: controller.signal,
+    });
+  } catch {
+    throw new RelayError("turnstile_failed", 503);
+  } finally {
+    clearTimeout(timer);
+  }
+
+  if (!response.ok) throw new RelayError("turnstile_failed", 503);
+
+  let result;
+  try {
+    result = await response.json();
+  } catch {
+    throw new RelayError("turnstile_failed", 503);
+  }
+
+  if (
+    result?.success !== true ||
+    String(result.hostname || "").toLowerCase() !== config.turnstileExpectedHostname ||
+    result.action !== config.turnstileExpectedAction
+  ) {
+    throw new RelayError("turnstile_failed", 403);
+  }
+
+  return true;
+}
+
+async function consumeCounter(binding, objectName, bucket, limit) {
+  if (!binding || typeof binding.idFromName !== "function" || typeof binding.get !== "function") {
+    throw new RelayError("relay_temporarily_paused", 503);
+  }
+
+  let response;
+  try {
+    const id = binding.idFromName(objectName);
+    const stub = binding.get(id);
+    response = await stub.fetch("https://relay-counter.internal/consume", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bucket, limit }),
+    });
+  } catch {
+    throw new RelayError("relay_temporarily_paused", 503);
+  }
+
+  let result;
+  try {
+    result = await response.json();
+  } catch {
+    throw new RelayError("relay_temporarily_paused", 503);
+  }
+  if (
+    (response.status !== 200 && response.status !== 429) ||
+    typeof result?.allowed !== "boolean" ||
+    !Number.isSafeInteger(result.count)
+  ) {
+    throw new RelayError("relay_temporarily_paused", 503);
+  }
+  return result;
+}
+
+export async function consumeRelayLimits(env, claims, config = readConfig(env), nowMs = Date.now()) {
+  const bucket = new Date(nowMs).toISOString().slice(0, 10);
+  const globalResult = await consumeCounter(
+    env.RELAY_USAGE_COUNTER,
+    "global",
+    bucket,
+    config.globalHardDaily,
+  );
+  if (!globalResult.allowed) throw new RelayError("relay_temporarily_paused", 503);
+
+  const sessionResult = await consumeCounter(
+    env.RELAY_USAGE_COUNTER,
+    `session:${claims.sid}`,
+    bucket,
+    config.sessionDailyLimit,
+  );
+  if (!sessionResult.allowed) throw new RelayError("rate_limited", 429);
+
+  return Object.freeze({
+    globalCount: globalResult.count,
+    sessionCount: sessionResult.count,
+    warning: globalResult.count >= config.globalWarningDaily,
+  });
+}
+
 function buildCorsHeaders(origin, config) {
   const headers = new Headers({
     "Cache-Control": "no-store",
@@ -387,15 +711,25 @@ function assertAllowedOrigin(request, config) {
   return origin;
 }
 
-export async function handleRelayRequest(request, env = {}, fetchImpl = fetch) {
+export async function handleRelayRequest(request, env = {}, services = {}) {
   const config = readConfig(env);
+  const nowMs = typeof services.now === "function" ? services.now() : Date.now();
+  const upstreamFetch = services.upstreamFetch || fetch;
+  const turnstileFetch = services.turnstileFetch || fetch;
+  const verifyTurnstile = services.verifyTurnstile || verifyTurnstileToken;
+  const issueTicket = services.issueTicket || issueRelayTicket;
+  const verifyTicket = services.verifyTicket || verifyRelayTicket;
+  const consumeLimits = services.consumeLimits || consumeRelayLimits;
+  const randomUUID = services.randomUUID || (() => crypto.randomUUID());
   let origin = null;
 
   try {
     origin = assertAllowedOrigin(request, config);
 
     const url = new URL(request.url);
-    if (url.pathname !== "/v1/entries") throw new RelayError("invalid_request", 404);
+    if (url.pathname !== "/v1/session" && url.pathname !== "/v1/entries") {
+      throw new RelayError("invalid_request", 404);
+    }
 
     if (request.method === "OPTIONS") {
       const headers = buildCorsHeaders(origin, config);
@@ -410,7 +744,40 @@ export async function handleRelayRequest(request, env = {}, fetchImpl = fetch) {
     if (!config.enabled) throw new RelayError("relay_temporarily_paused", 503);
 
     const payload = await parseJsonRequest(request, config);
-    const entries = await fetchGlurooEntries(payload, config, fetchImpl);
+
+    if (url.pathname === "/v1/session") {
+      const session = validateSessionPayload(payload);
+      await verifyTurnstile(session.turnstileToken, env, config, turnstileFetch);
+      const issued = await issueTicket({
+        origin,
+        secret: env.RELAY_TICKET_SECRET,
+        config,
+        nowMs,
+        randomUUID,
+      });
+      return jsonResponse(
+        {
+          ok: true,
+          relayTicket: issued.ticket,
+          expiresAt: issued.expiresAt,
+          expiresInSeconds: issued.expiresInSeconds,
+        },
+        200,
+        origin,
+        config,
+      );
+    }
+
+    const validated = validateRelayPayload(payload, config, { requireTicket: true });
+    const claims = await verifyTicket({
+      ticket: validated.relayTicket,
+      origin,
+      secret: env.RELAY_TICKET_SECRET,
+      config,
+      nowMs,
+    });
+    await consumeLimits(env, claims, config, nowMs);
+    const entries = await fetchGlurooEntries(validated, config, upstreamFetch);
     return jsonResponse({ ok: true, entries }, 200, origin, config);
   } catch (error) {
     const relayError = error instanceof RelayError ? error : new RelayError("upstream_unavailable", 502);

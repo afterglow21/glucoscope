@@ -1,20 +1,31 @@
-# GlucoScope Limited Data Relay — Phase 1
+# GlucoScope Limited Data Relay — Phase 2
 
-This directory contains the security skeleton for the Gluroo-only limited data relay.
+This directory contains the paused Gluroo-only relay security and access-control skeleton.
 
-Phase 1 is intentionally not connected to the GlucoScope frontend and must not be deployed to production yet.
+Phase 2 is intentionally not connected to the GlucoScope frontend and must not be deployed to production yet.
 
-## Scope
+## Added in Phase 2
 
-- accepts `POST /v1/entries` only;
-- allows HTTPS hosts ending in `.ns.gluroo.com` only;
-- constructs `/api/v1/entries.json` internally;
-- uses the confirmed Gluroo `token` query authentication;
-- rejects redirects;
-- limits date range, entry count, request size, response size, and upstream time;
-- returns only `sgv`, normalized `date`, normalized `dateString`, and an approved `direction`;
-- uses no KV, D1, R2, Durable Objects, Cache API, or AI binding;
-- keeps `RELAY_ENABLED=false` and Workers Logs disabled in the checked-in configuration.
+- `POST /v1/session` verifies a Cloudflare Turnstile token server-side;
+- successful verification issues a signed, origin-bound, one-hour relay ticket;
+- `POST /v1/entries` requires a valid relay ticket;
+- a SQLite-backed Durable Object stores daily counters only;
+- per-session and Worker-wide request limits fail closed;
+- the checked-in kill switch remains `RELAY_ENABLED=false`;
+- Workers Logs remain disabled.
+
+The Durable Object stores only a UTC day bucket and a request count. It does not store Gluroo URLs, credentials, glucose values, entry timestamps, response bodies, IP addresses, or AI content.
+
+## Secrets required later
+
+The following must be Cloudflare Worker Secrets and must never be placed in `wrangler.jsonc`, `.env`, `.dev.vars` committed to Git, screenshots, or support messages:
+
+```text
+TURNSTILE_SECRET_KEY
+RELAY_TICKET_SECRET
+```
+
+`RELAY_TICKET_SECRET` should be a new random value of at least 32 characters used only by this Worker.
 
 ## Local verification
 
@@ -25,8 +36,8 @@ npm run verify
 npm run deploy:dry
 ```
 
-Do not add Gluroo URLs, tokens, `.dev.vars`, `.env`, screenshots containing credentials, or real glucose payloads to Git.
+The dry run must show the `RELAY_USAGE_COUNTER` Durable Object binding, SQLite storage export, `RELAY_ENABLED=false`, `workers_dev=false`, and observability disabled.
 
 ## Deployment boundary
 
-Phase 1 has no `deploy` npm script. A real deployment requires later phases for Turnstile, signed relay tickets, rate limits, public privacy wording, provider-policy review, and explicit production approval.
+There is still no `deploy` npm script. A real deployment requires frontend disclosure, Turnstile widget integration, provider-policy review, Trust Pack updates, real-device tests, and explicit production approval.
