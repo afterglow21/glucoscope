@@ -8,8 +8,9 @@
 - `RELAY_ENABLED=false`; the Worker stops before Turnstile verification, ticket issuance, counter use, or upstream access, so the relay is not available for live use.
 - The final Trust Pack link, title, privacy, safety, verification-status, desktop, and mobile review is complete.
 - The final local and read-only Cloudflare configuration and security review is complete; required Secret names are declared in `wrangler.jsonc` without storing their values.
-- After separate explicit approval, commit `98def2e96065f1a801728e060673ea22d4ff9e44` was deployed once as stopped Version `1a51631d-1e53-4f88-ac27-2125b43f1ab2`; all post-deployment stop, CORS, Secret-name, and Durable Object checks passed.
-- The first advertised route acceptance is prepared but has not been executed.
+- After separate explicit approval, commit `98def2e96065f1a801728e060673ea22d4ff9e44` was deployed as stopped Version `1a51631d-1e53-4f88-ac27-2125b43f1ab2`; all post-deployment stop, CORS, Secret-name, and Durable Object checks passed.
+- A later Guardian candidate-route acceptance temporarily routed Version `84139213-8521-4772-b3f3-47ee0018c5d3`, but stopped before a Gluroo URL, credential, or glucose payload was submitted because the public Pages build did not yet expose the Guardian guide. Stopped Version `89d8166d-a50e-4e94-b3d3-a06f7a0b6fb1` was deployed immediately afterward and now receives 100% of traffic with `RELAY_ENABLED=false`.
+- The first advertised-route end-to-end acceptance remains incomplete and requires another separate live-enablement approval before it resumes.
 - Version-specific Preview URLs are disabled. The earlier temporary connectivity probe remains deleted.
 - User Foundation PR #7 was merged before this work began.
 - Development branch: `feature/limited-data-relay`.
@@ -574,6 +575,18 @@ After separate explicit approval:
 - one `1042` response occurred immediately after deployment and did not reproduce on subsequent empty-body or JSON-body POST checks. Cloudflare documents `1042` as a same-zone Worker subrequest error; no same-zone subrequest exists on the stopped code path, so live enablement remains blocked if it reappears.
 
 No Gluroo URL, credential, glucose payload, Turnstile token, ticket, or counter was used during this verification.
+
+## Guardian candidate-route acceptance pause — 2026-08-05
+
+After separate explicit approval:
+
+- Version `84139213-8521-4772-b3f3-47ee0018c5d3` temporarily received 100% of traffic for the Guardian candidate-route acceptance, with deployment message `temporary Guardian route acceptance`;
+- the acceptance stopped before a Gluroo URL, credential, or glucose payload was submitted because the current public Pages build did not yet expose the Guardian guide needed for the test;
+- Version `89d8166d-a50e-4e94-b3d3-a06f7a0b6fb1` was deployed immediately with message `pause after Guardian guide deployment gap` and now receives 100% of traffic with `RELAY_ENABLED=false`;
+- the current stopped Version retains the exact CORS origin, originless-request rejection, both required Secret bindings, and the SQLite `RelayUsageCounter` Durable Object binding;
+- version-specific Preview URLs remain disabled, and the end-to-end acceptance through GlucoScope remains incomplete.
+
+No Secret value was printed, stored in Git, or changed during the pause. Restarting the acceptance and setting `RELAY_ENABLED=true` still require separate explicit approval.
 
 ## Phase 1 tests
 

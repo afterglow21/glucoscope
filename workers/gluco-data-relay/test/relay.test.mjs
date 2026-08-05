@@ -614,6 +614,8 @@ test("per-session limit returns rate_limited and global hard stop returns paused
     consumeRelayLimits(sessionEnv, { sid: TEST_SID }, readConfig(sessionEnv), NOW_MS),
     /rate_limited/,
   );
+  assert.equal(sessionBinding.counters.get("global")?.count, 1);
+  assert.equal(sessionBinding.counters.get(`session:${TEST_SID}`)?.count, 1);
 
   const globalBinding = createCounterBinding();
   const globalEnv = env({

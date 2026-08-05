@@ -101,12 +101,20 @@ The Phase 3C public-policy review, stopped-target deployment, and final Trust Pa
 ## Final stopped validation deployment — 2026-08-05
 
 - Source commit: `98def2e96065f1a801728e060673ea22d4ff9e44`.
-- Wrangler `4.118.0` deployed once with `--strict` and message `paused pre-live safety audit` after separate explicit approval.
-- Current Version ID: `1a51631d-1e53-4f88-ac27-2125b43f1ab2`; it receives 100% of traffic and has no Preview URL.
+- Wrangler `4.118.0` deployed with `--strict` and message `paused pre-live safety audit` after separate explicit approval.
+- Validation Version ID: `1a51631d-1e53-4f88-ac27-2125b43f1ab2`; it had no Preview URL and was later superseded by the Guardian acceptance attempt described below.
 - All plain-text variables match `wrangler.jsonc`; `RELAY_ENABLED=false`, the exact CORS origin, originless-request rejection, `preview_urls=false`, and `observability.enabled=false` remain intact.
 - Both names in `secrets.required` were present as Cloudflare Secret bindings, and the SQLite `RelayUsageCounter` Durable Object binding remained present.
 - The exact-origin preflight returned `204`; three consecutive exact-origin POSTs returned `503 relay_temporarily_paused`; wrong-origin and missing-origin POSTs returned `403` without an allow-origin header. The earlier one-time Cloudflare `1042` response did not recur.
 - No Gluroo URL, credential, glucose payload, Turnstile token, relay ticket, or Durable Object counter was used. No Secret mutation, routing change, or live enablement occurred.
+
+## Guardian candidate-route acceptance pause — 2026-08-05
+
+- A separately approved acceptance attempt temporarily routed 100% of traffic to Version `84139213-8521-4772-b3f3-47ee0018c5d3` with message `temporary Guardian route acceptance`.
+- The attempt stopped before a Gluroo URL, credential, or glucose payload was submitted because the current public Pages build did not yet expose the Guardian guide needed for the test.
+- Version `89d8166d-a50e-4e94-b3d3-a06f7a0b6fb1` was then deployed immediately with message `pause after Guardian guide deployment gap`; it has `RELAY_ENABLED=false`, receives 100% of traffic, and has no Preview URL.
+- The current stopped Version retains the exact CORS origin, originless-request rejection, both required Secret bindings, and the SQLite `RelayUsageCounter` Durable Object binding.
+- End-to-end acceptance through GlucoScope remains incomplete. Restarting it and setting `RELAY_ENABLED=true` still require a separate explicit approval.
 
 ## Safe activation sequence
 

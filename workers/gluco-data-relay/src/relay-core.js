@@ -656,14 +656,7 @@ async function consumeCounter(binding, objectName, bucket, limit) {
 
 export async function consumeRelayLimits(env, claims, config = readConfig(env), nowMs = Date.now()) {
   const bucket = new Date(nowMs).toISOString().slice(0, 10);
-  const globalResult = await consumeCounter(
-    env.RELAY_USAGE_COUNTER,
-    "global",
-    bucket,
-    config.globalHardDaily,
-  );
-  if (!globalResult.allowed) throw new RelayError("relay_temporarily_paused", 503);
-
+  // Reject an exhausted ticket before it can consume the Worker-wide budget.
   const sessionResult = await consumeCounter(
     env.RELAY_USAGE_COUNTER,
     `session:${claims.sid}`,
@@ -671,6 +664,14 @@ export async function consumeRelayLimits(env, claims, config = readConfig(env), 
     config.sessionDailyLimit,
   );
   if (!sessionResult.allowed) throw new RelayError("rate_limited", 429);
+
+  const globalResult = await consumeCounter(
+    env.RELAY_USAGE_COUNTER,
+    "global",
+    bucket,
+    config.globalHardDaily,
+  );
+  if (!globalResult.allowed) throw new RelayError("relay_temporarily_paused", 503);
 
   return Object.freeze({
     globalCount: globalResult.count,
