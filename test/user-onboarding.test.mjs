@@ -11,6 +11,7 @@ const glurooGuide = await readFile(new URL("../guides/gluroo-setup/index.html", 
 const dexcomGuide = await readFile(new URL("../guides/dexcom-share/index.html", import.meta.url), "utf8");
 const libreGuide = await readFile(new URL("../guides/librelinkup/index.html", import.meta.url), "utf8");
 const nightscoutGuide = await readFile(new URL("../guides/nightscout-about/index.html", import.meta.url), "utf8");
+const guardianGuide = await readFile(new URL("../guides/guardian-monitor/index.html", import.meta.url), "utf8");
 
 // Existing user-foundation coverage.
 test("user onboarding says only one numbered connection method is needed", () => {
@@ -31,26 +32,29 @@ test("route cards advance directly without a separate choose button", () => {
 
 test("Gluroo preparation is a separate step before credential entry", () => {
   assert.match(index, /dataSourceGlurooPrepPanel/);
-  assert.match(index, /画像を見ながらGlurooを準備する/);
+  assert.match(index, /Glurooの準備ガイドを見る/);
   assert.match(index, /Glurooの準備ができたので、接続へ進む/);
   const connectStart = index.indexOf('id="dataSourceConnectPanel"');
   const connectEnd = index.indexOf("</form>", connectStart);
   const connectPanel = index.slice(connectStart, connectEnd);
-  assert.doesNotMatch(connectPanel, /画像を見ながらGlurooを準備する/);
+  assert.doesNotMatch(connectPanel, /Glurooの準備ガイドを見る/);
 });
 
-test("Gluroo beginner route is scoped to Libre 2 and Dexcom G7", () => {
-  assert.match(index, /FreeStyle Libre 2またはDexcom G7/);
+test("Gluroo beginner route covers Libre, Dexcom G7, and the verified Guardian Monitor path", () => {
+  assert.match(index, /FreeStyle Libre 2、Dexcom G7、Guardian（MiniMed 780G）/);
   assert.match(glurooGuide, /FreeStyle Libre 2/);
   assert.match(glurooGuide, /Dexcom G7/);
+  assert.match(glurooGuide, /Guardian Monitor/);
 });
 
-test("Guardian is honestly separated as an advanced route", () => {
-  assert.match(index, /Guardian／MiniMed 780G/);
-  assert.match(index, /Guardianは現在のかんたん接続では利用できません/);
-  assert.match(glurooGuide, /Guardianは現在のかんたん接続では利用できません/);
-  assert.match(nightscoutGuide, /Guardian／MiniMed 780Gからつなぐ例/);
-  assert.match(nightscoutGuide, /Guardian Monitor/);
+test("Guardian uses the verified Guardian Monitor to Gluroo route", () => {
+  assert.match(index, /Guardian（MiniMed 780G）/);
+  assert.match(index, /Guardian Monitorの設定ガイドを見る/);
+  assert.match(index, /guides\/guardian-monitor/);
+  assert.match(glurooGuide, /Guardian MonitorからGluroo Global ConnectへNightscout同期/);
+  assert.match(guardianGuide, /実機確認しています/);
+  assert.match(guardianGuide, /バックグラウンド更新をオン/);
+  assert.doesNotMatch(index, /Guardianは現在のかんたん接続では利用できません/);
 });
 
 test("Nightscout wording identifies what the person already uses", () => {
@@ -58,17 +62,25 @@ test("Nightscout wording identifies what the person already uses", () => {
   assert.doesNotMatch(index, /すでに使っている方・/);
 });
 
-test("public Guardian example uses the lowercase kazuma name", () => {
-  assert.match(index, /kazumaのGuardian接続例を見る/);
-  assert.match(nightscoutGuide, /参考：kazumaの現在の構成/);
-  assert.doesNotMatch(index, /カズマ/);
-  assert.doesNotMatch(nightscoutGuide, /カズマ/);
+test("Gluroo preparation presents equal device guide choices without a separate Guardian warning", () => {
+  assert.match(index, /data-source-device-guide-grid/);
+  assert.match(index, /Libre／Dexcomを使っている方/);
+  assert.match(index, /Guardian（MiniMed 780G）を使っている方/);
+  assert.match(index, /Guardian Monitorの設定ガイドを見る/);
+  assert.doesNotMatch(index, /data-source-guardian-note/);
+  assert.doesNotMatch(index, /kazumaのGuardian接続例を見る/);
+  assert.doesNotMatch(guardianGuide, /kazumaの現在の構成/);
 });
 
-test("local-only notice separates the server and shared-device messages", () => {
+test("connection screen separates relay, direct, and browser-storage boundaries", () => {
+  assert.match(index, /dataSourceRelayNotice/);
+  assert.match(index, /dataSourceNightscoutDirectNotice/);
   assert.match(index, /dataSourceLocalOnlyLine1/);
   assert.match(index, /dataSourceLocalOnlyLine2/);
-  assert.match(app, /GlucoScopeのサーバーには保存しません/);
+  assert.match(app, /限定中継機能を一時的に通ります/);
+  assert.match(app, /このブラウザがあなたのNightscoutへ直接つながります/);
+  assert.match(app, /GlucoScopeの中継サーバーへ送ることはありません/);
+  assert.doesNotMatch(app, /限定中継機能を通りません/);
   assert.match(app, /共用している端末/);
 });
 
@@ -273,7 +285,44 @@ test("field feedback copy and red-frame navigation are reflected", () => {
 });
 
 test("current cache and CSS markers are present", () => {
-  assert.match(index, /20260721-user-foundation-3-5/);
+  assert.match(index, /20260803-limited-relay-phase3a-1/);
   assert.match(guideCss, /User Foundation 0\.3\.3/);
-  assert.match(css, /User Foundation 0\.3/);
+  assert.match(css, /Limited Data Relay Phase 3A/);
+});
+
+
+test("limited relay frontend stays fail-closed until a production endpoint is approved", () => {
+  assert.match(index, /name="glucoscope-data-relay-endpoint" content=""/);
+  assert.match(index, /js\/data-relay-client\.js/);
+  assert.match(index, /dataSourceRelayTurnstile/);
+  assert.match(app, /candidate\.provider === "gluroo"/);
+  assert.match(app, /relayError\.code = "relay_unavailable"/);
+  assert.match(app, /await relay\.prepareConnection\(candidate\)/);
+});
+
+test("Gluroo relay copy never claims that credentials bypass the Worker", () => {
+  assert.doesNotMatch(index, /Gluroo[\s\S]{0,500}GlucoScopeのサーバーには保存しません/);
+  assert.match(index, /接続情報や血糖データを保存したり、AIへ送ったり、他の利用者と共有したりしません/);
+});
+
+test("Guardian Monitor guide has no analytics or real credentials", () => {
+  assert.doesNotMatch(guardianGuide, /static\.cloudflareinsights\.com/i);
+  assert.doesNotMatch(guardianGuide, /api-secret=[A-Za-z0-9]/i);
+  assert.doesNotMatch(guardianGuide, /token=[A-Za-z0-9]/i);
+});
+
+test("Guardian Monitor top navigation returns to the route chooser", () => {
+  const topbarStart = guardianGuide.indexOf('class="guide-topbar"');
+  const topbarEnd = guardianGuide.indexOf("</nav>", topbarStart);
+  const topbar = guardianGuide.slice(topbarStart, topbarEnd);
+  assert.match(topbar, /href="\.\.\/\.\.\/\?mode=user#glucose"/);
+  assert.match(topbar, /つなぎ方を選ぶ画面へ戻る/);
+  assert.doesNotMatch(topbar, /source=gluroo/);
+});
+
+test("a successful save preserves the current relay ticket for the reload", () => {
+  const clearStart = app.indexOf("function clearDataSourceSpecificBrowserState");
+  const clearEnd = app.indexOf("function buildUserModeUrl", clearStart);
+  const clearHandler = app.slice(clearStart, clearEnd);
+  assert.doesNotMatch(clearHandler, /clearRelaySession/);
 });

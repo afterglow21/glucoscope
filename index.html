@@ -22,7 +22,9 @@
     })();
   </script>
   <title>GlucoScope</title>
-  <link rel="stylesheet" href="style.css?v=20260721-user-foundation-3">
+  <!-- GlucoScope Limited Data Relay Phase 3A: keep blank until approved deployment. -->
+  <meta name="glucoscope-data-relay-endpoint" content="">
+  <link rel="stylesheet" href="style.css?v=20260803-limited-relay-phase3a-1">
 </head>
 <body>
 
@@ -58,7 +60,7 @@
           <span class="data-source-method-badge" data-i18n-key="dataSourceMethod1">方法①</span>
           <span class="data-source-recommend-badge" data-i18n-key="dataSourceRecommended">おすすめ</span>
           <strong data-i18n-key="dataSourceGlurooTitle">Glurooでつなぐ</strong>
-          <small data-i18n-key="dataSourceGlurooNote">FreeStyle Libre 2またはDexcom G7を使っている方へ。スマートフォンだけで準備できます。</small>
+          <small data-i18n-key="dataSourceGlurooNote">FreeStyle Libre 2、Dexcom G7、Guardian（MiniMed 780G）を使っている方へ。スマートフォンで準備できます。</small>
           <span class="data-source-choice-action" data-i18n-key="dataSourceChoiceAction">ここを押して次へ</span>
         </button>
 
@@ -68,12 +70,6 @@
           <small data-i18n-key="dataSourceNightscoutNote">自分のNightscout環境をすでに使っている方、または自分で構築・保守できる上級者向けです。</small>
           <span class="data-source-choice-action" data-i18n-key="dataSourceChoiceAction">ここを押して次へ</span>
         </button>
-      </div>
-
-      <div class="data-source-guardian-note">
-        <strong data-i18n-key="dataSourceGuardianTitle">Guardian／MiniMed 780Gを使っている方へ</strong>
-        <p data-i18n-key="dataSourceGuardianLead">Guardianは現在のかんたん接続では利用できません。別のアプリと、自分専用のNightscout環境を準備する上級者向けの方法があります。</p>
-        <a href="guides/nightscout-about/#guardian-example" data-i18n-key="dataSourceGuardianLink">kazumaのGuardian接続例を見る</a>
       </div>
 
       <div class="data-source-choose-actions data-source-demo-only">
@@ -88,8 +84,17 @@
         <span class="data-source-method-badge" data-i18n-key="dataSourceMethod1">方法①</span>
         <h3 data-i18n-key="dataSourceGlurooPrepTitle">Glurooを準備します</h3>
         <p data-i18n-key="dataSourceGlurooPrepLead">初めての方は、画像付きの日本語ガイドを見ながら進めてください。App Storeから入れるところから案内します。</p>
-        <p class="data-source-supported-note" data-i18n-key="dataSourceGlurooSupportedNote">この案内は、FreeStyle Libre 2とDexcom G7を対象に準備しています。</p>
-        <a class="data-source-primary-guide-link" href="guides/gluroo-setup/" data-i18n-key="dataSourceGlurooGuideLink">画像を見ながらGlurooを準備する</a>
+        <p class="data-source-supported-note" data-i18n-key="dataSourceGlurooSupportedNote">使っている機器に合うガイドを選んでください。</p>
+        <div class="data-source-device-guide-grid">
+          <a class="data-source-device-guide-link" href="guides/gluroo-setup/">
+            <strong data-i18n-key="dataSourceLibreDexcomGuideTitle">Libre／Dexcomを使っている方</strong>
+            <small data-i18n-key="dataSourceGlurooGuideLink">Glurooの準備ガイドを見る</small>
+          </a>
+          <a class="data-source-device-guide-link" href="guides/guardian-monitor/">
+            <strong data-i18n-key="dataSourceGuardianGuideTitle">Guardian（MiniMed 780G）を使っている方</strong>
+            <small data-i18n-key="dataSourceGuardianGuideLink">Guardian Monitorの設定ガイドを見る</small>
+          </a>
+        </div>
       </div>
 
       <div class="data-source-external-note">
@@ -118,10 +123,20 @@
           <a href="guides/nightscout-about/" data-i18n-key="dataSourceNightscoutAboutLink">Nightscoutとは？</a>
         </div>
 
+        <div id="dataSourceRelayNotice" class="data-source-notice data-source-relay-notice">
+          <strong data-i18n-key="dataSourceRelayNoticeTitle">Glurooのかんたん接続について</strong>
+          <p data-i18n-key="dataSourceRelayNoticeLead">接続に必要な情報と、表示する血糖データがGlucoScopeの限定中継機能を一時的に通ります。接続情報や血糖データを保存したり、AIへ送ったり、他の利用者と共有したりしません。</p>
+        </div>
+
+        <div id="dataSourceNightscoutDirectNotice" class="data-source-notice data-source-direct-notice" hidden>
+          <strong data-i18n-key="dataSourceDirectNoticeTitle">自分のNightscoutへ直接つなぎます</strong>
+          <p data-i18n-key="dataSourceDirectNoticeLead">Nightscoutを選ぶと、このブラウザがあなたのNightscoutへ直接つながります。接続先URL・合言葉・血糖データを、GlucoScopeの中継サーバーへ送ることはありません。</p>
+        </div>
+
         <div class="data-source-notice">
-          <strong data-i18n-key="dataSourceLocalOnlyTitle">入力した情報の保存について</strong>
+          <strong data-i18n-key="dataSourceLocalOnlyTitle">この端末への保存について</strong>
           <p>
-            <span data-i18n-key="dataSourceLocalOnlyLine1">接続先URLと接続用の合言葉は、GlucoScopeのサーバーには保存しません。</span>
+            <span data-i18n-key="dataSourceLocalOnlyLine1">接続先URLと接続用の合言葉は、選んだ場合だけこのブラウザへ保存します。</span>
             <span data-i18n-key="dataSourceLocalOnlyLine2">家族などと共用している端末では、「この端末に保存する」をオフにしてください。</span>
           </p>
         </div>
@@ -148,6 +163,12 @@
             <small data-i18n-key="dataSourcePersistHelp">オフにすると、画面を閉じたあとにもう一度入力が必要です。</small>
           </span>
         </label>
+
+        <div id="dataSourceRelayCheck" class="data-source-relay-check">
+          <strong data-i18n-key="dataSourceRelayCheckTitle">安全確認</strong>
+          <p data-i18n-key="dataSourceRelayCheckLead">Glurooへつなぐ前に、短い安全確認を行います。確認後に発行される接続用チケットは、このタブの中だけで使い、約1時間で期限が切れます。</p>
+          <div id="dataSourceRelayTurnstile" class="data-source-relay-turnstile" hidden aria-label="データ接続の安全確認"></div>
+        </div>
 
         <div class="data-source-test-row">
           <button id="dataSourceTestButton" type="button" class="data-source-secondary-button" data-i18n-key="dataSourceTestButton">つながるか確認する</button>
@@ -701,10 +722,11 @@
 <script src="vendor/chart.js/chart.umd.min.js?v=4.5.1"></script>
 <script src="js/api.js"></script>
 <script src="js/data-source.js?v=20260721-user-foundation-3-2"></script>
+<script src="js/data-relay-client.js?v=20260803-limited-relay-phase3a-1"></script>
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js?v=20260721-user-foundation-3"></script>
-<script src="js/app.js?v=20260721-user-foundation-3-5"></script>
+<script src="js/app.js?v=20260803-limited-relay-phase3a-1"></script>
 <!-- Cloudflare Web Analytics: loaded only when no user connection is stored -->
 <script src="js/analytics-loader.js?v=20260721-user-foundation-3-2"></script>
 <!-- End Cloudflare Web Analytics -->

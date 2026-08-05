@@ -32,9 +32,11 @@
 </section>
 <section class="trust-section">
   <h2>ユーザー版の接続情報</h2>
-  <p>User Foundation 0.3では、GlurooまたはNightscoutの接続先URLと接続用の合言葉を、利用する人が選んだスマートフォンやパソコンの中だけに保存します。GlucoScopeのWorker、Kazuma個人のAzure、Cloudflare KV、Durable Objectsには保存しません。</p>
-  <p>端末内の保存は、特別な暗号化金庫ではありません。家族などと共用している端末では「この端末に保存する」をオフにするか、利用後に保存した接続を削除してください。</p>
-  <p>Apple、Google、Gluroo、Dexcom、Libreなどのログインパスワードを、GlucoScopeへ入力してもらうことはありません。</p>
+  <p>接続先URLと接続用の合言葉は、利用する人が選んだスマートフォンやパソコンのブラウザへ保存します。端末内の保存は特別な暗号化金庫ではないため、共用端末では「この端末に保存する」をオフにするか、利用後に削除してください。</p>
+  <p>自分のNightscoutへつなぐ場合は、ブラウザから直接読み取り、接続情報と血糖データはGlucoScopeの限定中継機能を通りません。</p>
+  <p>Glurooのかんたん接続では、GlurooのURL、接続用の合言葉、指定期間、表示に必要な血糖データがCloudflare基盤とGlucoScopeの限定中継機能を一時的に通ります。GlucoScopeのアプリケーションでは、それらを保存、共有キャッシュ、ログ記録、AI送信、他の利用者との共有に使いません。</p>
+  <p>限定中継機能のDurable Objectsへ保存するのは、UTCの日付と利用回数だけです。Gluroo URL、合言葉、血糖値、測定時刻、レスポンス本文、IPアドレスは保存しません。</p>
+  <p>Apple、Google、Gluroo、CareLink、Dexcom、Libreなどのログインパスワードを、GlucoScopeへ入力してもらうことはありません。</p>
 </section>
 <section class="trust-section">
   <h2>ユーザー版のAI</h2>
@@ -73,9 +75,11 @@
 </section>
 <section class="trust-section">
   <h2>User connection details</h2>
-  <p>In User Foundation 0.3, the Gluroo or Nightscout connection URL and passphrase stay only on the selected phone or computer. They are not stored in the GlucoScope Worker, Kazuma's Azure account, Cloudflare KV, or Durable Objects.</p>
-  <p>Device storage is not a dedicated encrypted vault. On a shared device, turn off Save on this device or remove the saved connection after use.</p>
-  <p>GlucoScope does not ask for Apple, Google, Gluroo, Dexcom, Libre, or other manufacturer login passwords.</p>
+  <p>The connection URL and passphrase are saved in the selected browser when the person chooses to save them. Browser storage is not a dedicated encrypted vault, so a shared device should use session-only storage or remove the connection afterward.</p>
+  <p>An existing Nightscout environment is read directly by the browser. Its connection information and glucose data do not pass through the GlucoScope limited relay.</p>
+  <p>For the Gluroo easy connection, the Gluroo URL, passphrase, requested range, and glucose entries needed for display pass transiently through Cloudflare infrastructure and the GlucoScope limited relay. The GlucoScope application does not store, cache, log, send to AI, or share those values.</p>
+  <p>The relay Durable Object stores only a UTC date bucket and request count. It does not store the Gluroo URL, passphrase, glucose values, measurement timestamps, response bodies, or IP addresses.</p>
+  <p>GlucoScope does not ask for Apple, Google, Gluroo, CareLink, Dexcom, Libre, or other manufacturer login passwords.</p>
 </section>
 <section class="trust-section">
   <h2>User-mode AI</h2>
