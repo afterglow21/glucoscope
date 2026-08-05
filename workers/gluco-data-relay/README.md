@@ -98,6 +98,16 @@ The Phase 3C public-policy review, stopped-target deployment, and final Trust Pa
 - `observability.enabled=false` remains an intentional privacy exception. The Worker contains no console logging, and this audit did not use a Gluroo URL, credential, glucose payload, Turnstile token, relay ticket, or Durable Object counter.
 - No Worker deployment, Secret mutation, routing change, or live enablement occurred. End-to-end real-device acceptance and separate explicit approval for `RELAY_ENABLED=true` remain required.
 
+## Final stopped validation deployment — 2026-08-05
+
+- Source commit: `98def2e96065f1a801728e060673ea22d4ff9e44`.
+- Wrangler `4.118.0` deployed once with `--strict` and message `paused pre-live safety audit` after separate explicit approval.
+- Current Version ID: `1a51631d-1e53-4f88-ac27-2125b43f1ab2`; it receives 100% of traffic and has no Preview URL.
+- All plain-text variables match `wrangler.jsonc`; `RELAY_ENABLED=false`, the exact CORS origin, originless-request rejection, `preview_urls=false`, and `observability.enabled=false` remain intact.
+- Both names in `secrets.required` were present as Cloudflare Secret bindings, and the SQLite `RelayUsageCounter` Durable Object binding remained present.
+- The exact-origin preflight returned `204`; three consecutive exact-origin POSTs returned `503 relay_temporarily_paused`; wrong-origin and missing-origin POSTs returned `403` without an allow-origin header. The earlier one-time Cloudflare `1042` response did not recur.
+- No Gluroo URL, credential, glucose payload, Turnstile token, relay ticket, or Durable Object counter was used. No Secret mutation, routing change, or live enablement occurred.
+
 ## Safe activation sequence
 
 Each numbered boundary is independently reviewable. Steps 1 through 6 are complete for the approved stopped `workers.dev` target. Do not combine live enablement with any remaining check in one unreviewed operation.

@@ -8,6 +8,7 @@
 - `RELAY_ENABLED=false`; the Worker stops before Turnstile verification, ticket issuance, counter use, or upstream access, so the relay is not available for live use.
 - The final Trust Pack link, title, privacy, safety, verification-status, desktop, and mobile review is complete.
 - The final local and read-only Cloudflare configuration and security review is complete; required Secret names are declared in `wrangler.jsonc` without storing their values.
+- After separate explicit approval, commit `98def2e96065f1a801728e060673ea22d4ff9e44` was deployed once as stopped Version `1a51631d-1e53-4f88-ac27-2125b43f1ab2`; all post-deployment stop, CORS, Secret-name, and Durable Object checks passed.
 - The first advertised route acceptance is prepared but has not been executed.
 - Version-specific Preview URLs are disabled. The earlier temporary connectivity probe remains deleted.
 - User Foundation PR #7 was merged before this work began.
