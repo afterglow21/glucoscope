@@ -260,6 +260,7 @@ const translations = {
     dataSourceRelayCheckLead: "Glurooへつなぐ前に、短い安全確認を行います。確認後に発行される接続用チケットは、このタブの中だけで使い、約1時間で期限が切れます。",
     dataSourceRelayPreparing: "Glurooのかんたん接続は、現在公開前の準備中です。Nightscoutの直接接続と公開デモは引き続き使えます。",
     dataSourceRelayCheckFailed: "安全確認を完了できませんでした。少し時間をおいて、もう一度試してみてね。",
+    dataSourceRelayCheckFailedWithCode: "安全確認を完了できませんでした。確認コード：{code}。この6桁の数字だけを教えてください。",
     dataSourceRelaySessionRequired: "Glurooへつなぐための安全確認が必要です。「つながるか確認する」をもう一度押してね。",
     dataSourceRelayPaused: "Glurooのかんたん接続は、現在一時停止しています。接続情報や血糖データは保存していません。",
     dataSourceRelayLimited: "このタブからの今日の確認回数が上限に達しました。時間をおいてから、また確認してみてね。",
@@ -538,6 +539,7 @@ const translations = {
     dataSourceRelayCheckLead: "A brief safety check is completed before connecting to Gluroo. The resulting connection ticket stays in this tab and expires after about one hour.",
     dataSourceRelayPreparing: "The Gluroo easy connection is still being prepared for release. Direct Nightscout and the public demo remain available.",
     dataSourceRelayCheckFailed: "The safety check could not be completed. Please wait a little and try again.",
+    dataSourceRelayCheckFailedWithCode: "The safety check could not be completed. Confirmation code: {code}. Please share only this six-digit code.",
     dataSourceRelaySessionRequired: "A new safety check is needed for the Gluroo connection. Press Check the connection again.",
     dataSourceRelayPaused: "The Gluroo easy connection is temporarily paused. Connection details and glucose data have not been stored.",
     dataSourceRelayLimited: "This tab has reached today’s connection-check limit. Please try again later.",
@@ -798,7 +800,19 @@ function setDataSourceTestStatus(message, type = "") {
   status.textContent = message;
 }
 
+function getTurnstileConfirmationCode(error) {
+  const code = String(error?.turnstileErrorCode ?? "").trim();
+  return /^\d{6}$/u.test(code) ? code : "";
+}
+
 function getDataSourceErrorMessage(error) {
+  if (error?.code === "turnstile_failed") {
+    const confirmationCode = getTurnstileConfirmationCode(error);
+    if (confirmationCode) {
+      return t("dataSourceRelayCheckFailedWithCode").replace("{code}", confirmationCode);
+    }
+  }
+
   const messages = {
     missing_url: "dataSourceTestGenericError",
     invalid_url: "dataSourceTestGenericError",

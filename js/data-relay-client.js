@@ -28,6 +28,11 @@
     return error;
   }
 
+  function normalizeTurnstileErrorCode(value) {
+    const code = String(value ?? "").trim();
+    return /^\d{6}$/u.test(code) ? code : "";
+  }
+
   function getStorage(name) {
     try {
       const storage = root?.[name];
@@ -317,7 +322,15 @@
         size: "flexible",
         callback: (token) => finishPendingChallenge(null, token),
         "expired-callback": () => finishPendingChallenge(createRelayError("turnstile_failed")),
-        "error-callback": () => finishPendingChallenge(createRelayError("turnstile_failed"))
+        "error-callback": (errorCode) => {
+          const turnstileErrorCode = normalizeTurnstileErrorCode(errorCode);
+          finishPendingChallenge(createRelayError(
+            "turnstile_failed",
+            "turnstile_failed",
+            turnstileErrorCode ? { turnstileErrorCode } : {}
+          ));
+          return true;
+        }
       });
     } else if (typeof turnstile.reset === "function") {
       turnstile.reset(relayWidgetId);
@@ -470,6 +483,7 @@
     prepareConnection,
     updateUi,
     _testing: Object.freeze({
+      normalizeTurnstileErrorCode,
       normalizeRelayEndpoint,
       parseSession,
       saveRelaySession,
