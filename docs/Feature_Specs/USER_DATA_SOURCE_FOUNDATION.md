@@ -69,7 +69,7 @@ The relay:
 - requires server-validated Turnstile and a signed origin-bound ticket;
 - enforces date, entry, byte, timeout, session, and Worker-wide limits;
 - fails closed when configuration, secrets, counters, or the relay endpoint are unavailable;
-- remains paused and undeployed until provider-policy review, public wording, secrets, deployment, and real-device acceptance tests are complete.
+- remains paused and unavailable to the frontend while its single approved `workers.dev` target returns only the stopped response. Public wording and consent, final security checks, explicit live-enablement approval, and acceptance tests for the first advertised route must be complete before use. The Phase 3C public-policy review is complete; a Gluroo support reply remains welcome but is not a Friends & Family release blocker.
 
 A direct Gluroo request must not be used as a silent fallback, and a failed relay request must never fall back to Kazuma’s public-demo data.
 

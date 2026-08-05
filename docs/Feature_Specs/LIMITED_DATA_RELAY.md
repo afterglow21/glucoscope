@@ -2,10 +2,10 @@
 
 ## Status
 
-- Paused deployment-verification phase.
-- The Worker shell and SQLite Durable Object have been created in Cloudflare, but no public route or target is active.
-- The checked-in frontend endpoint remains blank and `RELAY_ENABLED=false`; the relay is not publicly enabled.
-- The temporary connectivity probe was deleted after testing.
+- Paused public-target verification phase.
+- The Worker shell, SQLite Durable Object, required Secrets, and one permanent `workers.dev` target have been created in Cloudflare.
+- The checked-in frontend endpoint remains blank and `RELAY_ENABLED=false`; the relay is not available to users.
+- Version-specific Preview URLs are disabled. The earlier temporary connectivity probe remains deleted.
 - User Foundation PR #7 was merged before this work began.
 - Development branch: `feature/limited-data-relay`.
 
@@ -468,19 +468,21 @@ The official Gluroo materials reviewed for this gate were:
 - the [Gluroo Privacy Policy](https://gluroo.com/privacy-policy/);
 - the [Gluroo FAQs](https://gluroo.com/support/faqs/);
 - the [Gluroo User Manual](https://gluroo.com/user-manual/);
+- Gluroo's official [Nightscout integration guidance](https://gluroo.com/support/gluroo-nightscout-integration-for-loop/);
 - Gluroo's official [smartwatch and third-party tool guidance](https://gluroo.com/blog/glucrew/blood-sugar-readings-smartwatch-gluroo/).
 
-These materials describe user-controlled use of Gluroo Global Connect with Nightscout-compatible third-party tools. They do not clearly authorize or prohibit GlucoScope's specific multi-user, server-to-server, transient Cloudflare relay model. Technical interoperability therefore must not be presented as provider approval or partnership.
+These materials describe user-controlled use of Gluroo Global Connect with Nightscout-compatible third-party tools. The Privacy Policy also contemplates information that a user permits a third-party product or service to access. The reviewed EULA does not state an express prohibition against this narrowly scoped, user-directed relay; it does prohibit security circumvention and off-purpose use, which the relay must never attempt. The materials do not specifically name or approve GlucoScope's transient Cloudflare relay model. This is a product risk decision based on the published boundary, not legal advice or provider approval. Technical interoperability must never be presented as Gluroo affiliation, endorsement, approval, or partnership.
 
-Before a public route is created or the relay is enabled, obtain written confirmation from Gluroo covering:
+A written Gluroo support response remains useful, especially before broader or paid distribution, but the absence of a response is not a blocker for a low-volume Friends & Family rollout. The rollout may proceed only when all other release gates pass and the following boundaries remain true:
 
-- a person submitting their own Global Connect URL and API Secret through the GlucoScope relay;
-- read-only access to `/api/v1/entries.json` and the exclusion of treatments, device settings, and other data;
-- transient processing without credential or glucose storage, cache, logging, AI use, or sharing;
-- expected request limits, attribution or notices, public/commercial-use boundaries, and shutdown contact;
-- whether Friends & Family testing is treated differently from later public use.
+- each person supplies their own Global Connect URL and API Secret and explicitly chooses relay processing;
+- the relay performs read-only access to `/api/v1/entries.json` and excludes treatments, device settings, and all other data;
+- credentials and glucose payloads are processed transiently without application storage, cache, logging, AI use, or sharing;
+- the rollout starts small, stays within strict session and Worker-wide limits, and advertises only routes that have passed their own acceptance checks;
+- GlucoScope makes no claim of Gluroo affiliation, endorsement, approval, or partnership and does not sell access to Gluroo;
+- the relay is paused immediately if Gluroo objects, applicable terms materially change, abnormal traffic is detected, or a privacy or safety concern appears.
 
-Do not include a real Global Connect URL, API Secret, glucose payload, or identifying screenshot in the inquiry. Until written confirmation is received, keep `RELAY_ENABLED=false`, keep the frontend endpoint blank, and keep the Worker without an active public target.
+Any provider inquiry must exclude a real Global Connect URL, API Secret, glucose payload, or identifying screenshot. Before first enablement, recheck the current public materials for material changes. Until the remaining release gates pass and separate live-enablement approval is given, keep `RELAY_ENABLED=false`, keep the frontend endpoint blank, and add no target beyond the approved `workers.dev` URL.
 
 ## Worker separation
 
@@ -539,7 +541,7 @@ Phase 3B created and verified the stopped production shell without opening the r
 - final stopped/no-target Version ID: `89a2e968-96df-49bb-b8f0-ce631c3b4b32`;
 - `RelayUsageCounter` was created as a SQLite-backed Durable Object;
 - `TURNSTILE_SECRET_KEY` and `RELAY_TICKET_SECRET` were registered as Cloudflare Worker Secrets; their values were not written to the repository or deployment record;
-- `RELAY_ENABLED=false`, `workers_dev=false`, and `observability.enabled=false` remain checked in;
+- `RELAY_ENABLED=false`, `workers_dev=false`, and `observability.enabled=false` were checked in at the end of Phase 3B;
 - the frontend relay endpoint remains blank;
 - Wrangler reported `No targets deployed` after the final deployment.
 
@@ -551,7 +553,22 @@ A temporary `workers.dev` target was enabled only long enough to verify the stop
 - a request without an Origin received `403`;
 - stopped responses included `Cache-Control: no-store` and `Pragma: no-cache`.
 
-The temporary URL returned `404` after the target was removed. No Gluroo URL, Gluroo credential, or glucose payload was used during this stopped-state verification. Provider-policy review, permanent routing, Trust Pack completion, real-device acceptance, and a separate explicit enablement approval remain release gates.
+The temporary URL returned `404` after the target was removed. No Gluroo URL, Gluroo credential, or glucose payload was used during this stopped-state verification. The Phase 3C public-policy review is complete.
+
+## Permanent stopped target verification — 2026-08-05
+
+After separate explicit approval:
+
+- `workers_dev=true` created the single permanent target `https://glucoscope-data-relay.afterglow21.workers.dev`;
+- `preview_urls=false` prevented version-specific Preview URLs from being created;
+- `RELAY_ENABLED=false`, the blank frontend endpoint, and `observability.enabled=false` remained unchanged;
+- Version `ea0b8f59-3e9b-4475-b93a-91855834b3ce` retained both required Secret bindings and the SQLite Durable Object binding;
+- allowed-origin preflight returned `204` with the exact CORS origin;
+- repeated allowed-origin POST checks returned `503 relay_temporarily_paused` with no-store headers;
+- wrong-origin and missing-origin POST checks returned `403`;
+- one `1042` response occurred immediately after deployment and did not reproduce on subsequent empty-body or JSON-body POST checks. Cloudflare documents `1042` as a same-zone Worker subrequest error; no same-zone subrequest exists on the stopped code path, so live enablement remains blocked if it reappears.
+
+No Gluroo URL, credential, glucose payload, Turnstile token, ticket, or counter was used during this verification.
 
 ## Phase 1 tests
 
@@ -580,7 +597,7 @@ The temporary URL returned `404` after the target was removed. No Gluroo URL, Gl
 
 The relay cannot be publicly enabled until:
 
-- Gluroo policy or support boundary is reviewed;
+- current Gluroo public materials are rechecked for material changes and no provider objection is known;
 - PROJECT_BIBLE and public Trust Pack wording are updated;
 - destination and SSRF tests pass;
 - Turnstile and signed ticket flow passes;
@@ -591,11 +608,11 @@ The relay cannot be publicly enabled until:
 - frontend discloses relay processing before credential submission;
 - direct Nightscout remains available;
 - user-mode AI remains isolated;
-- Guardian, Libre, and Dexcom routes are documented according to actual verification status;
-- real-device current, today, yesterday, 7-day, and 30-day tests pass;
+- Guardian, Libre, and Dexcom routes are documented according to their actual verification status;
+- current, today, yesterday, 7-day, and 30-day real-device tests pass for each route before that route is advertised as verified;
 - emergency pause and browser deletion behavior pass;
 - `node --check`, Worker tests, and `git diff --check` pass;
-- `wrangler deploy` occurs only after explicit approval.
+- the approved stopped `workers.dev` target remains the only public target, and any routing change or live enablement occurs only after new explicit approval.
 
 ---
 

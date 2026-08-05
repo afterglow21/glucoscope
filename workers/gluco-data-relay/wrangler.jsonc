@@ -3,7 +3,8 @@
   "name": "glucoscope-data-relay",
   "main": "src/index.js",
   "compatibility_date": "2026-08-03",
-  "workers_dev": false,
+  "workers_dev": true,
+  "preview_urls": false,
   "observability": {
     "enabled": false
   },

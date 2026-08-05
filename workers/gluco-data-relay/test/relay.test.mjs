@@ -757,11 +757,12 @@ test("rejects missing origins, wrong methods, and unknown paths", async () => {
   assert.equal(wrongPath.status, 404);
 });
 
-test("checked-in Wrangler config remains paused and uses a SQLite Durable Object export", () => {
+test("checked-in Wrangler config remains paused with one workers.dev target and SQLite Durable Object export", () => {
   const configText = fs.readFileSync(path.join(ROOT, "wrangler.jsonc"), "utf8");
   assert.match(configText, /"observability"\s*:\s*\{\s*"enabled"\s*:\s*false/s);
   assert.match(configText, /"RELAY_ENABLED"\s*:\s*"false"/);
-  assert.match(configText, /"workers_dev"\s*:\s*false/);
+  assert.match(configText, /"workers_dev"\s*:\s*true/);
+  assert.match(configText, /"preview_urls"\s*:\s*false/);
   assert.match(configText, /"name"\s*:\s*"RELAY_USAGE_COUNTER"/);
   assert.match(configText, /"class_name"\s*:\s*"RelayUsageCounter"/);
   assert.match(configText, /"RelayUsageCounter"\s*:\s*\{\s*"type"\s*:\s*"durable-object"\s*,\s*"storage"\s*:\s*"sqlite"/s);
