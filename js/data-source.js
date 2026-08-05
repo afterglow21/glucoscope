@@ -293,7 +293,10 @@
     const config = configInput?.mode === "public-demo"
       ? getPublicDemoConfig()
       : sanitizeConfig(configInput);
-    const fetchImpl = options.fetchImpl || root?.fetch || globalThis.fetch;
+    const fetchImpl = options.fetchImpl
+      || root?.GlucoScopeNativeApp?.fetch
+      || root?.fetch
+      || globalThis.fetch;
 
     if (typeof fetchImpl !== "function") {
       throw createRequestError("Fetch is unavailable.", "fetch_unavailable");

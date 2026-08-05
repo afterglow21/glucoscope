@@ -1,4 +1,9 @@
 const dataSourceManager = window.GlucoScopeDataSource || null;
+
+function isNativeAppRuntime() {
+  return window.GlucoScopeNativeApp?.isNative === true;
+}
+
 let activeDataSourceConfig = dataSourceManager?.getActiveConfig?.() || null;
 let activeDataSourceAdapter = activeDataSourceConfig && dataSourceManager
   ? dataSourceManager.createAdapter(activeDataSourceConfig)
@@ -251,6 +256,8 @@ const translations = {
     dataSourceLocalOnlyLine2: "家族などと共用している端末では、「この端末に保存する」をオフにしてください。",
     dataSourceRelayNoticeTitle: "Glurooのかんたん接続について",
     dataSourceRelayNoticeLead: "接続に必要な情報と、表示する血糖データがGlucoScopeの限定中継機能を一時的に通ります。接続情報や血糖データを保存したり、AIへ送ったり、他の利用者と共有したりしません。",
+    dataSourceNativeDirectNoticeTitle: "このiPhoneからGlurooへ直接つなぎます",
+    dataSourceNativeDirectNoticeLead: "アプリがGlurooへ直接つながります。接続情報や血糖データがGlucoScopeのサーバーやCloudflareの限定リレーを通ることはありません。",
     dataSourceDirectNoticeTitle: "自分のNightscoutへ直接つなぎます",
     dataSourceDirectNoticeLead: "Nightscoutを選ぶと、このブラウザがあなたのNightscoutへ直接つながります。接続先URL・合言葉・血糖データを、GlucoScopeの中継サーバーへ送ることはありません。",
     dataSourceRelayCheckTitle: "安全確認",
@@ -268,6 +275,8 @@ const translations = {
     dataSourceSecretHelp: "Glurooでは「API Secret Token」と表示されています。Apple・Google・CGMメーカーのパスワードは入力しません。",
     dataSourcePersistLabel: "この端末に保存する",
     dataSourcePersistHelp: "オフにすると、画面を閉じたあとにもう一度入力が必要です。",
+    dataSourceNativePersistLabel: "初期検証版では接続情報を長期保存しません",
+    dataSourceNativePersistHelp: "安全な保存機能を追加するまでは、この利用中だけ保持します。アプリを閉じたあとは再入力が必要になる場合があります。",
     dataSourceTestButton: "つながるか確認する",
     dataSourceTesting: "つながるか確認しているよ…",
     dataSourceTestWaiting: "上の2つを貼り付けて、つながるか確認します。",
@@ -526,6 +535,8 @@ const translations = {
     dataSourceLocalOnlyLine2: "On a device shared with family or others, turn off Save on this device.",
     dataSourceRelayNoticeTitle: "About the Gluroo easy connection",
     dataSourceRelayNoticeLead: "The connection information and glucose entries needed for display pass temporarily through the GlucoScope limited relay. They are not stored, sent to AI, or shared with another user.",
+    dataSourceNativeDirectNoticeTitle: "Connect directly from this iPhone to Gluroo",
+    dataSourceNativeDirectNoticeLead: "The app connects directly to Gluroo. Connection information and glucose data do not pass through a GlucoScope server or the Cloudflare limited relay.",
     dataSourceDirectNoticeTitle: "Connect directly to your Nightscout",
     dataSourceDirectNoticeLead: "When Nightscout is selected, this browser connects directly to your Nightscout. The connection URL, passphrase, and glucose data are not sent to the GlucoScope relay server.",
     dataSourceRelayCheckTitle: "Safety check",
@@ -543,6 +554,8 @@ const translations = {
     dataSourceSecretHelp: "Gluroo labels this API Secret Token. Do not enter an Apple, Google, or CGM manufacturer password.",
     dataSourcePersistLabel: "Save on this device",
     dataSourcePersistHelp: "When off, you will need to enter it again after closing the page.",
+    dataSourceNativePersistLabel: "This early test does not store connection information long term",
+    dataSourceNativePersistHelp: "Until secure storage is added, it is kept only for this session. You may need to enter it again after closing the app.",
     dataSourceTestButton: "Check the connection",
     dataSourceTesting: "Checking the connection…",
     dataSourceTestWaiting: "Paste the two items above, then check the connection.",
@@ -780,7 +793,7 @@ function getDataSourceFormConfig() {
     credential: document.getElementById("dataSourceSecret")?.value || "",
     credentialType: "auto",
     authStrategy: "auto",
-    persist: document.getElementById("dataSourcePersist")?.checked !== false
+    persist: !isNativeAppRuntime() && document.getElementById("dataSourcePersist")?.checked !== false
   };
 }
 
@@ -817,14 +830,26 @@ function updateDataSourceProviderHelp() {
   const glurooHelp = document.getElementById("dataSourceGlurooHelp");
   const nightscoutHelp = document.getElementById("dataSourceNightscoutHelp");
   const relayNotice = document.getElementById("dataSourceRelayNotice");
+  const nativeDirectNotice = document.getElementById("dataSourceNativeDirectNotice");
   const directNotice = document.getElementById("dataSourceNightscoutDirectNotice");
   const relayCheck = document.getElementById("dataSourceRelayCheck");
+  const persistInput = document.getElementById("dataSourcePersist");
+  const persistLabel = document.getElementById("dataSourcePersistLabelText");
+  const persistHelp = document.getElementById("dataSourcePersistHelpText");
+  const nativeApp = isNativeAppRuntime();
   if (glurooHelp) glurooHelp.hidden = provider !== "gluroo";
   if (nightscoutHelp) nightscoutHelp.hidden = provider !== "nightscout";
-  if (relayNotice) relayNotice.hidden = provider !== "gluroo";
+  if (relayNotice) relayNotice.hidden = provider !== "gluroo" || nativeApp;
+  if (nativeDirectNotice) nativeDirectNotice.hidden = provider !== "gluroo" || !nativeApp;
   if (directNotice) directNotice.hidden = provider !== "nightscout";
-  if (relayCheck) relayCheck.hidden = provider !== "gluroo";
-  window.GlucoScopeDataRelay?.updateUi?.(provider);
+  if (relayCheck) relayCheck.hidden = provider !== "gluroo" || nativeApp;
+  if (persistInput) {
+    persistInput.disabled = nativeApp;
+    if (nativeApp) persistInput.checked = false;
+  }
+  if (persistLabel) persistLabel.textContent = t(nativeApp ? "dataSourceNativePersistLabel" : "dataSourcePersistLabel");
+  if (persistHelp) persistHelp.textContent = t(nativeApp ? "dataSourceNativePersistHelp" : "dataSourcePersistHelp");
+  if (!nativeApp) window.GlucoScopeDataRelay?.updateUi?.(provider);
 }
 
 function showDataSourceChooseStep() {
@@ -894,7 +919,12 @@ function populateDataSourceForm(config = null) {
     secretInput.value = resolved?.mode === "user" ? resolved.credential || "" : "";
     secretInput.type = "password";
   }
-  if (persistInput) persistInput.checked = resolved?.mode === "user" ? resolved.persist !== false : true;
+  if (persistInput) {
+    persistInput.checked = isNativeAppRuntime()
+      ? false
+      : resolved?.mode === "user" ? resolved.persist !== false : true;
+    persistInput.disabled = isNativeAppRuntime();
+  }
   if (deleteButton) deleteButton.hidden = !dataSourceManager?.readUserConfig?.();
 
   testedDataSourceConfig = null;
@@ -948,6 +978,7 @@ function updateDataSourceUiLabels() {
   const secretToggle = document.getElementById("dataSourceSecretToggle");
   const secretInput = document.getElementById("dataSourceSecret");
   if (secretToggle) secretToggle.textContent = t(secretInput?.type === "text" ? "dataSourceSecretHide" : "dataSourceSecretShow");
+  if (!document.getElementById("dataSourceDialog")?.hidden) updateDataSourceProviderHelp();
 }
 
 function openDataSourceDialog(options = {}) {
@@ -986,7 +1017,7 @@ async function handleDataSourceTest() {
 
   try {
     const candidate = dataSourceManager.sanitizeConfig(getDataSourceFormConfig());
-    if (candidate.provider === "gluroo") {
+    if (candidate.provider === "gluroo" && !isNativeAppRuntime()) {
       const relay = window.GlucoScopeDataRelay;
       if (!relay || typeof relay.prepareConnection !== "function") {
         const relayError = new Error("The Gluroo relay client is unavailable.");
@@ -1038,7 +1069,7 @@ function handleDataSourceSave(event) {
 
   try {
     dataSourceManager.saveUserConfig(testedDataSourceConfig, {
-      persist: document.getElementById("dataSourcePersist")?.checked !== false
+      persist: !isNativeAppRuntime() && document.getElementById("dataSourcePersist")?.checked !== false
     });
     clearDataSourceSpecificBrowserState();
 

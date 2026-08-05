@@ -1,0 +1,14 @@
+{
+  "appId": "io.github.afterglow21.glucoscope",
+  "appName": "GlucoScope",
+  "webDir": "www",
+  "loggingBehavior": "none",
+  "server": {
+    "appStartPath": "user.html"
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": false
+    }
+  }
+}

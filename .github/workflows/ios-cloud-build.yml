@@ -1,0 +1,84 @@
+name: iOS cloud build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/ios-app-spike
+    paths:
+      - ".github/workflows/ios-cloud-build.yml"
+      - "app-native/**"
+      - "assets/**"
+      - "guides/**"
+      - "js/**"
+      - "pages/**"
+      - "vendor/**"
+      - "index.html"
+      - "script.js"
+      - "style.css"
+      - "user.html"
+
+permissions:
+  contents: read
+
+jobs:
+  unsigned-simulator-build:
+    name: Unsigned iOS Simulator build
+    runs-on: macos-26
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: app-native
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: app-native/package-lock.json
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Install exact dependencies
+        run: npm ci
+
+      - name: Run native safety tests
+        run: npm test
+
+      - name: Prepare app-only web assets
+        run: npm run build:web
+
+      - name: Generate and sync iOS project
+        run: |
+          npx cap add ios
+          npx cap sync ios
+
+      - name: Build without signing
+        run: |
+          set -euo pipefail
+          if [ -d ios/App/App.xcworkspace ]; then
+            xcodebuild \
+              -workspace ios/App/App.xcworkspace \
+              -scheme App \
+              -configuration Debug \
+              -sdk iphonesimulator \
+              -destination 'generic/platform=iOS Simulator' \
+              -derivedDataPath build/DerivedData \
+              CODE_SIGNING_ALLOWED=NO \
+              clean build
+          else
+            xcodebuild \
+              -project ios/App/App.xcodeproj \
+              -scheme App \
+              -configuration Debug \
+              -sdk iphonesimulator \
+              -destination 'generic/platform=iOS Simulator' \
+              -derivedDataPath build/DerivedData \
+              CODE_SIGNING_ALLOWED=NO \
+              clean build
+          fi

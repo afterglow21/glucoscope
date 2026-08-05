@@ -8,3 +8,6 @@ workers/gluco-data-relay/node_modules/
 workers/gluco-data-relay/.wrangler/
 workers/gluco-data-relay/.dev.vars*
 workers/gluco-data-relay/.env*
+app-native/node_modules/
+app-native/www/
+app-native/ios/

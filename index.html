@@ -128,6 +128,11 @@
           <p data-i18n-key="dataSourceRelayNoticeLead">接続に必要な情報と、表示する血糖データがGlucoScopeの限定中継機能を一時的に通ります。接続情報や血糖データを保存したり、AIへ送ったり、他の利用者と共有したりしません。</p>
         </div>
 
+        <div id="dataSourceNativeDirectNotice" class="data-source-notice data-source-direct-notice" hidden>
+          <strong data-i18n-key="dataSourceNativeDirectNoticeTitle">このiPhoneからGlurooへ直接つなぎます</strong>
+          <p data-i18n-key="dataSourceNativeDirectNoticeLead">アプリがGlurooへ直接つながります。接続情報や血糖データがGlucoScopeのサーバーやCloudflareの限定リレーを通ることはありません。</p>
+        </div>
+
         <div id="dataSourceNightscoutDirectNotice" class="data-source-notice data-source-direct-notice" hidden>
           <strong data-i18n-key="dataSourceDirectNoticeTitle">自分のNightscoutへ直接つなぎます</strong>
           <p data-i18n-key="dataSourceDirectNoticeLead">Nightscoutを選ぶと、このブラウザがあなたのNightscoutへ直接つながります。接続先URL・合言葉・血糖データを、GlucoScopeの中継サーバーへ送ることはありません。</p>
@@ -159,8 +164,8 @@
         <label class="data-source-save-option">
           <input id="dataSourcePersist" type="checkbox" checked>
           <span>
-            <strong data-i18n-key="dataSourcePersistLabel">この端末に保存する</strong>
-            <small data-i18n-key="dataSourcePersistHelp">オフにすると、画面を閉じたあとにもう一度入力が必要です。</small>
+            <strong id="dataSourcePersistLabelText" data-i18n-key="dataSourcePersistLabel">この端末に保存する</strong>
+            <small id="dataSourcePersistHelpText" data-i18n-key="dataSourcePersistHelp">オフにすると、画面を閉じたあとにもう一度入力が必要です。</small>
           </span>
         </label>
 
