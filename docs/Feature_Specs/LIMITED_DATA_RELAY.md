@@ -2,9 +2,10 @@
 
 ## Status
 
-- Paused public-target verification phase.
+- Paused frontend-acceptance phase.
 - The Worker shell, SQLite Durable Object, required Secrets, and one permanent `workers.dev` target have been created in Cloudflare.
-- The checked-in frontend endpoint remains blank and `RELAY_ENABLED=false`; the relay is not available to users.
+- The checked-in frontend points only to the approved stopped `workers.dev` target and requires explicit consent before a relay request.
+- `RELAY_ENABLED=false`; the Worker stops before Turnstile verification, ticket issuance, counter use, or upstream access, so the relay is not available for live use.
 - Version-specific Preview URLs are disabled. The earlier temporary connectivity probe remains deleted.
 - User Foundation PR #7 was merged before this work began.
 - Development branch: `feature/limited-data-relay`.
@@ -482,7 +483,7 @@ A written Gluroo support response remains useful, especially before broader or p
 - GlucoScope makes no claim of Gluroo affiliation, endorsement, approval, or partnership and does not sell access to Gluroo;
 - the relay is paused immediately if Gluroo objects, applicable terms materially change, abnormal traffic is detected, or a privacy or safety concern appears.
 
-Any provider inquiry must exclude a real Global Connect URL, API Secret, glucose payload, or identifying screenshot. Before first enablement, recheck the current public materials for material changes. Until the remaining release gates pass and separate live-enablement approval is given, keep `RELAY_ENABLED=false`, keep the frontend endpoint blank, and add no target beyond the approved `workers.dev` URL.
+Any provider inquiry must exclude a real Global Connect URL, API Secret, glucose payload, or identifying screenshot. Before first enablement, recheck the current public materials for material changes. Until the remaining release gates pass and separate live-enablement approval is given, keep `RELAY_ENABLED=false`, keep the frontend endpoint fixed to the approved stopped `workers.dev` URL, and add no other target.
 
 ## Worker separation
 
@@ -542,7 +543,7 @@ Phase 3B created and verified the stopped production shell without opening the r
 - `RelayUsageCounter` was created as a SQLite-backed Durable Object;
 - `TURNSTILE_SECRET_KEY` and `RELAY_TICKET_SECRET` were registered as Cloudflare Worker Secrets; their values were not written to the repository or deployment record;
 - `RELAY_ENABLED=false`, `workers_dev=false`, and `observability.enabled=false` were checked in at the end of Phase 3B;
-- the frontend relay endpoint remains blank;
+- the frontend relay endpoint was still blank at the end of Phase 3B;
 - Wrangler reported `No targets deployed` after the final deployment.
 
 A temporary `workers.dev` target was enabled only long enough to verify the stopped production response and was disabled immediately afterward. The smoke test confirmed:

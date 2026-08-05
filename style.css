@@ -7437,6 +7437,17 @@ body.data-source-dialog-open {
   font-size:13px;
 }
 
+.data-source-relay-consent {
+  padding:14px 16px;
+  border:1px solid rgba(74,222,128,.24);
+  border-radius:15px;
+  background:rgba(22,163,74,.08);
+}
+
+.data-source-relay-consent[hidden] {
+  display:none;
+}
+
 .data-source-test-row {
   display:grid;
   grid-template-columns:auto minmax(0,1fr);
@@ -7683,7 +7694,7 @@ body.data-source-dialog-open {
 
 
 /* ==========================================================================
-   GlucoScope Limited Data Relay Phase 3A
+   GlucoScope Limited Data Relay Paused Acceptance
    Gluroo-only disclosure and lazy Turnstile container.
    ========================================================================== */
 .data-source-device-guide-grid{

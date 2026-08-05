@@ -285,19 +285,31 @@ test("field feedback copy and red-frame navigation are reflected", () => {
 });
 
 test("current cache and CSS markers are present", () => {
-  assert.match(index, /20260803-limited-relay-phase3a-1/);
+  assert.match(index, /20260805-limited-relay-paused-1/);
   assert.match(guideCss, /User Foundation 0\.3\.3/);
-  assert.match(css, /Limited Data Relay Phase 3A/);
+  assert.match(css, /Limited Data Relay Paused Acceptance/);
 });
 
 
-test("limited relay frontend stays fail-closed until a production endpoint is approved", () => {
-  assert.match(index, /name="glucoscope-data-relay-endpoint" content=""/);
+test("limited relay frontend uses only the approved paused production endpoint", () => {
+  assert.match(index, /name="glucoscope-data-relay-endpoint" content="https:\/\/glucoscope-data-relay\.afterglow21\.workers\.dev"/);
   assert.match(index, /js\/data-relay-client\.js/);
   assert.match(index, /dataSourceRelayTurnstile/);
   assert.match(app, /candidate\.provider === "gluroo"/);
   assert.match(app, /relayError\.code = "relay_unavailable"/);
   assert.match(app, /await relay\.prepareConnection\(candidate\)/);
+});
+
+test("Gluroo relay requires explicit consent before any relay request", () => {
+  assert.match(index, /id="dataSourceRelayConsent" type="checkbox"/);
+  assert.match(index, /限定中継機能を一時的に通ることに同意します/);
+  const testStart = app.indexOf("async function handleDataSourceTest");
+  const testEnd = app.indexOf("function clearDataSourceSpecificBrowserState", testStart);
+  const handler = app.slice(testStart, testEnd);
+  assert.match(handler, /dataSourceRelayConsent/);
+  assert.match(handler, /relay_consent_required/);
+  assert.ok(handler.indexOf("relay_consent_required") < handler.indexOf("await relay.prepareConnection(candidate)"));
+  assert.match(app, /relay_consent_required: "dataSourceRelayConsentRequired"/);
 });
 
 test("Gluroo relay copy never claims that credentials bypass the Worker", () => {

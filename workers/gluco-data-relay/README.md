@@ -2,7 +2,7 @@
 
 This directory contains the paused Gluroo-only relay, including its security, access-control, and request-limit boundaries.
 
-Phase 3A connected the user onboarding flow to the relay client while keeping the checked-in endpoint blank. Phase 3B created the stopped Cloudflare Worker shell and Durable Object, registered the required Worker Secrets, and verified the stopped production response. The relay remains unavailable to the frontend and public users.
+Phase 3A connected the user onboarding flow to the relay client while keeping the checked-in endpoint blank. Phase 3B created the stopped Cloudflare Worker shell and Durable Object, registered the required Worker Secrets, and verified the stopped production response. The checked-in frontend now points only to the stopped target for acceptance testing and requires explicit consent. The relay remains unavailable for live use.
 
 ## Implemented through Phase 3B
 
@@ -63,9 +63,9 @@ The dry-run binding summary must show the `RELAY_USAGE_COUNTER` Durable Object b
 
 ## Deployment boundary
 
-There is intentionally no real `deploy` npm script. The stopped `workers.dev` target was created only after explicit approval. The checked-in frontend endpoint remains blank, version-specific Preview URLs are disabled, and `RELAY_ENABLED=false` prevents Turnstile verification, ticket issuance, counter consumption, or upstream access.
+There is intentionally no real `deploy` npm script. The stopped `workers.dev` target was created only after explicit approval. The checked-in frontend endpoint is fixed to that target for paused-state acceptance testing, version-specific Preview URLs are disabled, and `RELAY_ENABLED=false` prevents Turnstile verification, ticket issuance, counter consumption, or upstream access.
 
-The Phase 3C public-policy review and stopped-target deployment are complete. A Gluroo response remains welcome, but its absence is not a blocker for a low-volume Friends & Family rollout. GlucoScope must not claim Gluroo approval, endorsement, affiliation, or partnership. Frontend endpoint configuration, Trust Pack completion, applicable real-device tests, any routing change, and live relay enablement still require separate review and explicit approval.
+The Phase 3C public-policy review and stopped-target deployment are complete. A Gluroo response remains welcome, but its absence is not a blocker for a low-volume Friends & Family rollout. GlucoScope must not claim Gluroo approval, endorsement, affiliation, or partnership. Trust Pack completion, applicable real-device tests, any routing change, and live relay enablement still require separate review and explicit approval.
 
 ## Permanent stopped target verification — 2026-08-05
 
@@ -77,16 +77,25 @@ The Phase 3C public-policy review and stopped-target deployment are complete. A 
 - One Cloudflare `1042` response occurred immediately after deployment and did not reproduce on the subsequent empty-body or repeated JSON-body stopped checks. Live enablement must stop for investigation if it reappears.
 - No Gluroo URL, credential, glucose payload, Turnstile token, relay ticket, or Durable Object counter was used.
 
+## Paused frontend acceptance — 2026-08-05
+
+- The checked-in endpoint is exactly the approved `workers.dev` target above; there is no additional route or Preview URL.
+- Gluroo requires an unchecked-by-default consent control before any relay request. Missing consent stops in the browser before the Turnstile or Worker request begins.
+- The consent and privacy wording was confirmed in the desktop layout and at a 375 × 667 mobile viewport.
+- Nightscout hides the relay consent control and retains its direct-connection wording.
+- The public target returned `503 relay_temporarily_paused` with `Cache-Control: no-store` during the acceptance check.
+- Only placeholder values were used. No real Gluroo URL, credential, glucose payload, relay ticket, or Secret value was entered or printed.
+
 ## Safe activation sequence
 
-Each numbered boundary is independently reviewable. Steps 1 through 5 are complete for the approved stopped `workers.dev` target. Do not combine later frontend configuration and live enablement into one unreviewed operation.
+Each numbered boundary is independently reviewable. Steps 1 through 6 are complete for the approved stopped `workers.dev` target. Do not combine live enablement with any remaining check in one unreviewed operation.
 
 1. Recheck the current Gluroo public materials for material changes or a known provider objection.
 2. Confirm that the intended first device route is described according to its actual verification status. Unverified Libre, Dexcom, or other routes must not be advertised as verified.
 3. Run `npm run verify`, `npm run deploy:dry`, `git diff --check`, the frontend checks, and a Secret-pattern scan. Confirm that `RELAY_ENABLED=false`, `workers_dev=true`, `preview_urls=false`, `observability.enabled=false`, the SQLite Durable Object export, and the exact CORS origin remain intact.
 4. After explicit approval, add only the agreed permanent Cloudflare target. This phase uses the single `workers.dev` target above. Any future Custom Domain or route change requires a separate review and approval.
 5. With `RELAY_ENABLED=false`, deploy only after separate explicit approval. Verify allowed-origin preflight, allowed-origin paused response, wrong-origin rejection, no-cache headers, Durable Object binding, and the presence of the two Secret binding names. Never print or copy Secret values into the repository, terminal record, screenshot, or support message.
-6. Complete the Trust wording and consent UI, then set the checked-in frontend relay endpoint only after separate review. Direct Nightscout and the public demo must still work when the relay is paused.
+6. Keep the reviewed Trust wording and explicit consent UI aligned with the checked-in stopped endpoint. Direct Nightscout and the public demo must still work when the relay is paused.
 7. Ask for a separate explicit approval before changing `RELAY_ENABLED` to `true` and deploying that change. The first live check must use the person's Global Connect URL and API Secret only in the browser UI, never in commands, logs, screenshots, or test fixtures.
 8. Validate current, today, yesterday, 7-day, and 30-day reads for the first advertised route; credential deletion; ticket expiry; session and global limits; and the emergency pause path. Keep the rollout limited to Friends & Family.
 9. Immediately restore `RELAY_ENABLED=false` if Gluroo objects, applicable terms materially change, abnormal traffic is detected, or a privacy or safety concern appears.

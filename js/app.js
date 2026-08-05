@@ -251,6 +251,9 @@ const translations = {
     dataSourceLocalOnlyLine2: "家族などと共用している端末では、「この端末に保存する」をオフにしてください。",
     dataSourceRelayNoticeTitle: "Glurooのかんたん接続について",
     dataSourceRelayNoticeLead: "接続に必要な情報と、表示する血糖データがGlucoScopeの限定中継機能を一時的に通ります。接続情報や血糖データを保存したり、AIへ送ったり、他の利用者と共有したりしません。",
+    dataSourceRelayConsentLabel: "限定中継について確認しました",
+    dataSourceRelayConsentHelp: "上の説明を読み、接続情報と表示に必要な血糖データが限定中継機能を一時的に通ることに同意します。",
+    dataSourceRelayConsentRequired: "接続する前に、限定中継についての説明を読み、チェックを入れてください。",
     dataSourceDirectNoticeTitle: "自分のNightscoutへ直接つなぎます",
     dataSourceDirectNoticeLead: "Nightscoutを選ぶと、このブラウザがあなたのNightscoutへ直接つながります。接続先URL・合言葉・血糖データを、GlucoScopeの中継サーバーへ送ることはありません。",
     dataSourceRelayCheckTitle: "安全確認",
@@ -526,6 +529,9 @@ const translations = {
     dataSourceLocalOnlyLine2: "On a device shared with family or others, turn off Save on this device.",
     dataSourceRelayNoticeTitle: "About the Gluroo easy connection",
     dataSourceRelayNoticeLead: "The connection information and glucose entries needed for display pass temporarily through the GlucoScope limited relay. They are not stored, sent to AI, or shared with another user.",
+    dataSourceRelayConsentLabel: "I understand the limited relay",
+    dataSourceRelayConsentHelp: "I have read the explanation above and agree that the connection information and glucose entries needed for display will pass temporarily through the limited relay.",
+    dataSourceRelayConsentRequired: "Before connecting, read the limited-relay explanation and select the checkbox.",
     dataSourceDirectNoticeTitle: "Connect directly to your Nightscout",
     dataSourceDirectNoticeLead: "When Nightscout is selected, this browser connects directly to your Nightscout. The connection URL, passphrase, and glucose data are not sent to the GlucoScope relay server.",
     dataSourceRelayCheckTitle: "Safety check",
@@ -802,6 +808,7 @@ function getDataSourceErrorMessage(error) {
     request_timeout: "dataSourceTestCorsError",
     no_glucose_data: "dataSourceTestNoData",
     incompatible_entry_format: "dataSourceTestFormatError",
+    relay_consent_required: "dataSourceRelayConsentRequired",
     relay_unavailable: "dataSourceRelayPreparing",
     turnstile_failed: "dataSourceRelayCheckFailed",
     relay_ticket_required: "dataSourceRelaySessionRequired",
@@ -817,11 +824,15 @@ function updateDataSourceProviderHelp() {
   const glurooHelp = document.getElementById("dataSourceGlurooHelp");
   const nightscoutHelp = document.getElementById("dataSourceNightscoutHelp");
   const relayNotice = document.getElementById("dataSourceRelayNotice");
+  const relayConsentOption = document.getElementById("dataSourceRelayConsentOption");
+  const relayConsent = document.getElementById("dataSourceRelayConsent");
   const directNotice = document.getElementById("dataSourceNightscoutDirectNotice");
   const relayCheck = document.getElementById("dataSourceRelayCheck");
   if (glurooHelp) glurooHelp.hidden = provider !== "gluroo";
   if (nightscoutHelp) nightscoutHelp.hidden = provider !== "nightscout";
   if (relayNotice) relayNotice.hidden = provider !== "gluroo";
+  if (relayConsentOption) relayConsentOption.hidden = provider !== "gluroo";
+  if (provider !== "gluroo" && relayConsent) relayConsent.checked = false;
   if (directNotice) directNotice.hidden = provider !== "nightscout";
   if (relayCheck) relayCheck.hidden = provider !== "gluroo";
   window.GlucoScopeDataRelay?.updateUi?.(provider);
@@ -887,6 +898,7 @@ function populateDataSourceForm(config = null) {
   const urlInput = document.getElementById("dataSourceUrl");
   const secretInput = document.getElementById("dataSourceSecret");
   const persistInput = document.getElementById("dataSourcePersist");
+  const relayConsentInput = document.getElementById("dataSourceRelayConsent");
   const deleteButton = document.getElementById("dataSourceDeleteButton");
 
   if (urlInput) urlInput.value = resolved?.mode === "user" ? resolved.baseUrl || "" : "";
@@ -895,6 +907,7 @@ function populateDataSourceForm(config = null) {
     secretInput.type = "password";
   }
   if (persistInput) persistInput.checked = resolved?.mode === "user" ? resolved.persist !== false : true;
+  if (relayConsentInput) relayConsentInput.checked = false;
   if (deleteButton) deleteButton.hidden = !dataSourceManager?.readUserConfig?.();
 
   testedDataSourceConfig = null;
@@ -987,6 +1000,11 @@ async function handleDataSourceTest() {
   try {
     const candidate = dataSourceManager.sanitizeConfig(getDataSourceFormConfig());
     if (candidate.provider === "gluroo") {
+      if (document.getElementById("dataSourceRelayConsent")?.checked !== true) {
+        const consentError = new Error("The limited relay consent is required.");
+        consentError.code = "relay_consent_required";
+        throw consentError;
+      }
       const relay = window.GlucoScopeDataRelay;
       if (!relay || typeof relay.prepareConnection !== "function") {
         const relayError = new Error("The Gluroo relay client is unavailable.");
@@ -1122,6 +1140,7 @@ function setupDataSourceFoundation() {
     if (!document.getElementById("dataSourceConnectPanel")?.hidden) invalidateDataSourceTest();
   }));
   changeInputs.forEach((input) => input.addEventListener("input", invalidateDataSourceTest));
+  document.getElementById("dataSourceRelayConsent")?.addEventListener("change", invalidateDataSourceTest);
 
   document.getElementById("dataSourceSecretToggle")?.addEventListener("click", () => {
     const input = document.getElementById("dataSourceSecret");

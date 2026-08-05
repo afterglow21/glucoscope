@@ -22,9 +22,9 @@
     })();
   </script>
   <title>GlucoScope</title>
-  <!-- GlucoScope Limited Data Relay Phase 3B: keep blank until permanent routing and enablement are separately approved. -->
-  <meta name="glucoscope-data-relay-endpoint" content="">
-  <link rel="stylesheet" href="style.css?v=20260803-limited-relay-phase3a-1">
+  <!-- GlucoScope Limited Data Relay: the public endpoint is configured for paused acceptance testing only. -->
+  <meta name="glucoscope-data-relay-endpoint" content="https://glucoscope-data-relay.afterglow21.workers.dev">
+  <link rel="stylesheet" href="style.css?v=20260805-limited-relay-paused-1">
 </head>
 <body>
 
@@ -127,6 +127,14 @@
           <strong data-i18n-key="dataSourceRelayNoticeTitle">Glurooのかんたん接続について</strong>
           <p data-i18n-key="dataSourceRelayNoticeLead">接続に必要な情報と、表示する血糖データがGlucoScopeの限定中継機能を一時的に通ります。接続情報や血糖データを保存したり、AIへ送ったり、他の利用者と共有したりしません。</p>
         </div>
+
+        <label id="dataSourceRelayConsentOption" class="data-source-save-option data-source-relay-consent">
+          <input id="dataSourceRelayConsent" type="checkbox">
+          <span>
+            <strong data-i18n-key="dataSourceRelayConsentLabel">限定中継について確認しました</strong>
+            <small data-i18n-key="dataSourceRelayConsentHelp">上の説明を読み、接続情報と表示に必要な血糖データが限定中継機能を一時的に通ることに同意します。</small>
+          </span>
+        </label>
 
         <div id="dataSourceNightscoutDirectNotice" class="data-source-notice data-source-direct-notice" hidden>
           <strong data-i18n-key="dataSourceDirectNoticeTitle">自分のNightscoutへ直接つなぎます</strong>
@@ -722,11 +730,11 @@
 <script src="vendor/chart.js/chart.umd.min.js?v=4.5.1"></script>
 <script src="js/api.js"></script>
 <script src="js/data-source.js?v=20260721-user-foundation-3-2"></script>
-<script src="js/data-relay-client.js?v=20260803-limited-relay-phase3a-1"></script>
+<script src="js/data-relay-client.js?v=20260805-limited-relay-paused-1"></script>
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js?v=20260721-user-foundation-3"></script>
-<script src="js/app.js?v=20260803-limited-relay-phase3a-1"></script>
+<script src="js/app.js?v=20260805-limited-relay-paused-1"></script>
 <!-- Cloudflare Web Analytics: loaded only when no user connection is stored -->
 <script src="js/analytics-loader.js?v=20260721-user-foundation-3-2"></script>
 <!-- End Cloudflare Web Analytics -->
