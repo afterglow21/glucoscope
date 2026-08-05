@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 const index = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const userEntry = await readFile(new URL("../user.html", import.meta.url), "utf8");
 const app = await readFile(new URL("../js/app.js", import.meta.url), "utf8");
+const relayClient = await readFile(new URL("../js/data-relay-client.js", import.meta.url), "utf8");
 const css = await readFile(new URL("../style.css", import.meta.url), "utf8");
 const guideCss = await readFile(new URL("../guides/guide.css", import.meta.url), "utf8");
 const glurooGuide = await readFile(new URL("../guides/gluroo-setup/index.html", import.meta.url), "utf8");
@@ -285,9 +286,20 @@ test("field feedback copy and red-frame navigation are reflected", () => {
 });
 
 test("current cache and CSS markers are present", () => {
-  assert.match(index, /20260805-limited-relay-paused-1/);
+  assert.match(index, /20260806-turnstile-code-1/);
   assert.match(guideCss, /User Foundation 0\.3\.3/);
   assert.match(css, /Limited Data Relay Paused Acceptance/);
+});
+
+test("Turnstile diagnostics show only a validated six-digit confirmation code", () => {
+  assert.match(relayClient, /normalizeTurnstileErrorCode/);
+  assert.match(relayClient, /turnstileErrorCode \? \{ turnstileErrorCode \} : \{\}/);
+  assert.match(app, /dataSourceRelayCheckFailedWithCode/);
+  assert.match(app, /getTurnstileConfirmationCode/);
+  assert.match(app, /return \/\^\\d\{6\}\$\/u\.test\(code\) \? code : "";/);
+  assert.match(app, /replace\("\{code\}", confirmationCode\)/);
+  assert.match(app, /この6桁の数字だけを教えてください/);
+  assert.doesNotMatch(app, /dataSourceRelayCheckFailedWithCode[^\n]*(?:Secret|credential|token)/i);
 });
 
 

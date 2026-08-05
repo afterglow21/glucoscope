@@ -58,7 +58,8 @@ function loadModule({
   hostname = "afterglow21.github.io",
   search = "",
   endpoint = "https://relay.example",
-  fetchImpl = globalThis.fetch
+  fetchImpl = globalThis.fetch,
+  turnstile = null
 } = {}) {
   const localStorage = createStorage();
   const sessionStorage = createStorage();
@@ -97,6 +98,7 @@ function loadModule({
     GlucoScopeDataSource: manager,
     crypto: globalThis.crypto
   };
+  if (turnstile) context.turnstile = turnstile;
   context.window = context;
   context.globalThis = context;
   vm.runInNewContext(source, context, { filename: "data-relay-client.js" });
@@ -193,6 +195,57 @@ test("session creation sends only the Turnstile token and stores the returned re
   assert.deepEqual(Object.keys(requests[0].body), ["turnstileToken"]);
   assert.equal(requests[0].body.turnstileToken, "turnstile-test-token");
   assert.equal(session.ticket, "d".repeat(40));
+});
+
+async function captureTurnstileFailure(errorCode) {
+  let widgetOptions = null;
+  const turnstile = {
+    render(_container, options) {
+      widgetOptions = options;
+      return "relay-widget";
+    },
+    reset() {}
+  };
+  const { context, elements } = loadModule({ turnstile });
+  elements.set("dataSourceRelayTurnstile", {
+    hidden: true,
+    classList: { add() {}, remove() {} }
+  });
+
+  const pending = context.GlucoScopeDataRelay.prepareConnection({
+    provider: "gluroo",
+    baseUrl: "https://sample.ns.gluroo.com",
+    credential: "test-credential"
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.ok(widgetOptions);
+  assert.equal(widgetOptions["error-callback"](errorCode), true);
+
+  try {
+    await pending;
+    assert.fail("The Turnstile failure should reject the connection attempt.");
+  } catch (error) {
+    return error;
+  }
+}
+
+test("Turnstile failures retain only a six-digit Cloudflare confirmation code", async () => {
+  const validError = await captureTurnstileFailure("110200");
+  assert.equal(validError.code, "turnstile_failed");
+  assert.equal(validError.turnstileErrorCode, "110200");
+
+  const invalidError = await captureTurnstileFailure("110200;test-credential");
+  assert.equal(invalidError.code, "turnstile_failed");
+  assert.equal(invalidError.turnstileErrorCode, undefined);
+});
+
+test("Turnstile confirmation-code normalization rejects unexpected values", () => {
+  const normalize = loadModule().context.GlucoScopeDataRelay._testing.normalizeTurnstileErrorCode;
+  assert.equal(normalize(110200), "110200");
+  assert.equal(normalize(" 110600 "), "110600");
+  assert.equal(normalize("11020"), "");
+  assert.equal(normalize("error 110200"), "");
+  assert.equal(normalize(null), "");
 });
 
 test("an invalid relay ticket clears the browser session", async () => {
