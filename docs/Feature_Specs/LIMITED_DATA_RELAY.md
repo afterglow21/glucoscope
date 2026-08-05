@@ -6,6 +6,8 @@
 - The Worker shell, SQLite Durable Object, required Secrets, and one permanent `workers.dev` target have been created in Cloudflare.
 - The checked-in frontend points only to the approved stopped `workers.dev` target and requires explicit consent before a relay request.
 - `RELAY_ENABLED=false`; the Worker stops before Turnstile verification, ticket issuance, counter use, or upstream access, so the relay is not available for live use.
+- The final Trust Pack link, title, privacy, safety, verification-status, desktop, and mobile review is complete.
+- The first advertised route acceptance is prepared but has not been executed.
 - Version-specific Preview URLs are disabled. The earlier temporary connectivity probe remains deleted.
 - User Foundation PR #7 was merged before this work began.
 - Development branch: `feature/limited-data-relay`.

@@ -65,7 +65,7 @@ The dry-run binding summary must show the `RELAY_USAGE_COUNTER` Durable Object b
 
 There is intentionally no real `deploy` npm script. The stopped `workers.dev` target was created only after explicit approval. The checked-in frontend endpoint is fixed to that target for paused-state acceptance testing, version-specific Preview URLs are disabled, and `RELAY_ENABLED=false` prevents Turnstile verification, ticket issuance, counter consumption, or upstream access.
 
-The Phase 3C public-policy review and stopped-target deployment are complete. A Gluroo response remains welcome, but its absence is not a blocker for a low-volume Friends & Family rollout. GlucoScope must not claim Gluroo approval, endorsement, affiliation, or partnership. Trust Pack completion, applicable real-device tests, any routing change, and live relay enablement still require separate review and explicit approval.
+The Phase 3C public-policy review, stopped-target deployment, and final Trust Pack review are complete. A Gluroo response remains welcome, but its absence is not a blocker for a low-volume Friends & Family rollout. GlucoScope must not claim Gluroo approval, endorsement, affiliation, or partnership. The applicable end-to-end real-device test, final configuration review, any routing change, and live relay enablement still require separate review and explicit approval.
 
 ## Permanent stopped target verification — 2026-08-05
 
@@ -99,3 +99,33 @@ Each numbered boundary is independently reviewable. Steps 1 through 6 are comple
 7. Ask for a separate explicit approval before changing `RELAY_ENABLED` to `true` and deploying that change. The first live check must use the person's Global Connect URL and API Secret only in the browser UI, never in commands, logs, screenshots, or test fixtures.
 8. Validate current, today, yesterday, 7-day, and 30-day reads for the first advertised route; credential deletion; ticket expiry; session and global limits; and the emergency pause path. Keep the rollout limited to Friends & Family.
 9. Immediately restore `RELAY_ENABLED=false` if Gluroo objects, applicable terms materially change, abnormal traffic is detected, or a privacy or safety concern appears.
+
+## First advertised route acceptance — prepared, not executed
+
+The first candidate is the verified iPhone input segment extended through the full GlucoScope path:
+
+```text
+MiniMed / CareLink
+        ↓
+Guardian Monitor
+        ↓ Nightscout sync
+Gluroo Global Connect
+        ↓
+Limited Data Relay
+        ↓
+GlucoScope
+```
+
+Only Guardian Monitor upload into Gluroo has passed its real-device check. The end-to-end path through the relay and GlucoScope has not been accepted yet. Libre, Dexcom G7, and other routes must remain unverified in public wording.
+
+Before this acceptance begins, recheck the current public materials and configuration, obtain separate approval for live enablement, and enter the person's Global Connect URL and API Secret only in the browser UI. Never place them in commands, fixtures, screenshots, or documents.
+
+The acceptance must confirm:
+
+- current, today, yesterday, 7-day, and 30-day reads against Gluroo;
+- entries-only behavior with no treatments, insulin, carbohydrate, medication, pump-setting, or device-status retrieval;
+- gentle handling of missing, delayed, duplicated, invalid, expired-ticket, and rate-limited states;
+- deletion of the browser connection and relay ticket;
+- user-mode AI remains disabled and no relay data enters the AI Worker or shared cache;
+- direct Nightscout and the public demo remain independent;
+- an immediate return to `RELAY_ENABLED=false` works and produces the reviewed paused message.
