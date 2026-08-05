@@ -1,0 +1,16 @@
+{
+  "name": "glucoscope-data-relay",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check src/index.js && node --check src/relay-core.js && node --check src/rate-limit-core.js && node --check src/rate-limit-counter.js && node --check test/relay.test.mjs",
+    "test": "node --test test/*.test.mjs",
+    "verify": "npm run check && npm test",
+    "dev": "wrangler dev --local",
+    "deploy:dry": "wrangler deploy --dry-run"
+  },
+  "devDependencies": {
+    "wrangler": "^4.112.0"
+  }
+}

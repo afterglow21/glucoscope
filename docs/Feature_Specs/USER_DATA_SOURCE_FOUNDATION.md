@@ -1,15 +1,15 @@
-# User Data Source Foundation 0.3.4
+# User Data Source Foundation 0.4.0
 
 ## Purpose
 
-User Data Source Foundation 0.3.4 is the beginner-facing base for allowing a person other than Kazuma to open GlucoScope and connect their own glucose data without building an Azure environment for GlucoScope.
+User Data Source Foundation 0.4.0 is the beginner-facing base for allowing a person other than Kazuma to open GlucoScope and connect their own glucose data without building an Azure environment for GlucoScope. Existing Nightscout remains a direct browser route, while Gluroo Global Connect uses the narrowly scoped Limited Data Relay.
 
 The first supported path is a **Nightscout-compatible data source**. The setup screen names these two routes:
 
 - Gluroo Global Connect
 - an existing Nightscout environment
 
-Gluroo support is an interoperability proof of concept. GlucoScope does not claim that every Gluroo, CGM, pump, operating system, or historical-data combination is supported.
+Gluroo support remains an interoperability proof of concept. GlucoScope does not claim that every Gluroo, CGM, pump, operating system, or historical-data combination is supported. Guardian Monitor to Gluroo Global Connect has been verified with Kazuma’s MiniMed / Guardian environment.
 
 ## User flow
 
@@ -19,52 +19,77 @@ Gluroo support is an interoperability proof of concept. GlucoScope does not clai
 4. Enter the Nightscout-compatible URL and an API Secret or read token when required.
 5. Run the connection test.
 6. Save the connection in browser local storage, or keep it only for the current browser session.
-7. After a successful test, GlucoScope reloads in user mode and reads the user's data directly from that data source.
+7. After a successful test, GlucoScope reloads in user mode. Nightscout is read directly by the browser; Gluroo entries are read through Limited Data Relay using a short-lived session ticket.
 
 The existing root `index.html` without `mode=user` remains Kazuma's public demo.
 
 ## Privacy boundary
 
-For User Foundation 0.3.4:
+For User Foundation 0.4.0:
 
-- The data-source URL and credential are stored only in the selected browser storage.
-- They are not sent to the GlucoScope AI Worker.
+- The data-source URL and credential are stored only in the selected browser storage when the person chooses to save them.
+- Existing Nightscout is read directly by the browser and does not use Limited Data Relay.
+- Gluroo Global Connect uses Limited Data Relay. Its URL, credential, requested range, and required glucose entries are processed transiently by Cloudflare infrastructure and the relay Worker.
+- The relay application does not store, cache, log, send to AI, or share the Gluroo URL, credential, or glucose payload.
+- The relay retrieves glucose entries only. Treatments, insulin, carbohydrates, medication, pump settings, and device-status data are outside the relay scope.
+- The signed relay ticket is stored only in browser `sessionStorage`, is bound to the approved origin, and expires after about one hour.
+- The SQLite Durable Object stores only a UTC date bucket and request count for abuse prevention. It does not store source URLs, credentials, glucose values, entry timestamps, response bodies, IP addresses, or AI content.
 - The Cloudflare Web Analytics beacon is not loaded in user mode or on any same-origin page while a user connection remains in local or session browser storage.
 - If browser storage cannot be checked safely, analytics stays disabled as the privacy-first fallback.
 - Chart.js is served from a reviewed local vendored file instead of a third-party runtime CDN on the page that handles connection details and glucose data.
-- They are not stored in Kazuma's Azure account, Cloudflare KV, or Durable Objects.
-- The browser reads the Nightscout-compatible API directly.
-- Credential-bearing API requests reject redirects so the browser does not intentionally follow a compatible endpoint to another destination with the same credential.
-- The user can delete the saved connection from the setup screen.
+- The user can delete the saved connection from the setup screen. Deletion also clears the current relay ticket.
 - A shared device should use session-only storage or remove the connection after use.
 
-Browser local storage is not encrypted storage. Anyone who can use the same unlocked browser profile may be able to access locally stored information. JavaScript running on another page of the same GlucoScope origin can also share that browser-storage boundary. The setup screen must explain the shared-device boundary in plain language, and GlucoScope must avoid loading unnecessary third-party runtime scripts while a user connection is stored.
+Browser local storage is not encrypted storage. Anyone who can use the same unlocked browser profile may be able to access locally stored information. JavaScript running on another page of the same GlucoScope origin can also share that browser-storage boundary. The setup screen must explain the shared-device boundary and the Gluroo relay boundary separately in plain language.
 
 ## Authentication compatibility
 
-The adapter can try the following read-authentication forms:
+The direct Nightscout adapter can try the following read-authentication forms:
 
 1. no credential for a publicly readable endpoint;
 2. SHA-1 `api-secret` header for a regular Nightscout API Secret;
 3. raw `api-secret` header for a compatible service that issues a ready-to-use secret;
 4. `token` query parameter for a Nightscout read token or compatible token.
 
-The successful strategy is saved with the local connection so normal requests do not need to rediscover it first.
+The Gluroo relay uses only the verified `token` query authentication when it contacts the allowlisted Gluroo host. The successful direct Nightscout strategy may be saved with the browser connection. Gluroo does not need direct-browser strategy discovery.
 
 A read-only token should be preferred when the data source offers one. GlucoScope must never ask for a CGM manufacturer password, CareLink password, LibreLinkUp password, or Gluroo account password.
 
-## CORS boundary
+## CORS and relay boundary
 
-The browser must be allowed by the data source to read its API response.
+Existing Nightscout still requires the data source to allow the person’s browser to read its API response.
 
-A failed direct request may mean:
+Gluroo Global Connect was reachable from a Cloudflare Worker but was not readable directly from the verified browser environment because of provider-side CORS. Limited Data Relay is therefore the only Gluroo route prepared by User Foundation 0.4.0.
 
-- the URL or credential is incorrect;
-- the data source is unavailable;
-- browser CORS rules do not allow direct access;
-- the response format is not compatible yet.
+The relay:
 
-User Foundation 0.3.4 does not introduce a credential-bearing Cloudflare proxy. A proxy may be considered later only after destination restrictions, secret handling, abuse prevention, request limits, logging boundaries, and deletion behavior are designed.
+- accepts only the approved Gluroo hostname suffix;
+- constructs `/api/v1/entries.json` internally;
+- rejects redirects and arbitrary destinations;
+- requires server-validated Turnstile and a signed origin-bound ticket;
+- enforces date, entry, byte, timeout, session, and Worker-wide limits;
+- fails closed when configuration, secrets, counters, or the relay endpoint are unavailable;
+- remains paused and unavailable to the frontend while its single approved `workers.dev` target returns only the stopped response. Public wording and consent, final security checks, explicit live-enablement approval, and acceptance tests for the first advertised route must be complete before use. The Phase 3C public-policy review is complete; a Gluroo support reply remains welcome but is not a Friends & Family release blocker.
+
+A direct Gluroo request must not be used as a silent fallback, and a failed relay request must never fall back to Kazuma’s public-demo data.
+
+## Guardian / MiniMed route
+
+The verified iPhone route is:
+
+```text
+MiniMed / CareLink
+        ↓
+Guardian Monitor
+        ↓ Nightscout sync
+Gluroo Global Connect
+        ↓
+Limited Data Relay
+        ↓
+GlucoScope
+```
+
+Guardian Monitor is an uploader into Gluroo, not another destination supported by the relay. Its Nightscout destination is limited to one. The normal beginner guide should keep this exception small and show it only to people who already use another Nightscout destination.
 
 ## AI boundary
 
@@ -150,18 +175,16 @@ The guide shows its last review date and supported test environment. A Gluroo sc
 
 ## Device-route boundary
 
-The beginner Gluroo route is currently documented for FreeStyle Libre 2 and Dexcom G7. This is a documentation and verification boundary, not a permanent product lock-in.
+The beginner Gluroo route is currently documented for FreeStyle Libre 2, Dexcom G7, and Guardian (MiniMed 780G). This is a documentation and verification boundary, not a permanent product lock-in.
 
-Guardian / MiniMed 780G must not be described as a simple iPhone Gluroo route. Gluroo documents an Android-only experimental notification integration with alpha support for Medtronic apps, but User Foundation 0.3 does not recommend or support that as the standard onboarding route.
+Guardian (MiniMed 780G) does not connect to Gluroo by entering a CareLink or Medtronic account password into GlucoScope. The verified iPhone route uses Guardian Monitor as an external uploader and points its single Nightscout destination to Gluroo Global Connect.
 
-kazuma's current iPhone example uses:
+The onboarding must present two equally clear device-guide choices inside the Gluroo route:
 
-- MiniMed / CareLink;
-- Guardian Monitor as an external app with Nightscout synchronization;
-- a self-managed Nightscout web app;
-- Azure App Service Free tier and MongoDB Atlas Free cluster as the current hosting example.
+- Libre / Dexcom: open the Gluroo setup guide;
+- Guardian (MiniMed 780G): open the Guardian Monitor setup guide.
 
-The guide must explain that app purchases, free-tier limits, service availability, and maintenance requirements can change. It must not promise that this route is free, simple, or permanently available.
+The one-destination limitation is shown only as a conditional note for people who already send Guardian Monitor data to another Nightscout destination. The guide must explain that app availability, service behavior, and maintenance requirements can change. It must not promise that this route is permanently available.
 
 ## CGM account preparation guides
 

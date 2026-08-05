@@ -226,18 +226,18 @@ const translations = {
     dataSourceChoiceAction: "ここを押して次へ",
     dataSourceRecommended: "おすすめ",
     dataSourceGlurooTitle: "Glurooでつなぐ",
-    dataSourceGlurooNote: "FreeStyle Libre 2またはDexcom G7を使っている方へ。スマートフォンだけで準備できます。",
+    dataSourceGlurooNote: "FreeStyle Libre 2、Dexcom G7、Guardian（MiniMed 780G）を使っている方へ。スマートフォンで準備できます。",
     dataSourceNightscoutTitle: "Nightscoutにつなぐ",
     dataSourceNightscoutNote: "自分のNightscout環境をすでに使っている方、または自分で構築・保守できる上級者向けです。",
-    dataSourceGuardianTitle: "Guardian／MiniMed 780Gを使っている方へ",
-    dataSourceGuardianLead: "Guardianは現在のかんたん接続では利用できません。別のアプリと、自分専用のNightscout環境を準備する上級者向けの方法があります。",
-    dataSourceGuardianLink: "kazumaのGuardian接続例を見る",
     dataSourceGlurooPrepTitle: "Glurooを準備します",
     dataSourceGlurooPrepLead: "初めての方は、画像付きの日本語ガイドを見ながら進めてください。App Storeから入れるところから案内します。",
-    dataSourceGlurooSupportedNote: "この案内は、FreeStyle Libre 2とDexcom G7を対象に準備しています。",
+    dataSourceGlurooSupportedNote: "使っている機器に合うガイドを選んでください。",
+    dataSourceLibreDexcomGuideTitle: "Libre／Dexcomを使っている方",
+    dataSourceGuardianGuideTitle: "Guardian（MiniMed 780G）を使っている方",
     dataSourceGlurooConnectButton: "Glurooの準備ができたので、接続へ進む",
     dataSourceBackButton: "← つなぎ方を選び直す",
-    dataSourceGlurooGuideLink: "画像を見ながらGlurooを準備する",
+    dataSourceGlurooGuideLink: "Glurooの準備ガイドを見る",
+    dataSourceGuardianGuideLink: "Guardian Monitorの設定ガイドを見る",
     dataSourceNightscoutAboutLink: "Nightscoutとは？",
     dataSourceExternalTitle: "Glurooは外部サービスです",
     dataSourceExternalLead: "現在は無料でテスト利用できます。今後、料金や機能、画面、接続方法が変わる場合があります。",
@@ -246,9 +246,23 @@ const translations = {
     dataSourceGlurooOfficialLink: "Gluroo公式FAQ（英語・外部サイト）",
     dataSourceNightscoutHelpTitle: "自分のNightscout環境をすでに使っている方",
     dataSourceNightscoutHelpLead: "ご自身のNightscout URLと読み取り用の情報を、下の欄へ貼り付けます。新しく環境を作るところから始める方法は上級者向けです。",
-    dataSourceLocalOnlyTitle: "入力した情報の保存について",
-    dataSourceLocalOnlyLine1: "接続先URLと接続用の合言葉は、GlucoScopeのサーバーには保存しません。",
+    dataSourceLocalOnlyTitle: "この端末への保存について",
+    dataSourceLocalOnlyLine1: "接続先URLと接続用の合言葉は、選んだ場合だけこのブラウザへ保存します。",
     dataSourceLocalOnlyLine2: "家族などと共用している端末では、「この端末に保存する」をオフにしてください。",
+    dataSourceRelayNoticeTitle: "Glurooのかんたん接続について",
+    dataSourceRelayNoticeLead: "接続に必要な情報と、表示する血糖データがGlucoScopeの限定中継機能を一時的に通ります。接続情報や血糖データを保存したり、AIへ送ったり、他の利用者と共有したりしません。",
+    dataSourceRelayConsentLabel: "限定中継について確認しました",
+    dataSourceRelayConsentHelp: "上の説明を読み、接続情報と表示に必要な血糖データが限定中継機能を一時的に通ることに同意します。",
+    dataSourceRelayConsentRequired: "接続する前に、限定中継についての説明を読み、チェックを入れてください。",
+    dataSourceDirectNoticeTitle: "自分のNightscoutへ直接つなぎます",
+    dataSourceDirectNoticeLead: "Nightscoutを選ぶと、このブラウザがあなたのNightscoutへ直接つながります。接続先URL・合言葉・血糖データを、GlucoScopeの中継サーバーへ送ることはありません。",
+    dataSourceRelayCheckTitle: "安全確認",
+    dataSourceRelayCheckLead: "Glurooへつなぐ前に、短い安全確認を行います。確認後に発行される接続用チケットは、このタブの中だけで使い、約1時間で期限が切れます。",
+    dataSourceRelayPreparing: "Glurooのかんたん接続は、現在公開前の準備中です。Nightscoutの直接接続と公開デモは引き続き使えます。",
+    dataSourceRelayCheckFailed: "安全確認を完了できませんでした。少し時間をおいて、もう一度試してみてね。",
+    dataSourceRelaySessionRequired: "Glurooへつなぐための安全確認が必要です。「つながるか確認する」をもう一度押してね。",
+    dataSourceRelayPaused: "Glurooのかんたん接続は、現在一時停止しています。接続情報や血糖データは保存していません。",
+    dataSourceRelayLimited: "このタブからの今日の確認回数が上限に達しました。時間をおいてから、また確認してみてね。",
     dataSourceUrlLabel: "接続先URL",
     dataSourceUrlHelp: "Glurooでは「Nightscout URL」と表示されています。",
     dataSourceSecretLabel: "接続用の合言葉",
@@ -490,18 +504,18 @@ const translations = {
     dataSourceChoiceAction: "Tap to continue",
     dataSourceRecommended: "Recommended",
     dataSourceGlurooTitle: "Connect with Gluroo",
-    dataSourceGlurooNote: "For FreeStyle Libre 2 or Dexcom G7 users. You can prepare this route on a smartphone.",
+    dataSourceGlurooNote: "For FreeStyle Libre 2, Dexcom G7, or Guardian (MiniMed 780G) users. This route can be prepared on a smartphone.",
     dataSourceNightscoutTitle: "Connect Nightscout",
     dataSourceNightscoutNote: "For people who already use their own Nightscout environment, or advanced users who can build and maintain one.",
-    dataSourceGuardianTitle: "For Guardian / MiniMed 780G users",
-    dataSourceGuardianLead: "Guardian is not available through the current beginner connection. An advanced route using another app and your own Nightscout environment is required.",
-    dataSourceGuardianLink: "See kazuma’s Guardian connection example",
     dataSourceGlurooPrepTitle: "Prepare Gluroo",
     dataSourceGlurooPrepLead: "The Japanese picture guide starts with installing Gluroo from the App Store.",
-    dataSourceGlurooSupportedNote: "The current guide is being prepared for FreeStyle Libre 2 and Dexcom G7.",
+    dataSourceGlurooSupportedNote: "Choose the guide that matches the device you use.",
+    dataSourceLibreDexcomGuideTitle: "Libre / Dexcom users",
+    dataSourceGuardianGuideTitle: "Guardian (MiniMed 780G) users",
     dataSourceGlurooConnectButton: "Gluroo is ready — continue to connection",
     dataSourceBackButton: "← Choose another option",
-    dataSourceGlurooGuideLink: "Set up Gluroo with pictures",
+    dataSourceGlurooGuideLink: "Open the Gluroo setup guide",
+    dataSourceGuardianGuideLink: "Open the Guardian Monitor setup guide",
     dataSourceNightscoutAboutLink: "What is Nightscout?",
     dataSourceExternalTitle: "Gluroo is an external service",
     dataSourceExternalLead: "It is currently available for testing at no cost. Pricing, features, screens, or connection methods may change.",
@@ -510,9 +524,23 @@ const translations = {
     dataSourceGlurooOfficialLink: "Gluroo official FAQ (external site)",
     dataSourceNightscoutHelpTitle: "For people who already use their own Nightscout environment",
     dataSourceNightscoutHelpLead: "Paste your Nightscout URL and read credential below. Building a new environment from scratch is an advanced route.",
-    dataSourceLocalOnlyTitle: "About saving the information you enter",
-    dataSourceLocalOnlyLine1: "The connection URL and passphrase are not stored on the GlucoScope server.",
+    dataSourceLocalOnlyTitle: "Saving on this device",
+    dataSourceLocalOnlyLine1: "The connection URL and passphrase are saved in this browser only when you choose to save them.",
     dataSourceLocalOnlyLine2: "On a device shared with family or others, turn off Save on this device.",
+    dataSourceRelayNoticeTitle: "About the Gluroo easy connection",
+    dataSourceRelayNoticeLead: "The connection information and glucose entries needed for display pass temporarily through the GlucoScope limited relay. They are not stored, sent to AI, or shared with another user.",
+    dataSourceRelayConsentLabel: "I understand the limited relay",
+    dataSourceRelayConsentHelp: "I have read the explanation above and agree that the connection information and glucose entries needed for display will pass temporarily through the limited relay.",
+    dataSourceRelayConsentRequired: "Before connecting, read the limited-relay explanation and select the checkbox.",
+    dataSourceDirectNoticeTitle: "Connect directly to your Nightscout",
+    dataSourceDirectNoticeLead: "When Nightscout is selected, this browser connects directly to your Nightscout. The connection URL, passphrase, and glucose data are not sent to the GlucoScope relay server.",
+    dataSourceRelayCheckTitle: "Safety check",
+    dataSourceRelayCheckLead: "A brief safety check is completed before connecting to Gluroo. The resulting connection ticket stays in this tab and expires after about one hour.",
+    dataSourceRelayPreparing: "The Gluroo easy connection is still being prepared for release. Direct Nightscout and the public demo remain available.",
+    dataSourceRelayCheckFailed: "The safety check could not be completed. Please wait a little and try again.",
+    dataSourceRelaySessionRequired: "A new safety check is needed for the Gluroo connection. Press Check the connection again.",
+    dataSourceRelayPaused: "The Gluroo easy connection is temporarily paused. Connection details and glucose data have not been stored.",
+    dataSourceRelayLimited: "This tab has reached today’s connection-check limit. Please try again later.",
     dataSourceUrlLabel: "Connection URL",
     dataSourceUrlHelp: "Gluroo labels this Nightscout URL.",
     dataSourceSecretLabel: "Connection passphrase",
@@ -779,7 +807,14 @@ function getDataSourceErrorMessage(error) {
     cors_or_network: "dataSourceTestCorsError",
     request_timeout: "dataSourceTestCorsError",
     no_glucose_data: "dataSourceTestNoData",
-    incompatible_entry_format: "dataSourceTestFormatError"
+    incompatible_entry_format: "dataSourceTestFormatError",
+    relay_consent_required: "dataSourceRelayConsentRequired",
+    relay_unavailable: "dataSourceRelayPreparing",
+    turnstile_failed: "dataSourceRelayCheckFailed",
+    relay_ticket_required: "dataSourceRelaySessionRequired",
+    relay_ticket_invalid: "dataSourceRelaySessionRequired",
+    relay_temporarily_paused: "dataSourceRelayPaused",
+    rate_limited: "dataSourceRelayLimited"
   };
   return t(messages[error?.code] || "dataSourceTestGenericError");
 }
@@ -788,8 +823,19 @@ function updateDataSourceProviderHelp() {
   const provider = document.querySelector('input[name="dataSourceProvider"]:checked')?.value || "gluroo";
   const glurooHelp = document.getElementById("dataSourceGlurooHelp");
   const nightscoutHelp = document.getElementById("dataSourceNightscoutHelp");
+  const relayNotice = document.getElementById("dataSourceRelayNotice");
+  const relayConsentOption = document.getElementById("dataSourceRelayConsentOption");
+  const relayConsent = document.getElementById("dataSourceRelayConsent");
+  const directNotice = document.getElementById("dataSourceNightscoutDirectNotice");
+  const relayCheck = document.getElementById("dataSourceRelayCheck");
   if (glurooHelp) glurooHelp.hidden = provider !== "gluroo";
   if (nightscoutHelp) nightscoutHelp.hidden = provider !== "nightscout";
+  if (relayNotice) relayNotice.hidden = provider !== "gluroo";
+  if (relayConsentOption) relayConsentOption.hidden = provider !== "gluroo";
+  if (provider !== "gluroo" && relayConsent) relayConsent.checked = false;
+  if (directNotice) directNotice.hidden = provider !== "nightscout";
+  if (relayCheck) relayCheck.hidden = provider !== "gluroo";
+  window.GlucoScopeDataRelay?.updateUi?.(provider);
 }
 
 function showDataSourceChooseStep() {
@@ -852,6 +898,7 @@ function populateDataSourceForm(config = null) {
   const urlInput = document.getElementById("dataSourceUrl");
   const secretInput = document.getElementById("dataSourceSecret");
   const persistInput = document.getElementById("dataSourcePersist");
+  const relayConsentInput = document.getElementById("dataSourceRelayConsent");
   const deleteButton = document.getElementById("dataSourceDeleteButton");
 
   if (urlInput) urlInput.value = resolved?.mode === "user" ? resolved.baseUrl || "" : "";
@@ -860,6 +907,7 @@ function populateDataSourceForm(config = null) {
     secretInput.type = "password";
   }
   if (persistInput) persistInput.checked = resolved?.mode === "user" ? resolved.persist !== false : true;
+  if (relayConsentInput) relayConsentInput.checked = false;
   if (deleteButton) deleteButton.hidden = !dataSourceManager?.readUserConfig?.();
 
   testedDataSourceConfig = null;
@@ -951,6 +999,20 @@ async function handleDataSourceTest() {
 
   try {
     const candidate = dataSourceManager.sanitizeConfig(getDataSourceFormConfig());
+    if (candidate.provider === "gluroo") {
+      if (document.getElementById("dataSourceRelayConsent")?.checked !== true) {
+        const consentError = new Error("The limited relay consent is required.");
+        consentError.code = "relay_consent_required";
+        throw consentError;
+      }
+      const relay = window.GlucoScopeDataRelay;
+      if (!relay || typeof relay.prepareConnection !== "function") {
+        const relayError = new Error("The Gluroo relay client is unavailable.");
+        relayError.code = "relay_unavailable";
+        throw relayError;
+      }
+      await relay.prepareConnection(candidate);
+    }
     const result = await dataSourceManager.createAdapter(candidate).testConnection();
     testedDataSourceConfig = dataSourceManager.sanitizeConfig({
       ...candidate,
@@ -1078,6 +1140,7 @@ function setupDataSourceFoundation() {
     if (!document.getElementById("dataSourceConnectPanel")?.hidden) invalidateDataSourceTest();
   }));
   changeInputs.forEach((input) => input.addEventListener("input", invalidateDataSourceTest));
+  document.getElementById("dataSourceRelayConsent")?.addEventListener("change", invalidateDataSourceTest);
 
   document.getElementById("dataSourceSecretToggle")?.addEventListener("click", () => {
     const input = document.getElementById("dataSourceSecret");
@@ -1095,6 +1158,19 @@ function setupDataSourceFoundation() {
 
   updateDataSourceUiLabels();
   if (isUserDataSourceMode()) document.body.classList.add("user-data-source-mode");
+
+  const glurooRelaySessionRequired = Boolean(
+    isUserDataSourceMode()
+      && activeDataSourceConfig?.provider === "gluroo"
+      && !window.GlucoScopeDataRelay?.readRelaySession?.()
+  );
+
+  if (glurooRelaySessionRequired) {
+    showDataSourceSetupRequiredState();
+    openDataSourceDialog({ required: true });
+    setDataSourceTestStatus(t("dataSourceRelaySessionRequired"));
+    return false;
+  }
 
   if (isUserDataSourceMode() && !hasActiveDataSource()) {
     showDataSourceSetupRequiredState();

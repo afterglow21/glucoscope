@@ -1571,8 +1571,12 @@ GlucoScopeが今後もNightscoutだけに対応する、
 
 ---
 
-## Current User Foundation 0.1 Decision
-## 現在のUser Foundation 0.1方針
+## Historical User Foundation 0.1 Decision
+## 過去のUser Foundation 0.1方針
+
+> Historical note: this section records the earlier browser-direct proof of concept. For the current route, use **Current Limited Data Relay 0.2 Decision** below.
+>
+> 過去の記録：この節は、以前のブラウザ直接接続PoCの方針です。現在の接続ルートは、後ろの **現在の限定データリレー0.2方針** を正本として扱います。
 
 ### EN
 
@@ -1671,8 +1675,85 @@ AzureやNightscoutを自分で構築する方法は上級者向けの選択肢�
 
 ---
 
-## Beginner-First User Foundation 0.3
-## IT用語を前提にしないUser Foundation 0.3
+## Current Limited Data Relay 0.2 Decision
+## 現在の限定データリレー0.2方針
+
+### EN
+
+The browser-direct User Foundation decision remains the standard for an existing person-managed Nightscout environment.
+
+Gluroo Global Connect is different. In the verified environment, the Cloudflare Worker could read Gluroo, while the person’s browser could not read it directly because of provider-side CORS. Gluroo therefore uses a narrowly scoped Limited Data Relay.
+
+The current routes are:
+
+- Existing Nightscout: direct browser connection.
+- Gluroo Global Connect: Gluroo-only Limited Data Relay.
+
+The relay accepts glucose entries only. It does not retrieve treatments, insulin, carbohydrates, medication, pump settings, or device-status data. The Gluroo URL, credential, requested range, and required glucose entries pass transiently through Cloudflare infrastructure and the relay Worker. The GlucoScope application does not store, cache, log, send to AI, or share those values.
+
+The relay uses server-validated Turnstile, an origin-bound ticket that expires after about one hour, strict destination and path restrictions, request limits, and a kill switch. Its Durable Object stores only a UTC date bucket and request count.
+
+Guardian (MiniMed 780G) is now a verified Gluroo input route on iPhone:
+
+```text
+MiniMed / CareLink
+        ↓
+Guardian Monitor
+        ↓ Nightscout sync
+Gluroo Global Connect
+        ↓
+Limited Data Relay
+        ↓
+GlucoScope
+```
+
+Guardian Monitor is an uploader into Gluroo, not a second relay destination. The beginner guide may show this route. The one-destination limitation should appear only as a small conditional note for someone who already uses another Nightscout destination.
+
+The paused production Worker shell, SQLite Durable Object, and required Secret bindings were created in Phase 3B. After separate explicit approval, one permanent `workers.dev` target was created with `RELAY_ENABLED=false`; version-specific Preview URLs remain disabled. The checked-in frontend now points only to this stopped target for paused-state acceptance testing and requires explicit consent before any relay request. With `RELAY_ENABLED=false`, the Worker rejects the request before Turnstile verification, ticket issuance, counter use, or upstream access. Phase 3C reviewed Gluroo's official FAQ, Nightscout integration guidance, Privacy Policy, and EULA. Those materials describe user-controlled use of Global Connect with Nightscout-compatible third-party tools and do not state an express prohibition on this narrowly scoped, user-directed relay. A Gluroo support reply remains welcome, but it is not a release blocker. GlucoScope must not present technical interoperability as Gluroo approval, affiliation, or partnership.
+
+The consent UI, local paused-state frontend acceptance, final Trust Pack review, and final local and Cloudflare configuration and security review are complete. Required Secret names are declared in `wrangler.jsonc`, while their values remain Cloudflare Secrets. After separate explicit approval, commit `98def2e96065f1a801728e060673ea22d4ff9e44` was deployed as stopped Version `1a51631d-1e53-4f88-ac27-2125b43f1ab2`; the post-deployment stop, CORS, Secret-name, and Durable Object checks passed without using real data. A later separately approved Guardian candidate-route acceptance temporarily routed Version `84139213-8521-4772-b3f3-47ee0018c5d3`, but the acceptance stopped before a Gluroo URL, credential, or glucose payload was submitted because the public Pages build did not yet expose the Guardian guide needed for the test. Version `89d8166d-a50e-4e94-b3d3-a06f7a0b6fb1` was deployed immediately afterward with `RELAY_ENABLED=false`; it now receives 100% of traffic and retains the exact CORS setting, required Secret bindings, and Durable Object binding. The first advertised-route end-to-end acceptance remains incomplete. The relay must remain disabled and unavailable for live use until that acceptance and separate explicit live-enablement approval are complete. It must begin as a low-volume Friends & Family rollout. A device route may be advertised as verified only after that route passes its own acceptance checks. The relay must be paused immediately if Gluroo objects, the applicable terms materially change, abnormal traffic is detected, or a privacy or safety concern appears. Direct Nightscout and the public demo must continue independently.
+
+---
+
+### JP
+
+ブラウザから直接つなぐUser Foundationの方針は、利用する人がすでに自分のNightscout環境を持っている場合の標準として残します。
+
+一方、Gluroo Global Connectは、実機検証した環境でCloudflare Workerからは取得できましたが、利用者のブラウザからは提供元のCORS制限により直接取得できませんでした。そのためGlurooは、接続先と取得内容を絞った**限定データリレー**を利用します。
+
+現在の接続ルートは次の2つです。
+
+- 既存Nightscout：利用する人のブラウザから直接接続する。
+- Gluroo Global Connect：Gluroo専用の限定データリレーを利用する。
+
+限定リレーが取得するのは血糖エントリーだけです。治療記録、インスリン、炭水化物、薬、ポンプ設定、機器状態は取得しません。GlurooのURL、接続用の合言葉、指定期間、表示に必要な血糖データはCloudflare基盤とリレーWorkerを一時的に通りますが、GlucoScopeのアプリケーションでは保存、共有キャッシュ、ログ記録、AI送信、他の利用者との共有を行いません。
+
+リレーでは、Worker側で検証するTurnstile、約1時間で期限が切れるGlucoScopeのOrigin専用チケット、厳しい接続先・パス制限、回数制限、緊急停止スイッチを使います。Durable Objectsへ保存するのはUTCの日付と回数だけです。
+
+Guardian（MiniMed 780G）は、iPhoneで次のGluroo入力ルートを実機確認済みです。
+
+```text
+MiniMed / CareLink
+        ↓
+Guardian Monitor
+        ↓ Nightscout同期
+Gluroo Global Connect
+        ↓
+限定データリレー
+        ↓
+GlucoScope
+```
+
+Guardian MonitorはGlurooへデータを届ける入口であり、限定リレーが直接接続する2つ目のサービスではありません。このルートは初心者向けガイドでも案内できます。Nightscout送信先が1つだけという制約は、すでに別のNightscoutを使っている人にだけ、小さな条件付き補足として示します。
+
+Phase 3Bでは、停止状態の本番Worker、SQLite Durable Object、必要なSecret登録までを完了しました。その後、別途明示的な承認を得て、`RELAY_ENABLED=false`のまま恒久的な`workers.dev`公開先を1つ作成しました。バージョンごとのPreview URLは無効のままです。フロントの接続先は、停止状態の受け入れ確認に限ってこの公開先へ固定し、リレーへ通信する前に明示的な同意を必須にしました。`RELAY_ENABLED=false`の間は、WorkerがTurnstile検証、チケット発行、回数カウント、Glurooへの接続より前に要求を停止します。Phase 3Cでは、Glurooの公式FAQ、Nightscout連携案内、Privacy Policy、EULAを確認しました。これらは、利用する人が自分のGlobal Connect情報をNightscout互換の外部ツールで使う方法を案内しており、利用者自身が選ぶこの限定中継を明示的に禁止していません。Glurooからの返答は今後も歓迎しますが、公開を止める必須条件にはしません。また、技術的につながることを、Glurooの承認、提携、推奨のように表示しません。
+
+同意表示、停止状態でのローカル画面受け入れ確認、Trust Packの最終確認、ローカルとCloudflare上の設定・安全性の最終確認は完了しました。必要なSecret名は`wrangler.jsonc`へ宣言し、値はCloudflare Secretだけに保持します。別途明示的な承認を得て、commit `98def2e96065f1a801728e060673ea22d4ff9e44`を停止状態のVersion `1a51631d-1e53-4f88-ac27-2125b43f1ab2`としてデプロイし、実データを使わずに停止応答、CORS、Secret名、Durable Objectを確認しました。その後、Guardian候補ルートの受け入れ確認について別途明示的な承認を得て、Version `84139213-8521-4772-b3f3-47ee0018c5d3`へ一時的に通信を向けましたが、公開中のPagesに確認用のGuardianガイドがまだ反映されていなかったため、GlurooのURL、接続用の合言葉、血糖データを送信する前に確認を中止しました。直後にVersion `89d8166d-a50e-4e94-b3d3-a06f7a0b6fb1`を`RELAY_ENABLED=false`でデプロイし、現在はこの停止Versionが通信の100%を受け、正確なCORS設定、必要なSecret、Durable Objectのバインドも維持しています。最初に案内する接続ルートについて、GlucoScopeまでの全経路の実機確認はまだ完了していません。その実機確認と、有効化についての別の明示的な承認が完了するまでは、リレーを無効のままにし、実データへ接続できない状態を保ちます。最初はFriends & Familyの小規模利用に限り、実機確認が終わった接続ルートだけを確認済みとして案内します。Glurooから停止要請があった場合、利用条件に重要な変更があった場合、異常な通信、プライバシーまたは安全性の懸念が見つかった場合は、すぐにリレーを停止します。Nightscoutの直接接続と公開デモは、限定リレーから独立して使える状態を維持します。
+
+---
+
+## Beginner-First User Foundation 0.4
+## IT用語を前提にしないUser Foundation 0.4
 
 ### EN
 
@@ -1681,7 +1762,7 @@ A person should not need to understand APIs, CORS, localStorage, sessionStorage,
 
 The first screen asks only how the person wants to connect. It states that one route is enough and presents two numbered cards:
 
-- Method 1: Gluroo, as the recommended beginner route for the current Libre 2 and Dexcom G7 proof of concept;
+- Method 1: Gluroo, as the recommended beginner route for Libre 2, Dexcom G7, and the verified Guardian Monitor input path;
 - Method 2: an existing Nightscout environment, clearly marked as advanced;
 - the public demo remains available as a separate link.
 
@@ -1693,7 +1774,7 @@ Visible labels use everyday language such as connection URL, connection passphra
 
 Gluroo is an external service. GlucoScope must state that its availability, pricing, screens, features, and connection behavior may change, and that GlucoScope does not operate Gluroo.
 
-The beginner route must state its device boundary honestly. Guardian / MiniMed 780G is not shown as a simple Gluroo route. Its current example is separated into an advanced Nightscout architecture page. Dexcom Share and LibreLinkUp receive separate preparation guides, and CGM manufacturer passwords are never entered into GlucoScope.
+The beginner route must state its device boundary honestly. Guardian (MiniMed 780G) may use the verified iPhone route from Guardian Monitor to Gluroo Global Connect. Guardian Monitor remains an external uploader and its one-destination limitation is shown only as a conditional note. Dexcom Share, LibreLinkUp, and Guardian Monitor receive separate preparation guides, and CGM manufacturer passwords are never entered into GlucoScope.
 
 Do not place fixed-position focus markers over guide screenshots. Their positions can drift across devices or after image replacement. Use numbered steps, short captions, and plain-language instructions; keep screenshots as replaceable assets.
 
@@ -1714,7 +1795,7 @@ API、CORS、localStorage、sessionStorage、クラウドサーバー、デー�
 「どちらか1つでよい」と伝え、
 番号を付けた2つの方法を示します。
 
-- 方法①：現在のLibre 2・Dexcom G7検証で、初めての人におすすめするGluroo
+- 方法①：Libre 2、Dexcom G7、実機確認済みのGuardian Monitor入力ルートで、初めての人におすすめするGluroo
 - 方法②：自分のNightscout環境をすでに持っている人、または構築・保守できる上級者向けNightscout
 - 公開デモは別の導線として残す
 
@@ -1744,10 +1825,9 @@ GlurooはGlucoScopeとは別に運営される外部サービスです。
 GlucoScopeはGlurooの運営や変更へ関与しません。
 
 対応範囲は正直に示します。
-Guardian／MiniMed 780Gは、
-現在のかんたん接続では利用できないことを明記します。
-現在の構成例は、上級者向けNightscoutページへ分けます。
-Dexcom ShareとLibreLinkUpは別の準備ガイドを用意し、
+Guardian（MiniMed 780G）は、iPhoneのGuardian MonitorからGluroo Global Connectへ送る実機確認済みルートを案内できます。
+Guardian Monitorは外部の送信アプリであり、送信先が1つだけという制約は該当する人にだけ小さく補足します。
+Dexcom Share、LibreLinkUp、Guardian Monitorは別の準備ガイドを用意し、
 CGMメーカーのパスワードをGlucoScopeへ入力させません。
 
 スクリーンショットには、
@@ -1772,7 +1852,7 @@ and comfort levels.
 
 These levels describe future support options.
 For the current general-user proof of concept,
-the browser-local Gluroo or Nightscout-compatible route above is the standard path.
+the Gluroo limited-relay route or the browser-direct Nightscout route above is the standard path.
 
 The higher the level,
 the more technical knowledge and self-setup are required.
@@ -1817,7 +1897,7 @@ GlucoScopeでは、
 
 ここで示すレベルは、将来の支援方法の選択肢です。
 現在の一般利用者向けPoCでは、
-前項のブラウザ内Gluroo／Nightscout互換接続を標準ルートとします。
+前項のGluroo限定リレー／Nightscout直接接続を標準ルートとします。
 
 レベルが上がるほど、  
 必要なITスキルや、  

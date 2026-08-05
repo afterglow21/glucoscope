@@ -668,7 +668,7 @@ GlucoScopeは、
 
 一般利用者向けのGluroo案内は、
 現在はFreeStyle LibreとDexcom G7を対象にします。
-Guardian／MiniMed 780Gを、
+Guardian（MiniMed 780G）を、
 簡単に接続できる方法として案内しません。
 
 Dexcom ShareまたはLibreLinkUpの認証情報は、
@@ -832,3 +832,27 @@ GlucoScopeは、
 あなたの体感、  
 あなたのケア方針を大切にしながら、  
 医療従事者または適切な医療機関に相談してください。
+
+
+---
+
+## Relay and Data Availability
+## 中継機能とデータ更新について
+
+The Gluroo limited relay is a reflection-data transport path, not an alert or emergency path.
+
+A relay, network, Gluroo, Guardian Monitor, Nightscout, CGM, or pump connection may be delayed, unavailable, duplicated, incomplete, or wrong. A relay error does not prove that the original CGM or pump stopped.
+
+For current glucose, alerts, treatment decisions, and device state, prioritize the original CGM or pump application and the guidance from healthcare professionals.
+
+The relay retrieves glucose entries only. It does not retrieve treatments, insulin, carbohydrates, medication, pump settings, or device-status data.
+
+---
+
+Glurooの限定中継機能は、日々の振り返りに使う血糖データを運ぶための経路です。アラートや緊急時の経路ではありません。
+
+中継機能、ネットワーク、Gluroo、Guardian Monitor、Nightscout、CGM、ポンプには、遅れ、停止、重複、欠損、誤りが起こる可能性があります。中継機能のエラーだけで、元のCGMやポンプが停止したとは判断できません。
+
+現在の血糖値、アラート、治療判断、機器状態は、元のCGM・ポンプアプリと医療従事者からの案内を優先してください。
+
+限定中継機能が取得するのは血糖エントリーだけです。治療記録、インスリン、炭水化物、薬、ポンプ設定、機器状態は取得しません。
