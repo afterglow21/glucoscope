@@ -13,7 +13,7 @@ Cloudflare Pages may be considered later, but the current priority is to publish
 The AI letter API continues to run through Cloudflare Worker.
 Provider API keys must stay server-side in the Worker environment and must never be committed to GitHub or placed in frontend JavaScript.
 
-## User Foundation 0.4 / Limited Data Relay Phase 3A
+## User Foundation 0.4 / Limited Data Relay Phase 3B
 
 The root page remains Kazuma's public demo. The user-data route is:
 
@@ -48,7 +48,7 @@ Limited Data Relay
 GlucoScope
 ```
 
-The checked-in frontend endpoint is intentionally blank, the Worker remains `RELAY_ENABLED=false`, and no production deployment is performed in Phase 3A. Direct Nightscout and the public demo remain available.
+Phase 3A connected the user onboarding flow to the paused relay client. In Phase 3B, the paused Worker shell and SQLite Durable Object were created in Cloudflare, the required Worker Secrets were registered, and stopped-response/CORS smoke tests passed. The checked-in frontend endpoint remains intentionally blank, `workers_dev=false` leaves no active route or target, and the Worker remains `RELAY_ENABLED=false`. Direct Nightscout and the public demo remain available.
 
 Run the frontend tests with:
 

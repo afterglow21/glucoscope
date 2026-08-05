@@ -2,8 +2,9 @@
 
 ## Status
 
-- Design phase.
-- Production relay is not deployed yet.
+- Paused deployment-verification phase.
+- The Worker shell and SQLite Durable Object have been created in Cloudflare, but no public route or target is active.
+- The checked-in frontend endpoint remains blank and `RELAY_ENABLED=false`; the relay is not publicly enabled.
 - The temporary connectivity probe was deleted after testing.
 - User Foundation PR #7 was merged before this work began.
 - Development branch: `feature/limited-data-relay`.
@@ -507,6 +508,28 @@ Phase 1 creates a security skeleton only:
 - no frontend integration.
 
 Turnstile tickets, Durable Objects, public UI, and production deployment belong to later phases.
+
+## Phase 3B paused deployment record — 2026-08-05
+
+Phase 3B created and verified the stopped production shell without opening the relay for use:
+
+- Worker name: `glucoscope-data-relay`;
+- final stopped/no-target Version ID: `89a2e968-96df-49bb-b8f0-ce631c3b4b32`;
+- `RelayUsageCounter` was created as a SQLite-backed Durable Object;
+- `TURNSTILE_SECRET_KEY` and `RELAY_TICKET_SECRET` were registered as Cloudflare Worker Secrets; their values were not written to the repository or deployment record;
+- `RELAY_ENABLED=false`, `workers_dev=false`, and `observability.enabled=false` remain checked in;
+- the frontend relay endpoint remains blank;
+- Wrangler reported `No targets deployed` after the final deployment.
+
+A temporary `workers.dev` target was enabled only long enough to verify the stopped production response and was disabled immediately afterward. The smoke test confirmed:
+
+- an allowed GlucoScope origin received `503 relay_temporarily_paused`;
+- its CORS preflight received `204`;
+- an unapproved origin received `403` without an allow-origin header;
+- a request without an Origin received `403`;
+- stopped responses included `Cache-Control: no-store` and `Pragma: no-cache`.
+
+The temporary URL returned `404` after the target was removed. No Gluroo URL, Gluroo credential, or glucose payload was used during this stopped-state verification. Provider-policy review, permanent routing, Trust Pack completion, real-device acceptance, and a separate explicit enablement approval remain release gates.
 
 ## Phase 1 tests
 
