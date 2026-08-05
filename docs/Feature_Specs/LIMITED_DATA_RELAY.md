@@ -7,6 +7,7 @@
 - The checked-in frontend points only to the approved stopped `workers.dev` target and requires explicit consent before a relay request.
 - `RELAY_ENABLED=false`; the Worker stops before Turnstile verification, ticket issuance, counter use, or upstream access, so the relay is not available for live use.
 - The final Trust Pack link, title, privacy, safety, verification-status, desktop, and mobile review is complete.
+- The final local and read-only Cloudflare configuration and security review is complete; required Secret names are declared in `wrangler.jsonc` without storing their values.
 - The first advertised route acceptance is prepared but has not been executed.
 - Version-specific Preview URLs are disabled. The earlier temporary connectivity probe remains deleted.
 - User Foundation PR #7 was merged before this work began.
@@ -564,7 +565,7 @@ After separate explicit approval:
 
 - `workers_dev=true` created the single permanent target `https://glucoscope-data-relay.afterglow21.workers.dev`;
 - `preview_urls=false` prevented version-specific Preview URLs from being created;
-- `RELAY_ENABLED=false`, the blank frontend endpoint, and `observability.enabled=false` remained unchanged;
+- at the time of that Worker deployment, `RELAY_ENABLED=false`, the then-blank frontend endpoint, and `observability.enabled=false` remained unchanged; the later paused-frontend acceptance fixed the endpoint to this approved target and added explicit consent;
 - Version `ea0b8f59-3e9b-4475-b93a-91855834b3ce` retained both required Secret bindings and the SQLite Durable Object binding;
 - allowed-origin preflight returned `204` with the exact CORS origin;
 - repeated allowed-origin POST checks returned `503 relay_temporarily_paused` with no-store headers;

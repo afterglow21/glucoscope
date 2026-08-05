@@ -8,6 +8,12 @@
   "observability": {
     "enabled": false
   },
+  "secrets": {
+    "required": [
+      "RELAY_TICKET_SECRET",
+      "TURNSTILE_SECRET_KEY"
+    ]
+  },
   "durable_objects": {
     "bindings": [
       {

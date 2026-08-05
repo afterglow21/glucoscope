@@ -759,6 +759,7 @@ test("rejects missing origins, wrong methods, and unknown paths", async () => {
 
 test("checked-in Wrangler config remains paused with one workers.dev target and SQLite Durable Object export", () => {
   const configText = fs.readFileSync(path.join(ROOT, "wrangler.jsonc"), "utf8");
+  const config = JSON.parse(configText);
   assert.match(configText, /"observability"\s*:\s*\{\s*"enabled"\s*:\s*false/s);
   assert.match(configText, /"RELAY_ENABLED"\s*:\s*"false"/);
   assert.match(configText, /"workers_dev"\s*:\s*true/);
@@ -766,7 +767,14 @@ test("checked-in Wrangler config remains paused with one workers.dev target and 
   assert.match(configText, /"name"\s*:\s*"RELAY_USAGE_COUNTER"/);
   assert.match(configText, /"class_name"\s*:\s*"RelayUsageCounter"/);
   assert.match(configText, /"RelayUsageCounter"\s*:\s*\{\s*"type"\s*:\s*"durable-object"\s*,\s*"storage"\s*:\s*"sqlite"/s);
-  assert.equal(/TURNSTILE_SECRET_KEY|RELAY_TICKET_SECRET/.test(configText), false);
+  assert.deepEqual([...config.secrets.required].sort(), [
+    "RELAY_TICKET_SECRET",
+    "TURNSTILE_SECRET_KEY",
+  ]);
+  assert.doesNotMatch(
+    configText,
+    /"(?:TURNSTILE_SECRET_KEY|RELAY_TICKET_SECRET)"\s*:\s*"/,
+  );
   assert.equal(/kv_namespaces|d1_databases|r2_buckets/i.test(configText), false);
 });
 

@@ -27,6 +27,8 @@ RELAY_TICKET_SECRET
 
 `TURNSTILE_SECRET_KEY` uses the existing GlucoScope Turnstile configuration. `RELAY_TICKET_SECRET` is a separately generated random value used only by this Worker.
 
+The two names are also declared under `secrets.required` in `wrangler.jsonc`. Secret names are not credentials; their values remain only in Cloudflare. This declaration makes Wrangler validate that the required bindings exist before a future deployment.
+
 ## Local verification
 
 ```powershell
@@ -36,7 +38,7 @@ npm run verify
 npm run deploy:dry
 ```
 
-The dry-run binding summary must show the `RELAY_USAGE_COUNTER` Durable Object binding and `RELAY_ENABLED=false`. Wrangler does not print routing, Preview URL, or observability settings in that summary, so `workers_dev=true`, `preview_urls=false`, the SQLite `exports` declaration, and `observability.enabled=false` are verified from `wrangler.jsonc` and the automated tests.
+The dry-run binding summary must show the `RELAY_USAGE_COUNTER` Durable Object binding and `RELAY_ENABLED=false`. Wrangler does not print routing, Preview URL, observability, or remote Secret values in that summary, so `workers_dev=true`, `preview_urls=false`, the SQLite `exports` declaration, `secrets.required`, and `observability.enabled=false` are verified from `wrangler.jsonc`, the automated tests, and a read-only Cloudflare Secret-name check.
 
 ## Phase 3B production verification — 2026-08-05
 
@@ -85,6 +87,16 @@ The Phase 3C public-policy review, stopped-target deployment, and final Trust Pa
 - Nightscout hides the relay consent control and retains its direct-connection wording.
 - The public target returned `503 relay_temporarily_paused` with `Cache-Control: no-store` during the acceptance check.
 - Only placeholder values were used. No real Gluroo URL, credential, glucose payload, relay ticket, or Secret value was entered or printed.
+
+## Final pre-live configuration audit — 2026-08-05
+
+- Gluroo's current EULA, Privacy Policy, User Manual, FAQ, Nightscout integration guidance, and third-party-tool guidance were rechecked. No new express prohibition or known provider objection was found; GlucoScope still makes no claim of approval, affiliation, endorsement, or partnership.
+- Wrangler `4.118.0` passed `deploy --dry-run` without deploying. The bundle retained `RELAY_ENABLED=false`, the exact GitHub Pages CORS origin, originless-request rejection, the SQLite Durable Object binding, and all reviewed request and response limits.
+- The checked-in config now declares `RELAY_TICKET_SECRET` and `TURNSTILE_SECRET_KEY` under `secrets.required`. Only the names are versioned; their values remain Cloudflare Secrets.
+- A read-only check of deployed Version `ea0b8f59-3e9b-4475-b93a-91855834b3ce` confirmed that all plain-text variables match `wrangler.jsonc`, both Secret bindings are present, the Durable Object binding is present, Preview URLs are absent, and the version remains the only 100% deployment.
+- A fresh stopped-target check returned `204` for the exact-origin preflight, `503 relay_temporarily_paused` for the exact-origin POST, and `403` without an allow-origin header for wrong-origin and missing-origin POSTs. The earlier one-time Cloudflare `1042` response did not recur.
+- `observability.enabled=false` remains an intentional privacy exception. The Worker contains no console logging, and this audit did not use a Gluroo URL, credential, glucose payload, Turnstile token, relay ticket, or Durable Object counter.
+- No Worker deployment, Secret mutation, routing change, or live enablement occurred. End-to-end real-device acceptance and separate explicit approval for `RELAY_ENABLED=true` remain required.
 
 ## Safe activation sequence
 
