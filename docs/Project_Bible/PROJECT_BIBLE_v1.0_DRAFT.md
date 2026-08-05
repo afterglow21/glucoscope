@@ -1709,7 +1709,7 @@ GlucoScope
 
 Guardian Monitor is an uploader into Gluroo, not a second relay destination. The beginner guide may show this route. The one-destination limitation should appear only as a small conditional note for someone who already uses another Nightscout destination.
 
-The Worker remains paused and undeployed until the provider-policy review, public Trust Pack wording, frontend acceptance tests, secrets, deployment, and real-device checks are complete. Direct Nightscout and the public demo must continue independently.
+The paused production Worker shell, SQLite Durable Object, and required Secret bindings were created in Phase 3B, but no public route is active and the frontend endpoint remains blank. The relay must remain disabled and unpublished until written provider confirmation for the GlucoScope relay model, permanent routing, final public Trust Pack wording, frontend acceptance tests, and real-device checks are complete. Direct Nightscout and the public demo must continue independently.
 
 ---
 
@@ -1744,7 +1744,7 @@ GlucoScope
 
 Guardian MonitorはGlurooへデータを届ける入口であり、限定リレーが直接接続する2つ目のサービスではありません。このルートは初心者向けガイドでも案内できます。Nightscout送信先が1つだけという制約は、すでに別のNightscoutを使っている人にだけ、小さな条件付き補足として示します。
 
-提供元の利用条件確認、Trust Packの公開文面、フロントの受け入れテスト、Secret登録、デプロイ、実機確認が完了するまでは、Workerを停止・未公開のままにします。Nightscoutの直接接続と公開デモは、限定リレーから独立して使える状態を維持します。
+Phase 3Bでは、停止状態の本番Worker、SQLite Durable Object、必要なSecret登録までを完了しました。ただし公開ルートはなく、フロントの接続先も空欄です。GlucoScopeの中継方式について提供元から書面で確認でき、恒久ルート、Trust Packの最終文面、フロントの受け入れテスト、実機確認が完了するまでは、リレーを無効・未公開のままにします。Nightscoutの直接接続と公開デモは、限定リレーから独立して使える状態を維持します。
 
 ---
 

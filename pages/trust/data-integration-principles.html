@@ -48,7 +48,8 @@
 <section class="trust-section">
   <h2>Gluroo限定中継は公開準備中</h2>
   <p>GlurooはGlucoScopeとは別に運営される外部サービスです。料金、機能、画面、接続方法、利用条件は変わる可能性があります。</p>
-  <p>Cloudflare WorkerからGlurooへ到達できること、Guardian MonitorからGlurooへ送れること、限定中継のTurnstile・短時間チケット・回数制限は確認済みです。提供元の利用条件確認、公開文面、Secret登録、デプロイ、Libre・Dexcomを含む受け入れ確認が終わるまでは停止・未公開のままにします。</p>
+  <p>Cloudflare WorkerからGlurooへ到達できること、Guardian MonitorからGlurooへ送れること、限定中継のTurnstile・短時間チケット・回数制限は確認済みです。停止状態のWorkerとDurable Objectを作成し、必要なSecretも登録しましたが、公開ルートはなく、リレーは無効のままです。</p>
+  <p>Glurooの公開資料では、利用する人が自分のGlobal Connect情報を対応ツールへ設定する方法が案内されています。ただし、GlucoScopeのようなサーバー中継方式まで明確に確認できていないため、提供元から書面で確認でき、恒久ルートとLibre・Dexcomを含む受け入れ確認が終わるまでは公開しません。</p>
 </section>
 <section class="trust-section">
   <h2>複数の連携ルート</h2>
@@ -91,7 +92,8 @@
 <section class="trust-section">
   <h2>Gluroo limited relay is being prepared</h2>
   <p>Gluroo is an external service operated separately from GlucoScope. Its pricing, features, screens, connection methods, and terms may change.</p>
-  <p>Worker-to-Gluroo reachability, Guardian Monitor upload to Gluroo, and the relay Turnstile, short-lived ticket, and request limits are verified. The relay remains paused and unpublished until provider-policy review, public wording, secrets, deployment, and acceptance checks including Libre and Dexcom are complete.</p>
+  <p>Worker-to-Gluroo reachability, Guardian Monitor upload to Gluroo, and the relay Turnstile, short-lived ticket, and request limits are verified. The paused Worker shell and Durable Object have been created and the required Secrets are registered, but no public route is active and the relay remains disabled.</p>
+  <p>Gluroo's public materials explain how a person can use their own Global Connect details with compatible tools. They do not clearly confirm the GlucoScope server-relay model, so the relay will remain unpublished until written provider confirmation, permanent routing, and acceptance checks including Libre and Dexcom are complete.</p>
 </section>
 <section class="trust-section">
   <h2>Multiple paths</h2>

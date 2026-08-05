@@ -460,6 +460,28 @@ Before public release, current Gluroo terms or direct support guidance must be r
 
 If the provider does not permit the relay, it must not be released publicly even if it works technically.
 
+### Phase 3C public-policy review — 2026-08-05
+
+The official Gluroo materials reviewed for this gate were:
+
+- the [Gluroo EULA](https://gluroo.com/eula/);
+- the [Gluroo Privacy Policy](https://gluroo.com/privacy-policy/);
+- the [Gluroo FAQs](https://gluroo.com/support/faqs/);
+- the [Gluroo User Manual](https://gluroo.com/user-manual/);
+- Gluroo's official [smartwatch and third-party tool guidance](https://gluroo.com/blog/glucrew/blood-sugar-readings-smartwatch-gluroo/).
+
+These materials describe user-controlled use of Gluroo Global Connect with Nightscout-compatible third-party tools. They do not clearly authorize or prohibit GlucoScope's specific multi-user, server-to-server, transient Cloudflare relay model. Technical interoperability therefore must not be presented as provider approval or partnership.
+
+Before a public route is created or the relay is enabled, obtain written confirmation from Gluroo covering:
+
+- a person submitting their own Global Connect URL and API Secret through the GlucoScope relay;
+- read-only access to `/api/v1/entries.json` and the exclusion of treatments, device settings, and other data;
+- transient processing without credential or glucose storage, cache, logging, AI use, or sharing;
+- expected request limits, attribution or notices, public/commercial-use boundaries, and shutdown contact;
+- whether Friends & Family testing is treated differently from later public use.
+
+Do not include a real Global Connect URL, API Secret, glucose payload, or identifying screenshot in the inquiry. Until written confirmation is received, keep `RELAY_ENABLED=false`, keep the frontend endpoint blank, and keep the Worker without an active public target.
+
 ## Worker separation
 
 Limited Data Relay must be a separate Worker from the AI-letter Worker.
