@@ -13,7 +13,7 @@ Cloudflare Pages may be considered later, but the current priority is to publish
 The AI letter API continues to run through Cloudflare Worker.
 Provider API keys must stay server-side in the Worker environment and must never be committed to GitHub or placed in frontend JavaScript.
 
-## User Foundation 0.4 / Limited Data Relay paused acceptance
+## User Foundation 0.4 / Limited Data Relay stopped after first acceptance
 
 The root page remains Kazuma's public demo. The user-data route is:
 
@@ -34,7 +34,7 @@ Two connection routes are kept separate:
 
 The Gluroo relay accepts glucose entries only. It does not retrieve treatments, insulin, carbohydrates, medication, pump settings, or device-status data. The Gluroo URL, token, and glucose response pass transiently through Cloudflare infrastructure and the relay Worker, but the application does not store, cache, log, send to AI, or share those values. The SQLite Durable Object stores only a UTC date bucket and request count.
 
-The first candidate for end-to-end acceptance uses this path:
+The first end-to-end acceptance used this path:
 
 ```text
 MiniMed / CareLink
@@ -48,9 +48,9 @@ Limited Data Relay
 GlucoScope
 ```
 
-Only the Guardian Monitor upload into Gluroo segment has passed its real-device check. The end-to-end path through the relay and GlucoScope remains pending, and Libre, Dexcom G7, and other routes are not described as verified.
+On 2026-08-06, the Guardian route completed its first iPhone Safari acceptance through Turnstile, the signed relay ticket, Gluroo, and GlucoScope. The current glucose view and graph appeared, and they appeared again after a reload. The relay was returned immediately to `RELAY_ENABLED=false`. Extended period, expiry, deletion, and limit checks remain before a continuing Friends & Family enablement. Libre, Dexcom G7, and other routes are not described as verified.
 
-Phase 3A connected the user onboarding flow to the paused relay client. Phase 3B created the paused Worker shell and SQLite Durable Object in Cloudflare, registered the required Worker Secrets, and passed stopped-response/CORS smoke tests. The approved `workers.dev` target is now fixed in the checked-in frontend for paused-state acceptance, and explicit consent is required before any relay request. `preview_urls=false`, `observability.enabled=false`, and `RELAY_ENABLED=false` remain in place. The Worker stops before Turnstile verification, ticket issuance, counter use, or upstream access, so live Gluroo data is not available. Direct Nightscout and the public demo remain independent.
+Phase 3A connected the user onboarding flow to the paused relay client. Phase 3B created the paused Worker shell and SQLite Durable Object in Cloudflare, registered the required Worker Secrets, and passed stopped-response/CORS smoke tests. The approved `workers.dev` target is fixed in the checked-in frontend, and explicit consent is required before any relay request. `preview_urls=false`, `observability.enabled=false`, and the checked-in `RELAY_ENABLED=false` remain in place. The production Worker was also returned to `RELAY_ENABLED=false` after the first acceptance, so live Gluroo data is not currently available. Direct Nightscout and the public demo remain independent.
 
 Run the frontend tests with:
 

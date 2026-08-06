@@ -2,18 +2,19 @@
 
 ## Status
 
-- Paused frontend-acceptance phase.
+- First Guardian end-to-end acceptance completed; the relay is paused while extended range and operational gates remain.
 - The Worker shell, SQLite Durable Object, required Secrets, and one permanent `workers.dev` target have been created in Cloudflare.
 - The checked-in frontend points only to the approved stopped `workers.dev` target and requires explicit consent before a relay request.
 - `RELAY_ENABLED=false`; the Worker stops before Turnstile verification, ticket issuance, counter use, or upstream access, so the relay is not available for live use.
 - The final Trust Pack link, title, privacy, safety, verification-status, desktop, and mobile review is complete.
 - The final local and read-only Cloudflare configuration and security review is complete; required Secret names are declared in `wrangler.jsonc` without storing their values.
 - After separate explicit approval, commit `98def2e96065f1a801728e060673ea22d4ff9e44` was deployed as stopped Version `1a51631d-1e53-4f88-ac27-2125b43f1ab2`; all post-deployment stop, CORS, Secret-name, and Durable Object checks passed.
-- A later Guardian candidate-route acceptance temporarily routed Version `84139213-8521-4772-b3f3-47ee0018c5d3`, but stopped before a Gluroo URL, credential, or glucose payload was submitted because the public Pages build did not yet expose the Guardian guide. Stopped Version `89d8166d-a50e-4e94-b3d3-a06f7a0b6fb1` was deployed immediately afterward and now receives 100% of traffic with `RELAY_ENABLED=false`.
-- The first advertised-route end-to-end acceptance remains incomplete and requires another separate live-enablement approval before it resumes.
+- An earlier Guardian candidate-route acceptance temporarily routed Version `84139213-8521-4772-b3f3-47ee0018c5d3`, but stopped before credential submission because the public Pages build did not yet expose the Guardian guide. Stopped Version `89d8166d-a50e-4e94-b3d3-a06f7a0b6fb1` was deployed immediately afterward.
+- On 2026-08-06, PR #12 merged the Siteverify request alignment to `main` at `d3051852b6a3b698de67d163cd290bd2b4ad2c3a`. A separately approved temporary enablement then completed the first Guardian path through iPhone Safari, Turnstile, the signed ticket, Gluroo, the relay, and GlucoScope. Current glucose and the graph appeared and appeared again after reload.
+- Stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` was deployed immediately after acceptance and now receives 100% of traffic with `RELAY_ENABLED=false`. Continuing enablement still requires separate approval; extended period, expiry, deletion, and limit checks remain.
 - Version-specific Preview URLs are disabled. The earlier temporary connectivity probe remains deleted.
 - User Foundation PR #7 was merged before this work began.
-- Development branch: `feature/limited-data-relay`.
+- The current implementation is merged to `main`.
 
 ## Purpose
 
@@ -84,9 +85,12 @@ Real-device verification confirmed that:
 - Guardian / MiniMed glucose data appeared in Gluroo;
 - multiple readings and a glucose graph appeared after the first upload;
 - enabling Guardian Monitor background refresh allowed updates while the app was not open in the foreground;
+- iPhone Safari completed the GlucoScope consent and Turnstile flow and received a signed relay ticket;
+- GlucoScope displayed the current glucose view and graph through the limited relay;
+- the same display returned after a browser reload;
 - Guardian Monitor supports only one Nightscout upload destination at a time.
 
-After verification, Kazuma restored Guardian Monitor to his personal Nightscout destination.
+After the earlier upload-only verification, Kazuma restored Guardian Monitor to his personal Nightscout destination. The later end-to-end acceptance is recorded separately below.
 
 Guardian Monitor is therefore an **input uploader to Gluroo**, not another upstream destination that the relay Worker must support.
 
@@ -595,11 +599,27 @@ After separate explicit approval:
 
 - Version `84139213-8521-4772-b3f3-47ee0018c5d3` temporarily received 100% of traffic for the Guardian candidate-route acceptance, with deployment message `temporary Guardian route acceptance`;
 - the acceptance stopped before a Gluroo URL, credential, or glucose payload was submitted because the current public Pages build did not yet expose the Guardian guide needed for the test;
-- Version `89d8166d-a50e-4e94-b3d3-a06f7a0b6fb1` was deployed immediately with message `pause after Guardian guide deployment gap` and now receives 100% of traffic with `RELAY_ENABLED=false`;
-- the current stopped Version retains the exact CORS origin, originless-request rejection, both required Secret bindings, and the SQLite `RelayUsageCounter` Durable Object binding;
-- version-specific Preview URLs remain disabled, and the end-to-end acceptance through GlucoScope remains incomplete.
+- Version `89d8166d-a50e-4e94-b3d3-a06f7a0b6fb1` was deployed immediately with message `pause after Guardian guide deployment gap` and received 100% of traffic with `RELAY_ENABLED=false` until later diagnostic work;
+- that stopped Version retained the exact CORS origin, originless-request rejection, both required Secret bindings, and the SQLite `RelayUsageCounter` Durable Object binding;
+- version-specific Preview URLs remained disabled, and the end-to-end acceptance through GlucoScope was still incomplete at that time.
 
-No Secret value was printed, stored in Git, or changed during the pause. Restarting the acceptance and setting `RELAY_ENABLED=true` still require separate explicit approval.
+No Secret value was printed, stored in Git, or changed during the pause.
+
+## First Guardian end-to-end acceptance — 2026-08-06
+
+After separate explicit approval:
+
+- the initial live attempts reached the relay but returned safe diagnostic `710001`, placing the failure at the Worker-to-Siteverify transport boundary rather than browser CORS or Gluroo;
+- increasing only the Siteverify timeout from five to ten seconds reproduced `710001`;
+- PR #12 aligned the request with Cloudflare's Worker pattern: form-encoded POST, `AbortSignal.timeout(10_000)`, and no redirect or cache override;
+- stopped Version `2ea372de-a7c5-44c8-8852-0c21f5382633` first verified the merged code with `RELAY_ENABLED=false`;
+- temporary Version `f1c02561-e92a-4a9b-8b70-b9bab2a89fb2` then received 100% of traffic with `RELAY_ENABLED=true`;
+- a dummy invalid token returned expected `403 turnstile_failed` with safe diagnostic `710202` and the exact allowed CORS origin, confirming that Siteverify was reachable without using a real Gluroo URL, credential, or glucose payload in a command;
+- on iPhone Safari, the real Guardian route completed Turnstile, ticket issuance, Gluroo entry retrieval, current glucose and graph display, and a successful reload;
+- stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` was deployed immediately afterward and receives 100% of traffic with `RELAY_ENABLED=false`;
+- the stopped Version retains the exact CORS origin, originless-request rejection, both required Secret bindings, the SQLite Durable Object binding, `preview_urls=false`, and `observability.enabled=false`.
+
+No Secret value, Turnstile token, Gluroo URL, credential, or glucose payload was printed, logged, or committed. This completes the first basic end-to-end acceptance only. Today/yesterday/7-day/30-day coverage, deletion, ticket expiry, limit behavior, and a continuing Friends & Family enablement remain separate gates.
 
 ## Phase 1 tests
 

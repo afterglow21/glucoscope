@@ -60,8 +60,9 @@ test("public relay wording preserves the current verification and privacy bounda
   const readme = await read(new URL("../README.md", import.meta.url));
 
   assert.match(index, /Nightscoutへの直接接続と、Gluroo限定中継の現在地・安全境界/);
-  assert.match(data, /Guardian MonitorからGlurooへ血糖値が届くところまで/);
-  assert.match(data, /全経路の受け入れ確認は未完了/);
+  assert.match(data, /Guardianは、iPhoneのGuardian MonitorからGluroo Global Connect、限定中継、GlucoScopeまでの最初の全経路確認を完了しました/);
+  assert.match(data, /現在血糖とグラフの表示、再読み込み後の再表示/);
+  assert.match(data, /期間別・期限切れ・削除・上限の追加確認は残っており/);
   assert.match(data, /確認が終わっていないLibre・Dexcomなどのルートは、確認済みとは案内しません/);
   assert.match(data, /2026年8月6日、Glurooから/);
   assert.match(data, /医療相談や医療判断には使えません/);
@@ -75,9 +76,10 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(safety, /接続失敗は、CGMやポンプが止まったことを意味しません/);
   assert.match(support, /Gluroo、Nightscout、Azure、Cloudflare、OpenAI/);
   assert.match(support, /GlucoScopeや限定中継についての質問・不具合報告は、GlurooではなくGlucoScopeが受けます/);
-  assert.match(readme, /Only the Guardian Monitor upload into Gluroo segment has passed its real-device check/);
-  assert.match(readme, /approved `workers\.dev` target is now fixed in the checked-in frontend/);
-  assert.match(readme, /`preview_urls=false`, `observability\.enabled=false`, and `RELAY_ENABLED=false`/);
+  assert.match(readme, /Guardian route completed its first iPhone Safari acceptance/);
+  assert.match(readme, /Extended period, expiry, deletion, and limit checks remain/);
+  assert.match(readme, /approved `workers\.dev` target is fixed in the checked-in frontend/);
+  assert.match(readme, /`preview_urls=false`, `observability\.enabled=false`, and the checked-in `RELAY_ENABLED=false`/);
   assert.doesNotMatch(readme, /frontend endpoint remains intentionally blank/);
 });
 
