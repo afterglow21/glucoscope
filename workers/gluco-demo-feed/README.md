@@ -55,7 +55,7 @@ Each change below requires a separate explicit approval:
 3. Completed: create the stopped Worker with `DEMO_FEED_ENABLED=false`.
 4. Completed after separate explicit approval: register exactly the two required Secret values interactively without printing or copying them into commands.
 5. Completed after registration: verify stopped GET, the two Secret names, Cron no-op behavior, empty KV, KV binding, and 100% traffic to the stopped Version.
-6. Completed after explicit approval: set the local comparison frontend to the stopped Worker endpoint and verify the labelled synthetic fallback in a browser. The change remains unpublished until commit and push.
+6. Completed after explicit approval: set the comparison frontend to the stopped Worker endpoint and verify the labelled synthetic fallback in a browser. The change is pushed only to `feature/cgm-comparison-demo` and remains outside the public GitHub Pages site until merge to `main` and publication.
 7. Completed after explicit approval: verify the normal `workers.dev` route is enabled and Preview routing is disabled with `previews_enabled=false`.
 8. After a separate explicit approval, deploy a version with `DEMO_FEED_ENABLED=true`.
 9. Confirm one scheduled refresh, inspect only the sanitized public response, and verify that the Gluroo URL and API Secret are absent.

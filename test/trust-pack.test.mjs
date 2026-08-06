@@ -79,7 +79,7 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(data, /Secret値は表示、ログ記録、Gitへの保存をしていません/);
   assert.match(data, /5分CronはSecret参照、Gluroo取得、KV書き込みより前に終了し、KVは空のままです/);
   assert.match(data, /作業中のフロント接続先を停止中の`\/v1\/libre`へ設定/);
-  assert.match(data, /Glurooへの外部取得、KV書き込み、ライブ血糖値公開は行っておらず/);
+  assert.match(data, /Glurooへの外部取得、KV書き込み、ライブ血糖値公開は行っていません/);
   assert.match(privacy, /限定中継は現在停止中です/);
   assert.match(privacy, /明示的な同意がない限り、限定中継への通信を始めません/);
   assert.match(privacy, /Kazuma自身の公開比較データ/);
@@ -104,7 +104,8 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(readme, /subdomain setting was verified as `enabled=true` and `previews_enabled=false`/);
   assert.match(readme, /version-level `has_preview` metadata does not mean the public Preview route is enabled/);
   assert.match(readme, /comparison frontend was configured to use the stopped `\/v1\/libre` endpoint/);
-  assert.match(readme, /frontend change is not public until it is committed and pushed/);
+  assert.match(readme, /frontend change is pushed only to `feature\/cgm-comparison-demo`/);
+  assert.match(readme, /not part of the public GitHub Pages site until it is merged to `main` and published/);
   assert.doesNotMatch(readme, /frontend endpoint remains intentionally blank/);
 });
 

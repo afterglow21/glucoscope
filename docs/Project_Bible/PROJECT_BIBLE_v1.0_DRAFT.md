@@ -2474,7 +2474,8 @@ The Cron exits before Secret access, upstream fetch, or KV access while disabled
 After another explicit approval, the working frontend configuration was set to the
 stopped `/v1/libre` route. A local browser check verified that the page remained
 clearly labelled as preparing synthetic data when the live load failed. The frontend
-change remains unpublished until commit and push.
+change is pushed only to `feature/cgm-comparison-demo` and remains outside the public
+GitHub Pages site until merge to `main` and publication.
 Cloudflare's route-level subdomain setting reports `enabled=true` for the normal
 `workers.dev` route and `previews_enabled=false` for versioned Preview routing.
 Version-level `has_preview` capability metadata does not mean the public Preview
@@ -2575,7 +2576,9 @@ Glurooへの接続、血糖値取得、ライブ公開は行っていません�
 停止中のCronはSecret参照、外部取得、KVアクセスより前に終了します。
 さらに別の明示確認後、作業中のフロント接続先を停止中の`/v1/libre`へ設定しました。
 ローカル実画面でライブ取得失敗時も「準備中・合成データ」と明記して
-切り替わることを確認しています。このフロント変更はcommit・pushまで公開されません。
+切り替わることを確認しています。このフロント変更は
+`feature/cgm-comparison-demo`へだけpush済みで、`main`へのmergeと
+GitHub Pagesへの反映までは公開ページに含まれません。
 Cloudflareの公開ルート設定は、通常の`workers.dev`が`enabled=true`、
 Version別Previewが`previews_enabled=false`です。Version側の
 `has_preview`表示は、公開Previewルートが有効という意味ではありません。
