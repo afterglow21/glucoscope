@@ -479,13 +479,26 @@ The official Gluroo materials reviewed for this gate were:
 
 These materials describe user-controlled use of Gluroo Global Connect with Nightscout-compatible third-party tools. The Privacy Policy also contemplates information that a user permits a third-party product or service to access. The reviewed EULA does not state an express prohibition against this narrowly scoped, user-directed relay; it does prohibit security circumvention and off-purpose use, which the relay must never attempt. The materials do not specifically name or approve GlucoScope's transient Cloudflare relay model. This is a product risk decision based on the published boundary, not legal advice or provider approval. Technical interoperability must never be presented as Gluroo affiliation, endorsement, approval, or partnership.
 
-A written Gluroo support response remains useful, especially before broader or paid distribution, but the absence of a response is not a blocker for a low-volume Friends & Family rollout. The rollout may proceed only when all other release gates pass and the following boundaries remain true:
+### Written Gluroo support response — 2026-08-06
+
+Gluroo support stated in writing that the proposed use should work and was acceptable to them only to the extent that it does not conflict with the EULA, terms of use, or other Gluroo documents. This is conditional interoperability guidance, not a determination that every use or data-sharing arrangement is lawful and not an unconditional license, endorsement, affiliation, or partnership.
+
+The response adds these continuing boundaries:
+
+- neither Gluroo, GGC, GlucoScope, nor the relay may be presented or used for medical advice or medical decision-making;
+- Gluroo did not determine what CGM data re-sharing is lawful or unlawful, so GlucoScope gives no legal assurance and each person remains responsible for having the necessary authority and permissions;
+- GGC must not be marketed as a free alternative to subscription Nightscout services;
+- public wording may state only that GGC currently has no cost during its testing phase and must disclose that Gluroo is considering a subscription model under which GGC may no longer be free;
+- GlucoScope must state that it is not affiliated with Gluroo and must handle questions about GlucoScope and the relay itself rather than directing those questions to Gluroo;
+- the current EULA, terms, and other applicable Gluroo documents remain controlling and must be rechecked for material changes.
+
+The rollout may proceed only when all other release gates pass and the following boundaries remain true:
 
 - each person supplies their own Global Connect URL and API Secret and explicitly chooses relay processing;
 - the relay performs read-only access to `/api/v1/entries.json` and excludes treatments, device settings, and all other data;
 - credentials and glucose payloads are processed transiently without application storage, cache, logging, AI use, or sharing;
 - the rollout starts small, stays within strict session and Worker-wide limits, and advertises only routes that have passed their own acceptance checks;
-- GlucoScope makes no claim of Gluroo affiliation, endorsement, approval, or partnership and does not sell access to Gluroo;
+- GlucoScope makes no claim of Gluroo affiliation, endorsement, approval, or partnership, does not sell access to Gluroo, and does not market GGC as a free alternative to a subscription Nightscout service;
 - the relay is paused immediately if Gluroo objects, applicable terms materially change, abnormal traffic is detected, or a privacy or safety concern appears.
 
 Any provider inquiry must exclude a real Global Connect URL, API Secret, glucose payload, or identifying screenshot. Before first enablement, recheck the current public materials for material changes. Until the remaining release gates pass and separate live-enablement approval is given, keep `RELAY_ENABLED=false`, keep the frontend endpoint fixed to the approved stopped `workers.dev` URL, and add no other target.

@@ -197,6 +197,33 @@ test("session creation sends only the Turnstile token and stores the returned re
   assert.equal(session.ticket, "d".repeat(40));
 });
 
+test("session creation retains only a validated six-digit server diagnostic", async () => {
+  for (const [serverValue, expected] of [
+    ["710102", "710102"],
+    ["710102;test-credential", undefined],
+  ]) {
+    const { context } = loadModule({
+      fetchImpl: async () => Response.json(
+        {
+          ok: false,
+          error: "turnstile_failed",
+          turnstileErrorCode: serverValue,
+        },
+        { status: 403 }
+      )
+    });
+
+    await assert.rejects(
+      context.GlucoScopeDataRelay._testing.issueRelaySession("turnstile-test-token"),
+      (error) => {
+        assert.equal(error.code, "turnstile_failed");
+        assert.equal(error.turnstileErrorCode, expected);
+        return true;
+      }
+    );
+  }
+});
+
 async function captureTurnstileFailure(errorCode) {
   let widgetOptions = null;
   const turnstile = {

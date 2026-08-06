@@ -7,6 +7,7 @@ Phase 3A connected the user onboarding flow to the relay client while keeping th
 ## Implemented through Phase 3B
 
 - `POST /v1/session` verifies a Cloudflare Turnstile token server-side;
+- failed server-side Turnstile checks return only an allowlisted opaque six-digit confirmation code; no token, Secret, hostname, or provider detail is logged or returned;
 - successful verification issues a signed, origin-bound, one-hour relay ticket;
 - `POST /v1/entries` requires a valid relay ticket;
 - a SQLite-backed Durable Object stores daily counters only;
@@ -67,7 +68,7 @@ The dry-run binding summary must show the `RELAY_USAGE_COUNTER` Durable Object b
 
 There is intentionally no real `deploy` npm script. The stopped `workers.dev` target was created only after explicit approval. The checked-in frontend endpoint is fixed to that target for paused-state acceptance testing, version-specific Preview URLs are disabled, and `RELAY_ENABLED=false` prevents Turnstile verification, ticket issuance, counter consumption, or upstream access.
 
-The Phase 3C public-policy review, stopped-target deployment, and final Trust Pack review are complete. A Gluroo response remains welcome, but its absence is not a blocker for a low-volume Friends & Family rollout. GlucoScope must not claim Gluroo approval, endorsement, affiliation, or partnership. The applicable end-to-end real-device test, final configuration review, any routing change, and live relay enablement still require separate review and explicit approval.
+The Phase 3C public-policy review, stopped-target deployment, and final Trust Pack review are complete. On 2026-08-06, Gluroo support replied in writing that the proposed use should work and was acceptable to them only while it remains consistent with their EULA, terms, and other documents. The response does not create affiliation, endorsement, partnership, legal assurance about CGM data re-sharing, or permission to use GGC for medical decisions. GlucoScope must handle its own user questions, must not market GGC as a free alternative to subscription Nightscout services, and may say only that GGC currently has no cost during its testing phase while a future subscription is being considered. The applicable end-to-end real-device test, final configuration review, any routing change, and live relay enablement still require separate review and explicit approval.
 
 ## Permanent stopped target verification — 2026-08-05
 
@@ -91,6 +92,7 @@ The Phase 3C public-policy review, stopped-target deployment, and final Trust Pa
 ## Final pre-live configuration audit — 2026-08-05
 
 - Gluroo's current EULA, Privacy Policy, User Manual, FAQ, Nightscout integration guidance, and third-party-tool guidance were rechecked. No new express prohibition or known provider objection was found; GlucoScope still makes no claim of approval, affiliation, endorsement, or partnership.
+- Gluroo's 2026-08-06 written support response was recorded with its EULA/terms condition, medical-decision boundary, CGM re-sharing legal boundary, possible future GGC subscription, no-free-alternative marketing boundary, non-affiliation statement, and GlucoScope-owned support responsibility.
 - Wrangler `4.118.0` passed `deploy --dry-run` without deploying. The bundle retained `RELAY_ENABLED=false`, the exact GitHub Pages CORS origin, originless-request rejection, the SQLite Durable Object binding, and all reviewed request and response limits.
 - The checked-in config now declares `RELAY_TICKET_SECRET` and `TURNSTILE_SECRET_KEY` under `secrets.required`. Only the names are versioned; their values remain Cloudflare Secrets.
 - A read-only check of deployed Version `ea0b8f59-3e9b-4475-b93a-91855834b3ce` confirmed that all plain-text variables match `wrangler.jsonc`, both Secret bindings are present, the Durable Object binding is present, Preview URLs are absent, and the version remains the only 100% deployment.

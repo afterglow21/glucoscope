@@ -41,6 +41,13 @@ test("Gluroo preparation is a separate step before credential entry", () => {
   assert.doesNotMatch(connectPanel, /Glurooの準備ガイドを見る/);
 });
 
+test("Gluroo cost wording is limited to the current testing phase", () => {
+  assert.match(index, /Gluroo Global Connectは現在テスト期間中のため費用なし/);
+  assert.match(app, /将来はサブスクリプション/);
+  assert.match(app, /currently has no cost during its testing phase/);
+  assert.doesNotMatch(app, /free alternative to subscription Nightscout/i);
+});
+
 test("Gluroo beginner route covers Libre, Dexcom G7, and the verified Guardian Monitor path", () => {
   assert.match(index, /FreeStyle Libre 2、Dexcom G7、Guardian（MiniMed 780G）/);
   assert.match(glurooGuide, /FreeStyle Libre 2/);
@@ -286,7 +293,7 @@ test("field feedback copy and red-frame navigation are reflected", () => {
 });
 
 test("current cache and CSS markers are present", () => {
-  assert.match(index, /20260806-turnstile-code-1/);
+  assert.match(index, /20260806-turnstile-server-code-1/);
   assert.match(guideCss, /User Foundation 0\.3\.3/);
   assert.match(css, /Limited Data Relay Paused Acceptance/);
 });

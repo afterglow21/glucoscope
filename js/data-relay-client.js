@@ -218,7 +218,13 @@
       if (!response.ok || data?.ok !== true) {
         const code = typeof data?.error === "string" ? data.error : "relay_unavailable";
         if (code === "relay_ticket_invalid") clearRelaySession();
-        throw createRelayError(code, code, { status: response.status });
+        const turnstileErrorCode = code === "turnstile_failed"
+          ? normalizeTurnstileErrorCode(data?.turnstileErrorCode)
+          : "";
+        throw createRelayError(code, code, {
+          status: response.status,
+          ...(turnstileErrorCode ? { turnstileErrorCode } : {})
+        });
       }
 
       return { data, status: response.status, endpoint };
