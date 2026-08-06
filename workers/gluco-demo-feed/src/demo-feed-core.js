@@ -1,9 +1,12 @@
 const DEFAULTS = Object.freeze({
   allowedOrigin: "https://afterglow21.github.io",
   cacheKey: "public:libre-2:v1",
+  g7CacheKey: "public:dexcom-g7:v1",
   cacheTtlSeconds: 129_600,
   enabled: false,
+  g7Enabled: false,
   glurooHostSuffix: ".ns.gluroo.com",
+  libreEnabled: false,
   maxEntries: 1_000,
   maxFutureSkewMs: 300_000,
   maxUpstreamBytes: 1_048_576,
@@ -17,7 +20,25 @@ const HOUR_MS = 60 * 60 * 1000;
 const MAX_SECRET_LENGTH = 4_096;
 const MAX_SOURCE_URL_LENGTH = 2_048;
 const SNAPSHOT_SCHEMA_VERSION = 1;
-const SOURCE_ID = "libre-2";
+const SOURCE_DEFINITIONS = Object.freeze([
+  Object.freeze({
+    cacheKeyConfig: "cacheKey",
+    enabledConfig: "libreEnabled",
+    id: "libre-2",
+    path: "/v1/libre",
+    sourceUrlSecret: "GLUROO_DEMO_SOURCE_URL",
+    apiSecret: "GLUROO_DEMO_API_SECRET",
+  }),
+  Object.freeze({
+    cacheKeyConfig: "g7CacheKey",
+    enabledConfig: "g7Enabled",
+    id: "dexcom-g7",
+    path: "/v1/dexcom-g7",
+    sourceUrlSecret: "GLUROO_DEMO_G7_SOURCE_URL",
+    apiSecret: "GLUROO_DEMO_G7_API_SECRET",
+  }),
+]);
+const DEFAULT_SOURCE_ID = SOURCE_DEFINITIONS[0].id;
 const ALLOWED_DIRECTIONS = new Set([
   "DoubleUp",
   "SingleUp",
@@ -52,15 +73,18 @@ function parsePositiveInteger(value, fallback, { min = 1, max = Number.MAX_SAFE_
 }
 
 export function readConfig(env = {}) {
-  return Object.freeze({
+  const config = {
     allowedOrigin: String(env.CORS_ALLOWED_ORIGIN || DEFAULTS.allowedOrigin),
     cacheKey: String(env.DEMO_FEED_CACHE_KEY || DEFAULTS.cacheKey),
+    g7CacheKey: String(env.DEMO_G7_FEED_CACHE_KEY || DEFAULTS.g7CacheKey),
     cacheTtlSeconds: parsePositiveInteger(env.CACHE_TTL_SECONDS, DEFAULTS.cacheTtlSeconds, {
       min: 60,
       max: 604_800,
     }),
     enabled: parseBoolean(env.DEMO_FEED_ENABLED, DEFAULTS.enabled),
+    g7Enabled: parseBoolean(env.DEMO_G7_FEED_ENABLED, DEFAULTS.g7Enabled),
     glurooHostSuffix: String(env.GLUROO_HOST_SUFFIX || DEFAULTS.glurooHostSuffix).toLowerCase(),
+    libreEnabled: parseBoolean(env.DEMO_LIBRE_FEED_ENABLED, DEFAULTS.libreEnabled),
     maxEntries: parsePositiveInteger(env.MAX_ENTRIES, DEFAULTS.maxEntries, { max: 5_000 }),
     maxFutureSkewMs: parsePositiveInteger(env.MAX_FUTURE_SKEW_MS, DEFAULTS.maxFutureSkewMs, {
       max: 3_600_000,
@@ -84,7 +108,29 @@ export function readConfig(env = {}) {
     upstreamTimeoutMs: parsePositiveInteger(env.UPSTREAM_TIMEOUT_MS, DEFAULTS.upstreamTimeoutMs, {
       max: 60_000,
     }),
-  });
+  };
+  if (config.cacheKey === config.g7CacheKey) {
+    throw new DemoFeedError("demo_feed_not_configured", 503);
+  }
+  return Object.freeze(config);
+}
+
+function getSourceById(sourceId = DEFAULT_SOURCE_ID) {
+  const source = SOURCE_DEFINITIONS.find((candidate) => candidate.id === sourceId);
+  if (!source) throw new DemoFeedError("not_found", 404);
+  return source;
+}
+
+function getSourceByPath(pathname) {
+  return SOURCE_DEFINITIONS.find((candidate) => candidate.path === pathname) || null;
+}
+
+function isSourceEnabled(config, source) {
+  return config[source.enabledConfig] === true;
+}
+
+function getSourceCacheKey(config, source) {
+  return config[source.cacheKeyConfig];
 }
 
 function requireSecret(value) {
@@ -151,12 +197,21 @@ export function validateSourceUrl(rawSourceUrl, hostSuffix = DEFAULTS.glurooHost
   return `https://${hostname}`;
 }
 
-export function buildUpstreamUrl(env, config = readConfig(env), nowMs = Date.now()) {
+export function buildUpstreamUrl(
+  env,
+  config = readConfig(env),
+  nowMs = Date.now(),
+  sourceId = DEFAULT_SOURCE_ID,
+) {
+  const source = getSourceById(sourceId);
+  if (!config.enabled || !isSourceEnabled(config, source)) {
+    throw new DemoFeedError("demo_feed_paused", 503);
+  }
   const sourceUrl = validateSourceUrl(
-    requireSecret(env.GLUROO_DEMO_SOURCE_URL),
+    requireSecret(env[source.sourceUrlSecret]),
     config.glurooHostSuffix,
   );
-  const credential = requireSecret(env.GLUROO_DEMO_API_SECRET);
+  const credential = requireSecret(env[source.apiSecret]);
   const fromMs = nowMs - config.publicWindowHours * HOUR_MS;
   const upstream = new URL("/api/v1/entries.json", `${sourceUrl}/`);
   upstream.searchParams.set("count", String(config.maxEntries));
@@ -255,9 +310,9 @@ export function normalizeEntries(rawEntries, config = readConfig(), nowMs = Date
 export async function fetchGlurooEntries(
   env,
   config = readConfig(env),
-  { nowMs = Date.now(), fetchImpl = fetch } = {},
+  { nowMs = Date.now(), fetchImpl = fetch, sourceId = DEFAULT_SOURCE_ID } = {},
 ) {
-  const upstream = buildUpstreamUrl(env, config, nowMs);
+  const upstream = buildUpstreamUrl(env, config, nowMs, sourceId);
   let response;
   try {
     response = await fetchImpl(upstream.toString(), {
@@ -282,13 +337,18 @@ export async function fetchGlurooEntries(
   return normalizeEntries(rawEntries, config, nowMs);
 }
 
-export function validateSnapshot(snapshot, config = readConfig()) {
+export function validateSnapshot(
+  snapshot,
+  config = readConfig(),
+  expectedSourceId = DEFAULT_SOURCE_ID,
+) {
+  getSourceById(expectedSourceId);
   if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)) {
     throw new DemoFeedError("demo_feed_unavailable", 503);
   }
   if (
     snapshot.schemaVersion !== SNAPSHOT_SCHEMA_VERSION ||
-    snapshot.sourceId !== SOURCE_ID ||
+    snapshot.sourceId !== expectedSourceId ||
     !Number.isSafeInteger(snapshot.generatedAt) ||
     snapshot.generatedAt <= 0 ||
     !Array.isArray(snapshot.entries) ||
@@ -314,36 +374,86 @@ export function validateSnapshot(snapshot, config = readConfig()) {
 
   return Object.freeze({
     schemaVersion: SNAPSHOT_SCHEMA_VERSION,
-    sourceId: SOURCE_ID,
+    sourceId: expectedSourceId,
     generatedAt: snapshot.generatedAt,
     entries,
   });
 }
 
-export async function refreshDemoFeed(env, services = {}) {
+export async function refreshDemoFeed(
+  env,
+  services = {},
+  sourceId = DEFAULT_SOURCE_ID,
+) {
   const config = readConfig(env);
   if (!config.enabled) return Object.freeze({ ok: false, skipped: "disabled" });
+  const source = getSourceById(sourceId);
+  if (!isSourceEnabled(config, source)) {
+    return Object.freeze({ ok: false, sourceId: source.id, skipped: "source_disabled" });
+  }
   const cache = requireCacheBinding(env.DEMO_FEED_CACHE);
   const nowMs = typeof services.now === "function" ? services.now() : Date.now();
   const entries = await fetchGlurooEntries(env, config, {
     nowMs,
     fetchImpl: services.fetchImpl || fetch,
+    sourceId: source.id,
   });
   const snapshot = validateSnapshot({
     schemaVersion: SNAPSHOT_SCHEMA_VERSION,
-    sourceId: SOURCE_ID,
+    sourceId: source.id,
     generatedAt: nowMs,
     entries,
-  }, config);
+  }, config, source.id);
   const serialized = JSON.stringify(snapshot);
+  const sourceUrl = String(env[source.sourceUrlSecret] || "__missing_url__");
+  const apiSecret = String(env[source.apiSecret] || "__missing_secret__");
   if (
-    serialized.includes(String(env.GLUROO_DEMO_SOURCE_URL || "__missing_url__")) ||
-    serialized.includes(String(env.GLUROO_DEMO_API_SECRET || "__missing_secret__"))
+    serialized.includes(sourceUrl) ||
+    serialized.includes(apiSecret)
   ) {
     throw new DemoFeedError("demo_feed_unavailable", 503);
   }
-  await cache.put(config.cacheKey, serialized, { expirationTtl: config.cacheTtlSeconds });
-  return Object.freeze({ ok: true, entryCount: snapshot.entries.length, generatedAt: nowMs });
+  await cache.put(getSourceCacheKey(config, source), serialized, {
+    expirationTtl: config.cacheTtlSeconds,
+  });
+  return Object.freeze({
+    ok: true,
+    sourceId: source.id,
+    entryCount: snapshot.entries.length,
+    generatedAt: nowMs,
+  });
+}
+
+export async function refreshDemoFeeds(env, services = {}) {
+  const config = readConfig(env);
+  if (!config.enabled) {
+    return Object.freeze({ ok: false, skipped: "disabled", results: Object.freeze([]) });
+  }
+
+  const enabledSources = SOURCE_DEFINITIONS.filter((source) => isSourceEnabled(config, source));
+  if (!enabledSources.length) {
+    return Object.freeze({ ok: false, skipped: "sources_disabled", results: Object.freeze([]) });
+  }
+
+  const settled = await Promise.allSettled(
+    enabledSources.map((source) => refreshDemoFeed(env, services, source.id)),
+  );
+  const results = Object.freeze(settled.map((result, index) => {
+    if (result.status === "fulfilled") return result.value;
+    const error = result.reason instanceof DemoFeedError
+      ? result.reason
+      : new DemoFeedError("demo_feed_unavailable", 503);
+    return Object.freeze({
+      ok: false,
+      sourceId: enabledSources[index].id,
+      error: error.code,
+    });
+  }));
+
+  return Object.freeze({
+    ok: results.some((result) => result.ok),
+    results,
+  });
 }
 
 function buildHeaders(origin, config, { cacheable = false } = {}) {
@@ -383,7 +493,8 @@ export async function handleDemoFeedRequest(request, env = {}, services = {}) {
   try {
     origin = assertAllowedOrigin(request, config);
     const url = new URL(request.url);
-    if (url.pathname !== "/v1/libre") throw new DemoFeedError("not_found", 404);
+    const source = getSourceByPath(url.pathname);
+    if (!source) throw new DemoFeedError("not_found", 404);
 
     if (request.method === "OPTIONS") {
       if (!origin) throw new DemoFeedError("request_not_allowed", 403);
@@ -396,9 +507,13 @@ export async function handleDemoFeedRequest(request, env = {}, services = {}) {
 
     if (request.method !== "GET") throw new DemoFeedError("method_not_allowed", 405);
     if (!config.enabled) throw new DemoFeedError("demo_feed_paused", 503);
+    if (!isSourceEnabled(config, source)) throw new DemoFeedError("demo_feed_paused", 503);
     const cache = requireCacheBinding(env.DEMO_FEED_CACHE);
-    const stored = await cache.get(config.cacheKey, { type: "json", cacheTtl: 60 });
-    const snapshot = validateSnapshot(stored, config);
+    const stored = await cache.get(getSourceCacheKey(config, source), {
+      type: "json",
+      cacheTtl: 60,
+    });
+    const snapshot = validateSnapshot(stored, config, source.id);
     return jsonResponse({
       ok: true,
       sourceId: snapshot.sourceId,

@@ -33,10 +33,10 @@
       "label": "Dexcom G7",
       "shortLabel": "Dexcom G7",
       "color": "#6d70ad",
-      "verificationLabel": "実機確認前",
+      "verificationLabel": "Gluroo表示を確認済み",
       "dataStatus": "available",
-      "captureRoute": "取得元: Gluroo Global Connect（限定リレー） / 公開用: 匿名化した静的スナップショット",
-      "note": "Dexcom ShareとGlurooを含む実機経路はこれから確認します。確認前に対応済みとは案内しません。",
+      "captureRoute": "Gluroo Global Connectでの表示を確認済み。公開デモ用Worker経路は準備中",
+      "note": "Dexcom G7からGlurooまでの表示を確認済みです。公開デモ用WorkerからGlucoScopeまでの経路は未確認で、表示中の線は合成データです。",
       "readings": [[0,114],[30,118],[60,126],[90,141],[120,158],[150,171],[180,162],[210,143],[240,130],[270,120],[300,114],[330,109],[360,107],[390,116],[420,131],[450,147],[480,162],[510,148],[540,133],[570,123],[600,118],[630,114],[660,110],[690,108],[720,106]]
     }
   ]

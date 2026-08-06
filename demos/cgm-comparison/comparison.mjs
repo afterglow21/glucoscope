@@ -4,7 +4,11 @@ import {
   formatElapsedMinute,
   validateDataset
 } from "./comparison-core.mjs";
-import { buildLiveComparisonDataset } from "./live-comparison-core.mjs";
+import {
+  buildLiveComparisonDataset,
+  fetchOptionalPublicFeed,
+  normalizePublicFeedEndpoint
+} from "./live-comparison-core.mjs";
 
 const DATASET_URL = "./data/sample.json";
 const state = {
@@ -181,15 +185,17 @@ function bindRangeControls() {
 
 function readLiveConfig() {
   const config = globalThis.GlucoScopeCgmComparisonConfig || {};
-  const endpoint = String(config.libreFeedEndpoint || "").trim();
+  const libreEndpoint = normalizePublicFeedEndpoint(config.libreFeedEndpoint, window.location.href);
+  let dexcomEndpoint = "";
+  try {
+    dexcomEndpoint = normalizePublicFeedEndpoint(config.dexcomFeedEndpoint, window.location.href);
+  } catch {
+    dexcomEndpoint = "";
+  }
+  const dexcomRouteVerified = config.dexcomRouteVerified === true;
   const windowHours = Number(config.windowHours) || 24;
   const refreshMinutes = Number(config.refreshMinutes) || 5;
-  if (!endpoint) return { endpoint: "", windowHours, refreshMinutes };
-  const parsed = new URL(endpoint, window.location.href);
-  if (parsed.protocol !== "https:" && !(parsed.protocol === "http:" && ["localhost", "127.0.0.1"].includes(parsed.hostname))) {
-    throw new Error("Unsafe demo feed endpoint.");
-  }
-  return { endpoint: parsed.toString(), windowHours, refreshMinutes };
+  return { libreEndpoint, dexcomEndpoint, dexcomRouteVerified, windowHours, refreshMinutes };
 }
 
 async function loadStaticDataset() {
@@ -202,14 +208,17 @@ async function loadLiveDataset(config) {
   const nowMs = Date.now();
   const rangeStart = nowMs - config.windowHours * 60 * 60 * 1000;
   const guardianAdapter = globalThis.GlucoScopeDataSource.createAdapter({ mode: "public-demo" });
-  const [guardianResult, libreResponse] = await Promise.all([
+  const [guardianResult, libreResponse, dexcomPayload] = await Promise.all([
     guardianAdapter.fetchEntries(rangeStart, nowMs, 1_000),
-    fetch(config.endpoint, { cache: "no-store", headers: { Accept: "application/json" } })
+    fetch(config.libreEndpoint, { cache: "no-store", headers: { Accept: "application/json" } }),
+    fetchOptionalPublicFeed(config.dexcomEndpoint, "dexcom-g7")
   ]);
   if (!libreResponse.ok) throw new Error(`Libre demo feed returned HTTP ${libreResponse.status}.`);
   return buildLiveComparisonDataset({
     guardianEntries: guardianResult.data,
     librePayload: await libreResponse.json(),
+    dexcomPayload,
+    dexcomRouteVerified: config.dexcomRouteVerified,
     nowMs,
     windowHours: config.windowHours
   });
@@ -220,7 +229,7 @@ async function loadDataset({ preserveLiveOnError = false } = {}) {
   try {
     config = readLiveConfig();
     state.loadNotice = "";
-    state.dataset = config.endpoint
+    state.dataset = config.libreEndpoint
       ? await loadLiveDataset(config)
       : await loadStaticDataset();
   } catch {
@@ -248,7 +257,7 @@ function scheduleLiveRefresh() {
   } catch {
     return;
   }
-  if (!config.endpoint) return;
+  if (!config.libreEndpoint) return;
   setTimeout(async () => {
     await loadDataset({ preserveLiveOnError: true });
     scheduleLiveRefresh();

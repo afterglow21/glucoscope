@@ -11,7 +11,9 @@
   "secrets": {
     "required": [
       "GLUROO_DEMO_SOURCE_URL",
-      "GLUROO_DEMO_API_SECRET"
+      "GLUROO_DEMO_API_SECRET",
+      "GLUROO_DEMO_G7_SOURCE_URL",
+      "GLUROO_DEMO_G7_API_SECRET"
     ]
   },
   "kv_namespaces": [
@@ -27,8 +29,11 @@
   },
   "vars": {
     "DEMO_FEED_ENABLED": "false",
+    "DEMO_LIBRE_FEED_ENABLED": "false",
+    "DEMO_G7_FEED_ENABLED": "false",
     "CORS_ALLOWED_ORIGIN": "https://afterglow21.github.io",
     "DEMO_FEED_CACHE_KEY": "public:libre-2:v1",
+    "DEMO_G7_FEED_CACHE_KEY": "public:dexcom-g7:v1",
     "CACHE_TTL_SECONDS": "129600",
     "GLUROO_HOST_SUFFIX": ".ns.gluroo.com",
     "MAX_ENTRIES": "1000",

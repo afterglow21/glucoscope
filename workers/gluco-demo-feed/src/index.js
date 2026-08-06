@@ -1,4 +1,4 @@
-import { handleDemoFeedRequest, refreshDemoFeed } from "./demo-feed-core.js";
+import { handleDemoFeedRequest, refreshDemoFeeds } from "./demo-feed-core.js";
 
 export default {
   async fetch(request, env) {
@@ -7,7 +7,7 @@ export default {
 
   async scheduled(controller, env) {
     try {
-      await refreshDemoFeed(env);
+      await refreshDemoFeeds(env);
     } catch {
       controller.noRetry();
     }
