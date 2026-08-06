@@ -458,18 +458,87 @@ test("validates Turnstile server-side with exact hostname and action", async () 
   assert.equal(body.response, TURNSTILE_TOKEN);
 });
 
-test("rejects Turnstile hostname, action, and success mismatches", async () => {
+test("rejects Turnstile hostname, action, and success mismatches with safe diagnostics", async () => {
   const failures = [
-    { success: false, hostname: "afterglow21.github.io", action: "glucoscope-data-relay" },
-    { success: true, hostname: "evil.example", action: "glucoscope-data-relay" },
-    { success: true, hostname: "afterglow21.github.io", action: "other-action" },
+    {
+      result: { success: false, hostname: "afterglow21.github.io", action: "glucoscope-data-relay" },
+      diagnosticCode: "710999",
+    },
+    {
+      result: { success: true, hostname: "evil.example", action: "glucoscope-data-relay" },
+      diagnosticCode: "710601",
+    },
+    {
+      result: { success: true, hostname: "afterglow21.github.io", action: "other-action" },
+      diagnosticCode: "710602",
+    },
   ];
-  for (const result of failures) {
+  for (const { result, diagnosticCode } of failures) {
     await assert.rejects(
       verifyTurnstileToken(TURNSTILE_TOKEN, env(), readConfig(env()), async () => Response.json(result)),
-      /turnstile_failed/,
+      (error) => {
+        assert.equal(error.code, "turnstile_failed");
+        assert.equal(error.turnstileErrorCode, diagnosticCode);
+        return true;
+      },
     );
   }
+});
+
+test("maps only known Siteverify failures to opaque six-digit diagnostics", async () => {
+  const cases = [
+    ["missing-input-secret", "710101"],
+    ["invalid-input-secret", "710102"],
+    ["missing-input-response", "710201"],
+    ["invalid-input-response", "710202"],
+    ["bad-request", "710301"],
+    ["timeout-or-duplicate", "710401"],
+    ["internal-error", "710501"],
+    ["provider-detail-not-allowlisted", "710999"],
+  ];
+
+  for (const [siteverifyCode, diagnosticCode] of cases) {
+    await assert.rejects(
+      verifyTurnstileToken(
+        TURNSTILE_TOKEN,
+        env(),
+        readConfig(env()),
+        async () => Response.json({ success: false, "error-codes": [siteverifyCode] }),
+      ),
+      (error) => {
+        assert.equal(error.code, "turnstile_failed");
+        assert.equal(error.turnstileErrorCode, diagnosticCode);
+        assert.equal(String(error).includes(siteverifyCode), false);
+        return true;
+      },
+    );
+  }
+});
+
+test("session endpoint returns only an opaque diagnostic for a Siteverify failure", async () => {
+  const response = await handleRelayRequest(
+    relayRequest(
+      { turnstileToken: TURNSTILE_TOKEN },
+      { url: "https://relay.example/v1/session" },
+    ),
+    env(),
+    {
+      turnstileFetch: async () => Response.json({
+        success: false,
+        "error-codes": ["invalid-input-secret"],
+      }),
+    },
+  );
+  const body = await response.json();
+  assert.equal(response.status, 403);
+  assert.deepEqual(body, {
+    ok: false,
+    error: "turnstile_failed",
+    turnstileErrorCode: "710102",
+  });
+  assert.equal(JSON.stringify(body).includes(TURNSTILE_SECRET), false);
+  assert.equal(JSON.stringify(body).includes(TURNSTILE_TOKEN), false);
+  assert.equal(JSON.stringify(body).includes("invalid-input-secret"), false);
 });
 
 test("session endpoint returns a signed ticket but no secret", async () => {

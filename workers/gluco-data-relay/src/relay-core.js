@@ -24,6 +24,31 @@ const MAX_TICKET_LENGTH = 2_048;
 const MAX_TURNSTILE_TOKEN_LENGTH = 2_048;
 const TICKET_CLOCK_SKEW_SECONDS = 30;
 const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+const TURNSTILE_DIAGNOSTIC_CODES = Object.freeze({
+  networkOrTimeout: "710001",
+  siteverifyHttp: "710002",
+  siteverifyResponse: "710003",
+  missingInputSecret: "710101",
+  invalidInputSecret: "710102",
+  missingInputResponse: "710201",
+  invalidInputResponse: "710202",
+  badRequest: "710301",
+  timeoutOrDuplicate: "710401",
+  internalError: "710501",
+  hostnameMismatch: "710601",
+  actionMismatch: "710602",
+  unknownFailure: "710999",
+});
+const TURNSTILE_SITEVERIFY_ERROR_CODES = new Map([
+  ["missing-input-secret", TURNSTILE_DIAGNOSTIC_CODES.missingInputSecret],
+  ["invalid-input-secret", TURNSTILE_DIAGNOSTIC_CODES.invalidInputSecret],
+  ["missing-input-response", TURNSTILE_DIAGNOSTIC_CODES.missingInputResponse],
+  ["invalid-input-response", TURNSTILE_DIAGNOSTIC_CODES.invalidInputResponse],
+  ["bad-request", TURNSTILE_DIAGNOSTIC_CODES.badRequest],
+  ["timeout-or-duplicate", TURNSTILE_DIAGNOSTIC_CODES.timeoutOrDuplicate],
+  ["internal-error", TURNSTILE_DIAGNOSTIC_CODES.internalError],
+]);
+const SAFE_TURNSTILE_DIAGNOSTIC_PATTERN = /^71\d{4}$/u;
 const ENTRY_KEYS = new Set(["sourceUrl", "credential", "from", "to", "limit", "relayTicket"]);
 const SESSION_KEYS = new Set(["turnstileToken"]);
 const TICKET_KEYS = new Set(["v", "sid", "iat", "exp", "scope", "origin"]);
@@ -41,12 +66,25 @@ const ALLOWED_DIRECTIONS = new Set([
 ]);
 
 export class RelayError extends Error {
-  constructor(code, status = 400) {
+  constructor(code, status = 400, details = {}) {
     super(code);
     this.name = "RelayError";
     this.code = code;
     this.status = status;
+    const turnstileErrorCode = String(details.turnstileErrorCode || "");
+    if (SAFE_TURNSTILE_DIAGNOSTIC_PATTERN.test(turnstileErrorCode)) {
+      this.turnstileErrorCode = turnstileErrorCode;
+    }
   }
+}
+
+function getTurnstileFailureDiagnostic(result) {
+  const errorCodes = Array.isArray(result?.["error-codes"]) ? result["error-codes"] : [];
+  for (const errorCode of errorCodes) {
+    const diagnosticCode = TURNSTILE_SITEVERIFY_ERROR_CODES.get(String(errorCode));
+    if (diagnosticCode) return diagnosticCode;
+  }
+  return TURNSTILE_DIAGNOSTIC_CODES.unknownFailure;
 }
 
 function parseBoolean(value, fallback) {
@@ -595,26 +633,42 @@ export async function verifyTurnstileToken(
       signal: controller.signal,
     });
   } catch {
-    throw new RelayError("turnstile_failed", 503);
+    throw new RelayError("turnstile_failed", 503, {
+      turnstileErrorCode: TURNSTILE_DIAGNOSTIC_CODES.networkOrTimeout,
+    });
   } finally {
     clearTimeout(timer);
   }
 
-  if (!response.ok) throw new RelayError("turnstile_failed", 503);
+  if (!response.ok) {
+    throw new RelayError("turnstile_failed", 503, {
+      turnstileErrorCode: TURNSTILE_DIAGNOSTIC_CODES.siteverifyHttp,
+    });
+  }
 
   let result;
   try {
     result = await response.json();
   } catch {
-    throw new RelayError("turnstile_failed", 503);
+    throw new RelayError("turnstile_failed", 503, {
+      turnstileErrorCode: TURNSTILE_DIAGNOSTIC_CODES.siteverifyResponse,
+    });
   }
 
-  if (
-    result?.success !== true ||
-    String(result.hostname || "").toLowerCase() !== config.turnstileExpectedHostname ||
-    result.action !== config.turnstileExpectedAction
-  ) {
-    throw new RelayError("turnstile_failed", 403);
+  if (result?.success !== true) {
+    throw new RelayError("turnstile_failed", 403, {
+      turnstileErrorCode: getTurnstileFailureDiagnostic(result),
+    });
+  }
+  if (String(result.hostname || "").toLowerCase() !== config.turnstileExpectedHostname) {
+    throw new RelayError("turnstile_failed", 403, {
+      turnstileErrorCode: TURNSTILE_DIAGNOSTIC_CODES.hostnameMismatch,
+    });
+  }
+  if (result.action !== config.turnstileExpectedAction) {
+    throw new RelayError("turnstile_failed", 403, {
+      turnstileErrorCode: TURNSTILE_DIAGNOSTIC_CODES.actionMismatch,
+    });
   }
 
   return true;
@@ -782,6 +836,13 @@ export async function handleRelayRequest(request, env = {}, services = {}) {
     return jsonResponse({ ok: true, entries }, 200, origin, config);
   } catch (error) {
     const relayError = error instanceof RelayError ? error : new RelayError("upstream_unavailable", 502);
-    return jsonResponse({ ok: false, error: relayError.code }, relayError.status, origin, config);
+    const body = { ok: false, error: relayError.code };
+    if (
+      relayError.code === "turnstile_failed" &&
+      SAFE_TURNSTILE_DIAGNOSTIC_PATTERN.test(String(relayError.turnstileErrorCode || ""))
+    ) {
+      body.turnstileErrorCode = relayError.turnstileErrorCode;
+    }
+    return jsonResponse(body, relayError.status, origin, config);
   }
 }

@@ -69,7 +69,7 @@ The relay:
 - requires server-validated Turnstile and a signed origin-bound ticket;
 - enforces date, entry, byte, timeout, session, and Worker-wide limits;
 - fails closed when configuration, secrets, counters, or the relay endpoint are unavailable;
-- remains paused and unavailable to the frontend while its single approved `workers.dev` target returns only the stopped response. Public wording and consent, final security checks, explicit live-enablement approval, and acceptance tests for the first advertised route must be complete before use. The Phase 3C public-policy review is complete; a Gluroo support reply remains welcome but is not a Friends & Family release blocker.
+- remains paused and unavailable to the frontend while its single approved `workers.dev` target returns only the stopped response. Public wording and consent, final security checks, explicit live-enablement approval, and acceptance tests for the first advertised route must be complete before use. The Phase 3C public-policy review and the 2026-08-06 written Gluroo support response are recorded in `LIMITED_DATA_RELAY.md`; the response is conditional on continued compliance with Gluroo's EULA, terms, and other documents.
 
 A direct Gluroo request must not be used as a silent fallback, and a failed relay request must never fall back to Kazuma’s public-demo data.
 
@@ -166,8 +166,11 @@ Gluroo is one possible connection provider, not the GlucoScope platform itself.
 The public setup and guide must state that:
 
 - Gluroo is operated separately from GlucoScope;
-- Gluroo is currently available for testing at no cost according to its current public announcement;
+- Gluroo Global Connect currently has no cost during its testing phase;
+- Gluroo is considering a subscription model, and GGC may not remain free;
+- GGC must not be marketed as a free alternative to subscription Nightscout services;
 - price, features, screens, availability, and Nightscout-compatible behavior may change;
+- GlucoScope is not affiliated with Gluroo, and questions about GlucoScope or its relay are handled by GlucoScope;
 - Gluroo outages or changes may interrupt the GlucoScope connection;
 - screenshots are maintained as replaceable guide assets rather than embedded throughout the main dashboard.
 
