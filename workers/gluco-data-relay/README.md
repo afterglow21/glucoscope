@@ -7,6 +7,7 @@ Phase 3A connected the user onboarding flow to the relay client while keeping th
 ## Implemented through Phase 3B
 
 - `POST /v1/session` verifies a Cloudflare Turnstile token server-side;
+- the Siteverify request follows Cloudflare's Worker pattern: form-encoded POST, a 10-second timeout, and no redirect or cache override;
 - failed server-side Turnstile checks return only an allowlisted opaque six-digit confirmation code; no token, Secret, hostname, or provider detail is logged or returned;
 - successful verification issues a signed, origin-bound, one-hour relay ticket;
 - `POST /v1/entries` requires a valid relay ticket;

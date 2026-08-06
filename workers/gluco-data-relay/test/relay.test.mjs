@@ -451,11 +451,35 @@ test("validates Turnstile server-side with exact hostname and action", async () 
   assert.equal(result, true);
   assert.equal(seenUrl, "https://challenges.cloudflare.com/turnstile/v0/siteverify");
   assert.equal(seenInit.method, "POST");
-  assert.equal(seenInit.redirect, "error");
-  assert.equal(seenInit.cache, "no-store");
-  const body = JSON.parse(seenInit.body);
-  assert.equal(body.secret, TURNSTILE_SECRET);
-  assert.equal(body.response, TURNSTILE_TOKEN);
+  assert.equal(seenInit.headers["Content-Type"], "application/x-www-form-urlencoded");
+  assert.equal(seenInit.redirect, undefined);
+  assert.equal(seenInit.cache, undefined);
+  assert.equal(seenInit.signal instanceof AbortSignal, true);
+  assert.equal(seenInit.body instanceof URLSearchParams, true);
+  assert.equal(seenInit.body.get("secret"), TURNSTILE_SECRET);
+  assert.equal(seenInit.body.get("response"), TURNSTILE_TOKEN);
+});
+
+test("maps Siteverify transport, HTTP, and response failures to safe diagnostics", async () => {
+  const cases = [
+    [async () => { throw new TypeError("network failed"); }, "710001"],
+    [async () => new Response("unavailable", { status: 503 }), "710002"],
+    [async () => new Response("not-json"), "710003"],
+  ];
+
+  for (const [fetchImpl, diagnosticCode] of cases) {
+    await assert.rejects(
+      verifyTurnstileToken(TURNSTILE_TOKEN, env(), readConfig(env()), fetchImpl),
+      (error) => {
+        assert.equal(error.code, "turnstile_failed");
+        assert.equal(error.turnstileErrorCode, diagnosticCode);
+        assert.equal(String(error).includes("network failed"), false);
+        assert.equal(String(error).includes("unavailable"), false);
+        assert.equal(String(error).includes("not-json"), false);
+        return true;
+      },
+    );
+  }
 });
 
 test("rejects Turnstile hostname, action, and success mismatches with safe diagnostics", async () => {
@@ -842,6 +866,7 @@ test("checked-in Wrangler config remains paused with one workers.dev target and 
     "RELAY_TICKET_SECRET",
     "TURNSTILE_SECRET_KEY",
   ]);
+  assert.equal(config.vars.TURNSTILE_TIMEOUT_MS, "10000");
   assert.doesNotMatch(
     configText,
     /"(?:TURNSTILE_SECRET_KEY|RELAY_TICKET_SECRET)"\s*:\s*"/,
