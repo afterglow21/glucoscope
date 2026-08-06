@@ -1713,6 +1713,8 @@ The paused production Worker shell, SQLite Durable Object, and required Secret b
 
 The consent UI, local paused-state frontend acceptance, final Trust Pack review, and final local and Cloudflare configuration and security review are complete. Required Secret names are declared in `wrangler.jsonc`, while their values remain Cloudflare Secrets. After separate explicit approval, commit `98def2e96065f1a801728e060673ea22d4ff9e44` was deployed as stopped Version `1a51631d-1e53-4f88-ac27-2125b43f1ab2`; the post-deployment stop, CORS, Secret-name, and Durable Object checks passed without using real data. An earlier separately approved Guardian candidate-route acceptance temporarily routed Version `84139213-8521-4772-b3f3-47ee0018c5d3`, but stopped before credential submission because the public Pages build did not yet expose the Guardian guide. Version `89d8166d-a50e-4e94-b3d3-a06f7a0b6fb1` was deployed immediately afterward with `RELAY_ENABLED=false`. On 2026-08-06, merged commit `06dba2dc1321562e494a572e0da0c2cfbeb206a8` added safe opaque server-side Turnstile diagnostics and was deployed as stopped Version `86149056-cba7-41b8-80c1-15f0e2c26cf0`. Initial live attempts returned safe diagnostic `710001` at the Worker-to-Siteverify transport boundary; increasing only the timeout did not resolve it. PR #12 then aligned the Siteverify request with Cloudflare's Worker pattern and merged as `d3051852b6a3b698de67d163cd290bd2b4ad2c3a`. Stopped Version `2ea372de-a7c5-44c8-8852-0c21f5382633` verified the merged code and bindings before temporary Version `f1c02561-e92a-4a9b-8b70-b9bab2a89fb2` was separately approved to receive 100% of traffic with `RELAY_ENABLED=true`. A dummy invalid token returned expected safe diagnostic `710202`, confirming Siteverify reachability. On iPhone Safari, the Guardian path then completed consent, Turnstile, signed-ticket issuance, Gluroo entry retrieval, current glucose and graph display, and display again after reload. Stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` was deployed immediately afterward and now receives 100% of traffic with `RELAY_ENABLED=false`, the exact CORS setting, required Secret bindings, and Durable Object binding. No Secret value, Turnstile token, Gluroo URL, credential, or glucose payload was printed, logged, or committed. This completes the first basic Guardian end-to-end acceptance. Extended period, expiry, deletion, and limit checks and separate continuing-enablement approval remain before a low-volume Friends & Family rollout. A device route may be advertised as verified only to the extent of checks it has actually passed. The relay must be paused immediately if Gluroo objects, the applicable terms materially change, abnormal traffic is detected, or a privacy or safety concern appears. Direct Nightscout and the public demo must continue independently.
 
+Later on 2026-08-06, FreeStyle LibreLink, LibreLinkUp, and live Libre 2 readings in Gluroo were confirmed before a separately approved temporary enablement. Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` then received 100% of traffic with `RELAY_ENABLED=true`. A dummy invalid Turnstile token returned the expected `403` and safe diagnostic `710202`. iPhone Safari Private Browsing completed consent, ticket issuance, Libre glucose-entry retrieval, current glucose, graph display, reload, and return from the iOS Home Screen. Closing Private Browsing removed its browser-stored configuration as expected; normal-tab persistence after fully quitting Safari was not retested by user choice. Traffic was returned immediately to stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` at 100%, and the paused `503` response was rechecked. No Secret value, Turnstile token, Gluroo URL, credential, glucose payload, or relay ticket was printed, logged, or committed. This completes the first basic Libre 2 end-to-end acceptance only; historical comparison capture and the extended acceptance matrix remain unverified.
+
 ---
 
 ### JP
@@ -1749,6 +1751,8 @@ Guardian MonitorはGlurooへデータを届ける入口であり、限定リレ�
 Phase 3Bでは、停止状態の本番Worker、SQLite Durable Object、必要なSecret登録までを完了しました。その後、別途明示的な承認を得て、`RELAY_ENABLED=false`のまま恒久的な`workers.dev`公開先を1つ作成しました。バージョンごとのPreview URLは無効のままです。フロントの接続先は、停止状態の受け入れ確認に限ってこの公開先へ固定し、リレーへ通信する前に明示的な同意を必須にしました。`RELAY_ENABLED=false`の間は、WorkerがTurnstile検証、チケット発行、回数カウント、Glurooへの接続より前に要求を停止します。Phase 3Cでは、Glurooの公式FAQ、Nightscout連携案内、Privacy Policy、EULAを確認しました。これらは、利用する人が自分のGlobal Connect情報をNightscout互換の外部ツールで使う方法を案内しており、利用者自身が選ぶこの限定中継を明示的に禁止していません。2026年8月6日、Glurooサポートから、EULA、利用条件、その他の文書と矛盾しない範囲で、今回の使い方は動作し問題ないとの文書回答を受け取りました。これは条件付きの技術的な見解であり、提携、推奨、法的助言、無条件の許諾ではありません。GlucoScopeと限定中継は医療相談や医療判断に使わず、個別のCGMデータ再共有が適法かどうかをGlucoScopeが判断しません。利用する人自身が必要な権限や許可を確認します。Gluroo Global Connectを有料Nightscoutサービスの「無料代替」と宣伝しません。公開文面では、現在はテスト期間中のため費用なしであることと、将来サブスクリプションになる可能性があることを併記します。GlucoScopeはGlurooと提携しておらず、GlucoScopeや限定中継への問い合わせはGlurooではなくGlucoScopeが受けます。
 
 同意表示、停止状態でのローカル画面受け入れ確認、Trust Packの最終確認、ローカルとCloudflare上の設定・安全性の最終確認は完了しました。必要なSecret名は`wrangler.jsonc`へ宣言し、値はCloudflare Secretだけに保持します。別途明示的な承認を得て、commit `98def2e96065f1a801728e060673ea22d4ff9e44`を停止状態のVersion `1a51631d-1e53-4f88-ac27-2125b43f1ab2`としてデプロイし、実データを使わずに停止応答、CORS、Secret名、Durable Objectを確認しました。その後のGuardian候補ルート確認ではVersion `84139213-8521-4772-b3f3-47ee0018c5d3`へ一時的に通信を向けましたが、公開中のPagesに確認用ガイドがまだ反映されていなかったため、接続情報を送信する前に中止し、直後にVersion `89d8166d-a50e-4e94-b3d3-a06f7a0b6fb1`を`RELAY_ENABLED=false`でデプロイしました。2026-08-06には、安全な不透明6桁コードだけを返すサーバー側Turnstile診断を追加したマージcommit `06dba2dc1321562e494a572e0da0c2cfbeb206a8`を、停止Version `86149056-cba7-41b8-80c1-15f0e2c26cf0`としてデプロイしました。最初の有効化確認では、WorkerからSiteverifyへの通信境界で安全コード`710001`となり、時間だけを延ばしても解消しませんでした。そこでPR #12でCloudflareのWorker向け例に合わせてSiteverify要求を整え、`d3051852b6a3b698de67d163cd290bd2b4ad2c3a`としてmainへマージしました。まず停止Version `2ea372de-a7c5-44c8-8852-0c21f5382633`でコードとバインドを確認し、別の明示的な承認を得て一時有効Version `f1c02561-e92a-4a9b-8b70-b9bab2a89fb2`へ通信を100%向けました。無効なダミーtokenは期待どおり安全コード`710202`となり、Siteverifyへ到達できることを確認しました。その後、iPhoneのSafariでGuardianルートの同意、Turnstile、署名付きチケット、Gluroo血糖エントリー取得、現在血糖とグラフ表示、再読み込み後の再表示まで成功しました。確認直後に停止Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a`へ戻し、現在はこのVersionが通信の100%を受け、`RELAY_ENABLED=false`、正確なCORS設定、必要なSecret名、Durable Objectのバインドを維持しています。Secret値、Turnstile token、GlurooのURL、接続用の合言葉、血糖データは、印字、ログ記録、Gitへの保存をしていません。これでGuardianの最初の全経路確認は完了しました。期間別、期限切れ、削除、上限の追加確認と、継続的な有効化についての別の承認を終えてから、Friends & Familyの小規模利用として始めます。実際に確認できた範囲を超えて機器ルートを確認済みとは案内しません。Glurooから停止要請があった場合、利用条件に重要な変更があった場合、異常な通信、プライバシーまたは安全性の懸念が見つかった場合は、すぐにリレーを停止します。Nightscoutの直接接続と公開デモは、限定リレーから独立して使える状態を維持します。
+
+同じ2026年8月6日、FreeStyle LibreLink、LibreLinkUp、GlurooでLibre 2の実データが見えていることを確認してから、別の明示的な承認を得て一時有効Version `a398d59e-54c1-4b8d-a9a4-b779af360a54`へ通信を100%向けました。無効なダミーTurnstile tokenは期待どおり`403`と安全コード`710202`を返しました。iPhoneのSafariプライベートブラウズで、同意、チケット発行、Libre血糖エントリー取得、現在血糖、グラフ表示、再読み込み、iOSホーム画面からの復帰まで成功しました。プライベートブラウズ終了時にブラウザ保存情報が消えたのは仕様どおりです。通常タブでSafariを完全終了した後の保存は、利用者の判断で再テストを省略したため未確認です。確認直後に停止Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a`へ通信を100%戻し、停止中の`503`応答を再確認しました。Secret値、Turnstile token、GlurooのURL、接続用の合言葉、血糖データ、リレーチケットは、印字、ログ記録、Gitへの保存をしていません。これでLibre 2の最初の基本経路確認だけが完了しました。比較用の期間取得と追加の受け入れ確認は未確認のままです。
 
 ---
 
@@ -2375,6 +2379,209 @@ Kazuma自身のデータ環境を使った公開サンプルページを整え�
 
 利用する人が自分のデータを接続する前に、  
 GlucoScopeというプロジェクトを理解できる場所にします。
+
+---
+
+## Public 3CGM Comparison Lab
+## 公開3CGM比較ラボ
+
+### EN
+
+GlucoScope may provide a separate public observation page
+for Guardian 4, FreeStyle Libre 2, and Dexcom G7
+worn by Kazuma during the same period.
+
+On 2026-08-06, Kazuma explicitly chose to publish his own Libre glucose values
+and their measurement/update timing as part of the public demo.
+These values are intentionally public and must not be described as anonymous.
+This choice applies only to Kazuma's own demo data.
+It does not authorize storing, publishing, or re-sharing any general user's data.
+
+Guardian remains on Kazuma's existing Azure Nightscout
+and is read directly by the public comparison page.
+Libre 2 uses a separate, demo-only Cloudflare Worker.
+That Worker reads one fixed Gluroo Global Connect source on a scheduled trigger,
+sanitizes the response, and replaces an expiring KV snapshot.
+Public visitors read only that snapshot and never trigger a request to Gluroo.
+Dexcom G7 remains a prepared but pending source until its route is separately verified.
+
+The demo-only Worker is separate from the general-user Limited Data Relay.
+The general-user relay remains stopped with `RELAY_ENABLED=false`
+and keeps its transient, no-glucose-storage boundary.
+No general-user URL, credential, or glucose value may enter the demo feed or its KV.
+
+The comparison must not rank devices,
+claim which value is correct,
+describe one CGM as a reference,
+or provide medical or treatment conclusions.
+
+The public page may show:
+
+- the available live series on the same elapsed-time axis;
+- differences between displays at nearby times;
+- recording cadence and missing points;
+- the honest verification status of each route.
+
+Raw exports, exact calendar dates, account information, URLs, credentials,
+sensor identifiers, treatment events, insulin, meals, medication,
+pump settings, symptoms, and location information must remain out of Git.
+
+The demo-only Worker must keep its Gluroo source URL and API Secret
+in Cloudflare Secrets, not frontend code or Git.
+It may fetch only glucose entries from the fixed `.ns.gluroo.com` host
+and `/api/v1/entries.json` path, keep at most a rolling 24-hour snapshot,
+and set a KV expiration of no more than 36 hours.
+The stored and public fields are limited to glucose value, measurement time,
+and an allowlisted direction.
+Application logging and Worker observability remain disabled,
+and `DEMO_FEED_ENABLED=false` is the emergency stop.
+
+The comparison page must fall back to a clearly labelled synthetic dataset
+when the live feeds are not configured or cannot be loaded.
+It may show Guardian and Libre as live while Dexcom is visibly pending;
+it must not fabricate a missing live Dexcom series.
+
+The owner capture workflow remains available for a later reviewed
+three-source static comparison.
+It uses browser memory only, no analytics, no background polling,
+and downloads only a publication candidate whose timestamps are converted
+to elapsed minutes.
+
+The dedicated Worker, KV namespace, Secret registration, deployment,
+scheduled retrieval, live enablement, and frontend endpoint activation
+each require an explicit operational confirmation before the relevant change.
+
+On 2026-08-06, after explicit approval limited to KV creation,
+one dedicated empty `DEMO_FEED_CACHE` namespace was created in Cloudflare.
+Only its non-secret namespace identifier was recorded in `wrangler.jsonc`.
+After a second explicit approval limited to stopped Worker creation,
+Version `4c8d40de-8877-4d70-800e-1607e1940b96` was deployed to
+`https://glucoscope-demo-feed.afterglow21.workers.dev` with
+`DEMO_FEED_ENABLED=false`, the reviewed KV binding, five-minute Cron,
+and observability disabled.
+The active stopped Version returns `503 demo_feed_paused` without an Origin,
+returns the same `503` with exact CORS for the approved GitHub Pages Origin,
+returns `204` for its browser preflight, and rejects an unapproved Origin with `403`.
+After a later explicit approval, exactly `GLUROO_DEMO_SOURCE_URL` and
+`GLUROO_DEMO_API_SECRET` were registered as Cloudflare Secrets without
+printing, logging, or committing their values. Another explicit approval
+reapplied the stopped configuration as Version
+`f8801d58-67bd-4cf9-8cb1-dd227c879446`, which now receives 100% of traffic
+with `DEMO_FEED_ENABLED=false`. Its approved-origin endpoint still returns
+`503 demo_feed_paused`, and the dedicated KV remains empty.
+No Gluroo request, glucose value, or live publication occurred.
+The Cron exits before Secret access, upstream fetch, or KV access while disabled.
+After another explicit approval, the working frontend configuration was set to the
+stopped `/v1/libre` route. A local browser check verified that the page remained
+clearly labelled as preparing synthetic data when the live load failed. The frontend
+change remains unpublished until commit and push.
+Cloudflare's route-level subdomain setting reports `enabled=true` for the normal
+`workers.dev` route and `previews_enabled=false` for versioned Preview routing.
+Version-level `has_preview` capability metadata does not mean the public Preview
+route is enabled.
+
+All treatment decisions, alerts, and current device-state checks
+must continue to use the original approved CGM or pump application.
+
+---
+
+### JP
+
+GlucoScopeでは、
+Kazuma自身が同じ期間に装着した
+Guardian 4、FreeStyle Libre 2、Dexcom G7を、
+別の公開観察ページで並べて見られるようにできます。
+
+2026年8月6日、Kazumaは、自分自身のLibreの血糖値と
+測定・更新時刻を公開デモとして表示することを明示的に選びました。
+これらは意図して公開する情報であり、匿名データとは案内しません。
+この選択はKazuma自身のデモデータだけに適用します。
+一般利用者のデータを保存、公開、再共有する許可にはなりません。
+
+GuardianはKazumaの既存Azure Nightscoutをそのまま使い、
+公開比較ページのブラウザから直接取得します。
+Libre 2は、一般利用者向け限定中継とは別の、
+公開デモ専用Cloudflare Workerを使います。
+このWorkerは、決められた1つのGluroo Global Connect送信先を
+定期実行で取得し、公開してよい項目だけへ整えて、
+期限付きKVスナップショットを入れ替えます。
+公開ページを見た人はKVだけを読み、Glurooへの取得を発生させません。
+Dexcom G7は、別途経路を確認するまで準備中として表示します。
+
+デモ専用Workerと、一般利用者向け限定データリレーは別の仕組みです。
+一般利用者向けリレーは`RELAY_ENABLED=false`の停止状態を保ち、
+血糖データを保存しない境界も変えません。
+一般利用者のURL、接続情報、血糖値を、デモ用WorkerやKVへ入れません。
+
+この比較では、
+機器へ順位をつけません。
+どの値が正しいかを決めません。
+1つのCGMを基準機器として扱いません。
+医療上・治療上の結論を出しません。
+
+公開ページでは、
+次のような観察ができます。
+
+- 利用できるライブ表示を、同じ経過時間の軸で重ねる
+- 近い時刻に表示された値の違いを見る
+- 記録間隔と、データがなかった時間を見る
+- それぞれの経路で実際に確認できた範囲を正直に示す
+
+元のエクスポート、正確な日付、アカウント情報、URL、接続情報、
+センサー識別情報、治療記録、インスリン、食事、薬、ポンプ設定、
+症状、位置情報はGitへ追加しません。
+
+デモ専用WorkerのGluroo送信先URLとAPI Secretは、
+フロントやGitではなくCloudflare Secretsだけに置きます。
+接続先を固定した`.ns.gluroo.com`のホストと
+`/api/v1/entries.json`以外へ接続しません。
+保存するのは直近24時間以内とし、KVは最長36時間で期限切れにします。
+保存・公開する項目は、血糖値、測定時刻、許可した方向情報だけです。
+アプリケーションログとWorker observabilityは無効にし、
+`DEMO_FEED_ENABLED=false`を緊急停止スイッチにします。
+
+ライブデータが未設定または読み込めない場合は、
+合成データであることを明記してフォールバックします。
+GuardianとLibreをライブ表示し、Dexcomを準備中と表示できますが、
+Dexcomのライブ値を作って見せません。
+
+後から3種類そろった静的比較を作るための管理者向け取得フローは残します。
+このフローはブラウザメモリだけを使い、アクセス解析と定期取得を行わず、
+正確な日時を経過分へ置き換えた公開候補ファイルだけを端末へ保存します。
+
+デモ専用Worker、KV名前空間、Secret登録、デプロイ、定期取得、
+一時有効化、フロント接続先の有効化は、
+それぞれ該当する変更の前に明示確認を行います。
+
+2026年8月6日、KV作成だけに限定した明示確認を得て、
+Cloudflareへデモ専用の空の`DEMO_FEED_CACHE`名前空間を1つ作成しました。
+非Secretの名前空間IDだけを`wrangler.jsonc`へ反映しました。
+さらに停止Worker作成だけに限定した2回目の明示確認を得て、
+Version `4c8d40de-8877-4d70-800e-1607e1940b96`を
+`https://glucoscope-demo-feed.afterglow21.workers.dev`へ、
+`DEMO_FEED_ENABLED=false`、確認済みKVバインド、5分Cron、
+observability無効の状態でデプロイしました。
+現在の停止Versionは、Originなしと許可したGitHub Pages Originで
+`503 demo_feed_paused`、ブラウザのpreflightで`204`を返し、
+許可していないOriginは`403`で拒否します。
+その後、別の明示確認を得て、`GLUROO_DEMO_SOURCE_URL`と
+`GLUROO_DEMO_API_SECRET`だけをCloudflare Secretsへ登録しました。
+Secret値は表示、ログ記録、Gitへの保存をしていません。
+さらに別の明示確認後に停止設定を再反映したVersion
+`f8801d58-67bd-4cf9-8cb1-dd227c879446`が現在の通信を100%受け、
+`DEMO_FEED_ENABLED=false`を維持しています。
+許可したOriginでは引き続き`503 demo_feed_paused`を返し、KVは空です。
+Glurooへの接続、血糖値取得、ライブ公開は行っていません。
+停止中のCronはSecret参照、外部取得、KVアクセスより前に終了します。
+さらに別の明示確認後、作業中のフロント接続先を停止中の`/v1/libre`へ設定しました。
+ローカル実画面でライブ取得失敗時も「準備中・合成データ」と明記して
+切り替わることを確認しています。このフロント変更はcommit・pushまで公開されません。
+Cloudflareの公開ルート設定は、通常の`workers.dev`が`enabled=true`、
+Version別Previewが`previews_enabled=false`です。Version側の
+`has_preview`表示は、公開Previewルートが有効という意味ではありません。
+
+治療判断、アラート、現在の機器状態は、
+引き続き元の公式CGM・ポンプアプリを確認します。
 
 ---
 

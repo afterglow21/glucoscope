@@ -172,6 +172,7 @@ test("Libre guide identifies each app before switching", () => {
 });
 
 test("LibreLinkUp preparation guide explains invitation and credentials", () => {
+  assert.match(libreGuide, /アプリ連携済み/);
   assert.match(libreGuide, /接続するアプリ/);
   assert.match(libreGuide, /招待メール/);
   assert.match(libreGuide, /LibreLinkUpに自分の血糖値が表示/);

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Guardian 4、FreeStyle Libre 2、Dexcom G7の同時装着データを、優劣をつけず同じ時間軸で観察するGlucoScopeの比較デモです。">
+  <title>3CGM Comparison Lab | GlucoScope</title>
+  <link rel="stylesheet" href="comparison.css?v=20260806-cgm-live-1">
+</head>
+<body>
+  <main class="comparison-shell">
+    <nav class="comparison-topbar" aria-label="ページナビゲーション">
+      <a class="comparison-brand" href="../../index.html#about">🍀 GlucoScope</a>
+      <a class="comparison-back" href="../../index.html#about">公開デモへ戻る</a>
+    </nav>
+
+    <header class="comparison-hero comparison-card">
+      <div class="comparison-hero-copy">
+        <p class="comparison-kicker">Public Demo · Observation Lab</p>
+        <h1>3CGM Comparison Lab</h1>
+        <p class="comparison-title-jp">3種類のCGMを、同じ時間の流れで見てみる</p>
+        <p class="comparison-lead">
+          Guardian 4、FreeStyle Libre 2、Dexcom G7の表示を、どれが「良い」と決めずに並べて観察するページです。
+          値の違い、更新の間隔、データが届かなかった時間を、そのまま丁寧に見ていきます。
+        </p>
+        <div class="comparison-status-row">
+          <span id="datasetStatus" class="comparison-status comparison-status-synthetic">準備中 · 合成データ</span>
+          <span id="datasetWindow" class="comparison-window">読み込み中…</span>
+        </div>
+      </div>
+      <img class="comparison-hero-art" src="../../assets/gluco/about/gluco-data-link.png" alt="3つのデータのつながりを見守るグルコ">
+    </header>
+
+    <section class="comparison-safety comparison-card" aria-labelledby="comparisonSafetyTitle">
+      <h2 id="comparisonSafetyTitle">この比較について</h2>
+      <p><strong>これはCGMの精度試験、優劣評価、医療判断のための比較ではありません。</strong></p>
+      <p>どのCGMも基準値や正解として扱いません。治療判断、アラート、現在の機器状態は、それぞれの公式CGM・ポンプアプリを確認してください。</p>
+      <p id="datasetDisclosure">現在は画面準備用の合成データです。実際のCGMデータはまだ公開していません。</p>
+    </section>
+
+    <section class="comparison-controls comparison-card" aria-label="比較表示の設定">
+      <div>
+        <p class="comparison-control-label">表示する時間</p>
+        <div id="rangeControls" class="comparison-segmented" role="group" aria-label="表示期間">
+          <button type="button" data-hours="6">6時間</button>
+          <button type="button" data-hours="12" class="active">12時間</button>
+          <button type="button" data-hours="all">全期間</button>
+        </div>
+      </div>
+      <div>
+        <p class="comparison-control-label">表示するCGM</p>
+        <div id="sourceControls" class="comparison-source-controls" aria-label="CGM表示切替"></div>
+      </div>
+    </section>
+
+    <section class="comparison-chart-card comparison-card" aria-labelledby="comparisonChartTitle">
+      <div class="comparison-section-heading">
+        <div>
+          <p class="comparison-kicker">Same timeline</p>
+          <h2 id="comparisonChartTitle">同じ時間軸で重ねた表示</h2>
+        </div>
+        <p>点がない時間は、推測でつながず空白にします。</p>
+      </div>
+      <div id="chartMessage" class="comparison-message" role="status" aria-live="polite">データを読み込んでいます。</div>
+      <div class="comparison-chart-wrap">
+        <canvas id="comparisonChart" aria-label="3種類のCGMの比較グラフ"></canvas>
+      </div>
+    </section>
+
+    <section aria-labelledby="sourceSummaryTitle">
+      <div class="comparison-section-heading comparison-heading-outside">
+        <div>
+          <p class="comparison-kicker">Source notes</p>
+          <h2 id="sourceSummaryTitle">それぞれのデータ</h2>
+        </div>
+      </div>
+      <div id="sourceCards" class="comparison-source-grid"></div>
+    </section>
+
+    <section class="comparison-observation-grid" aria-label="比較の観察結果">
+      <article class="comparison-card comparison-observation-card">
+        <p class="comparison-kicker">Matched readings</p>
+        <h2>近い時刻でそろった表示</h2>
+        <p id="matchedCount" class="comparison-metric">--</p>
+        <p>表示中の2種類以上が比較可能な時刻の数です。一定時間以上離れた表示は無理に組み合わせません。</p>
+      </article>
+      <article class="comparison-card comparison-observation-card">
+        <p class="comparison-kicker">Observed spread</p>
+        <h2>表示の開き</h2>
+        <p id="medianSpread" class="comparison-metric">--</p>
+        <p>近い時刻の最大値と最小値の差の中央値です。精度や正しさを示す数値ではありません。</p>
+      </article>
+      <article class="comparison-card comparison-observation-card">
+        <p class="comparison-kicker">Missing points</p>
+        <h2>届かなかった表示</h2>
+        <p id="missingCount" class="comparison-metric">--</p>
+        <p>共通の時間軸に表示がなかった数です。機器の停止と断定せず、公開データ上の欠測として扱います。</p>
+      </article>
+    </section>
+
+    <section class="comparison-method comparison-card" aria-labelledby="comparisonMethodTitle">
+      <div class="comparison-section-heading">
+        <div>
+          <p class="comparison-kicker">Method &amp; privacy</p>
+          <h2 id="comparisonMethodTitle">公開するときに守ること</h2>
+        </div>
+      </div>
+      <ol>
+        <li>GuardianはKazumaの公開Nightscoutからブラウザで直接読み、Libre 2は公開デモ専用Workerが定期取得した短期スナップショットを読みます。</li>
+        <li>Libre 2のGluroo URLとAPI SecretはCloudflare Secretへ置き、公開ページやGitHubへ含めません。</li>
+        <li>血糖値と更新時刻は、Kazumaが公開を選んだデモ情報として誰でも見られる状態になります。</li>
+        <li>治療記録、インスリン、食事、薬、ポンプ設定、体調記録は比較データへ含めません。</li>
+        <li>欠測を推測で埋めず、各CGMの記録時刻と値だけを表示します。</li>
+        <li>一般利用者向け限定リレーは分離して停止状態を保ち、公開デモ専用配信だけを個別に停止できます。</li>
+      </ol>
+      <p class="comparison-affiliation">GlucoScopeはMedtronic、Abbott、Dexcom、Glurooと提携していません。製品名は比較対象を明確にするために記載しています。</p>
+    </section>
+
+    <footer class="comparison-footer">
+      <p>Every number has a story. Every story deserves kindness.</p>
+      <p>Understand today. Improve tomorrow. 🍀</p>
+    </footer>
+  </main>
+
+  <script src="../../vendor/chart.js/chart.umd.min.js?v=4.5.1"></script>
+  <script src="../../js/data-source.js?v=20260806-cgm-live-1"></script>
+  <script src="live-config.js?v=20260806-cgm-live-1"></script>
+  <script type="module" src="comparison.mjs?v=20260806-cgm-live-1"></script>
+  <script src="../../js/analytics-loader.js?v=20260721-user-foundation-3-2"></script>
+</body>
+</html>
