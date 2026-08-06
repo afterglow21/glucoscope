@@ -10,7 +10,7 @@ const DEFAULTS = Object.freeze({
   upstreamTimeoutMs: 15_000,
   turnstileExpectedHostname: "afterglow21.github.io",
   turnstileExpectedAction: "glucoscope-data-relay",
-  turnstileTimeoutMs: 5_000,
+  turnstileTimeoutMs: 10_000,
   ticketTtlSeconds: 3_600,
   sessionDailyLimit: 250,
   globalWarningDaily: 20_000,
@@ -619,25 +619,23 @@ export async function verifyTurnstileToken(
 ) {
   const validated = validateSessionPayload({ turnstileToken });
   const secret = requireSecret(env.TURNSTILE_SECRET_KEY, 16);
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), config.turnstileTimeoutMs);
+  const siteverifyBody = new URLSearchParams({
+    secret,
+    response: validated.turnstileToken,
+  });
 
   let response;
   try {
     response = await fetchImpl(TURNSTILE_VERIFY_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ secret, response: validated.turnstileToken }),
-      redirect: "error",
-      cache: "no-store",
-      signal: controller.signal,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: siteverifyBody,
+      signal: AbortSignal.timeout(config.turnstileTimeoutMs),
     });
   } catch {
     throw new RelayError("turnstile_failed", 503, {
       turnstileErrorCode: TURNSTILE_DIAGNOSTIC_CODES.networkOrTimeout,
     });
-  } finally {
-    clearTimeout(timer);
   }
 
   if (!response.ok) {
