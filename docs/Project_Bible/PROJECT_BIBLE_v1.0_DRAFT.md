@@ -2397,13 +2397,23 @@ These values are intentionally public and must not be described as anonymous.
 This choice applies only to Kazuma's own demo data.
 It does not authorize storing, publishing, or re-sharing any general user's data.
 
+On 2026-08-07, Kazuma confirmed that Dexcom G7 readings appear in Gluroo
+and that its connection details are prepared.
+This confirms only the path as far as Gluroo.
+The public demo Worker, KV, and frontend path remain unverified,
+and no G7 glucose value has been stored or published.
+A separate explicit choice is required before publishing Kazuma's G7 glucose values
+or their measurement/update timing.
+
 Guardian remains on Kazuma's existing Azure Nightscout
 and is read directly by the public comparison page.
 Libre 2 uses a separate, demo-only Cloudflare Worker.
-That Worker reads one fixed Gluroo Global Connect source on a scheduled trigger,
-sanitizes the response, and replaces an expiring KV snapshot.
-Public visitors read only that snapshot and never trigger a request to Gluroo.
-Dexcom G7 remains a prepared but pending source until its route is separately verified.
+The local multi-source revision gives Libre and G7 separate fixed Gluroo source slots,
+source gates, and KV keys while retaining one global emergency stop.
+It sanitizes each enabled response and replaces only that source's expiring KV snapshot.
+Public visitors read only those snapshots and never trigger a request to Gluroo.
+Dexcom G7 remains pending until its Worker, KV, frontend, consent, and live-data path
+are separately verified.
 
 The demo-only Worker is separate from the general-user Limited Data Relay.
 The general-user relay remains stopped with `RELAY_ENABLED=false`
@@ -2426,15 +2436,22 @@ Raw exports, exact calendar dates, account information, URLs, credentials,
 sensor identifiers, treatment events, insulin, meals, medication,
 pump settings, symptoms, and location information must remain out of Git.
 
-The demo-only Worker must keep its Gluroo source URL and API Secret
-in Cloudflare Secrets, not frontend code or Git.
-It may fetch only glucose entries from the fixed `.ns.gluroo.com` host
+The demo-only Worker must keep each Gluroo source URL and API Secret
+in source-specific Cloudflare Secrets, not frontend code or Git.
+The existing Libre names remain `GLUROO_DEMO_SOURCE_URL` and
+`GLUROO_DEMO_API_SECRET`; the locally declared G7 names are
+`GLUROO_DEMO_G7_SOURCE_URL` and `GLUROO_DEMO_G7_API_SECRET`.
+It may fetch only glucose entries from each fixed `.ns.gluroo.com` host
 and `/api/v1/entries.json` path, keep at most a rolling 24-hour snapshot,
 and set a KV expiration of no more than 36 hours.
 The stored and public fields are limited to glucose value, measurement time,
 and an allowlisted direction.
 Application logging and Worker observability remain disabled,
-and `DEMO_FEED_ENABLED=false` is the emergency stop.
+and `DEMO_FEED_ENABLED=false` is the global emergency stop.
+The checked-in source gates are also disabled as
+`DEMO_LIBRE_FEED_ENABLED=false` and `DEMO_G7_FEED_ENABLED=false`.
+The source-specific KV keys are `public:libre-2:v1` and `public:dexcom-g7:v1`,
+and the prepared read routes are `/v1/libre` and `/v1/dexcom-g7`.
 
 The comparison page must fall back to a clearly labelled synthetic dataset
 when the live feeds are not configured or cannot be loaded.
@@ -2473,9 +2490,21 @@ No Gluroo request, glucose value, or live publication occurred.
 The Cron exits before Secret access, upstream fetch, or KV access while disabled.
 After another explicit approval, the working frontend configuration was set to the
 stopped `/v1/libre` route. A local browser check verified that the page remained
-clearly labelled as preparing synthetic data when the live load failed. The frontend
-change is pushed only to `feature/cgm-comparison-demo` and remains outside the public
-GitHub Pages site until merge to `main` and publication.
+clearly labelled as preparing synthetic data when the live load failed.
+PR #14 merged this preparation to `main` in merge commit
+`7e96648c27ce20fabe2f283c384124e36ce0b2d2`.
+After the official GitHub Pages deployment-lag incident was mitigated,
+workflow run `31114013927` attempt 2 published the comparison page on 2026-08-07.
+The public URL loaded with the clearly labelled `準備中 · 合成データ` fallback
+and all three device cards.
+
+The G7 multi-source revision is local preparation only.
+It declares the new G7 Secret names, separate `public:dexcom-g7:v1` key,
+stopped `/v1/dexcom-g7` route, and global plus per-source gates,
+with all checked-in gates set to `false`.
+No G7 Secret value was registered, no G7 KV value was written,
+no revised Worker Version was deployed, no Cloudflare binding or traffic changed,
+and no frontend G7 endpoint was activated.
 Cloudflare's route-level subdomain setting reports `enabled=true` for the normal
 `workers.dev` route and `previews_enabled=false` for versioned Preview routing.
 Version-level `has_preview` capability metadata does not mean the public Preview
@@ -2499,15 +2528,25 @@ Guardian 4、FreeStyle Libre 2、Dexcom G7を、
 この選択はKazuma自身のデモデータだけに適用します。
 一般利用者のデータを保存、公開、再共有する許可にはなりません。
 
+2026年8月7日、Kazumaは、Dexcom G7の値がGlurooへ表示され、
+G7の接続情報を準備できていることを確認しました。
+これはGlurooまでの経路だけの確認です。
+公開デモ用Worker、KV、フロントまでの経路は未確認で、
+G7の血糖値は保存も公開もしていません。
+Kazuma自身のG7の血糖値と測定・更新時刻を公開する前に、
+Libreとは別の明示的な公開の選択を確認します。
+
 GuardianはKazumaの既存Azure Nightscoutをそのまま使い、
 公開比較ページのブラウザから直接取得します。
 Libre 2は、一般利用者向け限定中継とは別の、
 公開デモ専用Cloudflare Workerを使います。
-このWorkerは、決められた1つのGluroo Global Connect送信先を
-定期実行で取得し、公開してよい項目だけへ整えて、
-期限付きKVスナップショットを入れ替えます。
+ローカルで準備した複数ソース版では、LibreとG7に別々の固定Gluroo送信先、
+ソース停止スイッチ、KVキーを用意し、全体の緊急停止も残します。
+有効なソースごとに公開してよい項目だけへ整えて、
+そのソースの期限付きKVスナップショットだけを入れ替えます。
 公開ページを見た人はKVだけを読み、Glurooへの取得を発生させません。
-Dexcom G7は、別途経路を確認するまで準備中として表示します。
+Dexcom G7は、Worker、KV、フロント、公開同意、ライブデータの全経路を
+別途確認するまで準備中として表示します。
 
 デモ専用Workerと、一般利用者向け限定データリレーは別の仕組みです。
 一般利用者向けリレーは`RELAY_ENABLED=false`の停止状態を保ち、
@@ -2532,14 +2571,21 @@ Dexcom G7は、別途経路を確認するまで準備中として表示しま�
 センサー識別情報、治療記録、インスリン、食事、薬、ポンプ設定、
 症状、位置情報はGitへ追加しません。
 
-デモ専用WorkerのGluroo送信先URLとAPI Secretは、
-フロントやGitではなくCloudflare Secretsだけに置きます。
-接続先を固定した`.ns.gluroo.com`のホストと
+デモ専用Workerの各Gluroo送信先URLとAPI Secretは、
+ソースごとに分け、フロントやGitではなくCloudflare Secretsだけに置きます。
+既存Libre用の名前は`GLUROO_DEMO_SOURCE_URL`と`GLUROO_DEMO_API_SECRET`、
+ローカルで宣言したG7用の新しい名前は`GLUROO_DEMO_G7_SOURCE_URL`と
+`GLUROO_DEMO_G7_API_SECRET`です。
+各接続先を固定した`.ns.gluroo.com`のホストと
 `/api/v1/entries.json`以外へ接続しません。
 保存するのは直近24時間以内とし、KVは最長36時間で期限切れにします。
 保存・公開する項目は、血糖値、測定時刻、許可した方向情報だけです。
 アプリケーションログとWorker observabilityは無効にし、
-`DEMO_FEED_ENABLED=false`を緊急停止スイッチにします。
+`DEMO_FEED_ENABLED=false`を全体の緊急停止スイッチにします。
+ソース別の`DEMO_LIBRE_FEED_ENABLED=false`と
+`DEMO_G7_FEED_ENABLED=false`も停止状態でチェックインします。
+KVキーは`public:libre-2:v1`と`public:dexcom-g7:v1`へ分け、
+読み取り経路は`/v1/libre`と`/v1/dexcom-g7`として準備します。
 
 ライブデータが未設定または読み込めない場合は、
 合成データであることを明記してフォールバックします。
@@ -2576,9 +2622,19 @@ Glurooへの接続、血糖値取得、ライブ公開は行っていません�
 停止中のCronはSecret参照、外部取得、KVアクセスより前に終了します。
 さらに別の明示確認後、作業中のフロント接続先を停止中の`/v1/libre`へ設定しました。
 ローカル実画面でライブ取得失敗時も「準備中・合成データ」と明記して
-切り替わることを確認しています。このフロント変更は
-`feature/cgm-comparison-demo`へだけpush済みで、`main`へのmergeと
-GitHub Pagesへの反映までは公開ページに含まれません。
+切り替わることを確認しています。
+PR #14はこの準備をmerge commit
+`7e96648c27ce20fabe2f283c384124e36ce0b2d2`で`main`へ取り込みました。
+公式のGitHub Pages配信遅延インシデントが緩和された後、
+workflow run `31114013927`のattempt 2で2026年8月7日に公開しました。
+公開URLで「準備中・合成データ」の明記と3機種のカード表示を確認しています。
+
+G7の複数ソース対応はローカル準備だけです。
+G7用の新しいSecret名、別の`public:dexcom-g7:v1`キー、
+停止中の`/v1/dexcom-g7`経路、全体とソース別の停止スイッチを宣言し、
+チェックインする値はすべて`false`にしています。
+G7のSecret値登録、G7のKV書き込み、改訂Worker Versionのデプロイ、
+Cloudflareバインドや通信割合の変更、フロントのG7接続先有効化は行っていません。
 Cloudflareの公開ルート設定は、通常の`workers.dev`が`enabled=true`、
 Version別Previewが`previews_enabled=false`です。Version側の
 `has_preview`表示は、公開Previewルートが有効という意味ではありません。

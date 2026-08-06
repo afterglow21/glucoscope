@@ -10,6 +10,9 @@ import {
 } from "../demos/cgm-comparison/comparison-core.mjs";
 import {
   buildLiveComparisonDataset,
+  fetchOptionalPublicFeed,
+  normalizePublicFeedEndpoint,
+  validatePublicFeed,
   validatePublicLibreFeed
 } from "../demos/cgm-comparison/live-comparison-core.mjs";
 import {
@@ -30,7 +33,9 @@ test("public sample is explicitly synthetic, three-source, and privacy-safe", as
   assert.match(dataset.sources[1].captureRoute, /Gluroo Global Connect/);
   assert.match(dataset.sources[2].captureRoute, /Gluroo Global Connect/);
   assert.equal(dataset.sources[1].verificationLabel, "基本接続を実機確認済み");
-  assert.equal(dataset.sources[2].verificationLabel, "実機確認前");
+  assert.equal(dataset.sources[2].verificationLabel, "Gluroo表示を確認済み");
+  assert.match(dataset.sources[2].captureRoute, /公開デモ用Worker経路は準備中/);
+  assert.match(dataset.sources[2].note, /表示中の線は合成データ/);
   assert.doesNotMatch(sampleText, /https?:\/\//i);
   assert.doesNotMatch(sampleText, /\b\d{4}-\d{2}-\d{2}\b/);
   assert.doesNotMatch(sampleText, /secret|password|email|account[-_ ]?id/i);
@@ -73,7 +78,44 @@ test("live comparison uses Guardian and Libre while Dexcom remains pending", () 
   assert.equal(dataset.sources[0].readings.length, 2);
   assert.equal(dataset.sources[1].readings.length, 2);
   assert.deepEqual(dataset.sources[2].readings, []);
+  assert.equal(dataset.sources[2].verificationLabel, "Gluroo表示を確認済み");
+  assert.match(dataset.sources[2].captureRoute, /公開デモ用Worker経路は準備中/);
   assert.doesNotMatch(JSON.stringify(dataset), /private-guardian|dateString|https?:\/\/|secret/i);
+});
+
+test("a valid G7 feed stays pending until the public route gate is verified", () => {
+  const nowMs = Date.parse("2026-08-06T06:00:00.000Z");
+  const libreUpdatedAt = nowMs - 60_000;
+  const dexcomUpdatedAt = nowMs - 180_000;
+  const base = {
+    nowMs,
+    guardianEntries: [{ sgv: 104, date: nowMs }],
+    librePayload: {
+      ok: true,
+      sourceId: "libre-2",
+      updatedAt: libreUpdatedAt,
+      stale: false,
+      entries: [{ sgv: 103, date: nowMs }]
+    },
+    dexcomPayload: {
+      ok: true,
+      sourceId: "dexcom-g7",
+      updatedAt: dexcomUpdatedAt,
+      stale: false,
+      entries: [{ sgv: 102, date: nowMs }]
+    }
+  };
+  const dormant = buildLiveComparisonDataset({ ...base, dexcomRouteVerified: false });
+  assert.equal(dormant.sources[2].dataStatus, "pending");
+  assert.deepEqual(dormant.sources[2].readings, []);
+  assert.equal(dormant.updatedAt, libreUpdatedAt);
+
+  const verified = buildLiveComparisonDataset({ ...base, dexcomRouteVerified: true });
+  assert.equal(verified.sources[2].dataStatus, "available");
+  assert.equal(verified.sources[2].readings.length, 1);
+  assert.equal(verified.sources[2].verificationLabel, "公開デモ経路を実機確認済み");
+  assert.match(verified.disclosure, /Dexcom G7/);
+  assert.equal(verified.updatedAt, dexcomUpdatedAt);
 });
 
 test("public Libre feed validation rejects private or unexpected fields", () => {
@@ -89,6 +131,58 @@ test("public Libre feed validation rejects private or unexpected fields", () => 
     () => validatePublicLibreFeed({ ...valid, entries: [{ ...valid.entries[0], device: "private" }] }),
     /unexpected fields/
   );
+  assert.throws(() => validatePublicLibreFeed({ ...valid, privateAccount: "hidden" }), /unexpected fields/);
+  assert.throws(() => validatePublicFeed(valid, "dexcom-g7"), /invalid/);
+  assert.throws(
+    () => validatePublicFeed({ ...valid, sourceId: "dexcom-g7", entries: [{ ...valid.entries[0], direction: "unknown" }] }, "dexcom-g7"),
+    /direction/
+  );
+  assert.throws(
+    () => validatePublicFeed({ ...valid, entries: [{ sgv: "103", date: valid.entries[0].date }] }, "libre-2"),
+    /invalid/
+  );
+  assert.throws(
+    () => validatePublicFeed({ ...valid, entries: [valid.entries[0], { ...valid.entries[0], sgv: 104 }] }, "libre-2"),
+    /invalid/
+  );
+});
+
+test("optional G7 feed failures return pending input without affecting required feeds", async () => {
+  const endpoint = "https://example.invalid/v1/dexcom-g7";
+  const nowMs = Date.parse("2026-08-06T06:00:00.000Z");
+  const cases = [
+    async () => new Response(JSON.stringify({ ok: false }), { status: 503 }),
+    async () => { throw new Error("network unavailable"); },
+    async () => new Response("{", { status: 200, headers: { "Content-Type": "application/json" } })
+  ];
+  for (const fetchImpl of cases) {
+    const dexcomPayload = await fetchOptionalPublicFeed(endpoint, "dexcom-g7", fetchImpl);
+    assert.equal(dexcomPayload, null);
+    const dataset = buildLiveComparisonDataset({
+      nowMs,
+      guardianEntries: [{ sgv: 104, date: nowMs }],
+      librePayload: {
+        ok: true,
+        sourceId: "libre-2",
+        updatedAt: nowMs,
+        stale: false,
+        entries: [{ sgv: 103, date: nowMs }]
+      },
+      dexcomPayload,
+      dexcomRouteVerified: true
+    });
+    assert.equal(dataset.status, "live");
+    assert.deepEqual(dataset.sources.map((source) => source.dataStatus), ["available", "available", "pending"]);
+  }
+});
+
+test("optional public feed endpoint accepts HTTPS and local HTTP only", () => {
+  const baseUrl = "https://afterglow21.github.io/glucoscope/demos/cgm-comparison/";
+  assert.equal(normalizePublicFeedEndpoint("", baseUrl), "");
+  assert.equal(normalizePublicFeedEndpoint("https://example.com/v1/dexcom-g7", baseUrl), "https://example.com/v1/dexcom-g7");
+  assert.equal(normalizePublicFeedEndpoint("http://localhost:8787/v1/dexcom-g7", baseUrl), "http://localhost:8787/v1/dexcom-g7");
+  assert.throws(() => normalizePublicFeedEndpoint("http://example.com/v1/dexcom-g7", baseUrl), /Unsafe/);
+  assert.throws(() => normalizePublicFeedEndpoint("https://user:pass@example.com/v1/dexcom-g7", baseUrl), /Unsafe/);
 });
 
 test("comparison matching uses nearby readings without inventing a reference source", () => {
@@ -171,6 +265,8 @@ test("public demo is linked while the capture helper stays unlinked and noindex"
   assert.match(captureModule, /createAdapter\(\{ mode: "public-demo" \}\)/);
   assert.match(captureModule, /prepareConnection\(relayConfigs\["libre-2"\]\)/);
   assert.match(liveConfig, /libreFeedEndpoint:\s*"https:\/\/glucoscope-demo-feed\.afterglow21\.workers\.dev\/v1\/libre"/);
+  assert.match(liveConfig, /dexcomFeedEndpoint:\s*""/);
+  assert.match(liveConfig, /dexcomRouteVerified:\s*false/);
   assert.doesNotMatch(liveConfig, /ns\.gluroo\.com|api.?secret|token/i);
 });
 
