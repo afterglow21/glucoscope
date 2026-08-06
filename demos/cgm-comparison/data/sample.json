@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "status": "synthetic",
+  "title": "3CGM comparison layout sample",
+  "durationMinutes": 720,
+  "matchToleranceMinutes": 3,
+  "disclosure": "現在は画面と集計方法を確認するための合成データです。Kazumaの実際のCGMデータはまだ公開していません。",
+  "sources": [
+    {
+      "id": "guardian-4",
+      "label": "Guardian 4 / MiniMed 780G",
+      "shortLabel": "Guardian 4",
+      "color": "#3a7d68",
+      "verificationLabel": "基本接続を実機確認済み",
+      "dataStatus": "available",
+      "captureRoute": "取得元: Kazumaの既存Azure Nightscout（ブラウザ直接） / 公開用: 匿名化した静的スナップショット",
+      "note": "既存Azure Nightscoutのブラウザ直接接続は確認済みです。比較用の実測データは未公開です。",
+      "readings": [[0,112],[30,116],[60,124],[90,138],[120,154],[150,168],[180,160],[210,146],[240,132],[270,122],[300,116],[330,111],[360,108],[390,114],[420,128],[450,144],[480,158],[510,150],[540,136],[570,126],[600,120],[630,116],[660,112],[690,109],[720,107]]
+    },
+    {
+      "id": "libre-2",
+      "label": "FreeStyle Libre 2",
+      "shortLabel": "Libre 2",
+      "color": "#c58a35",
+      "verificationLabel": "基本接続を実機確認済み",
+      "dataStatus": "available",
+      "captureRoute": "取得元: Gluroo Global Connect（限定リレー） / 公開用: 匿名化した静的スナップショット",
+      "note": "LibreLink、LibreLinkUp、Gluroo、限定リレー、GlucoScopeまでの現在血糖・グラフ・再読み込みを実機確認済みです。比較用の実測データは未公開です。",
+      "readings": [[0,110],[30,114],[60,121],[90,134],[120,149],[150,164],[180,165],[210,151],[240,137],[270,126],[300,119],[330,113],[360,110],[390,112],[420,124],[450,139],[480,154],[510,153],[540,140],[570,130],[600,123],[630,118],[660,114],[690,111],[720,109]]
+    },
+    {
+      "id": "dexcom-g7",
+      "label": "Dexcom G7",
+      "shortLabel": "Dexcom G7",
+      "color": "#6d70ad",
+      "verificationLabel": "実機確認前",
+      "dataStatus": "available",
+      "captureRoute": "取得元: Gluroo Global Connect（限定リレー） / 公開用: 匿名化した静的スナップショット",
+      "note": "Dexcom ShareとGlurooを含む実機経路はこれから確認します。確認前に対応済みとは案内しません。",
+      "readings": [[0,114],[30,118],[60,126],[90,141],[120,158],[150,171],[180,162],[210,143],[240,130],[270,120],[300,114],[330,109],[360,107],[390,116],[420,131],[450,147],[480,162],[510,148],[540,133],[570,123],[600,118],[630,114],[660,110],[690,108],[720,106]]
+    }
+  ]
+}

@@ -48,9 +48,25 @@ Limited Data Relay
 GlucoScope
 ```
 
-On 2026-08-06, the Guardian route completed its first iPhone Safari acceptance through Turnstile, the signed relay ticket, Gluroo, and GlucoScope. The current glucose view and graph appeared, and they appeared again after a reload. The relay was returned immediately to `RELAY_ENABLED=false`. Extended period, expiry, deletion, and limit checks remain before a continuing Friends & Family enablement. Libre, Dexcom G7, and other routes are not described as verified.
+On 2026-08-06, the Guardian route completed its first iPhone Safari acceptance through Turnstile, the signed relay ticket, Gluroo, and GlucoScope. Later the same day, the FreeStyle Libre 2 route completed its first basic end-to-end acceptance from FreeStyle LibreLink through LibreLinkUp, Gluroo, the limited relay, and GlucoScope. Current glucose, graph display, reload, and return from the iOS Home Screen passed in Safari Private Browsing. Closing Private Browsing removed its browser-stored configuration as expected; normal-tab persistence after fully quitting Safari was not retested by user choice. The relay was returned immediately to `RELAY_ENABLED=false`. Extended period, expiry, deletion, and limit checks remain before a continuing Friends & Family enablement. Dexcom G7 and other untested routes are not described as verified.
 
-Phase 3A connected the user onboarding flow to the paused relay client. Phase 3B created the paused Worker shell and SQLite Durable Object in Cloudflare, registered the required Worker Secrets, and passed stopped-response/CORS smoke tests. The approved `workers.dev` target is fixed in the checked-in frontend, and explicit consent is required before any relay request. `preview_urls=false`, `observability.enabled=false`, and the checked-in `RELAY_ENABLED=false` remain in place. The production Worker was also returned to `RELAY_ENABLED=false` after the first acceptance, so live Gluroo data is not currently available. Direct Nightscout and the public demo remain independent.
+Phase 3A connected the user onboarding flow to the paused relay client. Phase 3B created the paused Worker shell and SQLite Durable Object in Cloudflare, registered the required Worker Secrets, and passed stopped-response/CORS smoke tests. The approved `workers.dev` target is fixed in the checked-in frontend, and explicit consent is required before any relay request. `preview_urls=false`, `observability.enabled=false`, and the checked-in `RELAY_ENABLED=false` remain in place. The production Worker was returned to `RELAY_ENABLED=false` after each basic acceptance, so live Gluroo data is not currently available. Direct Nightscout and the public demo remain independent.
+
+## 3CGM Comparison Lab preparation
+
+The public comparison lab is locally prepared to show live Guardian and Libre data together while Dexcom G7 remains visibly pending. It does not rank devices, claim accuracy, select a reference CGM, or support treatment decisions. If the live sources are not configured or cannot be loaded, the page clearly falls back to the checked-in synthetic dataset.
+
+Guardian is read directly from Kazuma's existing public Azure Nightscout. Libre uses the separate `workers/gluco-demo-feed/` Worker design: one scheduled Gluroo fetch updates an expiring sanitized KV snapshot, and public visitors read only that snapshot. Kazuma explicitly chose to make his own Libre glucose values and measurement/update timing public for this demo. This exception applies only to Kazuma's demo data; the general-user Limited Data Relay remains paused and retains its no-glucose-storage boundary.
+
+The demo Worker is checked in with `DEMO_FEED_ENABLED=false`, no application logging, and Worker observability disabled. After separate explicit approvals on 2026-08-06, one dedicated KV namespace was created and the stopped `glucoscope-demo-feed` Worker was deployed as Version `4c8d40de-8877-4d70-800e-1607e1940b96`. A later explicit approval registered exactly `GLUROO_DEMO_SOURCE_URL` and `GLUROO_DEMO_API_SECRET` as Cloudflare Secrets; their values were not printed, logged, or added to Git. Another explicit approval reapplied the stopped configuration as Version `f8801d58-67bd-4cf9-8cb1-dd227c879446`, which now receives 100% of traffic with `DEMO_FEED_ENABLED=false`. Its `workers.dev` endpoint returns `503 demo_feed_paused`, approved-origin preflight returns `204`, an unapproved browser origin returns `403`, the five-minute Cron exits before Secret access, Gluroo fetch, or KV write, and the dedicated KV remains empty. The Cloudflare subdomain setting was verified as `enabled=true` and `previews_enabled=false`; version-level `has_preview` metadata does not mean the public Preview route is enabled. After another explicit approval, the comparison frontend was configured to use the stopped `/v1/libre` endpoint, and a local browser check verified the clearly labelled synthetic fallback. No Gluroo upstream request, KV write, or live glucose publication occurred. Live retrieval still requires separate explicit approval. The frontend change is pushed only to `feature/cgm-comparison-demo` and is not part of the public GitHub Pages site until it is merged to `main` and published. Raw exports, credentials, and unreviewed candidate files remain out of Git.
+
+The unlinked `tools/cgm-comparison-capture/` helper remains available for a later reviewed three-source static snapshot after Dexcom is verified. It uses browser memory only, does not load analytics, and does not persist connection details.
+
+Design and safety details are documented in:
+
+```text
+docs/Feature_Specs/CGM_COMPARISON_DEMO.md
+```
 
 Run the frontend tests with:
 
@@ -244,5 +260,5 @@ The user-mode onboarding is designed for people with little technical knowledge,
 - The screenshot guide is maintained separately at `guides/gluroo-setup/` so Gluroo screen changes can be updated without redesigning the dashboard.
 - Guide screenshots are displayed without fixed-position overlays. Numbered steps and captions identify what to look for without risking marker drift across devices.
 - Separate preparation pages explain Dexcom Share, LibreLinkUp, and Guardian Monitor.
-- Gluroo connection details may stay in the selected browser and pass transiently through the limited relay. They are not stored in Azure, KV, Durable Objects, relay logs, shared cache, or AI.
+- General-user Gluroo connection details may stay in the selected browser and pass transiently through the limited relay. They are not stored in Azure, KV, Durable Objects, relay logs, shared cache, or AI. The separate public demo feed is limited to Kazuma's intentionally public Libre values and never receives a general user's connection details or glucose data.
 - Existing Nightscout remains a direct browser route and does not use the limited relay.

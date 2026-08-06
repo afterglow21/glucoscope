@@ -8,3 +8,10 @@ workers/gluco-data-relay/node_modules/
 workers/gluco-data-relay/.wrangler/
 workers/gluco-data-relay/.dev.vars*
 workers/gluco-data-relay/.env*
+workers/gluco-demo-feed/node_modules/
+workers/gluco-demo-feed/worker-configuration.d.ts
+workers/gluco-demo-feed/.wrangler/
+workers/gluco-demo-feed/.dev.vars*
+workers/gluco-demo-feed/.env*
+private/cgm-comparison/
+demos/cgm-comparison/data/candidate-*.json

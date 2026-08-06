@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="glucoscope-data-relay-endpoint" content="https://glucoscope-data-relay.afterglow21.workers.dev">
+  <title>Owner CGM Capture Helper | GlucoScope</title>
+  <link rel="stylesheet" href="../../demos/cgm-comparison/comparison.css?v=20260806-cgm-lab-1">
+  <link rel="stylesheet" href="capture.css?v=20260806-cgm-capture-1">
+</head>
+<body>
+  <main class="comparison-shell capture-shell">
+    <nav class="comparison-topbar" aria-label="ページナビゲーション">
+      <a class="comparison-brand" href="../../index.html#about">🍀 GlucoScope</a>
+      <a class="comparison-back" href="../../demos/cgm-comparison/">比較デモを見る</a>
+    </nav>
+
+    <header class="comparison-card capture-hero">
+      <p class="comparison-kicker">Owner-only workflow · no analytics</p>
+      <h1>3CGM Capture Helper</h1>
+      <p class="comparison-title-jp">Azure Nightscoutと2つのGlurooから、公開候補データを1回だけ取り出す</p>
+      <p>Guardianは既存の公開デモ用Azure Nightscoutから直接、Libre 2とG7は別々のGluroo Global Connectから限定リレー経由で取得し、正確な日付と接続情報を除いたJSONを端末へ保存します。</p>
+    </header>
+
+    <section class="comparison-safety comparison-card">
+      <h2>大切な境界</h2>
+      <p><strong>このページにはアクセス制限がありません。「非公開」とは、接続情報を保存・公開しない作業フローを意味します。</strong></p>
+      <p>入力内容はブラウザメモリだけで扱い、localStorageへ保存しません。取得したデータはGlucoScopeのサーバー、KV、Durable Objects、AI、アクセス解析へ保存しません。</p>
+      <p>限定リレーが停止中のときは使えません。有効化、実データ取得、停止へ戻す操作は、それぞれ別の明示確認を行います。</p>
+    </section>
+
+    <form id="captureForm" class="capture-form" novalidate>
+      <section class="comparison-card capture-section">
+        <div class="comparison-section-heading">
+          <div>
+            <p class="comparison-kicker">Step 1</p>
+            <h2>Libre 2とDexcom G7の接続情報</h2>
+          </div>
+          <p>2つのGlurooの「Nightscout URL」と「API Secret Token」を別々に入力します。Guardianの追加入力は不要です。</p>
+        </div>
+        <div class="capture-source-grid">
+          <fieldset class="capture-source" data-source-id="guardian-4">
+            <legend>Guardian 4 / MiniMed 780G</legend>
+            <p>既存の公開デモ用Azure Nightscoutへブラウザから直接接続します。URL・合言葉の追加入力は不要です。</p>
+          </fieldset>
+          <fieldset class="capture-source" data-source-id="libre-2">
+            <legend>FreeStyle Libre 2</legend>
+            <label>接続先URL<input name="libreUrl" type="url" inputmode="url" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="https://…"></label>
+            <label>接続用の合言葉<input name="libreSecret" type="password" autocomplete="off" autocapitalize="none" spellcheck="false"></label>
+          </fieldset>
+          <fieldset class="capture-source" data-source-id="dexcom-g7">
+            <legend>Dexcom G7</legend>
+            <label>接続先URL<input name="dexcomUrl" type="url" inputmode="url" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="https://…"></label>
+            <label>接続用の合言葉<input name="dexcomSecret" type="password" autocomplete="off" autocapitalize="none" spellcheck="false"></label>
+          </fieldset>
+        </div>
+      </section>
+
+      <section class="comparison-card capture-section">
+        <div class="comparison-section-heading">
+          <div>
+            <p class="comparison-kicker">Step 2</p>
+            <h2>重なる期間</h2>
+          </div>
+          <p>3種類すべてが動いていた期間を選びます。最大31日ですが、最初は短い期間で確認します。</p>
+        </div>
+        <div class="capture-range-grid">
+          <label>開始日時<input name="rangeStart" type="datetime-local"></label>
+          <label>終了日時<input name="rangeEnd" type="datetime-local"></label>
+        </div>
+      </section>
+
+      <section class="comparison-card capture-section">
+        <div class="comparison-section-heading">
+          <div>
+            <p class="comparison-kicker">Step 3</p>
+            <h2>安全確認と匿名化ファイル</h2>
+          </div>
+        </div>
+        <label class="capture-consent">
+          <input id="captureConsent" type="checkbox">
+          <span>Libre 2とDexcom G7の2つの接続情報と血糖エントリーが限定リレーを一時的に通ること、GuardianはAzure Nightscoutへブラウザから直接接続すること、生成ファイルにも血糖値が含まれることを確認しました。</span>
+        </label>
+        <div id="dataSourceRelayTurnstile" class="capture-turnstile" hidden aria-label="データ接続の安全確認"></div>
+        <div class="capture-actions">
+          <button id="prepareCaptureButton" type="button" class="capture-primary">安全確認を行う</button>
+          <button id="downloadCaptureButton" type="button" class="capture-primary" disabled>3系統を取得して匿名化JSONを保存</button>
+          <button id="clearCaptureButton" type="button" class="capture-secondary">入力とチケットを消す</button>
+        </div>
+        <p id="captureStatus" class="capture-status" role="status" aria-live="polite">まだ通信していません。</p>
+      </section>
+    </form>
+
+    <section class="comparison-card capture-section">
+      <h2>保存されるもの／されないもの</h2>
+      <div class="capture-boundary-grid">
+        <div><strong>保存される</strong><p>CGM名、装着開始からの経過分、mg/dL値、確認状況の説明</p></div>
+        <div><strong>保存されない</strong><p>URL、Secret、氏名、メール、アカウントID、センサー番号、正確な日付、治療・食事・薬・ポンプ情報</p></div>
+      </div>
+      <p>ダウンロードされたJSONはまだ公開候補です。Gitへ追加する前に内容と公開範囲を別途確認します。</p>
+    </section>
+  </main>
+
+  <script src="../../js/data-source.js?v=20260721-user-foundation-3-2"></script>
+  <script src="../../js/data-relay-client.js?v=20260806-turnstile-server-code-1"></script>
+  <script type="module" src="capture.mjs?v=20260806-cgm-capture-2"></script>
+</body>
+</html>

@@ -1,0 +1,193 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { access, readFile } from "node:fs/promises";
+
+import {
+  buildMatchedComparisons,
+  computeObservationSummary,
+  formatElapsedMinute,
+  validateDataset
+} from "../demos/cgm-comparison/comparison-core.mjs";
+import {
+  buildLiveComparisonDataset,
+  validatePublicLibreFeed
+} from "../demos/cgm-comparison/live-comparison-core.mjs";
+import {
+  anonymizeEntries,
+  buildAnonymizedDataset,
+  validateCaptureRange
+} from "../tools/cgm-comparison-capture/capture-core.mjs";
+
+const sampleUrl = new URL("../demos/cgm-comparison/data/sample.json", import.meta.url);
+
+test("public sample is explicitly synthetic, three-source, and privacy-safe", async () => {
+  const sampleText = await readFile(sampleUrl, "utf8");
+  const dataset = validateDataset(JSON.parse(sampleText));
+  assert.equal(dataset.status, "synthetic");
+  assert.deepEqual(dataset.sources.map((source) => source.id), ["guardian-4", "libre-2", "dexcom-g7"]);
+  assert.deepEqual(dataset.sources.map((source) => source.dataStatus), ["available", "available", "available"]);
+  assert.match(dataset.sources[0].captureRoute, /Azure Nightscout/);
+  assert.match(dataset.sources[1].captureRoute, /Gluroo Global Connect/);
+  assert.match(dataset.sources[2].captureRoute, /Gluroo Global Connect/);
+  assert.equal(dataset.sources[1].verificationLabel, "基本接続を実機確認済み");
+  assert.equal(dataset.sources[2].verificationLabel, "実機確認前");
+  assert.doesNotMatch(sampleText, /https?:\/\//i);
+  assert.doesNotMatch(sampleText, /\b\d{4}-\d{2}-\d{2}\b/);
+  assert.doesNotMatch(sampleText, /secret|password|email|account[-_ ]?id/i);
+});
+
+test("a public dataset can keep an unstarted CGM pending without fabricated readings", async () => {
+  const sample = JSON.parse(await readFile(sampleUrl, "utf8"));
+  sample.sources[2].dataStatus = "pending";
+  sample.sources[2].readings = [];
+  const dataset = validateDataset(sample);
+  assert.equal(dataset.sources[2].dataStatus, "pending");
+  assert.deepEqual(dataset.sources[2].readings, []);
+
+  sample.sources[2].dataStatus = "available";
+  assert.throws(() => validateDataset(sample), /available source needs readings/);
+});
+
+test("live comparison uses Guardian and Libre while Dexcom remains pending", () => {
+  const nowMs = Date.parse("2026-08-06T06:00:00.000Z");
+  const dataset = buildLiveComparisonDataset({
+    nowMs,
+    windowHours: 24,
+    guardianEntries: [
+      { sgv: 101, date: nowMs - 300_000, device: "private-guardian" },
+      { sgv: 104, date: nowMs }
+    ],
+    librePayload: {
+      ok: true,
+      sourceId: "libre-2",
+      updatedAt: nowMs,
+      stale: false,
+      entries: [
+        { sgv: 99, date: nowMs - 300_000, direction: "Flat" },
+        { sgv: 103, date: nowMs }
+      ]
+    }
+  });
+  assert.equal(dataset.status, "live");
+  assert.deepEqual(dataset.sources.map((source) => source.dataStatus), ["available", "available", "pending"]);
+  assert.equal(dataset.sources[0].readings.length, 2);
+  assert.equal(dataset.sources[1].readings.length, 2);
+  assert.deepEqual(dataset.sources[2].readings, []);
+  assert.doesNotMatch(JSON.stringify(dataset), /private-guardian|dateString|https?:\/\/|secret/i);
+});
+
+test("public Libre feed validation rejects private or unexpected fields", () => {
+  const valid = {
+    ok: true,
+    sourceId: "libre-2",
+    updatedAt: Date.parse("2026-08-06T06:00:00.000Z"),
+    stale: false,
+    entries: [{ sgv: 103, date: Date.parse("2026-08-06T05:55:00.000Z"), direction: "Flat" }]
+  };
+  assert.equal(validatePublicLibreFeed(valid), valid);
+  assert.throws(
+    () => validatePublicLibreFeed({ ...valid, entries: [{ ...valid.entries[0], device: "private" }] }),
+    /unexpected fields/
+  );
+});
+
+test("comparison matching uses nearby readings without inventing a reference source", () => {
+  const sources = [
+    { readings: [[0, 100], [5, 110], [10, 120]] },
+    { readings: [[1, 102], [6, 108], [15, 130]] },
+    { readings: [[0, 99], [5, 112], [10, 117]] }
+  ];
+  const matched = buildMatchedComparisons(sources, 2);
+  assert.equal(matched.length, 2);
+  assert.deepEqual(matched.map((item) => item.spread), [3, 4]);
+  assert.deepEqual(computeObservationSummary(sources, 2), {
+    matchedCount: 2,
+    medianSpread: 3.5,
+    missingCount: 1
+  });
+});
+
+test("elapsed labels expose no calendar date", () => {
+  assert.equal(formatElapsedMinute(0), "Day 1 00:00");
+  assert.equal(formatElapsedMinute(1505), "Day 2 01:05");
+});
+
+test("capture range is ordered and limited", () => {
+  const range = validateCaptureRange("2026-08-01T00:00:00Z", "2026-08-11T00:00:00Z");
+  assert.equal(range.durationMinutes, 14_400);
+  assert.throws(() => validateCaptureRange("2026-08-11", "2026-08-01"), /終了日時/);
+  assert.throws(() => validateCaptureRange("2026-01-01", "2026-03-01"), /31日以内/);
+});
+
+test("capture conversion removes exact timestamps and unrelated entry fields", () => {
+  const startMs = Date.parse("2026-08-01T00:00:00Z");
+  const endMs = startMs + 10 * 60_000;
+  const readings = anonymizeEntries([
+    { sgv: 101, date: startMs, direction: "Flat", device: "private-device" },
+    { sgv: 108, date: startMs + 5 * 60_000, dateString: "2026-08-01T00:05:00Z" },
+    { sgv: 111, date: endMs + 1 }
+  ], startMs, endMs);
+  assert.deepEqual(readings, [[0, 101], [5, 108]]);
+});
+
+test("candidate dataset includes only the anonymized publication schema", () => {
+  const startMs = Date.parse("2026-08-01T00:00:00Z");
+  const endMs = startMs + 10 * 60_000;
+  const entries = [{ sgv: 101, date: startMs }, { sgv: 108, date: endMs }];
+  const dataset = buildAnonymizedDataset({
+    startMs,
+    endMs,
+    entriesBySource: {
+      "guardian-4": entries,
+      "libre-2": entries,
+      "dexcom-g7": entries
+    }
+  });
+  const serialized = JSON.stringify(dataset);
+  assert.equal(dataset.status, "anonymized");
+  assert.deepEqual(dataset.sources.map((source) => source.dataStatus), ["available", "available", "available"]);
+  assert.equal(dataset.sources[1].verificationLabel, "基本接続を実機確認済み");
+  assert.equal(dataset.sources[2].verificationLabel, "実機確認前");
+  assert.doesNotMatch(serialized, /2026-08-01|https?:\/\/|secret|dateString|device/i);
+});
+
+test("public demo is linked while the capture helper stays unlinked and noindex", async () => {
+  const rootIndex = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const demo = await readFile(new URL("../demos/cgm-comparison/index.html", import.meta.url), "utf8");
+  const capture = await readFile(new URL("../tools/cgm-comparison-capture/index.html", import.meta.url), "utf8");
+  const captureModule = await readFile(new URL("../tools/cgm-comparison-capture/capture.mjs", import.meta.url), "utf8");
+  const liveConfig = await readFile(new URL("../demos/cgm-comparison/live-config.js", import.meta.url), "utf8");
+  assert.match(rootIndex, /href="demos\/cgm-comparison\/"/);
+  assert.doesNotMatch(rootIndex, /tools\/cgm-comparison-capture/);
+  assert.match(demo, /vendor\/chart\.js\/chart\.umd\.min\.js/);
+  assert.match(demo, /analytics-loader\.js/);
+  assert.match(demo, /js\/data-source\.js/);
+  assert.match(demo, /live-config\.js/);
+  assert.match(capture, /name="robots" content="noindex,nofollow,noarchive"/);
+  assert.doesNotMatch(capture, /analytics-loader\.js|static\.cloudflareinsights\.com/);
+  assert.equal((capture.match(/type="password"/g) || []).length, 2);
+  assert.doesNotMatch(capture, /name="guardian(?:Url|Secret)"/);
+  assert.match(capture, /Azure Nightscout/);
+  assert.match(captureModule, /createAdapter\(\{ mode: "public-demo" \}\)/);
+  assert.match(captureModule, /prepareConnection\(relayConfigs\["libre-2"\]\)/);
+  assert.match(liveConfig, /libreFeedEndpoint:\s*"https:\/\/glucoscope-demo-feed\.afterglow21\.workers\.dev\/v1\/libre"/);
+  assert.doesNotMatch(liveConfig, /ns\.gluroo\.com|api.?secret|token/i);
+});
+
+test("comparison and capture helper local links and assets resolve", async () => {
+  const pages = [
+    new URL("../demos/cgm-comparison/index.html", import.meta.url),
+    new URL("../tools/cgm-comparison-capture/index.html", import.meta.url)
+  ];
+  for (const pageUrl of pages) {
+    const html = await readFile(pageUrl, "utf8");
+    for (const match of html.matchAll(/(?:href|src)="([^"]+)"/g)) {
+      const target = match[1];
+      if (/^(?:https?:|#|data:)/i.test(target)) continue;
+      const resolved = new URL(target, pageUrl);
+      resolved.hash = "";
+      resolved.search = "";
+      await assert.doesNotReject(access(resolved), `${pageUrl.pathname}: ${target}`);
+    }
+  }
+});

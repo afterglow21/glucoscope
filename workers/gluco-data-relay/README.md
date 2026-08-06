@@ -2,7 +2,7 @@
 
 This directory contains the paused Gluroo-only relay, including its security, access-control, and request-limit boundaries.
 
-Phase 3A connected the user onboarding flow to the relay client while keeping the checked-in endpoint blank. Phase 3B created the stopped Cloudflare Worker shell and Durable Object, registered the required Worker Secrets, and verified the stopped production response. The checked-in frontend now points only to the approved target and requires explicit consent. The first basic Guardian end-to-end acceptance passed on 2026-08-06; the relay was then returned to `RELAY_ENABLED=false` and remains unavailable for live use.
+Phase 3A connected the user onboarding flow to the relay client while keeping the checked-in endpoint blank. Phase 3B created the stopped Cloudflare Worker shell and Durable Object, registered the required Worker Secrets, and verified the stopped production response. The checked-in frontend now points only to the approved target and requires explicit consent. The first basic Guardian and FreeStyle Libre 2 end-to-end acceptances passed on 2026-08-06; the relay was returned to `RELAY_ENABLED=false` after each check and remains unavailable for live use.
 
 ## Implemented through Phase 3B
 
@@ -69,7 +69,7 @@ The dry-run binding summary must show the `RELAY_USAGE_COUNTER` Durable Object b
 
 There is intentionally no real `deploy` npm script. The stopped `workers.dev` target was created only after explicit approval. The checked-in frontend endpoint is fixed to that target for paused-state acceptance testing, version-specific Preview URLs are disabled, and `RELAY_ENABLED=false` prevents Turnstile verification, ticket issuance, counter consumption, or upstream access.
 
-The Phase 3C public-policy review, stopped-target deployment, final Trust Pack review, and first basic Guardian end-to-end acceptance are complete. On 2026-08-06, Gluroo support replied in writing that the proposed use should work and was acceptable to them only while it remains consistent with their EULA, terms, and other documents. The response does not create affiliation, endorsement, partnership, legal assurance about CGM data re-sharing, or permission to use GGC for medical decisions. GlucoScope must handle its own user questions, must not market GGC as a free alternative to subscription Nightscout services, and may say only that GGC currently has no cost during its testing phase while a future subscription is being considered. Extended range and operational checks, any routing change, and continuing live relay enablement still require separate review and explicit approval.
+The Phase 3C public-policy review, stopped-target deployment, final Trust Pack review, and first basic Guardian and FreeStyle Libre 2 end-to-end acceptances are complete. On 2026-08-06, Gluroo support replied in writing that the proposed use should work and was acceptable to them only while it remains consistent with their EULA, terms, and other documents. The response does not create affiliation, endorsement, partnership, legal assurance about CGM data re-sharing, or permission to use GGC for medical decisions. GlucoScope must handle its own user questions, must not market GGC as a free alternative to subscription Nightscout services, and may say only that GGC currently has no cost during its testing phase while a future subscription is being considered. Extended range and operational checks, any routing change, and continuing live relay enablement still require separate review and explicit approval.
 
 ## Permanent stopped target verification — 2026-08-05
 
@@ -143,12 +143,24 @@ The Phase 3C public-policy review, stopped-target deployment, final Trust Pack r
 
 This completes the first basic end-to-end acceptance. Today/yesterday/7-day/30-day coverage, deletion, ticket expiry, limit behavior, and any continuing Friends & Family enablement remain separate gates.
 
+## First FreeStyle Libre 2 end-to-end acceptance — 2026-08-06
+
+- FreeStyle LibreLink, LibreLinkUp, and live Libre 2 readings in Gluroo were confirmed before relay enablement.
+- After separate explicit approval, temporary Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` received 100% of traffic with deployment message `temporary Libre 2 end-to-end acceptance` and `RELAY_ENABLED=true`.
+- Exact CORS, both required Secret bindings, the SQLite Durable Object binding, request limits, `preview_urls=false`, and `observability.enabled=false` remained unchanged. A dummy invalid Turnstile token returned the expected `403` with safe diagnostic `710202`.
+- iPhone Safari Private Browsing completed consent, Turnstile, ticket issuance, Gluroo entry retrieval, current glucose, graph display, reload, and return from the iOS Home Screen for the Libre 2 route.
+- Closing Private Browsing removed its browser-stored configuration as expected. Normal-tab persistence after fully quitting Safari was not retested by user choice.
+- Stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` was restored immediately afterward, receives 100% of traffic with `RELAY_ENABLED=false`, and returned the expected paused `503` response.
+- No Secret value, Turnstile token, Gluroo URL, credential, glucose payload, or relay ticket was printed, logged, or committed.
+
+This completes the first basic Libre 2 end-to-end acceptance only. Historical comparison capture, extended periods, deletion, ticket expiry, limit behavior, and any continuing enablement remain separate gates.
+
 ## Safe activation sequence
 
 Each numbered boundary is independently reviewable. Steps 1 through 7 and the current/reload portion of step 8 are complete for the approved `workers.dev` target. Do not combine continuing live enablement with any remaining check in one unreviewed operation.
 
 1. Recheck the current Gluroo public materials for material changes or a known provider objection.
-2. Confirm that the intended first device route is described according to its actual verification status. Unverified Libre, Dexcom, or other routes must not be advertised as verified.
+2. Confirm that each intended device route is described according to its actual verification status. Unverified Dexcom or other routes must not be advertised as verified, and Libre 2 must not be described beyond its completed basic-path checks.
 3. Run `npm run verify`, `npm run deploy:dry`, `git diff --check`, the frontend checks, and a Secret-pattern scan. Confirm that `RELAY_ENABLED=false`, `workers_dev=true`, `preview_urls=false`, `observability.enabled=false`, the SQLite Durable Object export, and the exact CORS origin remain intact.
 4. After explicit approval, add only the agreed permanent Cloudflare target. This phase uses the single `workers.dev` target above. Any future Custom Domain or route change requires a separate review and approval.
 5. With `RELAY_ENABLED=false`, deploy only after separate explicit approval. Verify allowed-origin preflight, allowed-origin paused response, wrong-origin rejection, no-cache headers, Durable Object binding, and the presence of the two Secret binding names. Never print or copy Secret values into the repository, terminal record, screenshot, or support message.
@@ -173,7 +185,7 @@ Limited Data Relay
 GlucoScope
 ```
 
-The Guardian path has completed its first end-to-end iPhone Safari acceptance through the relay and GlucoScope for current glucose, graph display, and reload. Libre, Dexcom G7, and other routes must remain unverified in public wording.
+The Guardian path has completed its first end-to-end iPhone Safari acceptance through the relay and GlucoScope for current glucose, graph display, and reload. The FreeStyle Libre 2 path has separately completed its first basic acceptance through FreeStyle LibreLink, LibreLinkUp, Gluroo, the relay, and GlucoScope for current glucose, graph display, reload, and return from the iOS Home Screen. Dexcom G7 and other untested routes must remain unverified in public wording, and neither accepted route may be described beyond the checks it actually passed.
 
 Before the remaining acceptance matrix resumes, recheck the current public materials and configuration, obtain separate approval for live enablement, and enter the person's Global Connect URL and API Secret only in the browser UI. Never place them in commands, fixtures, screenshots, or documents.
 

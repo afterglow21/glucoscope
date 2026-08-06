@@ -39,7 +39,7 @@
 <section class="trust-section">
   <h2>方法①はGluroo、方法②はNightscout</h2>
   <p>どちらか1つを選べばよいことを明記し、方法のカードを押すと直接次へ進めます。GlurooはLibre・Dexcom G7・Guardian（MiniMed 780G）からつなぐ方へ案内し、Nightscoutは自分の環境をすでに使っている方や、構築・保守できる上級者向けとして分けます。</p>
-  <p>Guardianは、iPhoneのGuardian MonitorからGluroo Global Connect、限定中継、GlucoScopeまでの最初の全経路確認を完了しました。現在血糖とグラフの表示、再読み込み後の再表示を確認しています。期間別・期限切れ・削除・上限の追加確認は残っており、Libre・Dexcom G7を含む未確認ルートを確認済みとは案内しません。</p>
+  <p>Guardianは、iPhoneのGuardian MonitorからGluroo Global Connect、限定中継、GlucoScopeまでの最初の全経路確認を完了しました。Libre 2も、FreeStyle LibreLink、LibreLinkUp、Gluroo、限定中継、GlucoScopeまでの基本経路で、現在血糖、グラフ、再読み込み、iOSホーム画面からの復帰を確認しています。期間別・期限切れ・削除・上限の追加確認は残っており、Dexcom G7などの未確認ルートを確認済みとは案内しません。</p>
 </section>
 <section class="trust-section">
   <h2>Guardian（MiniMed 780G）</h2>
@@ -49,10 +49,15 @@
 <section class="trust-section">
   <h2>Gluroo限定中継は小規模公開の準備中</h2>
   <p>GlurooはGlucoScopeとは別に運営される外部サービスです。Gluroo Global Connectは現在テスト期間中のため費用なしで利用できますが、将来はサブスクリプションになり、費用が必要になる可能性があります。有料Nightscoutサービスの「無料代替」として案内しません。料金、機能、画面、接続方法、利用条件は変わる可能性があります。</p>
-  <p>Cloudflare WorkerからGlurooへ到達できること、Guardian MonitorからGlurooへ送れること、限定中継のTurnstile・短時間チケット・回数制限は確認済みです。2026年8月6日には、別の明示的な確認を挟んで一時有効化し、iPhoneのSafariで現在血糖とグラフが表示され、再読み込み後も表示されることを確認しました。確認後はすぐ停止状態へ戻しており、現在は実データへ接続しません。</p>
+  <p>Cloudflare WorkerからGlurooへ到達できること、Guardian MonitorからGlurooへ送れること、限定中継のTurnstile・短時間チケット・回数制限は確認済みです。2026年8月6日には、それぞれ別の明示的な確認を挟んで一時有効化し、GuardianとLibre 2の基本経路で、iPhoneのSafariに現在血糖とグラフが表示され、再読み込み後も表示されることを確認しました。Libre 2はiOSホーム画面からの復帰も確認しています。確認後はすぐ停止状態へ戻しており、現在は実データへ接続しません。</p>
   <p>Glurooの公式資料では、利用する人が自分のGlobal Connect情報をNightscout互換ツールへ設定する方法が案内されています。現在確認したPrivacy PolicyとEULAにも、利用する人自身が選ぶこの限定中継を明示的に禁じる記載は見つかりませんでした。</p>
   <p>2026年8月6日、Glurooから、EULA、利用条件、その他の文書と矛盾しない範囲で、今回の使い方は動作し問題ないとの文書回答を受け取りました。これはGlurooとの提携、推奨、法的助言、無条件の許諾を意味しません。GlucoScopeと限定中継は医療相談や医療判断には使えません。個別のCGMデータ再共有が適法かどうかをGlucoScopeが判断するものではなく、利用する人自身が必要な権限や許可を確認します。GlucoScopeや限定中継への質問は、GlurooではなくGlucoScopeが受けます。</p>
-  <p>同意表示、停止状態の画面確認、設定・安全性の最終確認、Guardianの最初の全経路確認は完了しました。期間別・期限切れ・削除・上限の追加確認と、継続的な有効化を別途確認してから、Friends &amp; Familyの小規模利用として始めます。確認が終わっていないLibre・Dexcomなどのルートは、確認済みとは案内しません。提供元から停止要請があった場合、利用条件に重要な変更があった場合、異常な通信やプライバシー上の懸念が見つかった場合は、すぐに停止します。</p>
+  <p>同意表示、停止状態の画面確認、設定・安全性の最終確認、GuardianとLibre 2の最初の基本経路確認は完了しました。Libre 2の確認はSafariのプライベートブラウズで行い、終了時に保存情報が残らないのは仕様どおりです。通常タブでSafariを完全終了した後の保存は未確認です。期間別・期限切れ・削除・上限の追加確認と、継続的な有効化を別途確認してから、Friends &amp; Familyの小規模利用として始めます。Dexcomなど未確認のルートは、確認済みとは案内しません。提供元から停止要請があった場合、利用条件に重要な変更があった場合、異常な通信やプライバシー上の懸念が見つかった場合は、すぐに停止します。</p>
+</section>
+<section class="trust-section">
+  <h2>公開比較は一般利用者向け中継と分ける</h2>
+  <p>3CGM比較ラボでは、GuardianをKazumaの公開Nightscoutから直接読み、Libreは公開デモ専用Workerが定期取得した期限付きKVだけを読みます。Kazumaは自分自身のLibreの血糖値と測定・更新時刻を公開することを明示的に選びました。Dexcomは経路を実機確認するまで準備中と表示し、ライブ値を作って見せません。</p>
+  <p>デモ専用Workerは、一般利用者向け限定中継とは別です。一般利用者向けリレーは停止したままで、一般利用者の接続情報や血糖データを保存しません。デモ用KVへ入るのはKazumaが公開を選んだ直近24時間以内の血糖値、測定時刻、許可した方向情報だけで、最長36時間で期限切れになります。2026年8月6日、別々の明示確認後にデモ専用KV、停止Worker、必要な2つのCloudflare Secretを準備しました。Secret値は表示、ログ記録、Gitへの保存をしていません。`DEMO_FEED_ENABLED=false`のため、5分CronはSecret参照、Gluroo取得、KV書き込みより前に終了し、KVは空のままです。さらに別の明示確認後、作業中のフロント接続先を停止中の`/v1/libre`へ設定し、ローカル実画面で合成データへの切り替えを確認しました。Glurooへの外部取得、KV書き込み、ライブ血糖値公開は行っていません。このフロント変更は`feature/cgm-comparison-demo`へだけpush済みで、`main`へのmergeとGitHub Pagesへの反映までは公開ページに含まれません。</p>
 </section>
 <section class="trust-section">
   <h2>複数の連携ルート</h2>
@@ -91,15 +96,20 @@
 <section class="trust-section">
   <h2>Beginner-first setup</h2>
   <p>The screen says that only one route is needed. Method 1 uses Gluroo for Libre, Dexcom G7, and Guardian (MiniMed 780G). Method 2 is for people who already use or maintain their own Nightscout environment.</p>
-  <p>Guardian has completed its first iPhone end-to-end acceptance from Guardian Monitor through Gluroo Global Connect, the limited relay, and GlucoScope. Current glucose, graph display, and display after reload were confirmed. Extended period, expiry, deletion, and limit checks remain, and untested Libre, Dexcom G7, or other routes are not described as verified.</p>
+  <p>Guardian has completed its first iPhone end-to-end acceptance from Guardian Monitor through Gluroo Global Connect, the limited relay, and GlucoScope. FreeStyle Libre 2 has separately completed its first basic path from FreeStyle LibreLink through LibreLinkUp, Gluroo, the relay, and GlucoScope. Current glucose, graph display, display after reload, and return from the iOS Home Screen were confirmed for Libre 2. Extended period, expiry, deletion, and limit checks remain, and untested Dexcom G7 or other routes are not described as verified.</p>
 </section>
 <section class="trust-section">
   <h2>Gluroo limited relay is being prepared for a small rollout</h2>
   <p>Gluroo is an external service operated separately from GlucoScope. Gluroo Global Connect currently has no cost during its testing phase, but Gluroo is considering a subscription model and GGC may not remain free. GlucoScope does not market it as a free alternative to subscription Nightscout services. Pricing, features, screens, connection methods, and terms may change.</p>
-  <p>Worker-to-Gluroo reachability, Guardian Monitor upload to Gluroo, and the relay Turnstile, short-lived ticket, and request limits are verified. On 2026-08-06, a separately approved temporary enablement confirmed current glucose, graph display, and display after reload in iPhone Safari. The relay was returned immediately to its stopped state and cannot currently access live data.</p>
+  <p>Worker-to-Gluroo reachability, Guardian Monitor upload to Gluroo, and the relay Turnstile, short-lived ticket, and request limits are verified. On 2026-08-06, separately approved temporary enablements confirmed the basic Guardian and Libre 2 paths in iPhone Safari. The relay was returned immediately to its stopped state after each check and cannot currently access live data.</p>
   <p>Gluroo's official materials explain how a person can use their own Global Connect details with Nightscout-compatible tools. The Privacy Policy and EULA reviewed for this phase do not state an express prohibition on this user-directed limited relay.</p>
   <p>On 2026-08-06, Gluroo replied in writing that the proposed use should work and was acceptable to them only to the extent that it remains consistent with the EULA, terms, and other Gluroo documents. This does not create affiliation, endorsement, partnership, legal assurance, or an unconditional license. GlucoScope and the relay are not for medical advice or medical decision-making. GlucoScope does not determine whether a particular person's CGM data re-sharing is lawful; each person remains responsible for the necessary authority and permissions. Questions about GlucoScope or its relay are handled by GlucoScope, not Gluroo.</p>
-  <p>The consent UI, paused-state screen checks, final configuration and security review, and first Guardian end-to-end acceptance are complete. The relay will begin only as a low-volume Friends &amp; Family rollout after extended period, expiry, deletion, and limit checks and separate continuing-enablement approval. Libre, Dexcom, or any other route will not be described as verified until that route passes its own checks. The relay will be paused immediately if Gluroo objects, applicable terms materially change, abnormal traffic is detected, or a privacy concern appears.</p>
+  <p>The consent UI, paused-state screen checks, final configuration and security review, and first basic Guardian and Libre 2 acceptances are complete. The Libre 2 check used Safari Private Browsing, whose stored configuration was removed on close as expected; normal-tab persistence after fully quitting Safari was not retested. The relay will begin only as a low-volume Friends &amp; Family rollout after extended period, expiry, deletion, and limit checks and separate continuing-enablement approval. Dexcom or any other untested route will not be described as verified. The relay will be paused immediately if Gluroo objects, applicable terms materially change, abnormal traffic is detected, or a privacy concern appears.</p>
+</section>
+<section class="trust-section">
+  <h2>Public comparison stays separate from the general-user relay</h2>
+  <p>The 3CGM Comparison Lab reads Guardian directly from Kazuma's public Nightscout and reads Libre only from an expiring KV snapshot refreshed by a dedicated demo Worker. Kazuma explicitly chose to publish his own Libre glucose values and measurement/update timing. Dexcom remains visibly pending until its route is verified; no live Dexcom values are fabricated.</p>
+  <p>The demo-only Worker is separate from the general-user Limited Data Relay. The general-user relay remains stopped and does not store general-user connection details or glucose data. Demo KV contains only Kazuma's intentionally public glucose values from the latest 24 hours, measurement times, and an allowlisted direction, and expires within 36 hours. On 2026-08-06, separate explicit approvals created the dedicated KV namespace and stopped Worker and registered the two required Cloudflare Secrets without displaying, logging, or committing their values. With `DEMO_FEED_ENABLED=false`, its five-minute Cron exits before Secret access, Gluroo retrieval, or KV write, and KV remains empty. After another explicit approval, the working frontend configuration was set to the stopped `/v1/libre` route, and a local browser check verified the synthetic fallback. No Gluroo upstream request, KV write, or live glucose publication occurred. The frontend change is pushed only to `feature/cgm-comparison-demo` and remains outside the public GitHub Pages site until merge to `main` and publication.</p>
 </section>
 <section class="trust-section">
   <h2>Multiple paths</h2>

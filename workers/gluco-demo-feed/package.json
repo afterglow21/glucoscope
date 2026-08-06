@@ -1,0 +1,22 @@
+{
+  "name": "glucoscope-demo-feed",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check src/index.js && node --check src/demo-feed-core.js && node --check test/demo-feed.test.mjs",
+    "test": "node --test test/*.test.mjs",
+    "verify": "npm run check && npm test",
+    "types": "wrangler types",
+    "types:check": "wrangler types --check",
+    "dev": "wrangler dev --local --test-scheduled",
+    "deploy:dry": "wrangler deploy --dry-run"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260804.1",
+    "wrangler": "^4.118.0"
+  },
+  "overrides": {
+    "undici": "7.29.0"
+  }
+}

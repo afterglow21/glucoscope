@@ -1,0 +1,42 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "glucoscope-demo-feed",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-06",
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": {
+    "enabled": false
+  },
+  "secrets": {
+    "required": [
+      "GLUROO_DEMO_SOURCE_URL",
+      "GLUROO_DEMO_API_SECRET"
+    ]
+  },
+  "kv_namespaces": [
+    {
+      "binding": "DEMO_FEED_CACHE",
+      "id": "1856363ac2504579bb82c4b54c5eff2f"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "*/5 * * * *"
+    ]
+  },
+  "vars": {
+    "DEMO_FEED_ENABLED": "false",
+    "CORS_ALLOWED_ORIGIN": "https://afterglow21.github.io",
+    "DEMO_FEED_CACHE_KEY": "public:libre-2:v1",
+    "CACHE_TTL_SECONDS": "129600",
+    "GLUROO_HOST_SUFFIX": ".ns.gluroo.com",
+    "MAX_ENTRIES": "1000",
+    "MAX_FUTURE_SKEW_MS": "300000",
+    "MAX_UPSTREAM_BYTES": "1048576",
+    "PUBLIC_CACHE_MAX_AGE_SECONDS": "60",
+    "PUBLIC_WINDOW_HOURS": "24",
+    "STALE_AFTER_SECONDS": "900",
+    "UPSTREAM_TIMEOUT_MS": "15000"
+  }
+}

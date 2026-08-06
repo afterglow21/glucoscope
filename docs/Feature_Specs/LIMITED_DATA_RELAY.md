@@ -2,7 +2,7 @@
 
 ## Status
 
-- First Guardian end-to-end acceptance completed; the relay is paused while extended range and operational gates remain.
+- First Guardian and FreeStyle Libre 2 end-to-end acceptances completed; the relay is paused while extended range and operational gates remain.
 - The Worker shell, SQLite Durable Object, required Secrets, and one permanent `workers.dev` target have been created in Cloudflare.
 - The checked-in frontend points only to the approved stopped `workers.dev` target and requires explicit consent before a relay request.
 - `RELAY_ENABLED=false`; the Worker stops before Turnstile verification, ticket issuance, counter use, or upstream access, so the relay is not available for live use.
@@ -11,7 +11,8 @@
 - After separate explicit approval, commit `98def2e96065f1a801728e060673ea22d4ff9e44` was deployed as stopped Version `1a51631d-1e53-4f88-ac27-2125b43f1ab2`; all post-deployment stop, CORS, Secret-name, and Durable Object checks passed.
 - An earlier Guardian candidate-route acceptance temporarily routed Version `84139213-8521-4772-b3f3-47ee0018c5d3`, but stopped before credential submission because the public Pages build did not yet expose the Guardian guide. Stopped Version `89d8166d-a50e-4e94-b3d3-a06f7a0b6fb1` was deployed immediately afterward.
 - On 2026-08-06, PR #12 merged the Siteverify request alignment to `main` at `d3051852b6a3b698de67d163cd290bd2b4ad2c3a`. A separately approved temporary enablement then completed the first Guardian path through iPhone Safari, Turnstile, the signed ticket, Gluroo, the relay, and GlucoScope. Current glucose and the graph appeared and appeared again after reload.
-- Stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` was deployed immediately after acceptance and now receives 100% of traffic with `RELAY_ENABLED=false`. Continuing enablement still requires separate approval; extended period, expiry, deletion, and limit checks remain.
+- Later on 2026-08-06, a separately approved temporary enablement completed the first basic FreeStyle Libre 2 path through FreeStyle LibreLink, LibreLinkUp, Gluroo, the relay, and GlucoScope. Current glucose, graph display, reload, and return from the iOS Home Screen passed in Safari Private Browsing. Normal-tab persistence after fully quitting Safari was not retested by user choice.
+- Stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` was restored immediately after the latest acceptance and receives 100% of traffic with `RELAY_ENABLED=false`. Continuing enablement still requires separate approval; extended period, expiry, deletion, and limit checks remain.
 - Version-specific Preview URLs are disabled. The earlier temporary connectivity probe remains deleted.
 - User Foundation PR #7 was merged before this work began.
 - The current implementation is merged to `main`.
@@ -620,6 +621,21 @@ After separate explicit approval:
 - the stopped Version retains the exact CORS origin, originless-request rejection, both required Secret bindings, the SQLite Durable Object binding, `preview_urls=false`, and `observability.enabled=false`.
 
 No Secret value, Turnstile token, Gluroo URL, credential, or glucose payload was printed, logged, or committed. This completes the first basic end-to-end acceptance only. Today/yesterday/7-day/30-day coverage, deletion, ticket expiry, limit behavior, and a continuing Friends & Family enablement remain separate gates.
+
+## First FreeStyle Libre 2 end-to-end acceptance — 2026-08-06
+
+After separate explicit approval:
+
+- FreeStyle LibreLink, LibreLinkUp, and live Libre 2 readings in Gluroo were confirmed before relay enablement;
+- temporary Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` received 100% of traffic with deployment message `temporary Libre 2 end-to-end acceptance` and `RELAY_ENABLED=true`;
+- the exact CORS origin, both required Secret bindings, the SQLite Durable Object binding, request limits, `preview_urls=false`, and `observability.enabled=false` remained unchanged;
+- a dummy invalid Turnstile token returned expected `403` with safe diagnostic `710202`;
+- iPhone Safari Private Browsing completed consent, Turnstile, ticket issuance, Gluroo entry retrieval, current glucose, graph display, reload, and return from the iOS Home Screen for the Libre 2 route;
+- closing Private Browsing removed its browser-stored configuration as expected; normal-tab persistence after fully quitting Safari was not retested by user choice;
+- stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` was restored immediately afterward, receives 100% of traffic with `RELAY_ENABLED=false`, and returned the expected paused `503` response;
+- no Secret value, Turnstile token, Gluroo URL, credential, glucose payload, or relay ticket was printed, logged, or committed.
+
+This completes the first basic Libre 2 end-to-end acceptance only. Historical comparison capture, extended periods, deletion, ticket expiry, limit behavior, and any continuing enablement remain separate gates.
 
 ## Phase 1 tests
 

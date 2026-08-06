@@ -1,0 +1,158 @@
+.capture-shell {
+  max-width: 1080px;
+}
+
+.capture-hero,
+.capture-section {
+  margin-top: 22px;
+  padding: clamp(22px, 4vw, 36px);
+}
+
+.capture-hero h1 {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+}
+
+.capture-form {
+  display: grid;
+  gap: 0;
+}
+
+.capture-source-grid,
+.capture-range-grid,
+.capture-boundary-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.capture-source-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.capture-range-grid,
+.capture-boundary-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.capture-source {
+  margin: 0;
+  padding: 18px;
+  border: 1px solid #cbded5;
+  border-radius: 18px;
+  background: #f8fbf9;
+}
+
+.capture-source legend {
+  padding: 0 6px;
+  color: #315f50;
+  font-weight: 900;
+}
+
+.capture-source label,
+.capture-range-grid label {
+  display: grid;
+  gap: 5px;
+  color: #536d64;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.capture-source label + label {
+  margin-top: 12px;
+}
+
+.capture-source input,
+.capture-range-grid input {
+  width: 100%;
+  min-height: 46px;
+  padding: 9px 11px;
+  border: 1px solid #bcd2c7;
+  border-radius: 11px;
+  color: #28413a;
+  background: #fff;
+  font: inherit;
+}
+
+.capture-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 16px;
+  border: 1px solid #c6dbd0;
+  border-radius: 15px;
+  background: #f5faf7;
+  font-weight: 700;
+}
+
+.capture-consent input {
+  width: 20px;
+  height: 20px;
+  margin-top: 3px;
+  flex: 0 0 auto;
+}
+
+.capture-turnstile {
+  margin-top: 16px;
+}
+
+.capture-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.capture-primary,
+.capture-secondary {
+  min-height: 46px;
+  padding: 9px 16px;
+  border-radius: 13px;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.capture-primary {
+  border: 1px solid #357c64;
+  color: #fff;
+  background: #357c64;
+}
+
+.capture-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.capture-secondary {
+  border: 1px solid #bfd3c9;
+  color: #46675b;
+  background: #fff;
+}
+
+.capture-status {
+  min-height: 2em;
+  margin: 14px 0 0;
+  color: #587269;
+  font-weight: 800;
+}
+
+.capture-status.is-error {
+  color: #9a4d45;
+}
+
+.capture-boundary-grid > div {
+  padding: 16px;
+  border-radius: 16px;
+  background: #f4f9f6;
+}
+
+.capture-boundary-grid p {
+  margin-bottom: 0;
+  color: #5c736b;
+}
+
+@media (max-width: 820px) {
+  .capture-source-grid,
+  .capture-range-grid,
+  .capture-boundary-grid {
+    grid-template-columns: 1fr;
+  }
+}
