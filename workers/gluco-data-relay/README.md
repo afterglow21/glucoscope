@@ -118,6 +118,17 @@ The Phase 3C public-policy review, stopped-target deployment, and final Trust Pa
 - The current stopped Version retains the exact CORS origin, originless-request rejection, both required Secret bindings, and the SQLite `RelayUsageCounter` Durable Object binding.
 - End-to-end acceptance through GlucoScope remains incomplete. Restarting it and setting `RELAY_ENABLED=true` still require a separate explicit approval.
 
+## Stopped safe-diagnostic deployment — 2026-08-06
+
+- Source merge commit: `06dba2dc1321562e494a572e0da0c2cfbeb206a8`.
+- Wrangler `4.113.0` deployed with `--strict` and message `stopped safe Turnstile diagnostics from main 06dba2d` after explicit approval.
+- Current Version ID: `86149056-cba7-41b8-80c1-15f0e2c26cf0`; it receives 100% of traffic.
+- `RELAY_ENABLED=false`, the exact GitHub Pages CORS origin, originless-request rejection, `workers_dev=true`, `preview_urls=false`, and `observability.enabled=false` remain intact.
+- Both required Secret names and the SQLite `RelayUsageCounter` Durable Object binding are present. No Secret value was read, printed, changed, or registered.
+- The exact-origin preflight returned `204`; the exact-origin POST returned `503 relay_temporarily_paused`; wrong-origin and missing-origin POSTs returned `403`. Responses retained `Cache-Control: no-store`.
+- Only a dummy request body was used. No Gluroo URL, credential, glucose payload, real Turnstile token, relay ticket, or Durable Object counter was used.
+- This deployment adds safe server-side diagnostics but does not complete the end-to-end real-device test and does not authorize live enablement.
+
 ## Safe activation sequence
 
 Each numbered boundary is independently reviewable. Steps 1 through 6 are complete for the approved stopped `workers.dev` target. Do not combine live enablement with any remaining check in one unreviewed operation.
