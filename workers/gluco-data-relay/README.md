@@ -2,7 +2,7 @@
 
 This directory contains the paused Gluroo-only relay, including its security, access-control, and request-limit boundaries.
 
-Phase 3A connected the user onboarding flow to the relay client while keeping the checked-in endpoint blank. Phase 3B created the stopped Cloudflare Worker shell and Durable Object, registered the required Worker Secrets, and verified the stopped production response. The checked-in frontend now points only to the stopped target for acceptance testing and requires explicit consent. The relay remains unavailable for live use.
+Phase 3A connected the user onboarding flow to the relay client while keeping the checked-in endpoint blank. Phase 3B created the stopped Cloudflare Worker shell and Durable Object, registered the required Worker Secrets, and verified the stopped production response. The checked-in frontend now points only to the approved target and requires explicit consent. The first basic Guardian end-to-end acceptance passed on 2026-08-06; the relay was then returned to `RELAY_ENABLED=false` and remains unavailable for live use.
 
 ## Implemented through Phase 3B
 
@@ -69,7 +69,7 @@ The dry-run binding summary must show the `RELAY_USAGE_COUNTER` Durable Object b
 
 There is intentionally no real `deploy` npm script. The stopped `workers.dev` target was created only after explicit approval. The checked-in frontend endpoint is fixed to that target for paused-state acceptance testing, version-specific Preview URLs are disabled, and `RELAY_ENABLED=false` prevents Turnstile verification, ticket issuance, counter consumption, or upstream access.
 
-The Phase 3C public-policy review, stopped-target deployment, and final Trust Pack review are complete. On 2026-08-06, Gluroo support replied in writing that the proposed use should work and was acceptable to them only while it remains consistent with their EULA, terms, and other documents. The response does not create affiliation, endorsement, partnership, legal assurance about CGM data re-sharing, or permission to use GGC for medical decisions. GlucoScope must handle its own user questions, must not market GGC as a free alternative to subscription Nightscout services, and may say only that GGC currently has no cost during its testing phase while a future subscription is being considered. The applicable end-to-end real-device test, final configuration review, any routing change, and live relay enablement still require separate review and explicit approval.
+The Phase 3C public-policy review, stopped-target deployment, final Trust Pack review, and first basic Guardian end-to-end acceptance are complete. On 2026-08-06, Gluroo support replied in writing that the proposed use should work and was acceptable to them only while it remains consistent with their EULA, terms, and other documents. The response does not create affiliation, endorsement, partnership, legal assurance about CGM data re-sharing, or permission to use GGC for medical decisions. GlucoScope must handle its own user questions, must not market GGC as a free alternative to subscription Nightscout services, and may say only that GGC currently has no cost during its testing phase while a future subscription is being considered. Extended range and operational checks, any routing change, and continuing live relay enablement still require separate review and explicit approval.
 
 ## Permanent stopped target verification — 2026-08-05
 
@@ -99,7 +99,7 @@ The Phase 3C public-policy review, stopped-target deployment, and final Trust Pa
 - A read-only check of deployed Version `ea0b8f59-3e9b-4475-b93a-91855834b3ce` confirmed that all plain-text variables match `wrangler.jsonc`, both Secret bindings are present, the Durable Object binding is present, Preview URLs are absent, and the version remains the only 100% deployment.
 - A fresh stopped-target check returned `204` for the exact-origin preflight, `503 relay_temporarily_paused` for the exact-origin POST, and `403` without an allow-origin header for wrong-origin and missing-origin POSTs. The earlier one-time Cloudflare `1042` response did not recur.
 - `observability.enabled=false` remains an intentional privacy exception. The Worker contains no console logging, and this audit did not use a Gluroo URL, credential, glucose payload, Turnstile token, relay ticket, or Durable Object counter.
-- No Worker deployment, Secret mutation, routing change, or live enablement occurred. End-to-end real-device acceptance and separate explicit approval for `RELAY_ENABLED=true` remain required.
+- No Worker deployment, Secret mutation, routing change, or live enablement occurred during that audit. The later accepted live test is recorded below.
 
 ## Final stopped validation deployment — 2026-08-05
 
@@ -123,16 +123,29 @@ The Phase 3C public-policy review, stopped-target deployment, and final Trust Pa
 
 - Source merge commit: `06dba2dc1321562e494a572e0da0c2cfbeb206a8`.
 - Wrangler `4.113.0` deployed with `--strict` and message `stopped safe Turnstile diagnostics from main 06dba2d` after explicit approval.
-- Current Version ID: `86149056-cba7-41b8-80c1-15f0e2c26cf0`; it receives 100% of traffic.
+- Version ID: `86149056-cba7-41b8-80c1-15f0e2c26cf0`; it received 100% of traffic until the later Siteverify alignment and acceptance deployments.
 - `RELAY_ENABLED=false`, the exact GitHub Pages CORS origin, originless-request rejection, `workers_dev=true`, `preview_urls=false`, and `observability.enabled=false` remain intact.
 - Both required Secret names and the SQLite `RelayUsageCounter` Durable Object binding are present. No Secret value was read, printed, changed, or registered.
 - The exact-origin preflight returned `204`; the exact-origin POST returned `503 relay_temporarily_paused`; wrong-origin and missing-origin POSTs returned `403`. Responses retained `Cache-Control: no-store`.
 - Only a dummy request body was used. No Gluroo URL, credential, glucose payload, real Turnstile token, relay ticket, or Durable Object counter was used.
-- This deployment adds safe server-side diagnostics but does not complete the end-to-end real-device test and does not authorize live enablement.
+- This deployment added safe server-side diagnostics but did not complete the end-to-end real-device test by itself.
+
+## First Guardian end-to-end acceptance — 2026-08-06
+
+- PR #12 merged Siteverify request alignment at `d3051852b6a3b698de67d163cd290bd2b4ad2c3a` after Worker tests (43) and frontend tests (73) passed.
+- Stopped Version `2ea372de-a7c5-44c8-8852-0c21f5382633` first verified the merged code, exact CORS origin, both required Secret names, and Durable Object binding with `RELAY_ENABLED=false`.
+- Temporary Version `f1c02561-e92a-4a9b-8b70-b9bab2a89fb2` received 100% of traffic with `RELAY_ENABLED=true` after separate explicit approval.
+- A dummy invalid Turnstile token returned expected `403` with safe diagnostic `710202`, replacing the earlier transport diagnostic `710001` and confirming Siteverify reachability without using a real Gluroo URL, credential, or glucose payload in a command.
+- iPhone Safari completed consent, Turnstile, ticket issuance, Gluroo entry retrieval, current glucose and graph display, and a successful reload for the Guardian route.
+- Stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` was deployed immediately afterward and receives 100% of traffic with `RELAY_ENABLED=false`.
+- Exact CORS, originless-request rejection, both required Secret bindings, the SQLite Durable Object binding, `preview_urls=false`, and `observability.enabled=false` remain intact.
+- No Secret value, Turnstile token, Gluroo URL, credential, or glucose payload was printed, logged, or committed.
+
+This completes the first basic end-to-end acceptance. Today/yesterday/7-day/30-day coverage, deletion, ticket expiry, limit behavior, and any continuing Friends & Family enablement remain separate gates.
 
 ## Safe activation sequence
 
-Each numbered boundary is independently reviewable. Steps 1 through 6 are complete for the approved stopped `workers.dev` target. Do not combine live enablement with any remaining check in one unreviewed operation.
+Each numbered boundary is independently reviewable. Steps 1 through 7 and the current/reload portion of step 8 are complete for the approved `workers.dev` target. Do not combine continuing live enablement with any remaining check in one unreviewed operation.
 
 1. Recheck the current Gluroo public materials for material changes or a known provider objection.
 2. Confirm that the intended first device route is described according to its actual verification status. Unverified Libre, Dexcom, or other routes must not be advertised as verified.
@@ -144,7 +157,7 @@ Each numbered boundary is independently reviewable. Steps 1 through 6 are comple
 8. Validate current, today, yesterday, 7-day, and 30-day reads for the first advertised route; credential deletion; ticket expiry; session and global limits; and the emergency pause path. Keep the rollout limited to Friends & Family.
 9. Immediately restore `RELAY_ENABLED=false` if Gluroo objects, applicable terms materially change, abnormal traffic is detected, or a privacy or safety concern appears.
 
-## First advertised route acceptance — prepared, not executed
+## First advertised route acceptance — basic path accepted, extended matrix pending
 
 The first candidate is the verified iPhone input segment extended through the full GlucoScope path:
 
@@ -160,11 +173,11 @@ Limited Data Relay
 GlucoScope
 ```
 
-Only Guardian Monitor upload into Gluroo has passed its real-device check. The end-to-end path through the relay and GlucoScope has not been accepted yet. Libre, Dexcom G7, and other routes must remain unverified in public wording.
+The Guardian path has completed its first end-to-end iPhone Safari acceptance through the relay and GlucoScope for current glucose, graph display, and reload. Libre, Dexcom G7, and other routes must remain unverified in public wording.
 
-Before this acceptance begins, recheck the current public materials and configuration, obtain separate approval for live enablement, and enter the person's Global Connect URL and API Secret only in the browser UI. Never place them in commands, fixtures, screenshots, or documents.
+Before the remaining acceptance matrix resumes, recheck the current public materials and configuration, obtain separate approval for live enablement, and enter the person's Global Connect URL and API Secret only in the browser UI. Never place them in commands, fixtures, screenshots, or documents.
 
-The acceptance must confirm:
+The remaining acceptance must confirm:
 
 - current, today, yesterday, 7-day, and 30-day reads against Gluroo;
 - entries-only behavior with no treatments, insulin, carbohydrate, medication, pump-setting, or device-status retrieval;
