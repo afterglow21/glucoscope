@@ -386,6 +386,7 @@ test("public demo is linked while the capture helper stays unlinked and noindex"
   assert.match(demo, /analytics-loader\.js/);
   assert.match(demo, /js\/data-source\.js/);
   assert.match(demo, /live-config\.js\?v=20260807-three-cgm-live-1/);
+  assert.match(demo, /comparison\.mjs\?v=20260808-live-health-1/);
   assert.match(demo, /現在は合成データです。3本の線は表示確認用で、Kazumaの実測値ではありません/);
   assert.match(comparisonModule, /現在は実測ライブデータです。取得できた\$\{liveSourceCount\}種類/);
   assert.match(comparisonModule, /現在は合成データです。3本の線は表示確認用で、Kazumaの実測値ではありません/);
@@ -424,7 +425,7 @@ test("Method and privacy covers both Gluroo-backed public demo routes and Secret
   const demo = await readFile(new URL("../demos/cgm-comparison/index.html", import.meta.url), "utf8");
   assert.match(demo, /Libre 2とDexcom G7は公開デモ専用Worker/);
   assert.match(demo, /Libre 2とDexcom G7それぞれのGluroo URLとAPI SecretはCloudflare Secret/);
-  assert.match(demo, /comparison\.mjs\?v=20260807-three-cgm-live-3/);
+  assert.match(demo, /comparison\.mjs\?v=20260808-live-health-1/);
 });
 
 test("comparison and capture helper local links and assets resolve", async () => {
