@@ -2403,19 +2403,22 @@ Later that day, he separately and explicitly chose to publish his own G7 glucose
 and their measurement/update timing through the public comparison.
 This publication choice applies only to Kazuma's own G7 demo data
 and does not authorize storing, publishing, or re-sharing any general user's data.
-The technical confirmation still reaches only as far as Gluroo.
-The public demo Worker, KV, and frontend path remain unverified,
-and no G7 glucose value has been stored or published.
+The device-source confirmation still reaches only as far as Gluroo.
+Separately, the stopped public-demo Worker route and empty-KV boundary
+have now been verified without live retrieval. Live Gluroo retrieval,
+a populated G7 KV snapshot, frontend activation, and the complete end-to-end path
+remain unverified, and no G7 glucose value has been written to the demo KV
+or published by GlucoScope.
 
 Guardian remains on Kazuma's existing Azure Nightscout
 and is read directly by the public comparison page.
 Libre 2 uses a separate, demo-only Cloudflare Worker.
-The local multi-source revision gives Libre and G7 separate fixed Gluroo source slots,
+The deployed but stopped multi-source revision gives Libre and G7 separate fixed Gluroo source slots,
 source gates, and KV keys while retaining one global emergency stop.
 It sanitizes each enabled response and replaces only that source's expiring KV snapshot.
 Public visitors read only those snapshots and never trigger a request to Gluroo.
-Dexcom G7 remains pending until its Worker, KV, frontend, and live-data path
-are separately verified.
+Dexcom G7 remains pending until live retrieval, a populated KV snapshot,
+frontend activation, and the complete end-to-end path are separately verified.
 
 The demo-only Worker is separate from the general-user Limited Data Relay.
 The general-user relay remains stopped with `RELAY_ENABLED=false`
@@ -2441,7 +2444,7 @@ pump settings, symptoms, and location information must remain out of Git.
 The demo-only Worker must keep each Gluroo source URL and API Secret
 in source-specific Cloudflare Secrets, not frontend code or Git.
 The existing Libre names remain `GLUROO_DEMO_SOURCE_URL` and
-`GLUROO_DEMO_API_SECRET`; the locally declared G7 names are
+`GLUROO_DEMO_API_SECRET`; the deployed G7 names are
 `GLUROO_DEMO_G7_SOURCE_URL` and `GLUROO_DEMO_G7_API_SECRET`.
 It may fetch only glucose entries from each fixed `.ns.gluroo.com` host
 and `/api/v1/entries.json` path, keep at most a rolling 24-hour snapshot,
@@ -2453,7 +2456,7 @@ and `DEMO_FEED_ENABLED=false` is the global emergency stop.
 The checked-in source gates are also disabled as
 `DEMO_LIBRE_FEED_ENABLED=false` and `DEMO_G7_FEED_ENABLED=false`.
 The source-specific KV keys are `public:libre-2:v1` and `public:dexcom-g7:v1`,
-and the prepared read routes are `/v1/libre` and `/v1/dexcom-g7`.
+and the deployed, stopped read routes are `/v1/libre` and `/v1/dexcom-g7`.
 
 The comparison page must fall back to a clearly labelled synthetic dataset
 when the live feeds are not configured or cannot be loaded.
@@ -2478,16 +2481,16 @@ Version `4c8d40de-8877-4d70-800e-1607e1940b96` was deployed to
 `https://glucoscope-demo-feed.afterglow21.workers.dev` with
 `DEMO_FEED_ENABLED=false`, the reviewed KV binding, five-minute Cron,
 and observability disabled.
-The active stopped Version returns `503 demo_feed_paused` without an Origin,
-returns the same `503` with exact CORS for the approved GitHub Pages Origin,
-returns `204` for its browser preflight, and rejects an unapproved Origin with `403`.
+The stopped Worker was verified to return `503 demo_feed_paused` without an Origin,
+return the same `503` with exact CORS for the approved GitHub Pages Origin,
+return `204` for its browser preflight, and reject an unapproved Origin with `403`.
 After a later explicit approval, exactly `GLUROO_DEMO_SOURCE_URL` and
 `GLUROO_DEMO_API_SECRET` were registered as Cloudflare Secrets without
 printing, logging, or committing their values. Another explicit approval
 reapplied the stopped configuration as Version
-`f8801d58-67bd-4cf9-8cb1-dd227c879446`, which now receives 100% of traffic
-with `DEMO_FEED_ENABLED=false`. Its approved-origin endpoint still returns
-`503 demo_feed_paused`, and the dedicated KV remains empty.
+`f8801d58-67bd-4cf9-8cb1-dd227c879446`, which then received 100% of traffic
+with `DEMO_FEED_ENABLED=false`. Its approved-origin endpoint returned
+`503 demo_feed_paused`, and the dedicated KV remained empty.
 No Gluroo request, glucose value, or live publication occurred.
 The Cron exits before Secret access, upstream fetch, or KV access while disabled.
 After another explicit approval, the working frontend configuration was set to the
@@ -2500,7 +2503,7 @@ workflow run `31114013927` attempt 2 published the comparison page on 2026-08-07
 The public URL loaded with the clearly labelled `準備中 · 合成データ` fallback
 and all three device cards.
 
-The G7 multi-source code revision remains local preparation only.
+The G7 multi-source code revision was initially local preparation only.
 It declares the new G7 Secret names, separate `public:dexcom-g7:v1` key,
 stopped `/v1/dexcom-g7` route, and global plus per-source gates,
 with all checked-in gates set to `false`.
@@ -2509,16 +2512,33 @@ through masked prompts with `wrangler versions secret put`.
 This created unpublished Secret-only Versions
 `0e095e0a-63de-4b01-8c0f-2dd8f1e169a1` and
 `834019da-0cd1-41d8-8cff-41eab1062a00`.
-The latest contains all four Libre/G7 Secret names and keeps
+The latter Secret-only Version contains all four Libre/G7 Secret names and keeps
 `DEMO_FEED_ENABLED=false`.
 Secret values were not placed in command arguments, displayed in captured output,
 or added to Git. Wrangler's sanitized registration log contained omission markers
 and no detected Secret value, Gluroo host, entries path, or authorization value;
 temporary logs were removed after verification.
-Production traffic remains 100% on the previous stopped Version
+At that stage, production traffic remained 100% on the previous stopped Version
 `f8801d58-67bd-4cf9-8cb1-dd227c879446`.
 No G7 KV value was written, no G7 code revision or binding was deployed to production
-traffic, no traffic allocation changed, and no frontend G7 endpoint was activated.
+traffic, no traffic allocation changed, and no frontend G7 endpoint was activated
+during that Secret-registration step.
+
+After another separate explicit approval on 2026-08-07, the reviewed stopped
+multi-source revision was deployed as Version
+`9994a142-a4ca-4885-9077-952ec8e7e8d2` in deployment
+`97c234fe-c883-473d-b0ee-eb13d8d0cf04`, receiving 100% of traffic.
+`DEMO_FEED_ENABLED=false`, `DEMO_LIBRE_FEED_ENABLED=false`, and
+`DEMO_G7_FEED_ENABLED=false` were all confirmed. The Version contains exactly
+the four Secret names `GLUROO_DEMO_SOURCE_URL`, `GLUROO_DEMO_API_SECRET`,
+`GLUROO_DEMO_G7_SOURCE_URL`, and `GLUROO_DEMO_G7_API_SECRET`.
+Approved-origin GET requests to both `/v1/libre` and `/v1/dexcom-g7` return
+`503 demo_feed_paused`; the G7 preflight returns `204`, and an unapproved Origin
+is rejected with `403`. The dedicated KV was empty before and after the 03:30 UTC
+Cron boundary. No Gluroo retrieval, KV write, G7 frontend activation, or live
+publication occurred. This verifies the stopped Worker routes and empty-KV boundary;
+live retrieval, a populated G7 KV snapshot, frontend activation, and the complete
+end-to-end path remain unverified.
 Cloudflare's route-level subdomain setting reports `enabled=true` for the normal
 `workers.dev` route and `previews_enabled=false` for versioned Preview routing.
 Version-level `has_preview` capability metadata does not mean the public Preview
@@ -2548,20 +2568,24 @@ G7の接続情報を準備できていることを確認しました。
 公開比較で表示することへ、Libreとは別に明示同意しました。
 この公開の選択はKazuma自身のG7デモデータだけに適用し、
 一般利用者のデータを保存、公開、再共有する許可にはなりません。
-技術的な確認は、引き続きGlurooまでの経路だけです。
-公開デモ用Worker、KV、フロントまでの経路は未確認で、
-G7の血糖値は保存も公開もしていません。
+機器からの送信確認は、引き続きGlurooまでの経路だけです。
+これとは別に、停止中の公開デモ用Worker経路と空のKV境界は、
+ライブ取得を行わずに確認しました。Glurooからのライブ取得、
+G7値が入ったKVスナップショット、フロント接続先の有効化、
+全体のエンドツーエンド経路は未確認で、G7の血糖値はデモ用KVへ保存せず、
+GlucoScopeでも公開していません。
 
 GuardianはKazumaの既存Azure Nightscoutをそのまま使い、
 公開比較ページのブラウザから直接取得します。
 Libre 2は、一般利用者向け限定中継とは別の、
 公開デモ専用Cloudflare Workerを使います。
-ローカルで準備した複数ソース版では、LibreとG7に別々の固定Gluroo送信先、
+停止状態で本番反映した複数ソース版では、LibreとG7に別々の固定Gluroo送信先、
 ソース停止スイッチ、KVキーを用意し、全体の緊急停止も残します。
 有効なソースごとに公開してよい項目だけへ整えて、
 そのソースの期限付きKVスナップショットだけを入れ替えます。
 公開ページを見た人はKVだけを読み、Glurooへの取得を発生させません。
-Dexcom G7は、Worker、KV、フロント、ライブデータの全経路を
+Dexcom G7は、ライブ取得、値が入ったKVスナップショット、
+フロント接続先の有効化、全体のエンドツーエンド経路を
 別途確認するまで準備中として表示します。
 
 デモ専用Workerと、一般利用者向け限定データリレーは別の仕組みです。
@@ -2590,7 +2614,7 @@ Dexcom G7は、Worker、KV、フロント、ライブデータの全経路を
 デモ専用Workerの各Gluroo送信先URLとAPI Secretは、
 ソースごとに分け、フロントやGitではなくCloudflare Secretsだけに置きます。
 既存Libre用の名前は`GLUROO_DEMO_SOURCE_URL`と`GLUROO_DEMO_API_SECRET`、
-ローカルで宣言したG7用の新しい名前は`GLUROO_DEMO_G7_SOURCE_URL`と
+本番Versionへ反映したG7用の新しい名前は`GLUROO_DEMO_G7_SOURCE_URL`と
 `GLUROO_DEMO_G7_API_SECRET`です。
 各接続先を固定した`.ns.gluroo.com`のホストと
 `/api/v1/entries.json`以外へ接続しません。
@@ -2601,7 +2625,7 @@ Dexcom G7は、Worker、KV、フロント、ライブデータの全経路を
 ソース別の`DEMO_LIBRE_FEED_ENABLED=false`と
 `DEMO_G7_FEED_ENABLED=false`も停止状態でチェックインします。
 KVキーは`public:libre-2:v1`と`public:dexcom-g7:v1`へ分け、
-読み取り経路は`/v1/libre`と`/v1/dexcom-g7`として準備します。
+停止状態で本番反映した読み取り経路は`/v1/libre`と`/v1/dexcom-g7`です。
 
 ライブデータが未設定または読み込めない場合は、
 合成データであることを明記してフォールバックします。
@@ -2624,16 +2648,16 @@ Version `4c8d40de-8877-4d70-800e-1607e1940b96`を
 `https://glucoscope-demo-feed.afterglow21.workers.dev`へ、
 `DEMO_FEED_ENABLED=false`、確認済みKVバインド、5分Cron、
 observability無効の状態でデプロイしました。
-現在の停止Versionは、Originなしと許可したGitHub Pages Originで
+停止Workerは、Originなしと許可したGitHub Pages Originで
 `503 demo_feed_paused`、ブラウザのpreflightで`204`を返し、
 許可していないOriginは`403`で拒否します。
 その後、別の明示確認を得て、`GLUROO_DEMO_SOURCE_URL`と
 `GLUROO_DEMO_API_SECRET`だけをCloudflare Secretsへ登録しました。
 Secret値は表示、ログ記録、Gitへの保存をしていません。
 さらに別の明示確認後に停止設定を再反映したVersion
-`f8801d58-67bd-4cf9-8cb1-dd227c879446`が現在の通信を100%受け、
-`DEMO_FEED_ENABLED=false`を維持しています。
-許可したOriginでは引き続き`503 demo_feed_paused`を返し、KVは空です。
+`f8801d58-67bd-4cf9-8cb1-dd227c879446`が、その時点の通信を100%受け、
+`DEMO_FEED_ENABLED=false`を維持しました。
+許可したOriginでは`503 demo_feed_paused`を返し、KVは空のままでした。
 Glurooへの接続、血糖値取得、ライブ公開は行っていません。
 停止中のCronはSecret参照、外部取得、KVアクセスより前に終了します。
 さらに別の明示確認後、作業中のフロント接続先を停止中の`/v1/libre`へ設定しました。
@@ -2645,7 +2669,7 @@ PR #14はこの準備をmerge commit
 workflow run `31114013927`のattempt 2で2026年8月7日に公開しました。
 公開URLで「準備中・合成データ」の明記と3機種のカード表示を確認しています。
 
-G7の複数ソース対応コードはローカル準備だけです。
+G7の複数ソース対応コードは、当初はローカル準備だけでした。
 G7用の新しいSecret名、別の`public:dexcom-g7:v1`キー、
 停止中の`/v1/dexcom-g7`経路、全体とソース別の停止スイッチを宣言し、
 チェックインする値はすべて`false`にしています。
@@ -2654,16 +2678,33 @@ G7用の新しいSecret名、別の`public:dexcom-g7:v1`キー、
 これにより、通信へ反映しないSecret専用Version
 `0e095e0a-63de-4b01-8c0f-2dd8f1e169a1`と
 `834019da-0cd1-41d8-8cff-41eab1062a00`が作成されました。
-最新の未配信Versionでは、Libre/G7の4つのSecret名と
+後者の未配信Secret専用Versionでは、Libre/G7の4つのSecret名と
 `DEMO_FEED_ENABLED=false`を確認しました。
 Secret値はコマンド引数、取得した画面出力、Gitへ入れていません。
 Wranglerのサニタイズ済み登録ログには省略マーカーがあり、Secret値、
 Glurooホスト、entriesパス、認証値は検出されませんでした。
 一時ログは確認後に削除しました。
-本番通信の100%は、従来の停止Version
-`f8801d58-67bd-4cf9-8cb1-dd227c879446`のままです。
-G7のKV値、G7コードやバインドの本番反映、通信割合の変更、
+このSecret登録の段階では、本番通信の100%は従来の停止Version
+`f8801d58-67bd-4cf9-8cb1-dd227c879446`のままでした。
+この段階では、G7のKV値、G7コードやバインドの本番反映、通信割合の変更、
 フロントのG7接続先有効化は行っていません。
+
+その後の2026年8月7日、別の明示確認を得て、確認済みの停止multi-source版を
+Version `9994a142-a4ca-4885-9077-952ec8e7e8d2`、deployment
+`97c234fe-c883-473d-b0ee-eb13d8d0cf04`として本番へ反映し、
+通信の100%を向けました。`DEMO_FEED_ENABLED=false`、
+`DEMO_LIBRE_FEED_ENABLED=false`、`DEMO_G7_FEED_ENABLED=false`の
+3つすべてを確認しました。このVersionにあるSecret名は、
+`GLUROO_DEMO_SOURCE_URL`、`GLUROO_DEMO_API_SECRET`、
+`GLUROO_DEMO_G7_SOURCE_URL`、`GLUROO_DEMO_G7_API_SECRET`の
+4つだけです。許可したOriginからの`/v1/libre`と`/v1/dexcom-g7`の
+GETはいずれも`503 demo_feed_paused`、G7のpreflightは`204`を返し、
+許可していないOriginは`403`で拒否しました。専用KVは03:30 UTCの
+Cron時刻の前後とも空でした。Gluroo取得、KV書き込み、G7フロント接続先の
+有効化、ライブ公開は行っていません。これで停止Workerの両経路と
+空のKV境界を確認しましたが、Glurooからのライブ取得、G7値が入った
+KVスナップショット、フロント接続先の有効化、全体のエンドツーエンド経路は
+引き続き未確認です。
 Cloudflareの公開ルート設定は、通常の`workers.dev`が`enabled=true`、
 Version別Previewが`previews_enabled=false`です。Version側の
 `has_preview`表示は、公開Previewルートが有効という意味ではありません。

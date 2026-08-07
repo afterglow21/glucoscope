@@ -1,6 +1,6 @@
 # GlucoScope Public Demo Feed
 
-This Worker is a public-demo-only, multi-source feed for Kazuma's data. It is separate from the general-user Limited Data Relay. Publication consent is recorded separately for Kazuma's Libre and G7 glucose values and measurement/update timing. G7 nevertheless remains a stopped, unverified source until its Worker, KV, frontend, and live-data path are separately verified.
+This Worker is a public-demo-only, multi-source feed for Kazuma's data. It is separate from the general-user Limited Data Relay. Publication consent is recorded separately for Kazuma's Libre and G7 glucose values and measurement/update timing. Both source routes are deployed only in the stopped state; G7 remains unverified for scheduled live retrieval, KV publication, frontend use, and the end-to-end live-data path.
 
 The prepared routes use source-specific Gluroo Global Connect slots:
 
@@ -14,7 +14,7 @@ FreeStyle LibreLink
 
 Dexcom G7
         -> Gluroo Global Connect (display confirmed)
-        -> stopped local G7 source slot
+        -> deployed stopped G7 source slot
         -> public:dexcom-g7:v1 (not written)
         -> public comparison remains pending
 ```
@@ -23,11 +23,11 @@ Dexcom G7
 
 - `DEMO_FEED_ENABLED=false`, `DEMO_LIBRE_FEED_ENABLED=false`, and `DEMO_G7_FEED_ENABLED=false`.
 - The dedicated `DEMO_FEED_CACHE` KV namespace was created after explicit approval on 2026-08-06, and its non-secret namespace id is recorded in `wrangler.jsonc`. The namespace remains empty.
-- After a second explicit approval, stopped Version `4c8d40de-8877-4d70-800e-1607e1940b96` was deployed to `https://glucoscope-demo-feed.afterglow21.workers.dev`. A later explicit approval registered exactly `GLUROO_DEMO_SOURCE_URL` and `GLUROO_DEMO_API_SECRET` as Cloudflare Secrets. Another explicit approval reapplied the stopped configuration as Version `f8801d58-67bd-4cf9-8cb1-dd227c879446`, which now receives 100% of traffic. The five-minute Cron is present but exits while disabled, before Secret access, upstream fetch, or KV write.
-- The existing Libre Secret values remain Cloudflare-only. After separate explicit approval on 2026-08-07, the G7 values for `GLUROO_DEMO_G7_SOURCE_URL` and `GLUROO_DEMO_G7_API_SECRET` were entered through masked prompts with `wrangler versions secret put`. This created unpublished Secret-only Versions `0e095e0a-63de-4b01-8c0f-2dd8f1e169a1` and `834019da-0cd1-41d8-8cff-41eab1062a00`. The latest contains all four Secret names and keeps `DEMO_FEED_ENABLED=false`; production traffic remains 100% on stopped Version `f8801d58-67bd-4cf9-8cb1-dd227c879446`.
+- After a second explicit approval, stopped Version `4c8d40de-8877-4d70-800e-1607e1940b96` was deployed to `https://glucoscope-demo-feed.afterglow21.workers.dev`. A later explicit approval registered exactly `GLUROO_DEMO_SOURCE_URL` and `GLUROO_DEMO_API_SECRET` as Cloudflare Secrets. Another explicit approval reapplied the stopped configuration as Version `f8801d58-67bd-4cf9-8cb1-dd227c879446`; it received 100% of traffic at that stage. The five-minute Cron is present but exits while disabled, before Secret access, upstream fetch, or KV write.
+- The existing Libre Secret values remain Cloudflare-only. After separate explicit approval on 2026-08-07, the G7 values for `GLUROO_DEMO_G7_SOURCE_URL` and `GLUROO_DEMO_G7_API_SECRET` were entered through masked prompts with `wrangler versions secret put`, creating unpublished Secret-only Versions `0e095e0a-63de-4b01-8c0f-2dd8f1e169a1` and `834019da-0cd1-41d8-8cff-41eab1062a00`. After another separate approval, reviewed multi-source Version `9994a142-a4ca-4885-9077-952ec8e7e8d2` inherited exactly the four Libre/G7 Secret names and was deployed to 100% of production traffic with all three feed gates still `false`.
 - Secret values must never enter Git, terminal arguments, screenshots, logs, fixtures, or support messages.
-- `DEMO_G7_FEED_CACHE_KEY=public:dexcom-g7:v1` is a non-secret, source-specific KV key. No G7 KV value has been written.
-- `GET /v1/dexcom-g7` is locally prepared but has not been deployed or activated in the frontend. The two unpublished Secret-only Versions clone the currently deployed stopped code and do not deploy the local G7 route or source-specific gates. No G7 KV value, production code/binding change, traffic allocation change, or frontend activation occurred.
+- `DEMO_G7_FEED_CACHE_KEY=public:dexcom-g7:v1` is a non-secret, source-specific KV key. No G7 KV value has been written, including after a five-minute Cron boundary on the deployed stopped revision.
+- `GET /v1/dexcom-g7` is deployed but stopped and is not activated in the frontend. Both `/v1/libre` and `/v1/dexcom-g7` return `503 demo_feed_paused`; approved-origin G7 preflight returns `204`, and an unapproved Origin returns `403`. No live Gluroo retrieval, G7 KV write, or frontend activation occurred.
 - Observability is disabled to reduce health-data logging. Cloudflare's route-level subdomain API reports `enabled=true` and `previews_enabled=false`; version-level `has_preview` metadata does not mean the public Preview route is enabled.
 - There is intentionally no real `deploy` npm script.
 
@@ -39,7 +39,7 @@ Dexcom G7
 - An enabled source refresh constructs only its approved Gluroo `/api/v1/entries.json` request in memory.
 - Redirects are not followed, upstream time and response size are bounded, and only glucose value, numeric timestamp, and an allowlisted direction are retained.
 - The rolling public snapshot covers at most 24 hours and expires from KV after 36 hours without a successful refresh.
-- Once a reviewed source route is deployed and enabled, public visitors read only its source-specific KV snapshot and never cause a Gluroo request or receive a Gluroo URL or API Secret. Production currently has only the stopped `/v1/libre` route; `/v1/dexcom-g7` remains local and unavailable.
+- Once a reviewed source route is enabled, public visitors read only its source-specific KV snapshot and never cause a Gluroo request or receive a Gluroo URL or API Secret. Production currently has both routes deployed but stopped, so neither route reads KV or contacts Gluroo.
 - A stale snapshot may remain visible with a stale flag so the page can explain that updates stopped without implying that a CGM stopped.
 
 The feed is public by design. CORS limits normal browser embedding to the GlucoScope GitHub Pages origin but is not an authentication boundary. Anyone who can reach the public endpoint may read the published snapshot.
@@ -70,8 +70,8 @@ Each change below requires a separate explicit approval:
 8. Completed locally only: prepare the source-specific G7 gates, Secret names, KV key, and `/v1/dexcom-g7` route with every checked-in enable flag set to `false`. No Cloudflare state changed.
 9. Completed on 2026-08-07: record separate explicit consent for Kazuma's G7 glucose values and measurement/update timing.
 10. Completed after separate explicit approval: register only the two G7 Secret values as unpublished Secret-only Versions, without deploying or shifting traffic. Masked input was used; no value entered command arguments, captured output, or Git, and temporary registration logs were removed after verification.
-11. After separate explicit approval, deploy the reviewed multi-source revision with the global and both source gates still `false`. Do not combine this stopped deployment with live enablement.
-12. Verify the stopped G7 GET, approved-origin CORS and preflight, unapproved-origin rejection, Secret names, bindings, absent G7 KV value, and Cron exit before G7 Secret access or KV access.
+11. Completed after separate explicit approval: upload and deploy reviewed multi-source Version `9994a142-a4ca-4885-9077-952ec8e7e8d2` with the global and both source gates still `false`.
+12. Completed after deployment: verify stopped Libre and G7 GETs, approved-origin CORS and G7 preflight, unapproved-origin rejection, all four Secret names, bindings, absent G7 KV value, and Cron exit before Secret or KV access.
 13. After another separate explicit approval, enable only the intended source. Confirm one scheduled refresh, inspect only the sanitized public response, and verify that all Gluroo URLs and API Secrets are absent.
 14. Keep the general-user Limited Data Relay paused unless it receives its own separate approval.
 
