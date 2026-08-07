@@ -36,8 +36,8 @@ const SOURCE_DEFINITIONS = Object.freeze({
     shortLabel: "Libre 2",
     color: "#c58a35",
     verificationLabel: "公開デモ経路を実機確認済み",
-    captureRoute: "Gluroo Global Connectから公開デモ用Worker、GitHub Pagesまで1回確認済み",
-    note: "一般利用者向け限定中継とは別の公開デモWorkerで、公開ページ全体の3機種同時ライブ表示を1回確認済みです。接続情報は公開されません。継続運用、複数回のブラウザ表示更新、古いデータ・自然失効は未確認です。",
+    captureRoute: "Gluroo Global Connectから公開デモ用Worker、GitHub Pagesまで継続公開中",
+    note: "一般利用者向け限定中継とは別の公開デモWorkerで、公開3CGMライブデモを継続中です。接続情報は公開されません。2回の定期集計確認と1回のブラウザ自動更新を確認済みです。長時間・複数回のブラウザ自動更新観察と、本番の自然失効は未確認です。",
   }),
   dexcom: Object.freeze({
     id: "dexcom-g7",
@@ -45,15 +45,15 @@ const SOURCE_DEFINITIONS = Object.freeze({
     shortLabel: "Dexcom G7",
     color: "#6d70ad",
     verificationLabel: "公開デモ経路を実機確認済み",
-    captureRoute: "Gluroo Global Connectから公開デモ用Worker、GitHub Pagesまで1回確認済み",
-    note: "一般利用者向け限定中継とは別の公開デモWorkerで、公開ページ全体の3機種同時ライブ表示を1回確認済みです。接続情報は公開されません。継続運用、複数回のブラウザ表示更新、古いデータ・自然失効は未確認です。",
+    captureRoute: "Gluroo Global Connectから公開デモ用Worker、GitHub Pagesまで継続公開中",
+    note: "一般利用者向け限定中継とは別の公開デモWorkerで、公開3CGMライブデモを継続中です。接続情報は公開されません。2回の定期集計確認と1回のブラウザ自動更新を確認済みです。長時間・複数回のブラウザ自動更新観察と、本番の自然失効は未確認です。",
   }),
 });
 const VERIFIED_DEXCOM_DEFINITION = Object.freeze({
   ...SOURCE_DEFINITIONS.dexcom,
   verificationLabel: "公開デモ経路を実機確認済み",
   captureRoute: "Gluroo Global Connectから公開デモ専用Workerを経由",
-  note: "Kazumaが公開を選んだDexcom G7の直近データです。公開ページ全体の3機種同時ライブ表示は1回確認済みです。接続情報は公開されません。継続運用と複数回のブラウザ表示更新は未確認です。",
+  note: "Kazumaが公開を選んだDexcom G7の直近データです。公開3CGMライブデモを継続中で、2回の定期集計確認と1回のブラウザ自動更新を確認済みです。接続情報は公開されません。長時間・複数回のブラウザ自動更新観察と、本番の自然失効は未確認です。",
 });
 
 function normalizeTimestamp(entry) {
