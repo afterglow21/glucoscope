@@ -2394,16 +2394,18 @@ worn by Kazuma during the same period.
 As of 2026-08-07, the published comparison page is not a live three-source view.
 Because the dedicated Libre public-demo Worker is paused, the combined page shows
 the clearly labelled checked-in synthetic dataset for all three device cards.
+The Libre Worker has completed one scheduled retrieval and sanitized public-response
+check and was returned immediately to the stopped Version.
 Guardian's separate Azure Nightscout browser route is verified,
 but that fact alone does not make the combined comparison page live.
 
 The current delivery order is:
 
-1. Verify one separately approved Libre public-demo scheduled retrieval
-   and sanitized public response.
-2. Publish the stopped G7 frontend endpoint configuration while keeping
-   its route-verification gate disabled, then verify the synthetic fallback
-   on GitHub Pages.
+1. Completed after separate explicit approval: verify one Libre public-demo
+   scheduled retrieval and sanitized public response, restore the stopped Worker,
+   and confirm that the next stopped Cron does not extend the Libre snapshot expiration.
+2. Current: publish the configured stopped G7 endpoint while keeping
+   `dexcomRouteVerified=false`, then verify the synthetic fallback on GitHub Pages.
 3. Under separate operational approval, briefly enable the required demo feeds
    and verify Guardian, Libre, and G7 together on GitHub Pages.
 4. Restore the stopped Worker, verify fallback and expiry behavior,
@@ -2429,7 +2431,11 @@ The device-source confirmation itself still reaches only as far as Gluroo.
 Separately, one approved G7-only scheduled public-demo Worker retrieval,
 source-specific KV key creation, and sanitized public Worker response
 have now been verified. The Worker was returned immediately to its stopped Version.
-Frontend activation, GitHub Pages browser rendering, simultaneous three-source comparison,
+The Libre source has also completed one approved scheduled public-demo Worker retrieval
+and sanitized public-response check and was returned immediately to the stopped Version.
+The working frontend now configures the stopped G7 URL with
+`dexcomRouteVerified=false`; its GitHub Pages fallback check remains pending until
+that frontend change is published. Simultaneous three-source comparison,
 repeated refreshes, and the complete comparison-page end-to-end path remain unverified.
 
 Guardian remains on Kazuma's existing Azure Nightscout.
@@ -2590,14 +2596,31 @@ At 04:46 UTC, after the 04:45 UTC Cron boundary, KV metadata still listed only
 `public:dexcom-g7:v1` and its expiration was unchanged. This confirms that the
 stopped Cron did not refresh the snapshot or extend its lifetime. The raw KV value
 was not directly read or printed; the retained key is not served while the route is
-paused and will expire under its existing 36-hour TTL. The G7 frontend endpoint
-remains blank and `dexcomRouteVerified=false`.
+paused and will expire under its existing 36-hour TTL. At that checkpoint the G7
+frontend endpoint was blank and `dexcomRouteVerified=false`; the working frontend
+now configures the stopped G7 URL with the verification gate still `false`, and its
+GitHub Pages fallback check remains pending until publication.
 
 This verifies one scheduled G7 retrieval, source-specific KV key creation, and the
 sanitized public Worker response. It does not verify G7 frontend activation,
 GitHub Pages browser loading or rendering, simultaneous Guardian/Libre/G7 comparison,
 repeated scheduled refreshes, stale/fallback/expiry behavior, continuing enablement,
 or the general-user Limited Data Relay G7 path.
+
+After another separate explicit approval on 2026-08-07, temporary Libre-only Version
+`2e72847d-5011-47c5-80e6-8cb931a1b141` was deployed for one scheduled refresh.
+The 19:25 JST Cron produced a public `/v1/libre` response containing 523 entries.
+Aggregate-only validation passed the reviewed top-level schema, entry-field allowlist,
+type, range, chronological-order, recency, private-marker, and CORS checks.
+No glucose value, measurement timestamp, Gluroo URL, Secret, or token was printed
+or added to Git. G7 remained paused at `503` throughout the check.
+
+Stopped Version `9994a142-a4ca-4885-9077-952ec8e7e8d2` was then restored,
+and both `/v1/libre` and `/v1/dexcom-g7` again returned `503`.
+The next stopped Cron did not extend the Libre snapshot expiration.
+This verifies one Libre scheduled retrieval and sanitized public Worker response only.
+It does not verify GitHub Pages browser rendering, simultaneous three-source comparison,
+repeated refreshes, stale/fallback/natural-expiry behavior, or continuing enablement.
 
 All treatment decisions, alerts, and current device-state checks
 must continue to use the original approved CGM or pump application.
@@ -2614,14 +2637,17 @@ Guardian 4、FreeStyle Libre 2、Dexcom G7を、
 2026年8月7日現在、公開中の比較ページは3機種のライブ比較ではありません。
 Libre公開デモ用Workerが停止中のため、3機種すべてについて
 「準備中・合成データ」と明記した、あらかじめ用意した合成データを表示しています。
+Libre用Workerでは1回の定期取得と安全な公開応答を確認し、
+確認直後に停止Versionへ戻しています。
 GuardianのAzure Nightscoutブラウザ直接経路は別途確認済みですが、
 その事実だけで比較ページ全体をライブ表示済みとは扱いません。
 
 現在の作業順は次のとおりです。
 
-1. 別の明示確認後、Libre公開デモWorkerの定期取得と
-   安全な公開応答を1回だけ確認する。
-2. G7のフロント接続先を停止状態で反映し、経路確認ゲートを無効のまま保って、
+1. 完了：別の明示確認後、Libre公開デモWorkerの定期取得と
+   安全な公開応答を1回だけ確認し、停止Workerへ戻して、
+   次の停止中CronでLibreスナップショットの有効期限が延びないことを確認した。
+2. 現在：設定済みの停止中G7接続先を`dexcomRouteVerified=false`のまま公開し、
    GitHub Pagesで合成データへ安全に切り替わることを確認する。
 3. 別の運用確認後、必要なデモ配信を短時間だけ有効にし、
    GitHub PagesでGuardian・Libre・G7の同時表示を確認する。
@@ -2647,8 +2673,10 @@ G7の接続情報を準備できていることを確認しました。
 機器からの送信確認そのものは、引き続きGlurooまでの経路だけです。
 これとは別に、G7だけを一時有効にした公開デモ用Workerで、
 1回の定期取得、ソース別KVキー作成、安全な公開Worker応答まで確認しました。
-確認後はすぐ停止Versionへ戻しています。フロント接続先の有効化、
-GitHub Pages上のブラウザ表示、3機種の同時比較、複数回の定期更新、
+Libreでも別に1回の定期取得と安全な公開応答を確認し、
+確認後はすぐ停止Versionへ戻しています。作業中のフロントでは
+停止中のG7接続先を設定し、`dexcomRouteVerified=false`を保っていますが、
+この変更を公開した後のGitHub Pages確認、3機種の同時比較、複数回の定期更新、
 公開比較ページ全体のエンドツーエンド経路は引き続き未確認です。
 
 GuardianはKazumaの既存Azure Nightscoutをそのまま使います。
@@ -2812,13 +2840,31 @@ Libreは`503`の停止状態を保ち、G7のpreflightは許可Originで`204`、
 これにより、停止中のCronがスナップショットを更新せず、有効期限も
 延長しなかったことを確認しました。KVの値そのものは直接読み出しておらず、
 残ったキーは停止中の経路から配信せず、既存の36時間TTLで失効します。
-G7のフロント接続先は空、`dexcomRouteVerified=false`のままです。
+この確認時点ではG7のフロント接続先は空、`dexcomRouteVerified=false`でした。
+作業中のフロントでは停止中のG7 URLを設定し、確認ゲートを`false`のまま保っています。
+GitHub Pagesでのフォールバック確認は、この変更を公開した後に行います。
 
 今回確認できたのは、G7の1回の定期取得、ソース別KVキー作成、
 公開Worker応答の安全な構造までです。G7のフロント接続先有効化、
 GitHub Pages上のブラウザ表示、Guardian・Libre・G7の同時比較、
 複数回の定期更新、古いデータ・フォールバック・失効時の動作、
 継続有効化、一般利用者向け限定リレーのG7経路は未確認です。
+
+さらに別の明示確認後、2026年8月7日にLibreだけを一時有効にしたVersion
+`2e72847d-5011-47c5-80e6-8cb931a1b141`を、定期取得1回だけの確認に使いました。
+19:25 JSTのCronで、公開経路`/v1/libre`から523件の応答を確認しました。
+記録へ残したのは件数と集計・構造確認の結果だけです。公開用の最上位構造、
+許可した項目、型、範囲、時系列順、更新の新しさ、確認対象の非公開情報を
+示す項目がないこと、CORS境界を確認しました。Secret値、Gluroo URL、
+血糖値、測定時刻の実値、tokenは表示せず、Gitにも追加していません。
+確認中もG7は`503`の停止状態を保ちました。
+
+確認直後に停止Version `9994a142-a4ca-4885-9077-952ec8e7e8d2`へ戻し、
+LibreとG7の両経路が再び`503`を返すことを確認しました。
+次の停止中Cronでも、Libreスナップショットの有効期限は延長されませんでした。
+今回確認できたのはLibreの1回の定期取得と安全な公開Worker応答までです。
+GitHub Pages上のブラウザ表示、3機種の同時比較、複数回の定期更新、
+古いデータ・フォールバック・自然失効時の動作、継続有効化は未確認です。
 
 治療判断、アラート、現在の機器状態は、
 引き続き元の公式CGM・ポンプアプリを確認します。

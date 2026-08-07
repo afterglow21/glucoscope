@@ -32,9 +32,9 @@ const SOURCE_DEFINITIONS = Object.freeze({
     label: "FreeStyle Libre 2",
     shortLabel: "Libre 2",
     color: "#c58a35",
-    verificationLabel: "基本接続を実機確認済み",
-    captureRoute: "Gluroo Global Connectから公開デモ専用Workerを経由",
-    note: "Kazumaが公開を選んだLibre 2の直近データです。接続情報は公開されません。",
+    verificationLabel: "Worker取得を1回確認済み",
+    captureRoute: "Gluroo Global Connectから公開デモ用Workerの公開応答まで1回確認済み",
+    note: "一般利用者向け限定中継とは別の公開デモWorkerで、1回の定期取得と安全なWorker応答を確認済みです。接続情報は公開されません。繰り返し更新と3機種同時表示は別途確認します。",
   }),
   dexcom: Object.freeze({
     id: "dexcom-g7",
@@ -43,7 +43,7 @@ const SOURCE_DEFINITIONS = Object.freeze({
     color: "#6d70ad",
     verificationLabel: "Worker取得を1回確認済み",
     captureRoute: "Gluroo Global Connectから公開デモ用Workerの公開応答まで1回確認済み",
-    note: "一般利用者向け限定中継とは別の公開デモWorkerで、1回の定期取得と安全なWorker応答を確認済みです。フロント接続、繰り返し更新、3機種同時表示は未確認です。",
+    note: "一般利用者向け限定中継とは別の公開デモWorkerで、1回の定期取得と安全なWorker応答を確認済みです。接続先は停止状態で設定済みですが表示ゲートは無効で、GitHub Pages反映、繰り返し更新、3機種同時表示は未確認です。",
   }),
 });
 const VERIFIED_DEXCOM_DEFINITION = Object.freeze({
