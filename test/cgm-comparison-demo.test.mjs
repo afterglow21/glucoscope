@@ -415,7 +415,7 @@ test("live rendering gently identifies delayed sources and caps the preserved vi
   assert.match(comparisonModule, /source\.isStale === true/);
   assert.match(comparisonModule, /canPreserveLiveDataset\(state\.dataset, state\.liveLoadedAt, Date\.now\(\)\)/);
   assert.match(comparisonModule, /古い表示を残さず合成データへ切り替えました/);
-  assert.match(comparisonModule, /live-comparison-core\.mjs\?v=20260807-three-cgm-live-3/);
+  assert.match(comparisonModule, /live-comparison-core\.mjs\?v=20260808-live-health-1/);
   assert.match(comparisonCss, /\.comparison-status-delayed/);
   assert.match(comparisonCss, /\.comparison-source-state-delayed/);
 });

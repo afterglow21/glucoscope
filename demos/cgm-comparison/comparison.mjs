@@ -9,7 +9,7 @@ import {
   canPreserveLiveDataset,
   fetchOptionalPublicFeed,
   normalizePublicFeedEndpoint
-} from "./live-comparison-core.mjs?v=20260807-three-cgm-live-3";
+} from "./live-comparison-core.mjs?v=20260808-live-health-1";
 
 const DATASET_URL = "./data/sample.json";
 const state = {
