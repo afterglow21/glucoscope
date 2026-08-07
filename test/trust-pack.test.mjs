@@ -77,10 +77,9 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(data, /Kazumaは自分自身のLibreの血糖値と測定・更新時刻を公開することを明示的に選びました/);
   assert.match(data, /一般利用者の接続情報や血糖データを保存しません/);
   assert.match(data, /公開デモWorkerによる1回の定期取得、ソース別KVキー作成、安全な公開Worker応答まで確認済み/);
-  assert.match(data, /停止中のG7接続先は`dexcomRouteVerified=false`のままフロントへ設定済み/);
-  assert.match(data, /GitHub Pagesへの公開反映確認はまだです/);
-  assert.match(data, /現在のページは停止中Workerにより「準備中・合成データ」のままです/);
-  assert.match(data, /G7ライブ表示、3機種の同時比較、ページ全体のエンドツーエンド経路は未確認です/);
+  assert.match(data, /停止中のG7接続先は`dexcomRouteVerified=false`のままGitHub Pagesへ反映済み/);
+  assert.match(data, /「準備中・合成データ」と3機種のカードを安全に表示することも確認しました/);
+  assert.match(data, /G7ライブ表示、3機種の同時ライブ比較、ページ全体のライブ・エンドツーエンド経路は未確認です/);
   assert.match(data, /G7の血糖値と測定・更新時刻の公開へも、Libreとは別に明示同意しました/);
   assert.match(data, /G7だけを一時有効にしたVersion `3b796eb5-11be-466f-83ea-7710279f49c1`/);
   assert.match(data, /Libreを停止したまま1回のCronで`public:dexcom-g7:v1`を作成/);
@@ -97,7 +96,7 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(data, /G7は`503`のままでした/);
   assert.match(data, /確認後すぐ停止Version `9994a142-a4ca-4885-9077-952ec8e7e8d2`へ戻し、両経路が`503`/);
   assert.match(data, /次の停止中Cron後もLibreキーの有効期限は延長されませんでした/);
-  assert.match(data, /複数回の定期更新と一般利用者向け限定中継のG7経路も未確認です/);
+  assert.match(data, /複数回の定期更新と一般利用者向け限定中継のG7経路は未確認です/);
   assert.match(privacy, /限定中継は現在停止中です/);
   assert.match(privacy, /明示的な同意がない限り、限定中継への通信を始めません/);
   assert.match(privacy, /Kazuma自身の公開比較データ/);
@@ -106,12 +105,12 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(privacy, /KVは最長36時間で期限切れ/);
   assert.match(privacy, /残ったキーは停止中の経路から配信せず、既存の最長36時間TTLで失効します/);
   assert.match(privacy, /KVの生データは直接読み出していません/);
-  assert.match(privacy, /停止中のG7接続先は`dexcomRouteVerified=false`のまま設定済みです/);
-  assert.match(privacy, /GitHub Pagesへの公開反映、G7ライブ表示、3機種同時比較、ページ全体の経路は未確認です/);
+  assert.match(privacy, /停止中のG7接続先は`dexcomRouteVerified=false`のままGitHub Pagesへ反映し、合成データへの切替を確認済みです/);
+  assert.match(privacy, /G7ライブ表示、3機種同時ライブ比較、ページ全体のライブ経路/);
   assert.match(privacy, /Libreだけを一時有効にしたVersion `2e72847d-5011-47c5-80e6-8cb931a1b141`/);
   assert.match(privacy, /19:25 JSTのCronで公開`\/v1\/libre`応答が合計523件/);
   assert.match(privacy, /次の停止中Cron後もLibreキーの有効期限は延長されませんでした/);
-  assert.match(privacy, /複数回の定期更新と、一般利用者向け限定中継のG7経路も未確認です/);
+  assert.match(privacy, /複数回の定期更新と一般利用者向け限定中継のG7経路は未確認です/);
   assert.match(privacy, /ユーザー版は、前の項目のとおり現在送信しません/);
   assert.match(safety, /接続失敗は、CGMやポンプが止まったことを意味しません/);
   assert.match(support, /Gluroo、Nightscout、Azure、Cloudflare、OpenAI/);
@@ -119,8 +118,8 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(roadmap, /初回告知はまだ実施していません/);
   assert.match(roadmap, /現在の最優先は、公開3CGM比較ラボを段階的に確認することです/);
   assert.match(roadmap, /完了：Libre公開デモWorkerの取得と安全な公開応答を1回だけ確認し、停止状態へ戻しました/);
-  assert.match(roadmap, /現在：停止中のG7接続先を`dexcomRouteVerified=false`のままフロントへ設定済みです/);
-  assert.match(roadmap, /GitHub Pagesへの公開反映と、合成データへの安全な切替を確認します/);
+  assert.match(roadmap, /完了：停止中のG7接続先を`dexcomRouteVerified=false`のままGitHub Pagesへ反映し、合成データへの安全な切替を確認しました/);
+  assert.match(roadmap, /現在：別の明示確認後、短時間だけ3機種の公開ページ全体をライブデータで確認します/);
   assert.match(roadmap, /現時点の3CGM比較ページは、Libre公開デモ用Workerが停止中のため「準備中・合成データ」を表示しています/);
   assert.match(roadmap, /GuardianのAzure Nightscoutブラウザ直接経路は別途確認済みですが、その事実だけで比較ページ全体をライブ表示済みとは扱いません/);
   assert.match(roadmap, /Libreだけを一時有効にしたVersion `2e72847d-5011-47c5-80e6-8cb931a1b141`/);
@@ -130,7 +129,7 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(readme, /Extended period, expiry, deletion, and limit checks remain/);
   assert.match(readme, /approved `workers\.dev` target is fixed in the checked-in frontend/);
   assert.match(readme, /`preview_urls=false`, `observability\.enabled=false`, and the checked-in `RELAY_ENABLED=false`/);
-  assert.match(readme, /currently falls back to the clearly labelled synthetic dataset because the dedicated Libre public-demo feed is paused/);
+  assert.match(readme, /currently falls back to the clearly labelled synthetic dataset because the dedicated public-demo Worker is paused/);
   assert.match(readme, /Guardian's separate Azure Nightscout browser route is verified, but that does not make the combined comparison page live by itself/);
   assert.match(readme, /global `DEMO_FEED_ENABLED=false`, source gates `DEMO_LIBRE_FEED_ENABLED=false` and `DEMO_G7_FEED_ENABLED=false`/);
   assert.match(readme, /stopped `glucoscope-demo-feed` Worker was deployed as Version/);
@@ -140,10 +139,9 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(readme, /at that stopped-deployment checkpoint, the dedicated KV remained empty after a Cron boundary/i);
   assert.match(readme, /subdomain setting remains `enabled=true` with `previews_enabled=false`/);
   assert.match(readme, /version-level `has_preview` metadata does not mean the public Preview route is enabled/);
-  assert.match(readme, /working frontend now configures the stopped G7 endpoint with `dexcomRouteVerified=false`/);
-  assert.match(readme, /GitHub Pages verification remains pending until that frontend change is published/);
-  assert.match(readme, /PR #14 merged the comparison frontend to `main` in merge commit `7e96648c27ce20fabe2f283c384124e36ce0b2d2`/);
-  assert.match(readme, /GitHub Pages publication was verified on 2026-08-07/);
+  assert.match(readme, /published frontend now configures the stopped G7 endpoint with `dexcomRouteVerified=false`/);
+  assert.match(readme, /GitHub Pages loaded the clearly labelled `準備中 · 合成データ` fallback and all three device cards after commit `8b0481a`/);
+  assert.match(readme, /PR #14 merged the original comparison frontend to `main` in merge commit `7e96648c27ce20fabe2f283c384124e36ce0b2d2`/);
   assert.match(readme, /G7 Secret names `GLUROO_DEMO_G7_SOURCE_URL` and `GLUROO_DEMO_G7_API_SECRET`/);
   assert.match(readme, /two G7 values were entered through masked prompts with `wrangler versions secret put`/);
   assert.match(readme, /multi-source Version `9994a142-a4ca-4885-9077-952ec8e7e8d2` was uploaded and deployed to 100% of production traffic/);
@@ -157,7 +155,7 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(readme, /top-level schema, entry-field allowlist, type, range, chronological-order, recency, private-marker, and CORS checks/);
   assert.match(readme, /G7 remained paused at `503`/);
   assert.match(readme, /next stopped Cron did not extend the Libre snapshot expiration/);
-  assert.match(readme, /GitHub Pages browser rendering, simultaneous three-source comparison, repeated refreshes, stale\/fallback\/natural-expiry behavior, and continuing enablement remain unverified/);
+  assert.match(readme, /GitHub Pages synthetic fallback rendering is verified; simultaneous live three-source comparison, repeated refreshes, stale\/natural-expiry behavior, and continuing enablement remain unverified/);
   assert.doesNotMatch(readme, /frontend endpoint remains intentionally blank/);
 });
 

@@ -42,9 +42,9 @@ test("public sample is explicitly synthetic, three-source, and privacy-safe", as
   assert.equal(dataset.sources[2].verificationLabel, "Worker取得を1回確認済み");
   assert.match(dataset.sources[2].captureRoute, /公開デモ用Workerの公開応答まで1回確認済み/);
   assert.match(dataset.sources[2].note, /一般利用者向け限定中継とは別/);
-  assert.match(dataset.sources[2].note, /接続先は停止状態で設定済み/);
-  assert.match(dataset.sources[2].note, /表示ゲートは無効/);
-  assert.match(dataset.sources[2].note, /GitHub Pages反映、繰り返し更新、3機種同時表示は未確認/);
+  assert.match(dataset.sources[2].note, /停止中の接続先を表示ゲート無効のままGitHub Pagesへ反映/);
+  assert.match(dataset.sources[2].note, /合成データへの安全な切替を確認済み/);
+  assert.match(dataset.sources[2].note, /繰り返し更新と3機種同時ライブ表示は未確認/);
   assert.match(dataset.sources[2].note, /表示中の線は合成データ/);
   assert.doesNotMatch(sampleText, /https?:\/\//i);
   assert.doesNotMatch(sampleText, /\b\d{4}-\d{2}-\d{2}\b/);
@@ -95,9 +95,9 @@ test("live comparison uses Guardian and Libre while Dexcom remains pending", () 
   assert.equal(dataset.sources[2].verificationLabel, "Worker取得を1回確認済み");
   assert.match(dataset.sources[2].captureRoute, /公開デモ用Workerの公開応答まで1回確認済み/);
   assert.match(dataset.sources[2].note, /一般利用者向け限定中継とは別/);
-  assert.match(dataset.sources[2].note, /接続先は停止状態で設定済み/);
-  assert.match(dataset.sources[2].note, /表示ゲートは無効/);
-  assert.match(dataset.sources[2].note, /GitHub Pages反映、繰り返し更新、3機種同時表示は未確認/);
+  assert.match(dataset.sources[2].note, /停止中の接続先を表示ゲート無効のままGitHub Pagesへ反映/);
+  assert.match(dataset.sources[2].note, /合成データへの安全な切替を確認済み/);
+  assert.match(dataset.sources[2].note, /繰り返し更新と3機種同時ライブ表示は未確認/);
   assert.doesNotMatch(JSON.stringify(dataset), /private-guardian|dateString|https?:\/\/|secret/i);
 });
 
