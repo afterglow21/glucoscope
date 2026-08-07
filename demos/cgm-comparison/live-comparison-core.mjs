@@ -1,4 +1,4 @@
-import { validateDataset } from "./comparison-core.mjs";
+import { validateDataset } from "./comparison-core.mjs?v=20260808-clock-axis-1";
 
 const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
@@ -239,6 +239,7 @@ export function buildLiveComparisonDataset({
     durationMinutes,
     matchToleranceMinutes: 3,
     updatedAt: Math.min(...updateTimes),
+    windowEndAt: nowMs,
     disclosure: hasDexcomReadings
       ? "Kazumaが公開を選んだGuardian 4、Libre 2、Dexcom G7の直近表示です。血糖値と更新時刻は公開情報になります。接続情報、治療・食事・薬・ポンプ情報は含みません。機器の精度、優劣、医療判断を示すものではありません。"
       : "Kazumaが公開を選んだGuardian 4とLibre 2の直近表示です。血糖値と更新時刻は公開情報になります。接続情報、治療・食事・薬・ポンプ情報は含みません。機器の精度、優劣、医療判断を示すものではありません。",

@@ -1,6 +1,9 @@
 export const ALLOWED_DATASET_STATUSES = new Set(["synthetic", "anonymized", "live"]);
 export const ALLOWED_SOURCE_DATA_STATUSES = new Set(["available", "pending"]);
 
+const MINUTE_MS = 60 * 1000;
+const DAY_MS = 24 * 60 * MINUTE_MS;
+
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
@@ -15,6 +18,7 @@ export function validateDataset(dataset) {
 
   if (dataset.status === "live") {
     assert(Number.isSafeInteger(dataset.updatedAt) && dataset.updatedAt > 0, "Live dataset needs a numeric update time.");
+    assert(Number.isSafeInteger(dataset.windowEndAt) && dataset.windowEndAt > 0, "Live dataset needs a numeric window end time.");
   }
 
   const ids = new Set();
@@ -61,6 +65,48 @@ export function formatElapsedMinute(totalMinutes) {
   const hour = Math.floor(withinDay / 60);
   const rest = withinDay % 60;
   return `Day ${day} ${String(hour).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
+}
+
+function getZonedClockParts(timestamp, timeZone) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(timestamp);
+  const values = Object.fromEntries(parts
+    .filter((part) => part.type !== "literal")
+    .map((part) => [part.type, Number(part.value)]));
+  return values;
+}
+
+export function formatLiveClockMinute(totalMinutes, {
+  durationMinutes,
+  windowEndAt,
+  timeZone = "Asia/Tokyo"
+} = {}) {
+  const duration = Number(durationMinutes);
+  const endAt = Number(windowEndAt);
+  if (!Number.isFinite(duration) || duration <= 0 || !Number.isFinite(endAt) || endAt <= 0) {
+    return formatElapsedMinute(totalMinutes);
+  }
+
+  const minute = Math.min(duration, Math.max(0, Number(totalMinutes) || 0));
+  const pointAt = endAt - (duration - minute) * MINUTE_MS;
+  const point = getZonedClockParts(pointAt, timeZone);
+  const end = getZonedClockParts(endAt, timeZone);
+  const pointDay = Date.UTC(point.year, point.month - 1, point.day);
+  const endDay = Date.UTC(end.year, end.month - 1, end.day);
+  const dayDifference = Math.round((endDay - pointDay) / DAY_MS);
+  const clock = `${String(point.hour).padStart(2, "0")}:${String(point.minute).padStart(2, "0")}`;
+
+  if (Math.abs(duration - minute) < 0.5) return `現在 ${clock}`;
+  if (dayDifference === 0) return `今日 ${clock}`;
+  if (dayDifference === 1) return `昨日 ${clock}`;
+  return `${dayDifference}日前 ${clock}`;
 }
 
 export function filterSourcesByWindow(sources, startMinute) {

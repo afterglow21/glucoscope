@@ -2,14 +2,16 @@ import {
   computeObservationSummary,
   filterSourcesByWindow,
   formatElapsedMinute,
+  formatLiveClockMinute,
   validateDataset
-} from "./comparison-core.mjs";
+} from "./comparison-core.mjs?v=20260808-clock-axis-1";
 import {
   buildLiveComparisonDataset,
   canPreserveLiveDataset,
   fetchOptionalPublicFeed,
   normalizePublicFeedEndpoint
-} from "./live-comparison-core.mjs?v=20260808-live-health-1";
+} from "./live-comparison-core.mjs?v=20260808-clock-axis-1";
+import { createLiveRefreshController } from "./live-refresh-core.mjs?v=20260808-clock-axis-1";
 
 const DATASET_URL = "./data/sample.json";
 const state = {
@@ -38,6 +40,14 @@ function getVisibleSources() {
     state.dataset.sources.filter((source) => state.enabledSources.has(source.id)),
     startMinute
   );
+}
+
+function formatTimelineMinute(totalMinutes) {
+  if (state.dataset.status !== "live") return formatElapsedMinute(totalMinutes);
+  return formatLiveClockMinute(totalMinutes, {
+    durationMinutes: state.dataset.durationMinutes,
+    windowEndAt: state.dataset.windowEndAt
+  });
 }
 
 function renderDatasetHeader() {
@@ -171,8 +181,17 @@ function renderChart() {
           min: getWindowStart(),
           max: state.dataset.durationMinutes,
           grid: { color: "rgba(86, 121, 107, 0.10)" },
-          ticks: { callback: (value) => formatElapsedMinute(value) },
-          title: { display: true, text: "装着開始からの経過時間（正確な日付は非公開）" }
+          ticks: {
+            autoSkip: true,
+            maxTicksLimit: 7,
+            callback: (value) => formatTimelineMinute(value)
+          },
+          title: {
+            display: true,
+            text: state.dataset.status === "live"
+              ? "日本時間（24時間表記・昨日／今日・右端が現在）"
+              : "装着開始からの経過時間（正確な日付は非公開）"
+          }
         },
         y: {
           suggestedMin: 70,
@@ -185,7 +204,7 @@ function renderChart() {
         legend: { display: true, position: "bottom", labels: { usePointStyle: true, padding: 18 } },
         tooltip: {
           callbacks: {
-            title: (items) => items.length ? formatElapsedMinute(items[0].parsed.x) : "",
+            title: (items) => items.length ? formatTimelineMinute(items[0].parsed.x) : "",
             label: (item) => `${item.dataset.label}: ${Math.round(item.parsed.y)} mg/dL`
           }
         }
@@ -310,22 +329,33 @@ async function loadDataset({ preserveLiveOnError = false } = {}) {
   renderSummary();
 }
 
-function scheduleLiveRefresh() {
-  let config;
+function getLiveRefreshDelayMs() {
   try {
-    config = readLiveConfig();
+    const config = readLiveConfig();
+    return config.libreEndpoint ? Math.max(1, config.refreshMinutes) * 60_000 : null;
   } catch {
-    return;
+    return null;
   }
-  if (!config.libreEndpoint) return;
-  setTimeout(async () => {
-    await loadDataset({ preserveLiveOnError: true });
-    scheduleLiveRefresh();
-  }, Math.max(1, config.refreshMinutes) * 60_000);
 }
 
-bindRangeControls();
-loadDataset().then(scheduleLiveRefresh).catch((error) => {
+function reportLoadError(error) {
   console.error("Could not load the CGM comparison dataset.", error);
   byId("chartMessage").textContent = "比較データを読み込めませんでした。公開デモの通常画面はそのまま利用できます。";
+}
+
+const liveRefresh = createLiveRefreshController({
+  load: loadDataset,
+  getDelayMs: getLiveRefreshDelayMs,
+  isVisible: () => document.visibilityState !== "hidden",
+  onError: reportLoadError
 });
+
+document.addEventListener("visibilitychange", () => {
+  void liveRefresh.handleVisibilityChange().catch(reportLoadError);
+});
+window.addEventListener("pageshow", (event) => {
+  void liveRefresh.handlePageShow(event).catch(reportLoadError);
+});
+
+bindRangeControls();
+liveRefresh.start().catch(reportLoadError);

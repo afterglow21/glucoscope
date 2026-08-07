@@ -104,7 +104,11 @@ This is a public, non-anonymous display of Kazuma's own consented data. GlucoSco
 
 The public page:
 
-- shows available series on the same elapsed-time axis;
+- shows live series on the same rolling 24-hour axis, labelled in 24-hour Japan time
+  as `昨日`, `今日`, and `現在` without exposing an exact calendar date;
+- retains `Day N HH:mm` elapsed-time labels for synthetic and anonymized datasets;
+- refreshes immediately when a hidden page becomes visible or Safari restores it from
+  the back-forward cache, while keeping only one refresh request and one timer active;
 - allows each available series to be shown or hidden;
 - does not interpolate missing points;
 - reports only matched-point count, observed display spread, and missing-point count;

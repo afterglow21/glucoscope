@@ -15,7 +15,7 @@
 
     <section class="card about-detail-hero about-detail-hero-with-art">
       <div class="about-detail-hero-copy">
-        <p class="about-section-kicker">Development · Updated 2026-07-14</p>
+        <p class="about-section-kicker">Development · Updated 2026-08-08</p>
         <h1><span class="about-detail-title-en">Developer Status</span><span class="about-detail-title-jp">開発ステータス</span></h1>
         <p>Friends &amp; Family Previewとして公開を始めたGlucoScopeの、いまの動作状況と次の課題です。</p>
       </div>
@@ -54,7 +54,7 @@
 
       <div class="about-detail-mini-card">
         <div class="about-detail-mini-head"><span class="about-detail-mini-icon">📱</span><h3><span class="about-detail-mini-title-en">Mobile Experience</span><span class="about-detail-mini-title-jp">スマホ5タブ画面</span></h3></div>
-        <p>血糖値、グラフ、ふりかえり、お手紙、その他の5画面が利用できます。グラフはスマホ横置きのモニター利用にも対応し、重大な不具合を優先して調整を続けています。</p>
+        <p>血糖値、グラフ、ふりかえり、お手紙、その他の5画面が利用できます。グラフの横向きレイアウトは対応済みです。画面を消さずに使う常時表示モードは、ユーザー展開を始めた後に追加します。</p>
       </div>
 
       <div class="about-detail-mini-card">
@@ -78,7 +78,13 @@
 
       <div class="about-detail-mini-card">
         <div class="about-detail-mini-head"><span class="about-detail-mini-icon">🧭</span><h3><span class="about-detail-mini-title-en">Next Steps</span><span class="about-detail-mini-title-jp">次の課題</span></h3></div>
-        <p>AIお手紙の共有KVキャッシュ、利用状況の本番確認、Worker APIのCORS制限、Trust Pack / Aboutの公開文面とリンク整理、Cloudflare Web Analyticsの導入まで完了しました。次はFriends &amp; Familyフィードバック、初回告知、Journal、端末サイズごとの確認を進めます。Clinic構想は、30日グラフや既存の振り返り機能との重なりと医療的な誤解を避けるため、現在の計画から外しました。</p>
+        <ol>
+          <li>ユーザー基盤・同意に基づく利用分析の設計</li>
+          <li>管理者ダッシュボード</li>
+          <li>Plus 30日パスと支援導線</li>
+          <li>ユーザー展開開始後の、横向きグラフ限定の常時表示モード</li>
+        </ol>
+        <p>血糖値や接続情報を利用分析へ入れず、既存のAI Worker用Usage Dashboardとは分けて設計します。Clinic構想は現在の計画から外しています。</p>
         <p><a href="../trust/roadmap.html">Roadmapを見る →</a></p>
       </div>
     </section>

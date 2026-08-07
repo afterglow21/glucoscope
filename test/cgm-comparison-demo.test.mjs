@@ -6,6 +6,7 @@ import {
   buildMatchedComparisons,
   computeObservationSummary,
   formatElapsedMinute,
+  formatLiveClockMinute,
   validateDataset
 } from "../demos/cgm-comparison/comparison-core.mjs";
 import {
@@ -18,6 +19,7 @@ import {
   validatePublicFeed,
   validatePublicLibreFeed
 } from "../demos/cgm-comparison/live-comparison-core.mjs";
+import { createLiveRefreshController } from "../demos/cgm-comparison/live-refresh-core.mjs";
 import {
   anonymizeEntries,
   buildAnonymizedDataset,
@@ -93,6 +95,7 @@ test("live comparison uses Guardian and Libre while Dexcom remains pending", () 
     }
   });
   assert.equal(dataset.status, "live");
+  assert.equal(dataset.windowEndAt, nowMs);
   assert.deepEqual(dataset.sources.map((source) => source.dataStatus), ["available", "available", "pending"]);
   assert.equal(dataset.sources[0].readings.length, 2);
   assert.equal(dataset.sources[1].readings.length, 2);
@@ -334,6 +337,84 @@ test("elapsed labels expose no calendar date", () => {
   assert.equal(formatElapsedMinute(1505), "Day 2 01:05");
 });
 
+test("live labels use an unambiguous 24-hour JST clock across midnight", () => {
+  const options = {
+    durationMinutes: 1440,
+    windowEndAt: Date.parse("2026-08-08T00:30:00+09:00"),
+    timeZone: "Asia/Tokyo"
+  };
+  assert.equal(formatLiveClockMinute(1350, options), "昨日 23:00");
+  assert.equal(formatLiveClockMinute(1410, options), "今日 00:00");
+  assert.equal(formatLiveClockMinute(1440, options), "現在 00:30");
+  assert.doesNotMatch(formatLiveClockMinute(1410, options), /Day|\d{4}-\d{2}-\d{2}/);
+  assert.equal(formatLiveClockMinute(0, { ...options, durationMinutes: 4320 }), "3日前 00:30");
+  assert.equal(formatLiveClockMinute(1505), "Day 2 01:05");
+});
+
+test("live refresh resumes immediately without duplicate requests or timers", async () => {
+  let visible = true;
+  let timerSequence = 0;
+  const timers = new Map();
+  const loads = [];
+  const controller = createLiveRefreshController({
+    load: async (options) => { loads.push(options); },
+    getDelayMs: () => 5 * 60_000,
+    isVisible: () => visible,
+    setTimer: (callback, delay) => {
+      const id = ++timerSequence;
+      timers.set(id, { callback, delay });
+      return id;
+    },
+    clearTimer: (id) => timers.delete(id)
+  });
+
+  await controller.start();
+  await controller.start();
+  assert.deepEqual(loads, [{ preserveLiveOnError: false }]);
+  assert.equal(timers.size, 1);
+  assert.equal([...timers.values()][0].delay, 5 * 60_000);
+
+  visible = false;
+  await controller.handleVisibilityChange();
+  assert.equal(timers.size, 0);
+
+  visible = true;
+  await controller.handleVisibilityChange();
+  assert.equal(loads.length, 2);
+  assert.deepEqual(loads[1], { preserveLiveOnError: true });
+  assert.equal(timers.size, 1);
+
+  await controller.handlePageShow({ persisted: false });
+  assert.equal(loads.length, 2);
+  assert.equal(timers.size, 1);
+  controller.stop();
+  assert.equal(timers.size, 0);
+});
+
+test("visibility and Safari bfcache resume share one in-flight refresh", async () => {
+  let resolveLoad;
+  let loadCount = 0;
+  const controller = createLiveRefreshController({
+    load: () => {
+      loadCount += 1;
+      return new Promise((resolve) => { resolveLoad = resolve; });
+    },
+    getDelayMs: () => 5 * 60_000,
+    isVisible: () => true,
+    setTimer: () => 1,
+    clearTimer: () => {}
+  });
+
+  const initial = controller.start();
+  await Promise.resolve();
+  const resumed = controller.handlePageShow({ persisted: true });
+  assert.strictEqual(resumed, initial);
+  assert.equal(loadCount, 1);
+  resolveLoad();
+  await initial;
+  controller.stop();
+});
+
 test("capture range is ordered and limited", () => {
   const range = validateCaptureRange("2026-08-01T00:00:00Z", "2026-08-11T00:00:00Z");
   assert.equal(range.durationMinutes, 14_400);
@@ -386,7 +467,7 @@ test("public demo is linked while the capture helper stays unlinked and noindex"
   assert.match(demo, /analytics-loader\.js/);
   assert.match(demo, /js\/data-source\.js/);
   assert.match(demo, /live-config\.js\?v=20260807-three-cgm-live-1/);
-  assert.match(demo, /comparison\.mjs\?v=20260808-live-health-1/);
+  assert.match(demo, /comparison\.mjs\?v=20260808-clock-axis-1/);
   assert.match(demo, /現在は合成データです。3本の線は表示確認用で、Kazumaの実測値ではありません/);
   assert.match(comparisonModule, /現在は実測ライブデータです。取得できた\$\{liveSourceCount\}種類/);
   assert.match(comparisonModule, /現在は合成データです。3本の線は表示確認用で、Kazumaの実測値ではありません/);
@@ -416,7 +497,11 @@ test("live rendering gently identifies delayed sources and caps the preserved vi
   assert.match(comparisonModule, /source\.isStale === true/);
   assert.match(comparisonModule, /canPreserveLiveDataset\(state\.dataset, state\.liveLoadedAt, Date\.now\(\)\)/);
   assert.match(comparisonModule, /古い表示を残さず合成データへ切り替えました/);
-  assert.match(comparisonModule, /live-comparison-core\.mjs\?v=20260808-live-health-1/);
+  assert.match(comparisonModule, /live-comparison-core\.mjs\?v=20260808-clock-axis-1/);
+  assert.match(comparisonModule, /live-refresh-core\.mjs\?v=20260808-clock-axis-1/);
+  assert.match(comparisonModule, /日本時間（24時間表記・昨日／今日・右端が現在）/);
+  assert.match(comparisonModule, /visibilitychange/);
+  assert.match(comparisonModule, /pageshow/);
   assert.match(comparisonCss, /\.comparison-status-delayed/);
   assert.match(comparisonCss, /\.comparison-source-state-delayed/);
 });
@@ -425,7 +510,7 @@ test("Method and privacy covers both Gluroo-backed public demo routes and Secret
   const demo = await readFile(new URL("../demos/cgm-comparison/index.html", import.meta.url), "utf8");
   assert.match(demo, /Libre 2とDexcom G7は公開デモ専用Worker/);
   assert.match(demo, /Libre 2とDexcom G7それぞれのGluroo URLとAPI SecretはCloudflare Secret/);
-  assert.match(demo, /comparison\.mjs\?v=20260808-live-health-1/);
+  assert.match(demo, /comparison\.mjs\?v=20260808-clock-axis-1/);
 });
 
 test("comparison and capture helper local links and assets resolve", async () => {

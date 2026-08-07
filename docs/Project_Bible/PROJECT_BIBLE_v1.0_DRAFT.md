@@ -2397,7 +2397,7 @@ three graph lines, and the dedicated demo Worker was returned immediately afterw
 to the stopped Version. After a separate continuing-publication decision and the
 frontend safety release, the continuous public 3CGM demo started at 22:10:05 JST.
 
-The current delivery order is:
+The historical 3CGM delivery sequence was:
 
 1. Completed after separate explicit approval: verify one Libre public-demo
    scheduled retrieval and sanitized public response, restore the stopped Worker,
@@ -2418,10 +2418,11 @@ The current delivery order is:
    renews the 36-hour KV expiration, so natural expiry cannot occur during normal
    continuous operation; the existing paused-Cron, `503`, and fallback evidence remains
    the current safety basis.
-7. Current: complete the general-user relay period, expiry, deletion, and limit checks
-   before any Friends & Family continuing-enablement decision.
-8. Return to Worker usage-counter and Usage Dashboard production verification,
-   the site-wide Trust/About review, feedback, and the first announcement.
+
+The former follow-up items for general-user relay acceptance and the old Usage Dashboard
+priority are no longer the current implementation order. The general-user relay remains
+stopped; its remaining period, expiry, deletion, and limit checks are required only if a
+separate rollout decision resumes that work. The current four-step order is recorded below.
 
 On 2026-08-06, Kazuma explicitly chose to publish his own Libre glucose values
 and their measurement/update timing as part of the public demo.
@@ -2476,7 +2477,8 @@ or provide medical or treatment conclusions.
 
 The public page may show:
 
-- the available live series on the same elapsed-time axis;
+- the available live series on the same rolling 24-hour axis, labelled in 24-hour
+  Japan time as Yesterday, Today, and Current without exposing an exact calendar date;
 - differences between displays at nearby times;
 - recording cadence and missing points;
 - the honest verification status of each route.
@@ -2716,6 +2718,16 @@ privacy or safety concern is found. Stopped Version
 independently stopped at `RELAY_ENABLED=false` with 100% of its traffic on its stopped
 Version.
 
+The implementation order chosen on 2026-08-08 is:
+
+1. Design the user foundation and consented usage analytics.
+2. Build the administrator dashboard on that reviewed foundation.
+3. Design and implement the Plus 30-day pass and clearer optional-support paths.
+4. After user rollout begins, add an opt-in always-on mode only for the landscape graph.
+
+This order does not authorize re-enabling the general-user Limited Data Relay. It remains
+stopped until a separate rollout decision and explicit operational approval.
+
 All treatment decisions, alerts, and current device-state checks
 must continue to use the original approved CGM or pump application.
 
@@ -2752,10 +2764,16 @@ Guardian 4、FreeStyle Libre 2、Dexcom G7を、
    KV期限が毎回更新されるため、通常の継続運転中には起きない自然失効を、
    更新を意図的に止めるか失敗させた状態で別途確認する。現時点の安全根拠は、
    停止中Cronで期限が延びないこと、`503`、合成データへの復帰の既存確認とする。
-7. 現在：一般利用者向け限定リレーの期間別・期限切れ・削除・上限を確認し、
-   Friends & Familyで継続有効化するかを別途判断する。
-8. Worker UsageカウンターとUsage Dashboardの本番確認、
-   Trust Pack / Aboutのサイト全体確認、フィードバック、初回告知へ戻る。
+
+2026年8月8日以降の実装優先順位は次のとおりです。
+
+1. ユーザー基盤・同意に基づく利用分析の設計
+2. その設計を前提にした管理者ダッシュボード
+3. Plus 30日パスと、任意の開発支援への分かりやすい導線
+4. ユーザー展開開始後に、横向きグラフだけへ追加する任意の常時表示モード
+
+この順番は、一般利用者向け限定リレーの再有効化を意味しません。
+限定リレーは、別の展開判断と明示的な運用確認まで停止状態を保ちます。
 
 2026年8月6日、Kazumaは、自分自身のLibreの血糖値と
 測定・更新時刻を公開デモとして表示することを明示的に選びました。
@@ -2809,7 +2827,8 @@ Dexcom G7は公開比較ページで1回のライブ表示確認を完了しま�
 公開ページでは、
 次のような観察ができます。
 
-- 利用できるライブ表示を、同じ経過時間の軸で重ねる
+- 利用できるライブ表示を、正確な日付を出さず、24時間表記の日本時間で
+  「昨日」「今日」「現在」が分かる同じ直近24時間軸へ重ねる
 - 近い時刻に表示された値の違いを見る
 - 記録間隔と、データがなかった時間を見る
 - それぞれの経路で実際に確認できた範囲を正直に示す
@@ -3075,7 +3094,8 @@ as custom analytics events, event names, URLs, or additional analytics data:
 - API keys, endpoints, or authentication information
 - Health-related mobile tab actions
 
-Do not add a GlucoScope-specific visitor identifier.
+For this unauthenticated public Web Analytics layer, do not add a
+GlucoScope-specific visitor identifier.
 Do not use analytics to judge, rank, or pressure a person.
 The purpose is to understand the public site's overall reach and performance,
 not to follow an individual's glucose-management behavior.
@@ -3109,7 +3129,8 @@ the analytics implementation or collected information changes.
 - APIキー、接続先、認証情報
 - 健康情報に結びつくスマホタブ操作
 
-GlucoScope独自の利用者識別IDは追加しません。
+この未ログインの公開アクセス分析には、
+GlucoScope独自の利用者識別IDを追加しません。
 アクセス分析を、
 人の評価、ランキング、プレッシャーのために使いません。
 
@@ -3119,6 +3140,76 @@ GlucoScope独自の利用者識別IDは追加しません。
 
 アクセス分析の実装や扱う情報が変わる場合は、
 公開向けPrivacy Notesも必ず更新します。
+
+---
+
+## User Foundation, Admin Analytics, Plus, and Always-On Boundary
+## ユーザー基盤・管理者分析・Plus・常時表示の境界
+
+### EN
+
+The next product-design sequence is fixed as follows:
+
+1. User foundation and consented usage analytics design
+2. Administrator dashboard
+3. Plus 30-day pass and optional-support paths
+4. Landscape-graph-only always-on mode after user rollout begins
+
+The user-foundation design may include a user-chosen display name and account-level
+counts such as visits, AI analyses, collected Gluco memories, and support or Plus state.
+Before collecting any of them, define explicit notice and consent, identifier format,
+access control, retention, correction, export, and deletion. The administrator must see
+only what is necessary to operate and improve GlucoScope.
+
+Product analytics must remain separate from public Web Analytics, CGM transport, and
+glucose storage. Do not place glucose values, graphs, AI-letter contents, Nightscout or
+Gluroo URLs and credentials, treatment information, or device settings in product
+analytics. The existing Usage Dashboard is an infrastructure-wide AI Worker view; it is
+not the future person-level administrator dashboard.
+
+Optional development support remains a contribution without feature benefits. A Plus
+30-day pass is a separate paid product under design. Its included capabilities, price,
+renewal behavior, expiry, refund handling, payment-provider boundary, taxes, and support
+expectations must be clear before release. Do not present Plus as medical care or better
+medical guidance.
+
+The always-on mode comes after user rollout begins. It is opt-in, limited to the graph in
+landscape orientation, and must clearly explain battery and screen-on behavior. It is a
+viewing convenience, not an alarm or a substitute for the original CGM application.
+
+---
+
+### JP
+
+次のプロダクト設計・実装順は、次のとおりとします。
+
+1. ユーザー基盤・同意に基づく利用分析の設計
+2. 管理者ダッシュボード
+3. Plus 30日パスと任意の開発支援への導線
+4. ユーザー展開開始後の、横向きグラフ限定の常時表示モード
+
+ユーザー基盤では、本人が決める表示名と、アクセス回数、AI分析回数、
+集めたグルコの想い出、支援またはPlusの状態などの利用集計を候補にできます。
+ただし、収集前に、分かりやすい説明と同意、識別子の形、閲覧権限、保存期間、
+訂正、書き出し、削除の方法を設計します。管理者が見られるのは、
+GlucoScopeの運営と改善に必要な範囲だけにします。
+
+プロダクト内の利用分析は、未ログインの公開Web Analytics、CGMの通信、
+血糖データの保存とは分離します。血糖値、グラフ、AIお手紙本文、
+NightscoutやGlurooのURL・接続情報、治療情報、機器設定を利用分析へ入れません。
+既存のUsage DashboardはAI Worker全体の利用状況を見るものであり、
+今後つくる利用者別の管理者ダッシュボードとは別です。
+
+任意の開発支援は、機能特典を付けない支援のままです。
+Plus 30日パスは、それとは別の設計中の有料サービスです。公開前に、
+利用できる機能、価格、自動更新の有無、期限、返金、決済事業者、税、
+サポート範囲を分かりやすく定めます。Plusを医療サービスや、
+より良い医療判断が得られる仕組みとして案内しません。
+
+常時表示モードは、ユーザー展開を始めた後に実装します。
+本人が選んだ時だけ、横向きのグラフ画面に限定して動かし、
+電池消費と画面点灯について明記します。アラームではなく、
+元のCGMアプリの代わりにもなりません。
 
 ---
 
