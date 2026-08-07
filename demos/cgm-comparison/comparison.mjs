@@ -6,9 +6,10 @@ import {
 } from "./comparison-core.mjs";
 import {
   buildLiveComparisonDataset,
+  canPreserveLiveDataset,
   fetchOptionalPublicFeed,
   normalizePublicFeedEndpoint
-} from "./live-comparison-core.mjs";
+} from "./live-comparison-core.mjs?v=20260807-three-cgm-live-2";
 
 const DATASET_URL = "./data/sample.json";
 const state = {
@@ -16,7 +17,8 @@ const state = {
   chart: null,
   hours: 12,
   enabledSources: new Set(),
-  loadNotice: ""
+  loadNotice: "",
+  liveLoadedAt: 0
 };
 
 class DemoFeedPausedError extends Error {}
@@ -45,19 +47,35 @@ function renderDatasetHeader() {
   const liveSourceCount = state.dataset.sources.filter((source) =>
     source.dataStatus === "available" && source.readings.length > 0
   ).length;
+  const delayedSources = isLive
+    ? state.dataset.sources.filter((source) =>
+      source.dataStatus === "available" && source.readings.length > 0 && source.isStale === true
+    )
+    : [];
+  const hasDelayedSources = delayedSources.length > 0;
   status.textContent = isLive
-    ? "公開デモ · ライブデータ"
+    ? hasDelayedSources
+      ? "公開デモ · 更新が遅れているデータあり"
+      : "公開デモ · ライブデータ"
     : isSynthetic
       ? "準備中 · 合成データ"
       : "匿名化済み実測データ";
-  status.className = `comparison-status ${isLive ? "comparison-status-live" : isSynthetic ? "comparison-status-synthetic" : "comparison-status-anonymized"}`;
+  status.className = `comparison-status ${isLive
+    ? hasDelayedSources ? "comparison-status-delayed" : "comparison-status-live"
+    : isSynthetic ? "comparison-status-synthetic" : "comparison-status-anonymized"}`;
   const modeNotice = byId("datasetModeNotice");
+  const liveNotice = `現在は実測ライブデータです。取得できた${liveSourceCount}種類のCGMデータを表示しています。`;
+  const delayedNotice = hasDelayedSources
+    ? ` ${delayedSources.map((source) => source.shortLabel).join("、")}の公開データ更新が遅れています。CGMや機器の停止を意味する表示ではありません。`
+    : "";
   modeNotice.textContent = isLive
-    ? `現在は実測ライブデータです。取得できた${liveSourceCount}種類のCGMデータを表示しています。`
+    ? `${liveNotice}${delayedNotice}`
     : isSynthetic
       ? "現在は合成データです。3本の線は表示確認用で、Kazumaの実測値ではありません。"
       : "現在は匿名化済み実測データです。現在時刻や個人を特定する情報は含みません。";
-  modeNotice.className = `comparison-mode-notice ${isLive ? "comparison-mode-notice-live" : isSynthetic ? "comparison-mode-notice-synthetic" : "comparison-mode-notice-anonymized"}`;
+  modeNotice.className = `comparison-mode-notice ${isLive
+    ? hasDelayedSources ? "comparison-mode-notice-delayed" : "comparison-mode-notice-live"
+    : isSynthetic ? "comparison-mode-notice-synthetic" : "comparison-mode-notice-anonymized"}`;
   const updatedText = isLive
     ? ` · 約${Math.max(0, Math.round((Date.now() - state.dataset.updatedAt) / 60_000))}分前に更新`
     : "";
@@ -76,7 +94,12 @@ function renderSourceControls() {
     button.dataset.sourceId = source.id;
     button.setAttribute("aria-pressed", state.enabledSources.has(source.id) ? "true" : "false");
     button.disabled = !isAvailable;
-    button.innerHTML = `<span class="comparison-source-dot" aria-hidden="true"></span>${source.shortLabel}${isAvailable ? "" : " · 準備中"}`;
+    const sourceStatusText = !isAvailable
+      ? " · 準備中"
+      : source.isStale === true
+        ? " · 更新遅れ"
+        : "";
+    button.innerHTML = `<span class="comparison-source-dot" aria-hidden="true"></span>${source.shortLabel}${sourceStatusText}`;
     button.addEventListener("click", () => {
       if (!isAvailable) return;
       if (state.enabledSources.has(source.id) && state.enabledSources.size > 1) {
@@ -95,16 +118,20 @@ function renderSourceControls() {
 function renderSourceCards() {
   const cards = state.dataset.sources.map((source) => {
     const article = document.createElement("article");
-    article.className = "comparison-source-card comparison-card";
+    const isAvailable = source.dataStatus === "available" && source.readings.length > 0;
+    const isDelayed = state.dataset.status === "live" && isAvailable && source.isStale === true;
+    article.className = `comparison-source-card comparison-card${isDelayed ? " comparison-source-card-delayed" : ""}`;
     article.style.setProperty("--source-color", source.color);
     const sourceStateLabel = state.dataset.status === "synthetic"
       ? "現在表示：合成データ"
-      : source.dataStatus === "available" && source.readings.length > 0
-        ? source.verificationLabel
+      : isAvailable
+        ? isDelayed
+          ? "現在表示：更新が遅れています"
+          : source.verificationLabel
         : "現在表示：準備中";
     article.innerHTML = `
       <h3>${source.label}</h3>
-      <span class="comparison-source-state">${sourceStateLabel}</span>
+      <span class="comparison-source-state${isDelayed ? " comparison-source-state-delayed" : ""}">${sourceStateLabel}</span>
       <p class="comparison-source-route">${source.captureRoute}</p>
       <p class="comparison-source-note">${source.note}</p>
       <p class="comparison-source-meta">${source.dataStatus === "available" ? `現在の表示点: ${source.readings.length}` : "データ準備中"}</p>
@@ -251,16 +278,25 @@ async function loadDataset({ preserveLiveOnError = false } = {}) {
   try {
     config = readLiveConfig();
     state.loadNotice = "";
-    state.dataset = config.libreEndpoint
+    const nextDataset = config.libreEndpoint
       ? await loadLiveDataset(config)
       : await loadStaticDataset();
+    state.dataset = nextDataset;
+    state.liveLoadedAt = nextDataset.status === "live" ? Date.now() : 0;
   } catch (error) {
-    if (preserveLiveOnError && state.dataset?.status === "live" && !(error instanceof DemoFeedPausedError)) {
+    const wasLive = state.dataset?.status === "live";
+    const canPreserveLive = preserveLiveOnError &&
+      !(error instanceof DemoFeedPausedError) &&
+      canPreserveLiveDataset(state.dataset, state.liveLoadedAt, Date.now());
+    if (canPreserveLive) {
       state.loadNotice = "ライブデータの更新が遅れています。前回取得できた表示を残しています。";
     } else {
       state.dataset = await loadStaticDataset();
+      state.liveLoadedAt = 0;
       state.loadNotice = error instanceof DemoFeedPausedError
         ? "公開デモは停止中のため、合成データを表示しています。"
+        : preserveLiveOnError && wasLive
+          ? "ライブデータの更新が続いて遅れているため、古い表示を残さず合成データへ切り替えました。"
         : "ライブデータはまだ準備中のため、合成データを表示しています。";
     }
   }

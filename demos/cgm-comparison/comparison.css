@@ -175,6 +175,12 @@ h2 {
   border: 1px solid #a8d8c2;
 }
 
+.comparison-status-delayed {
+  color: #6f581f;
+  background: #fff7df;
+  border: 1px solid #e5cf8a;
+}
+
 .comparison-mode-notice {
   margin: 18px 0 14px;
   padding: 14px 16px;
@@ -197,6 +203,12 @@ h2 {
   color: #235f4b;
   background: #e5f4ec;
   border-color: #91c9ae;
+}
+
+.comparison-mode-notice-delayed {
+  color: #67531f;
+  background: #fff8e5;
+  border-color: #dfc979;
 }
 
 .comparison-source-toggle:disabled {
@@ -348,6 +360,15 @@ h2 {
   background: #eef5f1;
   font-size: 0.78rem;
   font-weight: 800;
+}
+
+.comparison-source-card-delayed {
+  background: linear-gradient(180deg, #fffaf0 0%, #ffffff 42%);
+}
+
+.comparison-source-state-delayed {
+  color: #6b561e;
+  background: #fff2c9;
 }
 
 .comparison-observation-grid {

@@ -1,6 +1,9 @@
 import { validateDataset } from "./comparison-core.mjs";
 
-const HOUR_MS = 60 * 60 * 1000;
+const MINUTE_MS = 60 * 1000;
+const HOUR_MS = 60 * MINUTE_MS;
+export const LIVE_SOURCE_STALE_AFTER_MS = 15 * MINUTE_MS;
+export const MAX_PRESERVED_LIVE_AGE_MS = LIVE_SOURCE_STALE_AFTER_MS;
 const ALLOWED_DIRECTIONS = new Set([
   "DoubleUp",
   "SingleUp",
@@ -70,6 +73,38 @@ function normalizeEntries(entries, startMs, endMs) {
     unique.set(date, reading);
   }
   return [...unique.entries()].sort((left, right) => left[0] - right[0]).map(([, reading]) => reading);
+}
+
+function getLatestReadingTimestamp(entries) {
+  let latestTimestamp = null;
+  for (const rawEntry of entries || []) {
+    if (!rawEntry || typeof rawEntry !== "object" || Array.isArray(rawEntry)) continue;
+    const sgv = Number(rawEntry.sgv ?? rawEntry.glucose ?? rawEntry.value);
+    const date = normalizeTimestamp(rawEntry);
+    if (!Number.isFinite(sgv) || sgv < 20 || sgv > 600 || !date) continue;
+    latestTimestamp = latestTimestamp === null ? date : Math.max(latestTimestamp, date);
+  }
+  return latestTimestamp;
+}
+
+export function isReadingSeriesStale(entries, nowMs, upstreamStale = false) {
+  const latestTimestamp = getLatestReadingTimestamp(entries);
+  return upstreamStale === true || (
+    latestTimestamp !== null && nowMs - latestTimestamp > LIVE_SOURCE_STALE_AFTER_MS
+  );
+}
+
+export function canPreserveLiveDataset(dataset, loadedAt, nowMs = Date.now()) {
+  return dataset?.status === "live" &&
+    Number.isSafeInteger(loadedAt) &&
+    loadedAt > 0 &&
+    Number.isFinite(nowMs) &&
+    nowMs >= loadedAt &&
+    nowMs - loadedAt <= MAX_PRESERVED_LIVE_AGE_MS;
+}
+
+function buildDelayedSourceNote(shortLabel) {
+  return `${shortLabel}の公開データ更新が遅れています。公開経路から新しい表示をまだ受け取れていない状態です。CGMや機器の停止を意味するものではありません。`;
 }
 
 export function normalizePublicFeedEndpoint(rawEndpoint, baseUrl) {
@@ -167,32 +202,44 @@ export function buildLiveComparisonDataset({
   const guardianReadings = normalizeEntries(guardianEntries, startMs, nowMs);
   const libreReadings = normalizeEntries(feed.entries, startMs, nowMs);
   const dexcomReadings = normalizeEntries(dexcomFeed?.entries, startMs, nowMs);
-  const dexcomDefinition = dexcomFeed ? VERIFIED_DEXCOM_DEFINITION : SOURCE_DEFINITIONS.dexcom;
+  const guardianIsStale = isReadingSeriesStale(guardianEntries, nowMs);
+  const libreIsStale = isReadingSeriesStale(feed.entries, nowMs, feed.stale);
+  const dexcomIsStale = isReadingSeriesStale(dexcomFeed?.entries, nowMs, dexcomFeed?.stale);
+  const hasDexcomReadings = dexcomReadings.length > 0;
+  const dexcomDefinition = hasDexcomReadings ? VERIFIED_DEXCOM_DEFINITION : SOURCE_DEFINITIONS.dexcom;
   const sources = [
-    makeSource(SOURCE_DEFINITIONS.guardian, guardianReadings),
+    makeSource(SOURCE_DEFINITIONS.guardian, guardianReadings, {
+      isStale: guardianIsStale,
+      note: guardianIsStale
+        ? buildDelayedSourceNote(SOURCE_DEFINITIONS.guardian.shortLabel)
+        : SOURCE_DEFINITIONS.guardian.note,
+    }),
     makeSource(SOURCE_DEFINITIONS.libre, libreReadings, {
-      isStale: feed.stale,
-      note: feed.stale
-        ? "Libre 2の公開データ更新が遅れています。CGMの停止を意味する表示ではありません。"
+      isStale: libreIsStale,
+      note: libreIsStale
+        ? buildDelayedSourceNote(SOURCE_DEFINITIONS.libre.shortLabel)
         : SOURCE_DEFINITIONS.libre.note,
     }),
     makeSource(dexcomDefinition, dexcomReadings, {
-      isStale: dexcomFeed?.stale || false,
+      isStale: dexcomIsStale,
+      note: dexcomIsStale
+        ? buildDelayedSourceNote(SOURCE_DEFINITIONS.dexcom.shortLabel)
+        : dexcomDefinition.note,
     }),
   ];
   const updateTimes = [nowMs, feed.updatedAt];
-  if (dexcomFeed) updateTimes.push(dexcomFeed.updatedAt);
+  if (hasDexcomReadings) updateTimes.push(dexcomFeed.updatedAt);
 
   return validateDataset({
     schemaVersion: 1,
     status: "live",
-    title: dexcomFeed
+    title: hasDexcomReadings
       ? "Guardian, Libre, and Dexcom public demo observation"
       : "Guardian and Libre public demo observation",
     durationMinutes,
     matchToleranceMinutes: 3,
     updatedAt: Math.min(...updateTimes),
-    disclosure: dexcomFeed
+    disclosure: hasDexcomReadings
       ? "Kazumaが公開を選んだGuardian 4、Libre 2、Dexcom G7の直近表示です。血糖値と更新時刻は公開情報になります。接続情報、治療・食事・薬・ポンプ情報は含みません。機器の精度、優劣、医療判断を示すものではありません。"
       : "Kazumaが公開を選んだGuardian 4とLibre 2の直近表示です。血糖値と更新時刻は公開情報になります。接続情報、治療・食事・薬・ポンプ情報は含みません。機器の精度、優劣、医療判断を示すものではありません。",
     sources,

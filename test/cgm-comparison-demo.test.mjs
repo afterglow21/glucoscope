@@ -9,7 +9,10 @@ import {
   validateDataset
 } from "../demos/cgm-comparison/comparison-core.mjs";
 import {
+  LIVE_SOURCE_STALE_AFTER_MS,
+  MAX_PRESERVED_LIVE_AGE_MS,
   buildLiveComparisonDataset,
+  canPreserveLiveDataset,
   fetchOptionalPublicFeed,
   normalizePublicFeedEndpoint,
   validatePublicFeed,
@@ -138,6 +141,103 @@ test("a valid G7 feed stays pending until frontend activation is separately appr
   assert.equal(verified.sources[2].verificationLabel, "公開デモ経路を実機確認済み");
   assert.match(verified.disclosure, /Dexcom G7/);
   assert.equal(verified.updatedAt, dexcomUpdatedAt);
+});
+
+test("Guardian and G7 use the latest reading age for the gentle update-delay state", () => {
+  const nowMs = Date.parse("2026-08-06T06:00:00.000Z");
+  const delayedReadingAt = nowMs - LIVE_SOURCE_STALE_AFTER_MS - 1;
+  const dataset = buildLiveComparisonDataset({
+    nowMs,
+    guardianEntries: [{ sgv: 104, date: delayedReadingAt }],
+    librePayload: {
+      ok: true,
+      sourceId: "libre-2",
+      updatedAt: nowMs,
+      stale: false,
+      entries: [{ sgv: 103, date: nowMs }]
+    },
+    dexcomPayload: {
+      ok: true,
+      sourceId: "dexcom-g7",
+      updatedAt: nowMs,
+      stale: false,
+      entries: [{ sgv: 102, date: delayedReadingAt }]
+    },
+    dexcomRouteVerified: true
+  });
+
+  assert.equal(LIVE_SOURCE_STALE_AFTER_MS, 15 * 60_000);
+  assert.equal(dataset.sources[0].isStale, true);
+  assert.match(dataset.sources[0].note, /Guardian 4の公開データ更新が遅れています/);
+  assert.equal(dataset.sources[1].isStale, false);
+  assert.equal(dataset.sources[2].isStale, true);
+  assert.match(dataset.sources[2].note, /Dexcom G7の公開データ更新が遅れています/);
+  assert.match(dataset.sources[2].note, /CGMや機器の停止を意味するものではありません/);
+});
+
+test("the upstream stale flag marks a fresh G7 snapshot as delayed", () => {
+  const nowMs = Date.parse("2026-08-06T06:00:00.000Z");
+  const dataset = buildLiveComparisonDataset({
+    nowMs,
+    guardianEntries: [{ sgv: 104, date: nowMs }],
+    librePayload: {
+      ok: true,
+      sourceId: "libre-2",
+      updatedAt: nowMs,
+      stale: false,
+      entries: [{ sgv: 103, date: nowMs }]
+    },
+    dexcomPayload: {
+      ok: true,
+      sourceId: "dexcom-g7",
+      updatedAt: nowMs,
+      stale: true,
+      entries: [{ sgv: 102, date: nowMs }]
+    },
+    dexcomRouteVerified: true
+  });
+
+  assert.equal(dataset.sources[2].isStale, true);
+  assert.match(dataset.sources[2].note, /公開経路から新しい表示をまだ受け取れていない状態/);
+});
+
+test("G7 is not described as live when its valid feed has no in-window readings", () => {
+  const nowMs = Date.parse("2026-08-06T06:00:00.000Z");
+  const outsideWindowAt = nowMs - 25 * 60 * 60_000;
+  const dataset = buildLiveComparisonDataset({
+    nowMs,
+    windowHours: 24,
+    guardianEntries: [{ sgv: 104, date: nowMs }],
+    librePayload: {
+      ok: true,
+      sourceId: "libre-2",
+      updatedAt: nowMs,
+      stale: false,
+      entries: [{ sgv: 103, date: nowMs }]
+    },
+    dexcomPayload: {
+      ok: true,
+      sourceId: "dexcom-g7",
+      updatedAt: nowMs,
+      stale: false,
+      entries: [{ sgv: 102, date: outsideWindowAt }]
+    },
+    dexcomRouteVerified: true
+  });
+
+  assert.equal(dataset.sources[2].dataStatus, "pending");
+  assert.deepEqual(dataset.sources[2].readings, []);
+  assert.equal(dataset.title, "Guardian and Libre public demo observation");
+  assert.doesNotMatch(dataset.disclosure, /Dexcom G7/);
+});
+
+test("a previous live view is preserved for at most the shared 15-minute boundary", () => {
+  const loadedAt = Date.parse("2026-08-06T06:00:00.000Z");
+  const liveDataset = { status: "live" };
+  assert.equal(MAX_PRESERVED_LIVE_AGE_MS, LIVE_SOURCE_STALE_AFTER_MS);
+  assert.equal(canPreserveLiveDataset(liveDataset, loadedAt, loadedAt + MAX_PRESERVED_LIVE_AGE_MS), true);
+  assert.equal(canPreserveLiveDataset(liveDataset, loadedAt, loadedAt + MAX_PRESERVED_LIVE_AGE_MS + 1), false);
+  assert.equal(canPreserveLiveDataset({ status: "synthetic" }, loadedAt, loadedAt + 1), false);
 });
 
 test("public Libre feed validation rejects private or unexpected fields", () => {
@@ -298,6 +398,27 @@ test("public demo is linked while the capture helper stays unlinked and noindex"
   assert.match(liveConfig, /dexcomFeedEndpoint:\s*"https:\/\/glucoscope-demo-feed\.afterglow21\.workers\.dev\/v1\/dexcom-g7"/);
   assert.match(liveConfig, /dexcomRouteVerified:\s*true/);
   assert.doesNotMatch(liveConfig, /ns\.gluroo\.com|api.?secret|token/i);
+});
+
+test("live rendering gently identifies delayed sources and caps the preserved view", async () => {
+  const comparisonModule = await readFile(new URL("../demos/cgm-comparison/comparison.mjs", import.meta.url), "utf8");
+  const comparisonCss = await readFile(new URL("../demos/cgm-comparison/comparison.css", import.meta.url), "utf8");
+  assert.match(comparisonModule, /更新が遅れているデータあり/);
+  assert.match(comparisonModule, /現在表示：更新が遅れています/);
+  assert.match(comparisonModule, /CGMや機器の停止を意味する表示ではありません/);
+  assert.match(comparisonModule, /source\.isStale === true/);
+  assert.match(comparisonModule, /canPreserveLiveDataset\(state\.dataset, state\.liveLoadedAt, Date\.now\(\)\)/);
+  assert.match(comparisonModule, /古い表示を残さず合成データへ切り替えました/);
+  assert.match(comparisonModule, /live-comparison-core\.mjs\?v=20260807-three-cgm-live-2/);
+  assert.match(comparisonCss, /\.comparison-status-delayed/);
+  assert.match(comparisonCss, /\.comparison-source-state-delayed/);
+});
+
+test("Method and privacy covers both Gluroo-backed public demo routes and Secrets", async () => {
+  const demo = await readFile(new URL("../demos/cgm-comparison/index.html", import.meta.url), "utf8");
+  assert.match(demo, /Libre 2とDexcom G7は公開デモ専用Worker/);
+  assert.match(demo, /Libre 2とDexcom G7それぞれのGluroo URLとAPI SecretはCloudflare Secret/);
+  assert.match(demo, /comparison\.mjs\?v=20260807-three-cgm-live-2/);
 });
 
 test("comparison and capture helper local links and assets resolve", async () => {
