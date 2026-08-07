@@ -2391,6 +2391,28 @@ GlucoScope may provide a separate public observation page
 for Guardian 4, FreeStyle Libre 2, and Dexcom G7
 worn by Kazuma during the same period.
 
+As of 2026-08-07, the published comparison page is not a live three-source view.
+Because the dedicated Libre public-demo Worker is paused, the combined page shows
+the clearly labelled checked-in synthetic dataset for all three device cards.
+Guardian's separate Azure Nightscout browser route is verified,
+but that fact alone does not make the combined comparison page live.
+
+The current delivery order is:
+
+1. Verify one separately approved Libre public-demo scheduled retrieval
+   and sanitized public response.
+2. Publish the stopped G7 frontend endpoint configuration while keeping
+   its route-verification gate disabled, then verify the synthetic fallback
+   on GitHub Pages.
+3. Under separate operational approval, briefly enable the required demo feeds
+   and verify Guardian, Libre, and G7 together on GitHub Pages.
+4. Restore the stopped Worker, verify fallback and expiry behavior,
+   and make a separate continuing-publication decision.
+5. Complete the general-user relay period, expiry, deletion, and limit checks
+   before any Friends & Family continuing-enablement decision.
+6. Return to Worker usage-counter and Usage Dashboard production verification,
+   the site-wide Trust/About review, feedback, and the first announcement.
+
 On 2026-08-06, Kazuma explicitly chose to publish his own Libre glucose values
 and their measurement/update timing as part of the public demo.
 These values are intentionally public and must not be described as anonymous.
@@ -2410,8 +2432,9 @@ have now been verified. The Worker was returned immediately to its stopped Versi
 Frontend activation, GitHub Pages browser rendering, simultaneous three-source comparison,
 repeated refreshes, and the complete comparison-page end-to-end path remain unverified.
 
-Guardian remains on Kazuma's existing Azure Nightscout
-and is read directly by the public comparison page.
+Guardian remains on Kazuma's existing Azure Nightscout.
+Its verified browser-direct route is the planned Guardian input for a live comparison,
+but the current combined page remains synthetic while a required live feed is paused.
 Libre 2 uses a separate, demo-only Cloudflare Worker.
 The deployed but stopped multi-source revision gives Libre and G7 separate fixed Gluroo source slots,
 source gates, and KV keys while retaining one global emergency stop.
@@ -2460,8 +2483,10 @@ and the deployed, stopped read routes are `/v1/libre` and `/v1/dexcom-g7`.
 
 The comparison page must fall back to a clearly labelled synthetic dataset
 when the live feeds are not configured or cannot be loaded.
-It may show Guardian and Libre as live while Dexcom is visibly pending;
-it must not fabricate a missing live Dexcom series.
+Only when both the verified Guardian route and a separately enabled and verified
+Libre public feed load successfully may the page show Guardian and Libre as live.
+Dexcom must remain visibly pending until its frontend route and complete page path
+are separately verified; the page must not fabricate a missing live Dexcom series.
 
 The owner capture workflow remains available for a later reviewed
 three-source static comparison.
@@ -2586,6 +2611,27 @@ Kazuma自身が同じ期間に装着した
 Guardian 4、FreeStyle Libre 2、Dexcom G7を、
 別の公開観察ページで並べて見られるようにできます。
 
+2026年8月7日現在、公開中の比較ページは3機種のライブ比較ではありません。
+Libre公開デモ用Workerが停止中のため、3機種すべてについて
+「準備中・合成データ」と明記した、あらかじめ用意した合成データを表示しています。
+GuardianのAzure Nightscoutブラウザ直接経路は別途確認済みですが、
+その事実だけで比較ページ全体をライブ表示済みとは扱いません。
+
+現在の作業順は次のとおりです。
+
+1. 別の明示確認後、Libre公開デモWorkerの定期取得と
+   安全な公開応答を1回だけ確認する。
+2. G7のフロント接続先を停止状態で反映し、経路確認ゲートを無効のまま保って、
+   GitHub Pagesで合成データへ安全に切り替わることを確認する。
+3. 別の運用確認後、必要なデモ配信を短時間だけ有効にし、
+   GitHub PagesでGuardian・Libre・G7の同時表示を確認する。
+4. 停止Workerへ戻し、フォールバックと期限切れ動作を確認してから、
+   継続公開するかを別途判断する。
+5. 一般利用者向け限定リレーの期間別・期限切れ・削除・上限を確認し、
+   Friends & Familyで継続有効化するかを別途判断する。
+6. Worker UsageカウンターとUsage Dashboardの本番確認、
+   Trust Pack / Aboutのサイト全体確認、フィードバック、初回告知へ戻る。
+
 2026年8月6日、Kazumaは、自分自身のLibreの血糖値と
 測定・更新時刻を公開デモとして表示することを明示的に選びました。
 これらは意図して公開する情報であり、匿名データとは案内しません。
@@ -2605,8 +2651,9 @@ G7の接続情報を準備できていることを確認しました。
 GitHub Pages上のブラウザ表示、3機種の同時比較、複数回の定期更新、
 公開比較ページ全体のエンドツーエンド経路は引き続き未確認です。
 
-GuardianはKazumaの既存Azure Nightscoutをそのまま使い、
-公開比較ページのブラウザから直接取得します。
+GuardianはKazumaの既存Azure Nightscoutをそのまま使います。
+確認済みのブラウザ直接経路はライブ比較時に使うGuardian入力ですが、
+必要なライブ配信が停止中の現在は、比較ページ全体を合成データとして表示します。
 Libre 2は、一般利用者向け限定中継とは別の、
 公開デモ専用Cloudflare Workerを使います。
 停止状態で本番反映した複数ソース版では、LibreとG7に別々の固定Gluroo送信先、
@@ -2658,8 +2705,10 @@ KVキーは`public:libre-2:v1`と`public:dexcom-g7:v1`へ分け、
 
 ライブデータが未設定または読み込めない場合は、
 合成データであることを明記してフォールバックします。
-GuardianとLibreをライブ表示し、Dexcomを準備中と表示できますが、
-Dexcomのライブ値を作って見せません。
+確認済みのGuardian経路と、別途有効化・確認したLibre公開フィードの両方を
+正常に読み込めた場合だけ、GuardianとLibreをライブ表示できます。
+Dexcomはフロント経路と比較ページ全体を別途確認するまで準備中とし、
+存在しないDexcomのライブ値を作って見せません。
 
 後から3種類そろった静的比較を作るための管理者向け取得フローは残します。
 このフローはブラウザメモリだけを使い、アクセス解析と定期取得を行わず、

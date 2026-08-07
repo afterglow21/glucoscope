@@ -5147,6 +5147,18 @@ canvas{
   line-height:1.9;
 }
 
+.trust-section ol{
+  margin:10px 0 18px;
+  padding-left:1.5em;
+  color:#d7e1ef;
+  font-size:16.5px;
+  line-height:1.8;
+}
+
+.trust-section li + li{
+  margin-top:6px;
+}
+
 .trust-language-panel-en .trust-section h2{
   color:#dbeafe;
   font-size:17px;
@@ -5156,6 +5168,11 @@ canvas{
   color:#bdcadc;
   font-size:15px;
   line-height:1.8;
+}
+
+.trust-language-panel-en .trust-section ol{
+  color:#bdcadc;
+  font-size:15px;
 }
 
 .trust-related{
@@ -5504,7 +5521,8 @@ canvas{
     padding:16px;
   }
 
-  .trust-section p{
+  .trust-section p,
+  .trust-section ol{
     font-size:15.5px;
     line-height:1.85;
   }

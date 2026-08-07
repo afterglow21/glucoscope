@@ -57,6 +57,7 @@ test("public relay wording preserves the current verification and privacy bounda
   const privacy = await read(new URL("privacy-notes.html", trustDirUrl));
   const safety = await read(new URL("safety-policy.html", trustDirUrl));
   const support = await read(new URL("support-policy.html", trustDirUrl));
+  const roadmap = await read(new URL("roadmap.html", trustDirUrl));
   const readme = await read(new URL("../README.md", import.meta.url));
 
   assert.match(index, /Nightscoutへの直接接続と、Gluroo限定中継の現在地・安全境界/);
@@ -102,11 +103,16 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(safety, /接続失敗は、CGMやポンプが止まったことを意味しません/);
   assert.match(support, /Gluroo、Nightscout、Azure、Cloudflare、OpenAI/);
   assert.match(support, /GlucoScopeや限定中継についての質問・不具合報告は、GlurooではなくGlucoScopeが受けます/);
+  assert.match(roadmap, /初回告知はまだ実施していません/);
+  assert.match(roadmap, /現在の最優先は、公開3CGM比較ラボを段階的に確認することです/);
+  assert.match(roadmap, /現時点の3CGM比較ページは、Libre公開デモ用Workerが停止中のため「準備中・合成データ」を表示しています/);
+  assert.match(roadmap, /GuardianのAzure Nightscoutブラウザ直接経路は別途確認済みですが、その事実だけで比較ページ全体をライブ表示済みとは扱いません/);
   assert.match(readme, /Guardian route completed its first iPhone Safari acceptance/);
   assert.match(readme, /Extended period, expiry, deletion, and limit checks remain/);
   assert.match(readme, /approved `workers\.dev` target is fixed in the checked-in frontend/);
   assert.match(readme, /`preview_urls=false`, `observability\.enabled=false`, and the checked-in `RELAY_ENABLED=false`/);
-  assert.match(readme, /show live Guardian and Libre data together while Dexcom G7 remains visibly pending/);
+  assert.match(readme, /currently falls back to the clearly labelled synthetic dataset because the dedicated Libre public-demo feed is paused/);
+  assert.match(readme, /Guardian's separate Azure Nightscout browser route is verified, but that does not make the combined comparison page live by itself/);
   assert.match(readme, /global `DEMO_FEED_ENABLED=false`, source gates `DEMO_LIBRE_FEED_ENABLED=false` and `DEMO_G7_FEED_ENABLED=false`/);
   assert.match(readme, /stopped `glucoscope-demo-feed` Worker was deployed as Version/);
   assert.match(readme, /approved-origin G7 preflight returns `204`/);
