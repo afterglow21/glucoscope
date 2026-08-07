@@ -175,6 +175,30 @@ h2 {
   border: 1px solid #a8d8c2;
 }
 
+.comparison-mode-notice {
+  margin: 18px 0 14px;
+  padding: 14px 16px;
+  border: 2px solid;
+  border-radius: 16px;
+  font-size: clamp(0.96rem, 2.6vw, 1.08rem);
+  font-weight: 900;
+  line-height: 1.65;
+  text-align: center;
+}
+
+.comparison-mode-notice-synthetic {
+  color: #68470c;
+  background: #fff3d7;
+  border-color: #d9b75e;
+}
+
+.comparison-mode-notice-live,
+.comparison-mode-notice-anonymized {
+  color: #235f4b;
+  background: #e5f4ec;
+  border-color: #91c9ae;
+}
+
 .comparison-source-toggle:disabled {
   cursor: not-allowed;
   opacity: 0.55;

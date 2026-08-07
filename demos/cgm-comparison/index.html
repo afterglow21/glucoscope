@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="Guardian 4、FreeStyle Libre 2、Dexcom G7の同時装着データを、優劣をつけず同じ時間軸で観察するGlucoScopeの比較デモです。">
   <title>3CGM Comparison Lab | GlucoScope</title>
-  <link rel="stylesheet" href="comparison.css?v=20260806-cgm-live-1">
+  <link rel="stylesheet" href="comparison.css?v=20260807-three-cgm-live-1">
 </head>
 <body>
   <main class="comparison-shell">
@@ -60,6 +60,9 @@
           <h2 id="comparisonChartTitle">同じ時間軸で重ねた表示</h2>
         </div>
         <p>点がない時間は、推測でつながず空白にします。</p>
+      </div>
+      <div id="datasetModeNotice" class="comparison-mode-notice comparison-mode-notice-synthetic" role="status" aria-live="polite">
+        現在は合成データです。3本の線は表示確認用で、Kazumaの実測値ではありません。
       </div>
       <div id="chartMessage" class="comparison-message" role="status" aria-live="polite">データを読み込んでいます。</div>
       <div class="comparison-chart-wrap">
@@ -124,8 +127,8 @@
 
   <script src="../../vendor/chart.js/chart.umd.min.js?v=4.5.1"></script>
   <script src="../../js/data-source.js?v=20260806-cgm-live-1"></script>
-  <script src="live-config.js?v=20260807-g7-stopped-1"></script>
-  <script type="module" src="comparison.mjs?v=20260806-cgm-live-1"></script>
+  <script src="live-config.js?v=20260807-three-cgm-live-1"></script>
+  <script type="module" src="comparison.mjs?v=20260807-three-cgm-live-1"></script>
   <script src="../../js/analytics-loader.js?v=20260721-user-foundation-3-2"></script>
 </body>
 </html>

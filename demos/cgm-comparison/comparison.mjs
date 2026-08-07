@@ -19,6 +19,8 @@ const state = {
   loadNotice: ""
 };
 
+class DemoFeedPausedError extends Error {}
+
 function byId(id) {
   return document.getElementById(id);
 }
@@ -40,12 +42,22 @@ function renderDatasetHeader() {
   const status = byId("datasetStatus");
   const isSynthetic = state.dataset.status === "synthetic";
   const isLive = state.dataset.status === "live";
+  const liveSourceCount = state.dataset.sources.filter((source) =>
+    source.dataStatus === "available" && source.readings.length > 0
+  ).length;
   status.textContent = isLive
     ? "公開デモ · ライブデータ"
     : isSynthetic
       ? "準備中 · 合成データ"
       : "匿名化済み実測データ";
   status.className = `comparison-status ${isLive ? "comparison-status-live" : isSynthetic ? "comparison-status-synthetic" : "comparison-status-anonymized"}`;
+  const modeNotice = byId("datasetModeNotice");
+  modeNotice.textContent = isLive
+    ? `現在は実測ライブデータです。取得できた${liveSourceCount}種類のCGMデータを表示しています。`
+    : isSynthetic
+      ? "現在は合成データです。3本の線は表示確認用で、Kazumaの実測値ではありません。"
+      : "現在は匿名化済み実測データです。現在時刻や個人を特定する情報は含みません。";
+  modeNotice.className = `comparison-mode-notice ${isLive ? "comparison-mode-notice-live" : isSynthetic ? "comparison-mode-notice-synthetic" : "comparison-mode-notice-anonymized"}`;
   const updatedText = isLive
     ? ` · 約${Math.max(0, Math.round((Date.now() - state.dataset.updatedAt) / 60_000))}分前に更新`
     : "";
@@ -85,9 +97,14 @@ function renderSourceCards() {
     const article = document.createElement("article");
     article.className = "comparison-source-card comparison-card";
     article.style.setProperty("--source-color", source.color);
+    const sourceStateLabel = state.dataset.status === "synthetic"
+      ? "現在表示：合成データ"
+      : source.dataStatus === "available" && source.readings.length > 0
+        ? source.verificationLabel
+        : "現在表示：準備中";
     article.innerHTML = `
       <h3>${source.label}</h3>
-      <span class="comparison-source-state">${source.verificationLabel}</span>
+      <span class="comparison-source-state">${sourceStateLabel}</span>
       <p class="comparison-source-route">${source.captureRoute}</p>
       <p class="comparison-source-note">${source.note}</p>
       <p class="comparison-source-meta">${source.dataStatus === "available" ? `現在の表示点: ${source.readings.length}` : "データ準備中"}</p>
@@ -213,7 +230,12 @@ async function loadLiveDataset(config) {
     fetch(config.libreEndpoint, { cache: "no-store", headers: { Accept: "application/json" } }),
     fetchOptionalPublicFeed(config.dexcomEndpoint, "dexcom-g7")
   ]);
-  if (!libreResponse.ok) throw new Error(`Libre demo feed returned HTTP ${libreResponse.status}.`);
+  if (!libreResponse.ok) {
+    if (libreResponse.status === 503) {
+      throw new DemoFeedPausedError("The public demo feed is paused.");
+    }
+    throw new Error(`Libre demo feed returned HTTP ${libreResponse.status}.`);
+  }
   return buildLiveComparisonDataset({
     guardianEntries: guardianResult.data,
     librePayload: await libreResponse.json(),
@@ -232,12 +254,14 @@ async function loadDataset({ preserveLiveOnError = false } = {}) {
     state.dataset = config.libreEndpoint
       ? await loadLiveDataset(config)
       : await loadStaticDataset();
-  } catch {
-    if (preserveLiveOnError && state.dataset?.status === "live") {
+  } catch (error) {
+    if (preserveLiveOnError && state.dataset?.status === "live" && !(error instanceof DemoFeedPausedError)) {
       state.loadNotice = "ライブデータの更新が遅れています。前回取得できた表示を残しています。";
     } else {
       state.dataset = await loadStaticDataset();
-      state.loadNotice = "ライブデータはまだ準備中のため、合成データを表示しています。";
+      state.loadNotice = error instanceof DemoFeedPausedError
+        ? "公開デモは停止中のため、合成データを表示しています。"
+        : "ライブデータはまだ準備中のため、合成データを表示しています。";
     }
   }
   state.enabledSources = new Set(state.dataset.sources

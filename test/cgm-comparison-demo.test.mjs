@@ -268,13 +268,21 @@ test("public demo is linked while the capture helper stays unlinked and noindex"
   const demo = await readFile(new URL("../demos/cgm-comparison/index.html", import.meta.url), "utf8");
   const capture = await readFile(new URL("../tools/cgm-comparison-capture/index.html", import.meta.url), "utf8");
   const captureModule = await readFile(new URL("../tools/cgm-comparison-capture/capture.mjs", import.meta.url), "utf8");
+  const comparisonModule = await readFile(new URL("../demos/cgm-comparison/comparison.mjs", import.meta.url), "utf8");
   const liveConfig = await readFile(new URL("../demos/cgm-comparison/live-config.js", import.meta.url), "utf8");
   assert.match(rootIndex, /href="demos\/cgm-comparison\/"/);
   assert.doesNotMatch(rootIndex, /tools\/cgm-comparison-capture/);
   assert.match(demo, /vendor\/chart\.js\/chart\.umd\.min\.js/);
   assert.match(demo, /analytics-loader\.js/);
   assert.match(demo, /js\/data-source\.js/);
-  assert.match(demo, /live-config\.js\?v=20260807-g7-stopped-1/);
+  assert.match(demo, /live-config\.js\?v=20260807-three-cgm-live-1/);
+  assert.match(demo, /現在は合成データです。3本の線は表示確認用で、Kazumaの実測値ではありません/);
+  assert.match(comparisonModule, /現在は実測ライブデータです。取得できた\$\{liveSourceCount\}種類/);
+  assert.match(comparisonModule, /現在は合成データです。3本の線は表示確認用で、Kazumaの実測値ではありません/);
+  assert.match(comparisonModule, /現在表示：合成データ/);
+  assert.match(comparisonModule, /現在表示：準備中/);
+  assert.match(comparisonModule, /error instanceof DemoFeedPausedError/);
+  assert.match(comparisonModule, /公開デモは停止中のため、合成データを表示しています/);
   assert.match(capture, /name="robots" content="noindex,nofollow,noarchive"/);
   assert.doesNotMatch(capture, /analytics-loader\.js|static\.cloudflareinsights\.com/);
   assert.equal((capture.match(/type="password"/g) || []).length, 2);
@@ -284,7 +292,7 @@ test("public demo is linked while the capture helper stays unlinked and noindex"
   assert.match(captureModule, /prepareConnection\(relayConfigs\["libre-2"\]\)/);
   assert.match(liveConfig, /libreFeedEndpoint:\s*"https:\/\/glucoscope-demo-feed\.afterglow21\.workers\.dev\/v1\/libre"/);
   assert.match(liveConfig, /dexcomFeedEndpoint:\s*"https:\/\/glucoscope-demo-feed\.afterglow21\.workers\.dev\/v1\/dexcom-g7"/);
-  assert.match(liveConfig, /dexcomRouteVerified:\s*false/);
+  assert.match(liveConfig, /dexcomRouteVerified:\s*true/);
   assert.doesNotMatch(liveConfig, /ns\.gluroo\.com|api.?secret|token/i);
 });
 
