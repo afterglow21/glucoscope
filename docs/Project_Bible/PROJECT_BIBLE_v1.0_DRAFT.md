@@ -2410,10 +2410,15 @@ The current delivery order is:
    synthetic fallback, and no expiry extension at the next stopped Cron.
 5. Completed after the frontend safety release and continuing-publication decision:
    start the continuous public demo, verify two fresh scheduled aggregate checks,
-   and verify one new browser session plus its first five-minute automatic refresh.
-6. Current: verify production natural-expiry behavior and continue longer observation
-   without describing the unobserved expiry path as complete.
-7. Complete the general-user relay period, expiry, deletion, and limit checks
+   and complete an approximately three-hour follow-up health check plus one further
+   five-minute auto-refresh at a later checkpoint, for two confirmed browser refreshes
+   in total.
+6. Non-blocking stopped/failure-path follow-up: verify production natural expiry when
+   continuous refresh is intentionally stopped or fails. A healthy five-minute refresh
+   renews the 36-hour KV expiration, so natural expiry cannot occur during normal
+   continuous operation; the existing paused-Cron, `503`, and fallback evidence remains
+   the current safety basis.
+7. Current: complete the general-user relay period, expiry, deletion, and limit checks
    before any Friends & Family continuing-enablement decision.
 8. Return to Worker usage-counter and Usage Dashboard production verification,
    the site-wide Trust/About review, feedback, and the first announcement.
@@ -2441,8 +2446,10 @@ The published frontend now configures the G7 URL with `dexcomRouteVerified=true`
 That flag records the verified G7 display path; it does not enable the Worker.
 One simultaneous live three-source page path and its stopped-state closure were
 verified before continuing publication started. The public page now reads the live
-demo Worker continuously. Two scheduled aggregate checks and one five-minute browser
-automatic refresh have passed. Production natural-expiry behavior remains unobserved.
+demo Worker continuously. Two scheduled aggregate checks, an approximately three-hour
+follow-up health check, and two five-minute browser auto-refresh checks at separate
+checkpoints have passed. Production natural-expiry behavior remains a separate,
+non-blocking stopped/failure-path check because healthy refreshes renew the KV expiration.
 
 Guardian remains on Kazuma's existing Azure Nightscout.
 Its verified browser-direct route is the Guardian input for the live comparison.
@@ -2486,6 +2493,9 @@ The existing Libre names remain `GLUROO_DEMO_SOURCE_URL` and
 It may fetch only glucose entries from each fixed `.ns.gluroo.com` host
 and `/api/v1/entries.json` path, keep at most a rolling 24-hour snapshot,
 and set a KV expiration of no more than 36 hours.
+Each successful five-minute scheduled refresh replaces the current snapshot and renews
+that expiration. Natural expiry therefore cannot occur while normal continuous refresh
+remains healthy; it is verified separately by stopping or failing the refresh path.
 The stored and public fields are limited to glucose value, measurement time,
 and an allowlisted direction.
 Application logging and Worker observability remain disabled,
@@ -2680,8 +2690,21 @@ source freshness from the latest reading or upstream stale state with a 15-minut
 boundary and preserves a previously live view for no more than 15 minutes before
 falling back to labelled synthetic data.
 
-Longer, repeated browser auto-refresh observation and production natural-expiry
-behavior remain unobserved. Pause immediately if Kazuma
+At approximately 01:10 JST on 2026-08-08, a read-only follow-up confirmed about three
+hours of continuous operation: both public Worker feeds remained healthy and fresh,
+and the general-user Limited Data Relay remained stopped. An existing public browser
+tab was inspected without reloading and still showed the three-source live state with
+no console errors. About five minutes later, the same tab completed another automatic
+refresh, retained all three live sources, showed no console errors, and reset its
+freshness display. This confirms one further refresh at a later checkpoint, bringing
+the total confirmed browser refreshes to two; it does not claim multiple refreshes
+within this follow-up window.
+
+Production natural expiry remains unobserved by design during healthy continuous
+operation: each five-minute refresh renews the 36-hour KV expiration. Treat natural
+expiry as a separate, non-blocking stopped/failure-path test, supported for now by the
+existing paused-Cron no-extension, paused-route `503`, and labelled fallback evidence.
+Pause immediately if Kazuma
 withdraws consent, Gluroo objects or its
 applicable terms materially change, unexpected data or abnormal traffic appears, or a
 privacy or safety concern is found. Stopped Version
@@ -2723,10 +2746,13 @@ Guardian 4、FreeStyle Libre 2、Dexcom G7を、
 4. 安全な終了まで完了：停止Workerへ戻し、両経路の停止、合成データへの
    復帰、次の停止中Cronで期限が延びないことを確認した。
 5. 完了：フロントの安全対応と別の継続公開判断後、継続公開を開始し、
-   2回の定期集計確認と、新しいブラウザセッション、その5分後の自動更新を確認した。
-6. 現在：長時間・複数回のブラウザ自動更新観察と本番での自然失効動作を、
-   未確認部分を過大主張せず確認する。
-7. 一般利用者向け限定リレーの期間別・期限切れ・削除・上限を確認し、
+   2回の定期集計確認、約3時間後の健全性確認、別の機会の5分自動更新を
+   もう1回確認した。ブラウザ自動更新の確認は合計2回である。
+6. 継続公開を妨げない停止・障害経路の追加確認：正常な5分更新では36時間の
+   KV期限が毎回更新されるため、通常の継続運転中には起きない自然失効を、
+   更新を意図的に止めるか失敗させた状態で別途確認する。現時点の安全根拠は、
+   停止中Cronで期限が延びないこと、`503`、合成データへの復帰の既存確認とする。
+7. 現在：一般利用者向け限定リレーの期間別・期限切れ・削除・上限を確認し、
    Friends & Familyで継続有効化するかを別途判断する。
 8. Worker UsageカウンターとUsage Dashboardの本番確認、
    Trust Pack / Aboutのサイト全体確認、フィードバック、初回告知へ戻る。
@@ -2752,8 +2778,10 @@ Libreでも別に1回の定期取得と安全な公開応答を確認し、
 `dexcomRouteVerified=true`にしています。これはG7を表示対象にするフロント側の
 確認ゲートであり、Workerを有効にする設定ではありません。GitHub Pagesでは
 3機種の同時ライブ表示とグラフ3本を1回確認し、安全対応後に継続公開を開始しました。
-その後、2回の定期集計確認と、同じブラウザタブでの5分後の自動更新1回を確認しました。
-長時間・複数回のブラウザ自動更新観察と、本番での自然失効動作は未確認です。
+その後、2回の定期集計確認と約3時間後の健全性確認を行い、別の機会の
+5分自動更新をもう1回確認しました。ブラウザ自動更新の確認は合計2回です。
+本番の自然失効は、正常な定期更新中にはKV期限が更新され続けるため、
+継続公開を妨げない別の停止・障害経路確認とします。
 
 GuardianはKazumaの既存Azure Nightscoutをそのまま使います。
 確認済みのブラウザ直接経路を、継続公開中のGuardian入力として使います。
@@ -2798,6 +2826,9 @@ Dexcom G7は公開比較ページで1回のライブ表示確認を完了しま�
 各接続先を固定した`.ns.gluroo.com`のホストと
 `/api/v1/entries.json`以外へ接続しません。
 保存するのは直近24時間以内とし、KVは最長36時間で期限切れにします。
+正常な5分ごとの定期取得に成功すると、現在のスナップショットを置き換えて
+その期限も更新します。そのため、通常の継続運転が正常な間は自然失効せず、
+更新を止めるか失敗させた別経路で確認します。
 保存・公開する項目は、血糖値、測定時刻、許可した方向情報だけです。
 アプリケーションログとWorker observabilityは無効にし、
 `DEMO_FEED_ENABLED=false`を全体の緊急停止スイッチにします。
@@ -2988,7 +3019,19 @@ Libreの表示点数は526件から525件へ変化し、console errorはあり�
 最新測定または上流`stale`から15分境界で新しさを判定し、通信失敗時に前回ライブを
 保持する時間も15分までに制限して、その後は合成データへ切り替えます。
 
-長時間・複数回のブラウザ自動更新観察と、本番での自然失効動作は未確認です。
+2026年8月8日01:10 JSTごろ、読み取りだけの追加確認で、継続開始から約3時間、
+Libre・G7の両公開Worker経路が正常かつ新しい状態を保ち、一般利用者向け限定リレーも
+停止したままであることを確認しました。公開ページを開いたままの既存ブラウザタブを
+再読み込みせず確認し、3ソースのライブ表示とconsole errorなしを確認しました。
+さらに約5分後、同じタブで次の自動更新が完了し、3ソースのライブ状態と
+console errorなしを保ったまま、新しさ表示がリセットされました。これは
+別の機会の自動更新をもう1回確認したもので、確認済みの自動更新は合計2回です。
+この追加確認の約5分間に複数回更新したとは扱いません。
+
+本番の自然失効は、正常な継続運転では5分更新のたびに36時間のKV期限が更新されるため、
+そのままでは発生しません。継続公開を妨げない別の停止・障害経路テストとして扱い、
+現時点では、停止中Cronで期限が延びないこと、停止経路の`503`、合成データへ戻る
+既存確認を安全根拠とします。
 Kazumaが同意を取り下げた場合、Glurooから停止要請または利用条件の重要変更が
 あった場合、想定外データ、異常通信、プライバシーまたは安全上の懸念が見つかった
 場合はすぐ停止します。停止Version `9994a142-a4ca-4885-9077-952ec8e7e8d2`を

@@ -41,8 +41,9 @@ test("public sample is explicitly synthetic, three-source, and privacy-safe", as
   assert.equal(dataset.sources[1].verificationLabel, "公開デモ経路を実機確認済み");
   assert.match(dataset.sources[1].captureRoute, /公開デモ用Worker、GitHub Pagesまで継続公開中/);
   assert.match(dataset.sources[1].note, /公開3CGMライブデモを継続中/);
-  assert.match(dataset.sources[1].note, /2回の定期集計確認と1回のブラウザ自動更新/);
-  assert.match(dataset.sources[1].note, /本番の自然失効は未確認/);
+  assert.match(dataset.sources[1].note, /約3時間の継続稼働/);
+  assert.match(dataset.sources[1].note, /これまでの確認は合計2回/);
+  assert.match(dataset.sources[1].note, /自然失効は起きません/);
   assert.match(dataset.sources[1].note, /表示中の線は安全なフォールバック用の合成データ/);
   assert.equal(dataset.sources[2].verificationLabel, "公開デモ経路を実機確認済み");
   assert.match(dataset.sources[2].captureRoute, /公開デモ用Worker、GitHub Pagesまで継続公開中/);
@@ -50,8 +51,9 @@ test("public sample is explicitly synthetic, three-source, and privacy-safe", as
   assert.match(dataset.sources[2].note, /公開3CGMライブデモを継続中/);
   assert.match(dataset.sources[2].note, /dexcomRouteVerified=true/);
   assert.match(dataset.sources[2].note, /Workerの有効化ではありません/);
-  assert.match(dataset.sources[2].note, /2回の定期集計確認と1回のブラウザ自動更新/);
-  assert.match(dataset.sources[2].note, /本番の自然失効は未確認/);
+  assert.match(dataset.sources[2].note, /約3時間の継続稼働/);
+  assert.match(dataset.sources[2].note, /これまでの確認は合計2回/);
+  assert.match(dataset.sources[2].note, /自然失効は起きません/);
   assert.match(dataset.sources[2].note, /表示中の線は安全なフォールバック用の合成データ/);
   assert.doesNotMatch(sampleText, /https?:\/\//i);
   assert.doesNotMatch(sampleText, /\b\d{4}-\d{2}-\d{2}\b/);
@@ -98,15 +100,17 @@ test("live comparison uses Guardian and Libre while Dexcom remains pending", () 
   assert.match(dataset.sources[1].captureRoute, /公開デモ用Worker、GitHub Pagesまで継続公開中/);
   assert.match(dataset.sources[1].note, /接続情報は公開されません/);
   assert.match(dataset.sources[1].note, /公開3CGMライブデモを継続中/);
-  assert.match(dataset.sources[1].note, /2回の定期集計確認と1回のブラウザ自動更新/);
-  assert.match(dataset.sources[1].note, /本番の自然失効は未確認/);
+  assert.match(dataset.sources[1].note, /約3時間の継続稼働/);
+  assert.match(dataset.sources[1].note, /これまでの確認は合計2回/);
+  assert.match(dataset.sources[1].note, /自然失効は起きません/);
   assert.deepEqual(dataset.sources[2].readings, []);
   assert.equal(dataset.sources[2].verificationLabel, "公開デモ経路を実機確認済み");
   assert.match(dataset.sources[2].captureRoute, /公開デモ用Worker、GitHub Pagesまで継続公開中/);
   assert.match(dataset.sources[2].note, /一般利用者向け限定中継とは別/);
   assert.match(dataset.sources[2].note, /公開3CGMライブデモを継続中/);
-  assert.match(dataset.sources[2].note, /2回の定期集計確認と1回のブラウザ自動更新/);
-  assert.match(dataset.sources[2].note, /本番の自然失効は未確認/);
+  assert.match(dataset.sources[2].note, /約3時間の継続稼働/);
+  assert.match(dataset.sources[2].note, /これまでの確認は合計2回/);
+  assert.match(dataset.sources[2].note, /自然失効は起きません/);
   assert.doesNotMatch(JSON.stringify(dataset), /private-guardian|dateString|https?:\/\/|secret/i);
 });
 

@@ -113,9 +113,10 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(data, /user visually confirmed three graph lines/);
   assert.match(data, /After the 21:25 JST stopped Cron, both KV expirations were unchanged from the post-stop baseline; only the two expected keys remained and neither had metadata/);
   assert.match(data, /This completes one public-page acceptance; continuing operation, repeated browser-display refreshes, stale display, and natural expiry remain unverified/);
-  assert.match(data, /Two scheduled aggregate checks and one five-minute browser auto-refresh have passed/);
+  assert.match(data, /About three hours of continuous operation passed/);
+  assert.match(data, /one further five-minute auto-refresh, bringing the total confirmed browser refreshes to two/);
   assert.match(data, /Scheduled aggregate checks observed Libre\/G7 counts of 528\/290 and then 526\/290/);
-  assert.match(data, /Longer repeated browser observation and production natural expiry remain unobserved/);
+  assert.match(data, /Natural expiry is a separate, non-blocking stopped\/failure-path check/);
   assert.match(data, /次の3段落は、一時確認後に停止へ戻した過去のチェックポイントです/);
   assert.match(privacy, /限定中継は現在停止中です/);
   assert.match(privacy, /明示的な同意がない限り、限定中継への通信を始めません/);
@@ -143,7 +144,7 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(privacy, /After the 21:25 JST stopped Cron, both KV expirations were unchanged from the post-stop baseline/);
   assert.match(privacy, /The raw KV values were not read directly/);
   assert.match(privacy, /Two aggregate checks observed Libre\/G7 counts of 528\/290 and then 526\/290/);
-  assert.match(privacy, /Longer repeated browser observation and production natural expiry remain unobserved/);
+  assert.match(privacy, /Natural expiry remains a separate, non-blocking stopped\/failure-path check/);
   assert.match(privacy, /The next three paragraphs are historical checkpoints/);
   assert.match(privacy, /ユーザー版は、前の項目のとおり現在送信しません/);
   assert.match(safety, /接続失敗は、CGMやポンプが止まったことを意味しません/);
@@ -156,7 +157,9 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(roadmap, /完了：別の明示確認後、Guardian・Libre・G7の3機種を短時間だけ公開ページでライブ表示し、3カードと3本のグラフを確認しました/);
   assert.match(roadmap, /完了：最初の受け入れ後は停止Versionへ戻し、両経路の停止応答と新しく開いたページの合成データへの復帰を確認しました/);
   assert.match(roadmap, /現時点の3CGM比較ページは継続公開ライブデモです/);
-  assert.match(roadmap, /同じブラウザタブの5分後の自動更新1回まで確認済み/);
+  assert.match(roadmap, /約3時間の継続稼働を確認/);
+  assert.match(roadmap, /ブラウザ自動更新の確認は合計2回/);
+  assert.match(roadmap, /次：一般利用者向け限定中継の期間別・期限切れ・削除・上限を受け入れ確認します/);
   assert.match(roadmap, /今回確認できたのは1回の公開ページ受け入れです。継続運用、複数回のブラウザ表示更新、古いデータ表示・自然失効は未確認/);
   assert.match(roadmap, /21:25 JSTの停止中Cron後も両KVキーの期限は停止後の基準から変わらず、想定した2キーだけでmetadataもありませんでした/);
   assert.match(roadmap, /The public 3CGM Comparison Lab began continuous live publication/);
@@ -202,7 +205,8 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(readme, /deployment `e96fb11c-a2e0-4097-b54c-a1d638bbffc8` at 22:10:05 JST/);
   assert.match(readme, /second scheduled aggregate check observed 526 Libre entries and 290 G7 entries/);
   assert.match(readme, /Libre displayed-point aggregate changing from 526 to 525/);
-  assert.match(readme, /Longer, repeated browser auto-refresh observation and production natural-expiry behavior remain pending/);
+  assert.match(readme, /one further five-minute auto-refresh at a later checkpoint, bringing the total confirmed browser refreshes to two/);
+  assert.match(readme, /natural expiry is now a separate, non-blocking stopped\/failure-path test/i);
   assert.doesNotMatch(readme, /frontend endpoint remains intentionally blank/);
 });
 
