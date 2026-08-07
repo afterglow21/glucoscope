@@ -33,8 +33,10 @@ test("public sample is explicitly synthetic, three-source, and privacy-safe", as
   assert.match(dataset.sources[1].captureRoute, /Gluroo Global Connect/);
   assert.match(dataset.sources[2].captureRoute, /Gluroo Global Connect/);
   assert.equal(dataset.sources[1].verificationLabel, "基本接続を実機確認済み");
-  assert.equal(dataset.sources[2].verificationLabel, "Gluroo表示を確認済み");
-  assert.match(dataset.sources[2].captureRoute, /停止中の公開デモ用Worker経路を確認済み/);
+  assert.equal(dataset.sources[2].verificationLabel, "Worker取得を1回確認済み");
+  assert.match(dataset.sources[2].captureRoute, /公開デモ用Workerの公開応答まで1回確認済み/);
+  assert.match(dataset.sources[2].note, /一般利用者向け限定中継とは別/);
+  assert.match(dataset.sources[2].note, /フロント接続、繰り返し更新、3機種同時表示は未確認/);
   assert.match(dataset.sources[2].note, /表示中の線は合成データ/);
   assert.doesNotMatch(sampleText, /https?:\/\//i);
   assert.doesNotMatch(sampleText, /\b\d{4}-\d{2}-\d{2}\b/);
@@ -78,12 +80,14 @@ test("live comparison uses Guardian and Libre while Dexcom remains pending", () 
   assert.equal(dataset.sources[0].readings.length, 2);
   assert.equal(dataset.sources[1].readings.length, 2);
   assert.deepEqual(dataset.sources[2].readings, []);
-  assert.equal(dataset.sources[2].verificationLabel, "Gluroo表示を確認済み");
-  assert.match(dataset.sources[2].captureRoute, /停止中の公開デモ用Worker経路を確認済み/);
+  assert.equal(dataset.sources[2].verificationLabel, "Worker取得を1回確認済み");
+  assert.match(dataset.sources[2].captureRoute, /公開デモ用Workerの公開応答まで1回確認済み/);
+  assert.match(dataset.sources[2].note, /一般利用者向け限定中継とは別/);
+  assert.match(dataset.sources[2].note, /フロント接続、繰り返し更新、3機種同時表示は未確認/);
   assert.doesNotMatch(JSON.stringify(dataset), /private-guardian|dateString|https?:\/\/|secret/i);
 });
 
-test("a valid G7 feed stays pending until the live publication path is verified", () => {
+test("a valid G7 feed stays pending until frontend activation is separately approved", () => {
   const nowMs = Date.parse("2026-08-06T06:00:00.000Z");
   const libreUpdatedAt = nowMs - 60_000;
   const dexcomUpdatedAt = nowMs - 180_000;
