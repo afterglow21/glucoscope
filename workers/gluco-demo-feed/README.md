@@ -1,6 +1,6 @@
 # GlucoScope Public Demo Feed
 
-This Worker is a public-demo-only, multi-source feed for Kazuma's data. It is separate from the general-user Limited Data Relay. Publication consent is recorded separately for Kazuma's Libre and G7 glucose values and measurement/update timing. Libre and G7 have each completed one temporary scheduled retrieval and sanitized public Worker-response check. Both source routes are currently returned to the stopped state. The published frontend configures the stopped G7 URL with `dexcomRouteVerified=false`; its Pages synthetic fallback check passed, while the live comparison-page end-to-end path remains unverified.
+This Worker is a public-demo-only, multi-source feed for Kazuma's data. It is separate from the general-user Limited Data Relay. Publication consent is recorded separately for Kazuma's Libre and G7 glucose values and measurement/update timing. After source-specific checks, the Worker completed one temporary Guardian/Libre/G7 GitHub Pages acceptance. It was then returned to the stopped Version; both source routes now return `503`, and a newly opened page falls back to the clearly labelled synthetic dataset. The frontend keeps `dexcomRouteVerified=true` as a record of the verified G7 display path, but this flag does not enable the Worker. Continued operation, repeated browser display refreshes, stale behavior, and natural expiry remain unverified.
 
 The prepared routes use source-specific Gluroo Global Connect slots:
 
@@ -14,21 +14,21 @@ FreeStyle LibreLink
 
 Dexcom G7
         -> Gluroo Global Connect (display confirmed)
-        -> one verified scheduled G7 source refresh
-        -> public:dexcom-g7:v1 (retained until existing TTL)
-        -> Worker response verified; public comparison remains pending
+        -> scheduled demo-feed Worker
+        -> public:dexcom-g7:v1
+        -> one verified three-source public-page display
 ```
 
 ## Checked-in safety state
 
 - `DEMO_FEED_ENABLED=false`, `DEMO_LIBRE_FEED_ENABLED=false`, and `DEMO_G7_FEED_ENABLED=false`.
-- The dedicated `DEMO_FEED_CACHE` KV namespace was created after explicit approval on 2026-08-06, and its non-secret namespace id is recorded in `wrangler.jsonc`. It was empty through the stopped-deployment checks. The later temporary G7 acceptance created one G7 key, which is not served while paused and remains only until its existing TTL expires.
+- The dedicated `DEMO_FEED_CACHE` KV namespace was created after explicit approval on 2026-08-06, and its non-secret namespace id is recorded in `wrangler.jsonc`. It was empty through the initial stopped-deployment checks. Later temporary acceptances created the two source-specific keys. They are not served while paused and remain only until their existing TTLs expire.
 - After a second explicit approval, stopped Version `4c8d40de-8877-4d70-800e-1607e1940b96` was deployed to `https://glucoscope-demo-feed.afterglow21.workers.dev`. A later explicit approval registered exactly `GLUROO_DEMO_SOURCE_URL` and `GLUROO_DEMO_API_SECRET` as Cloudflare Secrets. Another explicit approval reapplied the stopped configuration as Version `f8801d58-67bd-4cf9-8cb1-dd227c879446`; it received 100% of traffic at that stage. The five-minute Cron is present but exits while disabled, before Secret access, upstream fetch, or KV write.
 - The existing Libre Secret values remain Cloudflare-only. After separate explicit approval on 2026-08-07, the G7 values for `GLUROO_DEMO_G7_SOURCE_URL` and `GLUROO_DEMO_G7_API_SECRET` were entered through masked prompts with `wrangler versions secret put`, creating unpublished Secret-only Versions `0e095e0a-63de-4b01-8c0f-2dd8f1e169a1` and `834019da-0cd1-41d8-8cff-41eab1062a00`. After another separate approval, reviewed multi-source Version `9994a142-a4ca-4885-9077-952ec8e7e8d2` inherited exactly the four Libre/G7 Secret names and was deployed to 100% of production traffic with all three feed gates still `false`.
 - Secret values must never enter Git, terminal arguments, screenshots, logs, fixtures, or support messages.
-- `DEMO_G7_FEED_CACHE_KEY=public:dexcom-g7:v1` is a non-secret, source-specific KV key. One temporary G7-only check wrote this key. The raw KV value was not directly read or printed; the key is retained only until its existing 36-hour expiry.
-- `DEMO_FEED_CACHE_KEY=public:libre-2:v1` is the corresponding non-secret Libre key. One temporary Libre-only check produced its sanitized public response; after the stopped restore, the next Cron did not extend the Libre snapshot expiration.
-- `GET /v1/dexcom-g7` completed one sanitized live-response check and is now stopped again without frontend activation. Both `/v1/libre` and `/v1/dexcom-g7` currently return `503 demo_feed_paused`; approved-origin G7 preflight returns `204`, and an unapproved Origin returns `403`.
+- `DEMO_G7_FEED_CACHE_KEY=public:dexcom-g7:v1` is a non-secret, source-specific KV key. Temporary checks wrote this key without directly reading or printing its raw KV value; it is retained only until its existing 36-hour expiry.
+- `DEMO_FEED_CACHE_KEY=public:libre-2:v1` is the corresponding non-secret Libre key. Temporary checks produced its sanitized public response without directly reading or printing its raw KV value.
+- `GET /v1/libre` and `GET /v1/dexcom-g7` completed one simultaneous public-page acceptance and are now stopped again. Both currently return `503 demo_feed_paused`; a newly opened GitHub Pages view returns to the synthetic fallback. `dexcomRouteVerified=true` records frontend verification only and does not bypass the Worker stops.
 - Observability is disabled to reduce health-data logging. Cloudflare's route-level subdomain API reports `enabled=true` and `previews_enabled=false`; version-level `has_preview` metadata does not mean the public Preview route is enabled.
 - There is intentionally no real `deploy` npm script.
 
@@ -58,6 +58,18 @@ This acceptance verifies one G7 scheduled retrieval, source-specific key creatio
 After another separate explicit approval on 2026-08-07, temporary Libre-only Version `2e72847d-5011-47c5-80e6-8cb931a1b141` was deployed for one scheduled refresh. The 19:25 JST Cron produced a public `/v1/libre` response containing 523 entries. Aggregate-only validation passed the reviewed top-level schema, entry-field allowlist, type, range, chronological-order, recency, private-marker, and CORS checks. No glucose value, measurement timestamp, Gluroo URL, Secret, or token was printed or added to Git. G7 remained paused at `503` throughout the check.
 
 Stopped Version `9994a142-a4ca-4885-9077-952ec8e7e8d2` was then restored. Both `/v1/libre` and `/v1/dexcom-g7` again return `503`. The next stopped Cron did not extend the Libre snapshot expiration. This acceptance verifies one Libre scheduled retrieval and sanitized public Worker response only. It does not verify GitHub Pages browser rendering, simultaneous three-source comparison, repeated refreshes, stale/fallback/natural-expiry behavior, or continuing enablement.
+
+## First simultaneous three-source public-page acceptance
+
+After separate operational approval on 2026-08-07, live Version `4069bca4-e8cf-474a-9e9d-d7ffa42b7567` was deployed at 100% through deployment `9738343a-fc1d-4f02-aff1-1bae3d7cbe57` at 20:58:02 JST. The global, Libre, and G7 gates were enabled only for this temporary review window.
+
+The sanitized public responses contained 527 Libre entries and 276 G7 entries. Aggregate-only validation passed the reviewed top-level and entry allowlists, types, ranges, chronological ordering, recency, and exact CORS boundary. No Secret value, Gluroo URL, glucose value, or measurement timestamp was printed or added to Git. GitHub Pages displayed Guardian, Libre, and G7 as live with all three cards enabled, and Kazuma visually confirmed all three plotted lines.
+
+This records one public-page acceptance. The visual-review window crossed scheduled triggers, so it does not claim an exact scheduled-refresh count. Continued operation, repeated browser display refreshes, stale behavior, and natural expiry remain unverified.
+
+Stopped Version `9994a142-a4ca-4885-9077-952ec8e7e8d2` was restored at 100% through deployment `e45b6547-33a4-4196-9efe-1fffd412bcd4` at 21:16:31 JST. Both public routes returned `503`, and a newly opened GitHub Pages view returned to the clearly labelled synthetic dataset. After the 21:25 JST stopped Cron, KV metadata listed only the two expected source keys, carried no metadata payload, and showed unchanged expirations for both keys. This confirms that the stopped Cron did not refresh either snapshot or extend either expiration.
+
+The frontend retains `dexcomRouteVerified=true` because the G7 display path passed this acceptance. That frontend flag is not a Worker enable switch. Production remains on the stopped Version, and the general-user Limited Data Relay remains stopped independently.
 
 The feed is public by design when a source is enabled. CORS limits normal browser embedding to the GlucoScope GitHub Pages origin but is not an authentication boundary. While a source route is enabled, anyone who can reach the public endpoint may read the published snapshot.
 
@@ -94,7 +106,10 @@ Each change below requires a separate explicit approval:
 15. Completed after separate explicit approval on 2026-08-07: deploy Libre-only Version `2e72847d-5011-47c5-80e6-8cb931a1b141` for the 19:25 JST Cron, verify the aggregate 523-entry sanitized public response, reviewed schema/type/range/order/recency/private-marker/CORS boundaries, and G7 isolation at `503`, then restore stopped Version `9994a142-a4ca-4885-9077-952ec8e7e8d2`.
 16. Completed after the Libre restore: verify both source routes return `503` and the next stopped Cron does not extend the Libre snapshot expiration.
 17. Completed with commit `8b0481a`: publish the configured stopped G7 URL with `dexcomRouteVerified=false` and verify the synthetic fallback on GitHub Pages.
-18. Current, under separate operational approval: briefly enable the required demo feeds and verify the simultaneous live three-source display. Repeated refreshes, stale/natural-expiry behavior, and continuing enablement remain separate checks.
-19. Keep the general-user Limited Data Relay paused unless it receives its own separate approval.
+18. Completed after separate operational approval: deploy temporary live Version `4069bca4-e8cf-474a-9e9d-d7ffa42b7567`, validate the sanitized Libre and G7 public responses without printing values or timestamps, and verify one simultaneous Guardian/Libre/G7 display on GitHub Pages.
+19. Completed immediately afterward: restore stopped Version `9994a142-a4ca-4885-9077-952ec8e7e8d2` through deployment `e45b6547-33a4-4196-9efe-1fffd412bcd4`, verify both routes return `503`, and verify a new page returns to the synthetic fallback.
+20. Completed after the next stopped Cron: confirm that both source-key expirations remain unchanged and no snapshot is refreshed.
+21. Current: keep the Worker stopped while stale/natural-expiry behavior and any continuing-publication decision remain separate checks. Do not describe one public-page acceptance as continued operation or repeated browser refresh acceptance.
+22. Keep the general-user Limited Data Relay paused unless it receives its own separate approval.
 
 If Gluroo objects, terms materially change, unexpected data appears, abnormal traffic is detected, or Kazuma no longer wants the data public, disable the affected source or restore `DEMO_FEED_ENABLED=false` immediately and remove only the affected KV snapshot.

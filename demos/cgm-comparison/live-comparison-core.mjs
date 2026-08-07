@@ -32,25 +32,25 @@ const SOURCE_DEFINITIONS = Object.freeze({
     label: "FreeStyle Libre 2",
     shortLabel: "Libre 2",
     color: "#c58a35",
-    verificationLabel: "Worker取得を1回確認済み",
-    captureRoute: "Gluroo Global Connectから公開デモ用Workerの公開応答まで1回確認済み",
-    note: "一般利用者向け限定中継とは別の公開デモWorkerで、1回の定期取得と安全なWorker応答を確認済みです。接続情報は公開されません。繰り返し更新と3機種同時表示は別途確認します。",
+    verificationLabel: "公開デモ経路を実機確認済み",
+    captureRoute: "Gluroo Global Connectから公開デモ用Worker、GitHub Pagesまで1回確認済み",
+    note: "一般利用者向け限定中継とは別の公開デモWorkerで、公開ページ全体の3機種同時ライブ表示を1回確認済みです。接続情報は公開されません。継続運用、複数回のブラウザ表示更新、古いデータ・自然失効は未確認です。",
   }),
   dexcom: Object.freeze({
     id: "dexcom-g7",
     label: "Dexcom G7",
     shortLabel: "Dexcom G7",
     color: "#6d70ad",
-    verificationLabel: "Worker取得を1回確認済み",
-    captureRoute: "Gluroo Global Connectから公開デモ用Workerの公開応答まで1回確認済み",
-    note: "一般利用者向け限定中継とは別の公開デモWorkerで、1回の定期取得と安全なWorker応答を確認済みです。停止中の接続先を表示ゲート無効のままGitHub Pagesへ反映し、合成データへの安全な切替を確認済みです。繰り返し更新と3機種同時ライブ表示は未確認です。",
+    verificationLabel: "公開デモ経路を実機確認済み",
+    captureRoute: "Gluroo Global Connectから公開デモ用Worker、GitHub Pagesまで1回確認済み",
+    note: "一般利用者向け限定中継とは別の公開デモWorkerで、公開ページ全体の3機種同時ライブ表示を1回確認済みです。接続情報は公開されません。継続運用、複数回のブラウザ表示更新、古いデータ・自然失効は未確認です。",
   }),
 });
 const VERIFIED_DEXCOM_DEFINITION = Object.freeze({
   ...SOURCE_DEFINITIONS.dexcom,
   verificationLabel: "公開デモ経路を実機確認済み",
   captureRoute: "Gluroo Global Connectから公開デモ専用Workerを経由",
-  note: "Kazumaが公開を選んだDexcom G7の直近データです。接続情報は公開されません。",
+  note: "Kazumaが公開を選んだDexcom G7の直近データです。公開ページ全体の3機種同時ライブ表示は1回確認済みです。接続情報は公開されません。継続運用と複数回のブラウザ表示更新は未確認です。",
 });
 
 function normalizeTimestamp(entry) {
