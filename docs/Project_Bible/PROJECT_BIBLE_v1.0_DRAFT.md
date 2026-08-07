@@ -2399,11 +2399,13 @@ It does not authorize storing, publishing, or re-sharing any general user's data
 
 On 2026-08-07, Kazuma confirmed that Dexcom G7 readings appear in Gluroo
 and that its connection details are prepared.
-This confirms only the path as far as Gluroo.
+Later that day, he separately and explicitly chose to publish his own G7 glucose values
+and their measurement/update timing through the public comparison.
+This publication choice applies only to Kazuma's own G7 demo data
+and does not authorize storing, publishing, or re-sharing any general user's data.
+The technical confirmation still reaches only as far as Gluroo.
 The public demo Worker, KV, and frontend path remain unverified,
 and no G7 glucose value has been stored or published.
-A separate explicit choice is required before publishing Kazuma's G7 glucose values
-or their measurement/update timing.
 
 Guardian remains on Kazuma's existing Azure Nightscout
 and is read directly by the public comparison page.
@@ -2412,7 +2414,7 @@ The local multi-source revision gives Libre and G7 separate fixed Gluroo source 
 source gates, and KV keys while retaining one global emergency stop.
 It sanitizes each enabled response and replaces only that source's expiring KV snapshot.
 Public visitors read only those snapshots and never trigger a request to Gluroo.
-Dexcom G7 remains pending until its Worker, KV, frontend, consent, and live-data path
+Dexcom G7 remains pending until its Worker, KV, frontend, and live-data path
 are separately verified.
 
 The demo-only Worker is separate from the general-user Limited Data Relay.
@@ -2498,13 +2500,25 @@ workflow run `31114013927` attempt 2 published the comparison page on 2026-08-07
 The public URL loaded with the clearly labelled `準備中 · 合成データ` fallback
 and all three device cards.
 
-The G7 multi-source revision is local preparation only.
+The G7 multi-source code revision remains local preparation only.
 It declares the new G7 Secret names, separate `public:dexcom-g7:v1` key,
 stopped `/v1/dexcom-g7` route, and global plus per-source gates,
 with all checked-in gates set to `false`.
-No G7 Secret value was registered, no G7 KV value was written,
-no revised Worker Version was deployed, no Cloudflare binding or traffic changed,
-and no frontend G7 endpoint was activated.
+After separate explicit approval on 2026-08-07, the two G7 Secret values were entered
+through masked prompts with `wrangler versions secret put`.
+This created unpublished Secret-only Versions
+`0e095e0a-63de-4b01-8c0f-2dd8f1e169a1` and
+`834019da-0cd1-41d8-8cff-41eab1062a00`.
+The latest contains all four Libre/G7 Secret names and keeps
+`DEMO_FEED_ENABLED=false`.
+Secret values were not placed in command arguments, displayed in captured output,
+or added to Git. Wrangler's sanitized registration log contained omission markers
+and no detected Secret value, Gluroo host, entries path, or authorization value;
+temporary logs were removed after verification.
+Production traffic remains 100% on the previous stopped Version
+`f8801d58-67bd-4cf9-8cb1-dd227c879446`.
+No G7 KV value was written, no G7 code revision or binding was deployed to production
+traffic, no traffic allocation changed, and no frontend G7 endpoint was activated.
 Cloudflare's route-level subdomain setting reports `enabled=true` for the normal
 `workers.dev` route and `previews_enabled=false` for versioned Preview routing.
 Version-level `has_preview` capability metadata does not mean the public Preview
@@ -2530,11 +2544,13 @@ Guardian 4、FreeStyle Libre 2、Dexcom G7を、
 
 2026年8月7日、Kazumaは、Dexcom G7の値がGlurooへ表示され、
 G7の接続情報を準備できていることを確認しました。
-これはGlurooまでの経路だけの確認です。
+同日、Kazumaは、自分自身のG7の血糖値と測定・更新時刻を
+公開比較で表示することへ、Libreとは別に明示同意しました。
+この公開の選択はKazuma自身のG7デモデータだけに適用し、
+一般利用者のデータを保存、公開、再共有する許可にはなりません。
+技術的な確認は、引き続きGlurooまでの経路だけです。
 公開デモ用Worker、KV、フロントまでの経路は未確認で、
 G7の血糖値は保存も公開もしていません。
-Kazuma自身のG7の血糖値と測定・更新時刻を公開する前に、
-Libreとは別の明示的な公開の選択を確認します。
 
 GuardianはKazumaの既存Azure Nightscoutをそのまま使い、
 公開比較ページのブラウザから直接取得します。
@@ -2545,7 +2561,7 @@ Libre 2は、一般利用者向け限定中継とは別の、
 有効なソースごとに公開してよい項目だけへ整えて、
 そのソースの期限付きKVスナップショットだけを入れ替えます。
 公開ページを見た人はKVだけを読み、Glurooへの取得を発生させません。
-Dexcom G7は、Worker、KV、フロント、公開同意、ライブデータの全経路を
+Dexcom G7は、Worker、KV、フロント、ライブデータの全経路を
 別途確認するまで準備中として表示します。
 
 デモ専用Workerと、一般利用者向け限定データリレーは別の仕組みです。
@@ -2629,12 +2645,25 @@ PR #14はこの準備をmerge commit
 workflow run `31114013927`のattempt 2で2026年8月7日に公開しました。
 公開URLで「準備中・合成データ」の明記と3機種のカード表示を確認しています。
 
-G7の複数ソース対応はローカル準備だけです。
+G7の複数ソース対応コードはローカル準備だけです。
 G7用の新しいSecret名、別の`public:dexcom-g7:v1`キー、
 停止中の`/v1/dexcom-g7`経路、全体とソース別の停止スイッチを宣言し、
 チェックインする値はすべて`false`にしています。
-G7のSecret値登録、G7のKV書き込み、改訂Worker Versionのデプロイ、
-Cloudflareバインドや通信割合の変更、フロントのG7接続先有効化は行っていません。
+2026年8月7日、別の明示確認後、G7用2つのSecret値を
+`wrangler versions secret put`のマスク入力で登録しました。
+これにより、通信へ反映しないSecret専用Version
+`0e095e0a-63de-4b01-8c0f-2dd8f1e169a1`と
+`834019da-0cd1-41d8-8cff-41eab1062a00`が作成されました。
+最新の未配信Versionでは、Libre/G7の4つのSecret名と
+`DEMO_FEED_ENABLED=false`を確認しました。
+Secret値はコマンド引数、取得した画面出力、Gitへ入れていません。
+Wranglerのサニタイズ済み登録ログには省略マーカーがあり、Secret値、
+Glurooホスト、entriesパス、認証値は検出されませんでした。
+一時ログは確認後に削除しました。
+本番通信の100%は、従来の停止Version
+`f8801d58-67bd-4cf9-8cb1-dd227c879446`のままです。
+G7のKV値、G7コードやバインドの本番反映、通信割合の変更、
+フロントのG7接続先有効化は行っていません。
 Cloudflareの公開ルート設定は、通常の`workers.dev`が`enabled=true`、
 Version別Previewが`previews_enabled=false`です。Version側の
 `has_preview`表示は、公開Previewルートが有効という意味ではありません。

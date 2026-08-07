@@ -76,16 +76,18 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(data, /Kazumaは自分自身のLibreの血糖値と測定・更新時刻を公開することを明示的に選びました/);
   assert.match(data, /一般利用者の接続情報や血糖データを保存しません/);
   assert.match(data, /別々の明示確認後にデモ専用KV、停止Worker、既存Libre用の2つのCloudflare Secretを準備しました/);
-  assert.match(data, /Secret値は表示、ログ記録、Gitへの保存をしていません/);
   assert.match(data, /5分CronはSecret参照、Gluroo取得、KV書き込みより前に終了し、KVは空のままです/);
   assert.match(data, /Dexcom G7からGlurooまでの表示は確認済みですが、公開デモ用WorkerからGlucoScopeまでの経路は未確認です/);
-  assert.match(data, /公開前にLibreとは別の明示同意を確認します/);
+  assert.match(data, /G7の血糖値と測定・更新時刻の公開へも、Libreとは別に明示同意しました/);
   assert.match(data, /別の`public:dexcom-g7:v1`キー、停止中の`\/v1\/dexcom-g7`/);
-  assert.match(data, /G7のSecret登録、KV書き込み、改訂Workerのデプロイ、Cloudflare設定変更、フロント接続先の有効化は行っていません/);
+  assert.match(data, /G7用2つのSecretをマスク入力でCloudflareへ登録し、2つの未配信Versionを作成しました/);
+  assert.match(data, /本番通信の100%は従来の停止Versionのままです/);
+  assert.match(data, /Secret値は画面出力やGitへ入れず、一時ログは安全確認後に削除しました/);
+  assert.match(data, /G7のKV書き込み、G7コードやバインドの本番反映、通信割合の変更、フロント接続先の有効化は行っていません/);
   assert.match(privacy, /限定中継は現在停止中です/);
   assert.match(privacy, /明示的な同意がない限り、限定中継への通信を始めません/);
   assert.match(privacy, /Kazuma自身の公開比較データ/);
-  assert.match(privacy, /公開URLを知る人はこれらの値を閲覧できるため、匿名データとは案内しません/);
+  assert.match(privacy, /公開URLを知る人は公開後の値を閲覧できるため、匿名データとは案内しません/);
   assert.match(privacy, /一般利用者の接続情報や血糖データをデモ用WorkerやKVへ保存・公開しません/);
   assert.match(privacy, /KVは最長36時間で期限切れ/);
   assert.match(privacy, /ユーザー版は、前の項目のとおり現在送信しません/);
@@ -109,7 +111,9 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(readme, /PR #14 merged the comparison frontend to `main` in merge commit `7e96648c27ce20fabe2f283c384124e36ce0b2d2`/);
   assert.match(readme, /GitHub Pages publication was verified on 2026-08-07/);
   assert.match(readme, /new G7 Secret names `GLUROO_DEMO_G7_SOURCE_URL` and `GLUROO_DEMO_G7_API_SECRET`/);
-  assert.match(readme, /No G7 Secret value was registered, no G7 KV value was written, no revised Worker Version was deployed/);
+  assert.match(readme, /two G7 values were entered through masked prompts with `wrangler versions secret put`/);
+  assert.match(readme, /Production traffic remains 100% on the previous stopped Version/);
+  assert.match(readme, /No G7 KV value was written, no G7 code revision or binding was deployed to production traffic/);
   assert.doesNotMatch(readme, /frontend endpoint remains intentionally blank/);
 });
 
