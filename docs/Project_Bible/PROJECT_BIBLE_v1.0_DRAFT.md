@@ -2403,12 +2403,12 @@ Later that day, he separately and explicitly chose to publish his own G7 glucose
 and their measurement/update timing through the public comparison.
 This publication choice applies only to Kazuma's own G7 demo data
 and does not authorize storing, publishing, or re-sharing any general user's data.
-The device-source confirmation still reaches only as far as Gluroo.
-Separately, the stopped public-demo Worker route and empty-KV boundary
-have now been verified without live retrieval. Live Gluroo retrieval,
-a populated G7 KV snapshot, frontend activation, and the complete end-to-end path
-remain unverified, and no G7 glucose value has been written to the demo KV
-or published by GlucoScope.
+The device-source confirmation itself still reaches only as far as Gluroo.
+Separately, one approved G7-only scheduled public-demo Worker retrieval,
+source-specific KV key creation, and sanitized public Worker response
+have now been verified. The Worker was returned immediately to its stopped Version.
+Frontend activation, GitHub Pages browser rendering, simultaneous three-source comparison,
+repeated refreshes, and the complete comparison-page end-to-end path remain unverified.
 
 Guardian remains on Kazuma's existing Azure Nightscout
 and is read directly by the public comparison page.
@@ -2417,8 +2417,8 @@ The deployed but stopped multi-source revision gives Libre and G7 separate fixed
 source gates, and KV keys while retaining one global emergency stop.
 It sanitizes each enabled response and replaces only that source's expiring KV snapshot.
 Public visitors read only those snapshots and never trigger a request to Gluroo.
-Dexcom G7 remains pending until live retrieval, a populated KV snapshot,
-frontend activation, and the complete end-to-end path are separately verified.
+Dexcom G7 remains pending in the comparison page until frontend activation
+and the complete page end-to-end path are separately approved and verified.
 
 The demo-only Worker is separate from the general-user Limited Data Relay.
 The general-user relay remains stopped with `RELAY_ENABLED=false`
@@ -2536,13 +2536,43 @@ Approved-origin GET requests to both `/v1/libre` and `/v1/dexcom-g7` return
 `503 demo_feed_paused`; the G7 preflight returns `204`, and an unapproved Origin
 is rejected with `403`. The dedicated KV was empty before and after the 03:30 UTC
 Cron boundary. No Gluroo retrieval, KV write, G7 frontend activation, or live
-publication occurred. This verifies the stopped Worker routes and empty-KV boundary;
-live retrieval, a populated G7 KV snapshot, frontend activation, and the complete
-end-to-end path remain unverified.
+publication occurred. This verifies the stopped Worker routes and empty-KV boundary.
+At that stopped-deployment checkpoint, live retrieval, a populated G7 KV snapshot,
+frontend activation, and the complete end-to-end path had not yet been verified.
 Cloudflare's route-level subdomain setting reports `enabled=true` for the normal
 `workers.dev` route and `previews_enabled=false` for versioned Preview routing.
 Version-level `has_preview` capability metadata does not mean the public Preview
 route is enabled.
+
+After separate explicit approval on 2026-08-07, temporary G7-only Version
+`3b796eb5-11be-466f-83ea-7710279f49c1` was deployed at 100% through deployment
+`5b7a0099-9425-4ddf-a500-68e2ed834ea5`, with `DEMO_FEED_ENABLED=true`,
+`DEMO_LIBRE_FEED_ENABLED=false`, and `DEMO_G7_FEED_ENABLED=true`.
+One scheduled refresh created the G7 snapshot under `public:dexcom-g7:v1`.
+The raw KV value was not read directly. The direct public `/v1/dexcom-g7` response
+was structurally validated: exactly 190 entries; the reviewed top-level schema;
+entries containing only `sgv`, numeric `date`, and optional allowlisted `direction`;
+valid types and bounds; strictly increasing measurement times; a recent update marker;
+exact approved-origin CORS; and no reviewed private markers. Validation output retained
+only aggregate and schema results. No Secret value, Gluroo URL, glucose value,
+or measurement timestamp was printed or added to Git. Libre remained paused,
+approved-origin G7 preflight returned `204`, and an unapproved Origin returned `403`.
+
+Immediately afterward, deployment `8de64190-7558-43c6-83c1-1e29a2cf80de`
+restored stopped Version `9994a142-a4ca-4885-9077-952ec8e7e8d2` to 100% traffic
+with all three gates `false`. Both source routes again return `503`.
+At 04:46 UTC, after the 04:45 UTC Cron boundary, KV metadata still listed only
+`public:dexcom-g7:v1` and its expiration was unchanged. This confirms that the
+stopped Cron did not refresh the snapshot or extend its lifetime. The raw KV value
+was not directly read or printed; the retained key is not served while the route is
+paused and will expire under its existing 36-hour TTL. The G7 frontend endpoint
+remains blank and `dexcomRouteVerified=false`.
+
+This verifies one scheduled G7 retrieval, source-specific KV key creation, and the
+sanitized public Worker response. It does not verify G7 frontend activation,
+GitHub Pages browser loading or rendering, simultaneous Guardian/Libre/G7 comparison,
+repeated scheduled refreshes, stale/fallback/expiry behavior, continuing enablement,
+or the general-user Limited Data Relay G7 path.
 
 All treatment decisions, alerts, and current device-state checks
 must continue to use the original approved CGM or pump application.
@@ -2568,12 +2598,12 @@ G7の接続情報を準備できていることを確認しました。
 公開比較で表示することへ、Libreとは別に明示同意しました。
 この公開の選択はKazuma自身のG7デモデータだけに適用し、
 一般利用者のデータを保存、公開、再共有する許可にはなりません。
-機器からの送信確認は、引き続きGlurooまでの経路だけです。
-これとは別に、停止中の公開デモ用Worker経路と空のKV境界は、
-ライブ取得を行わずに確認しました。Glurooからのライブ取得、
-G7値が入ったKVスナップショット、フロント接続先の有効化、
-全体のエンドツーエンド経路は未確認で、G7の血糖値はデモ用KVへ保存せず、
-GlucoScopeでも公開していません。
+機器からの送信確認そのものは、引き続きGlurooまでの経路だけです。
+これとは別に、G7だけを一時有効にした公開デモ用Workerで、
+1回の定期取得、ソース別KVキー作成、安全な公開Worker応答まで確認しました。
+確認後はすぐ停止Versionへ戻しています。フロント接続先の有効化、
+GitHub Pages上のブラウザ表示、3機種の同時比較、複数回の定期更新、
+公開比較ページ全体のエンドツーエンド経路は引き続き未確認です。
 
 GuardianはKazumaの既存Azure Nightscoutをそのまま使い、
 公開比較ページのブラウザから直接取得します。
@@ -2584,9 +2614,8 @@ Libre 2は、一般利用者向け限定中継とは別の、
 有効なソースごとに公開してよい項目だけへ整えて、
 そのソースの期限付きKVスナップショットだけを入れ替えます。
 公開ページを見た人はKVだけを読み、Glurooへの取得を発生させません。
-Dexcom G7は、ライブ取得、値が入ったKVスナップショット、
-フロント接続先の有効化、全体のエンドツーエンド経路を
-別途確認するまで準備中として表示します。
+Dexcom G7は、フロント接続先の有効化と公開比較ページ全体の
+エンドツーエンド経路を別途確認するまで準備中として表示します。
 
 デモ専用Workerと、一般利用者向け限定データリレーは別の仕組みです。
 一般利用者向けリレーは`RELAY_ENABLED=false`の停止状態を保ち、
@@ -2702,12 +2731,45 @@ GETはいずれも`503 demo_feed_paused`、G7のpreflightは`204`を返し、
 許可していないOriginは`403`で拒否しました。専用KVは03:30 UTCの
 Cron時刻の前後とも空でした。Gluroo取得、KV書き込み、G7フロント接続先の
 有効化、ライブ公開は行っていません。これで停止Workerの両経路と
-空のKV境界を確認しましたが、Glurooからのライブ取得、G7値が入った
-KVスナップショット、フロント接続先の有効化、全体のエンドツーエンド経路は
-引き続き未確認です。
+空のKV境界を確認しました。この停止確認の時点では、Glurooからのライブ取得、
+G7値が入ったKVスナップショット、フロント接続先の有効化、
+全体のエンドツーエンド経路はまだ確認していませんでした。
 Cloudflareの公開ルート設定は、通常の`workers.dev`が`enabled=true`、
 Version別Previewが`previews_enabled=false`です。Version側の
 `has_preview`表示は、公開Previewルートが有効という意味ではありません。
+
+さらに2026年8月7日、別の明示確認後、G7だけを一時有効にしたVersion
+`3b796eb5-11be-466f-83ea-7710279f49c1`を、deployment
+`5b7a0099-9425-4ddf-a500-68e2ed834ea5`として通信の100%へ反映しました。
+この確認中は、`DEMO_FEED_ENABLED=true`、`DEMO_LIBRE_FEED_ENABLED=false`、
+`DEMO_G7_FEED_ENABLED=true`でした。
+
+1回の定期取得で`public:dexcom-g7:v1`キーが作成されました。
+KVの生データは直接読み出さず、公開経路`/v1/dexcom-g7`の応答だけを
+構造確認しました。エントリーは190件で、公開用の最上位構造、
+各エントリーが`sgv`、数値の`date`、任意の許可済み`direction`だけで
+あること、型・範囲・時系列順、更新の新しさ、正確なCORS、
+確認対象の非公開情報を示す項目がないことを確認しました。
+記録へ残すのは件数と構造確認の結果だけで、Secret値、Gluroo URL、
+血糖値、測定時刻の実値は表示せず、Gitにも追加していません。
+Libreは`503`の停止状態を保ち、G7のpreflightは許可Originで`204`、
+不許可Originで`403`でした。
+
+確認直後、deployment `8de64190-7558-43c6-83c1-1e29a2cf80de`により、
+停止Version `9994a142-a4ca-4885-9077-952ec8e7e8d2`へ通信の100%を戻し、
+3つのゲートをすべて`false`にしました。両経路は再び`503`を返します。
+04:45 UTCのCron後、04:46 UTCにKVメタデータを確認すると、
+`public:dexcom-g7:v1`だけが残り、有効期限は変わっていませんでした。
+これにより、停止中のCronがスナップショットを更新せず、有効期限も
+延長しなかったことを確認しました。KVの値そのものは直接読み出しておらず、
+残ったキーは停止中の経路から配信せず、既存の36時間TTLで失効します。
+G7のフロント接続先は空、`dexcomRouteVerified=false`のままです。
+
+今回確認できたのは、G7の1回の定期取得、ソース別KVキー作成、
+公開Worker応答の安全な構造までです。G7のフロント接続先有効化、
+GitHub Pages上のブラウザ表示、Guardian・Libre・G7の同時比較、
+複数回の定期更新、古いデータ・フォールバック・失効時の動作、
+継続有効化、一般利用者向け限定リレーのG7経路は未確認です。
 
 治療判断、アラート、現在の機器状態は、
 引き続き元の公式CGM・ポンプアプリを確認します。

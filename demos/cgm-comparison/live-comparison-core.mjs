@@ -41,9 +41,9 @@ const SOURCE_DEFINITIONS = Object.freeze({
     label: "Dexcom G7",
     shortLabel: "Dexcom G7",
     color: "#6d70ad",
-    verificationLabel: "Gluroo表示を確認済み",
-    captureRoute: "Gluroo Global Connectでの表示と停止中の公開デモ用Worker経路を確認済み",
-    note: "停止中の公開デモ用Worker経路は確認済みです。ライブ取得とGlucoScope表示は準備中です。",
+    verificationLabel: "Worker取得を1回確認済み",
+    captureRoute: "Gluroo Global Connectから公開デモ用Workerの公開応答まで1回確認済み",
+    note: "一般利用者向け限定中継とは別の公開デモWorkerで、1回の定期取得と安全なWorker応答を確認済みです。フロント接続、繰り返し更新、3機種同時表示は未確認です。",
   }),
 });
 const VERIFIED_DEXCOM_DEFINITION = Object.freeze({

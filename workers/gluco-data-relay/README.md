@@ -160,7 +160,7 @@ This completes the first basic Libre 2 end-to-end acceptance only. Historical co
 Each numbered boundary is independently reviewable. Steps 1 through 7 and the current/reload portion of step 8 are complete for the approved `workers.dev` target. Do not combine continuing live enablement with any remaining check in one unreviewed operation.
 
 1. Recheck the current Gluroo public materials for material changes or a known provider objection.
-2. Confirm that each intended device route is described according to its actual verification status. Unverified Dexcom or other routes must not be advertised as verified, and Libre 2 must not be described beyond its completed basic-path checks.
+2. Confirm that each intended device route is described according to its actual verification status. The general-user limited-relay Dexcom route and other untested relay routes must not be advertised as verified, and Libre 2 must not be described beyond its completed basic-path checks. The separate public-demo Worker keeps its own verification record.
 3. Run `npm run verify`, `npm run deploy:dry`, `git diff --check`, the frontend checks, and a Secret-pattern scan. Confirm that `RELAY_ENABLED=false`, `workers_dev=true`, `preview_urls=false`, `observability.enabled=false`, the SQLite Durable Object export, and the exact CORS origin remain intact.
 4. After explicit approval, add only the agreed permanent Cloudflare target. This phase uses the single `workers.dev` target above. Any future Custom Domain or route change requires a separate review and approval.
 5. With `RELAY_ENABLED=false`, deploy only after separate explicit approval. Verify allowed-origin preflight, allowed-origin paused response, wrong-origin rejection, no-cache headers, Durable Object binding, and the presence of the two Secret binding names. Never print or copy Secret values into the repository, terminal record, screenshot, or support message.
@@ -185,7 +185,7 @@ Limited Data Relay
 GlucoScope
 ```
 
-The Guardian path has completed its first end-to-end iPhone Safari acceptance through the relay and GlucoScope for current glucose, graph display, and reload. The FreeStyle Libre 2 path has separately completed its first basic acceptance through FreeStyle LibreLink, LibreLinkUp, Gluroo, the relay, and GlucoScope for current glucose, graph display, reload, and return from the iOS Home Screen. Dexcom G7 and other untested routes must remain unverified in public wording, and neither accepted route may be described beyond the checks it actually passed.
+The Guardian path has completed its first end-to-end iPhone Safari acceptance through the relay and GlucoScope for current glucose, graph display, and reload. The FreeStyle Libre 2 path has separately completed its first basic acceptance through FreeStyle LibreLink, LibreLinkUp, Gluroo, the relay, and GlucoScope for current glucose, graph display, reload, and return from the iOS Home Screen. The general-user limited-relay Dexcom G7 path and other untested relay routes must remain unverified in public wording, and neither accepted relay route may be described beyond the checks it actually passed. The separate public-demo Worker is outside this relay acceptance matrix.
 
 Before the remaining acceptance matrix resumes, recheck the current public materials and configuration, obtain separate approval for live enablement, and enter the person's Global Connect URL and API Secret only in the browser UI. Never place them in commands, fixtures, screenshots, or documents.
 
