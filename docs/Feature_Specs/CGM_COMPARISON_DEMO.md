@@ -10,7 +10,7 @@ It is not an accuracy study, a clinical evaluation, a device ranking, a referenc
 
 On 2026-08-06, Kazuma explicitly chose to publish his own Libre glucose values and update timing as part of the public demo. This is a deliberate public-data choice for Kazuma's data only. It does not authorize storing, publishing, or re-sharing data from general users.
 
-On 2026-08-07, Kazuma confirmed that Dexcom G7 readings appear in Gluroo and that the G7 connection details are prepared. This confirms only the path as far as Gluroo. The public demo Worker, KV snapshot, and frontend path remain unverified; no G7 glucose value has been stored or published. A separate, explicit publication choice is still required before any G7 glucose value or measurement/update timing may be made public.
+On 2026-08-07, Kazuma confirmed that Dexcom G7 readings appear in Gluroo and that the G7 connection details are prepared. He then separately and explicitly chose to publish his own G7 glucose values and measurement/update timing through the public comparison. This confirms the publication choice, not the technical path: the public demo Worker, KV snapshot, and frontend remain unverified, and no G7 glucose value has been stored or published. The choice applies only to Kazuma's own G7 demo data and does not authorize any general-user data use.
 
 ```text
 Guardian 4 -> Kazuma Azure Nightscout -> comparison page (browser direct)
@@ -18,13 +18,13 @@ Libre 2   -> LibreLinkUp -> Gluroo -> dedicated demo-feed Worker -> expiring KV 
 Dexcom G7 -> Gluroo confirmed -> disabled local demo-feed source slot -> no public data
 ```
 
-The public comparison page uses Guardian and Libre when both live routes are available. Dexcom remains visibly marked as preparing until its Worker, KV, frontend, consent, and live-data path are separately verified, and it has no fabricated live series. If live loading is unavailable, the page falls back to the checked-in synthetic dataset and labels that state clearly.
+The public comparison page uses Guardian and Libre when both live routes are available. Dexcom remains visibly marked as preparing until its Worker, KV, frontend, and live-data path are separately verified, and it has no fabricated live series. If live loading is unavailable, the page falls back to the checked-in synthetic dataset and labels that state clearly.
 
 This architecture does not use or enable the general-user Limited Data Relay. That relay remains paused with `RELAY_ENABLED=false`, and its no-storage boundary remains unchanged.
 
 ## Dedicated demo-feed Worker
 
-`workers/gluco-demo-feed/` is a separate, multi-source Worker prepared for Kazuma's demo data. Libre is the only source for which publication consent has been recorded. Public visitors read only sanitized, source-specific KV snapshots; they never cause a direct request to Gluroo.
+`workers/gluco-demo-feed/` is a separate, multi-source Worker prepared for Kazuma's demo data. Publication consent has been recorded separately for Kazuma's Libre and G7 values. Only the Libre path currently has a stopped Worker revision deployed to production; the G7 code remains local. Public visitors read only sanitized, source-specific KV snapshots from routes that have been separately deployed and enabled; they never cause a direct request to Gluroo.
 
 The Worker:
 
@@ -43,7 +43,7 @@ After explicit approval on 2026-08-06, one dedicated `DEMO_FEED_CACHE` KV namesp
 
 After another explicit approval, the frontend configuration was set to the stopped `/v1/libre` route and the labelled synthetic fallback was verified locally. PR #14 merged that frontend preparation to `main` in merge commit `7e96648c27ce20fabe2f283c384124e36ce0b2d2`. After the official GitHub Pages deployment-lag incident was mitigated, workflow run `31114013927` attempt 2 published the comparison page on 2026-08-07. The public URL loaded with the clearly labelled `準備中 · 合成データ` fallback and all three device cards.
 
-The multi-source G7 revision is local preparation only. It declares the two new G7 Secret names, a separate `public:dexcom-g7:v1` KV key, the stopped `/v1/dexcom-g7` route, and global plus source-specific gates, all checked in as `false`. No G7 Secret value has been registered, no G7 KV value has been written, no revised Worker version has been deployed, no Cloudflare binding or traffic allocation has changed, and no frontend G7 endpoint has been activated. Every additional Cloudflare mutation requires a separate explicit confirmation.
+The multi-source G7 code revision remains local preparation only. It declares the two new G7 Secret names, a separate `public:dexcom-g7:v1` KV key, the stopped `/v1/dexcom-g7` route, and global plus source-specific gates, all checked in as `false`. After separate explicit approval on 2026-08-07, both G7 Secret values were entered through masked prompts with `wrangler versions secret put`. This created unpublished Secret-only Versions `0e095e0a-63de-4b01-8c0f-2dd8f1e169a1` and `834019da-0cd1-41d8-8cff-41eab1062a00`; the latest contains all four Libre/G7 Secret names and keeps `DEMO_FEED_ENABLED=false`. Secret values were not placed in command arguments, displayed in captured output, or added to Git. Wrangler's sanitized registration log contained omission markers and no detected Secret value, Gluroo host, entries path, or authorization value; temporary logs were removed after verification. Production traffic remains 100% on the previous stopped Version `f8801d58-67bd-4cf9-8cb1-dd227c879446`. No G7 KV value has been written, no G7 code revision or binding has been deployed to production traffic, no traffic allocation has changed, and no frontend G7 endpoint has been activated. Every additional Cloudflare mutation requires a separate explicit confirmation.
 
 ## Current route verification
 
@@ -98,11 +98,12 @@ Raw exports, connection details, manufacturer credentials, exact dates, sensor i
 6. Completed after explicit approval: verify the normal `workers.dev` route remains enabled and the public Preview route reports `previews_enabled=false`.
 7. Completed after explicit approval: configure the local frontend to use the stopped `/v1/libre` route and verify the clearly labelled synthetic fallback in a browser.
 8. Completed locally only: prepare the G7 source slot with the new Secret names, separate KV key, `/v1/dexcom-g7`, and all global and per-source gates set to `false`. This step made no Cloudflare change.
-9. Before any G7 publication, record separate explicit consent for Kazuma's G7 glucose values and measurement/update timing.
-10. After separate explicit approvals, register only the two G7 Secret values and deploy a stopped version; do not combine either operation with live enablement.
-11. Verify the stopped G7 response, exact CORS and preflight, Secret names, bindings, absent G7 KV value, Cron no-op before G7 Secret access, and 100% traffic to the reviewed stopped Version without retrieving Gluroo data.
-12. After another explicit approval, verify that the sanitized public response contains only the allowlisted fields and that the page labels Guardian, Libre, and pending Dexcom honestly before considering a G7 frontend activation.
-13. Return the affected source or the entire Worker to the stopped state immediately if a privacy, traffic, terms, or data-quality concern appears.
+9. Completed on 2026-08-07: record separate explicit consent for Kazuma's G7 glucose values and measurement/update timing.
+10. Completed after separate explicit approval: register only the two G7 Secret values as unpublished Secret-only Versions without deploying or shifting traffic.
+11. After separate explicit approval, deploy the reviewed multi-source revision with the global and both source gates still `false`; do not combine this stopped deployment with live enablement.
+12. Verify the stopped G7 response, exact CORS and preflight, Secret names, bindings, absent G7 KV value, Cron no-op before G7 Secret access, and 100% traffic to the reviewed stopped Version without retrieving Gluroo data.
+13. After another separate explicit approval, verify that the sanitized public response contains only the allowlisted fields and that the page labels Guardian, Libre, and pending Dexcom honestly before considering a G7 frontend activation.
+14. Return the affected source or the entire Worker to the stopped state immediately if a privacy, traffic, terms, or data-quality concern appears.
 
 ---
 
