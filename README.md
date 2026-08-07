@@ -54,7 +54,16 @@ Phase 3A connected the user onboarding flow to the paused relay client. Phase 3B
 
 ## 3CGM Comparison Lab preparation
 
-The comparison lab is prepared to show live Guardian and Libre data together while Dexcom G7 remains visibly pending. It does not rank devices, claim accuracy, select a reference CGM, or support treatment decisions. If the live sources are not configured or cannot be loaded, the page clearly falls back to the checked-in synthetic dataset. PR #14 merged the comparison frontend to `main` in merge commit `7e96648c27ce20fabe2f283c384124e36ce0b2d2`. GitHub Pages publication was verified on 2026-08-07 after the official deployment-lag incident was mitigated: `/demos/cgm-comparison/` loaded with the clearly labelled `準備中 · 合成データ` fallback and all three device cards.
+The comparison lab is published, but it currently falls back to the clearly labelled synthetic dataset because the dedicated Libre public-demo feed is paused. Guardian's separate Azure Nightscout browser route is verified, but that does not make the combined comparison page live by itself. The intended next live state is Guardian plus Libre, with Dexcom G7 pending until its frontend connection and complete page path are separately activated and verified. The lab does not rank devices, claim accuracy, select a reference CGM, or support treatment decisions. PR #14 merged the comparison frontend to `main` in merge commit `7e96648c27ce20fabe2f283c384124e36ce0b2d2`. GitHub Pages publication was verified on 2026-08-07 after the official deployment-lag incident was mitigated: `/demos/cgm-comparison/` loaded with the clearly labelled `準備中 · 合成データ` fallback and all three device cards.
+
+Current delivery order:
+
+1. Verify one separately approved Libre public-demo scheduled retrieval and sanitized public response.
+2. Publish the stopped G7 frontend endpoint configuration while keeping its route-verification gate disabled, then verify the synthetic fallback on GitHub Pages.
+3. With separate operational approval, briefly enable the required demo feeds and verify Guardian, Libre, and G7 together on GitHub Pages.
+4. Restore the stopped Worker, verify fallback and expiry behavior, and make a separate continuing-publication decision.
+5. Complete the general-user relay period, expiry, deletion, and limit checks before any Friends & Family continuing-enablement decision.
+6. Return to Worker usage-counter and Usage Dashboard production verification, the site-wide Trust/About review, feedback, and the first announcement.
 
 Guardian is read directly from Kazuma's existing public Azure Nightscout. Libre uses the separate `workers/gluco-demo-feed/` Worker design: one scheduled Gluroo fetch updates an expiring sanitized KV snapshot, and public visitors read only that snapshot. The same Worker includes a separately gated G7 route whose scheduled retrieval, sanitized KV write, and public Worker response have now been verified once. Kazuma explicitly chose to make his own Libre glucose values and measurement/update timing public for this demo. On 2026-08-07, he separately and explicitly chose to publish his own G7 glucose values and measurement/update timing through the same public comparison. These choices apply only to Kazuma's consented demo data; they do not authorize storing or publishing any general user's data. The G7 snapshot created by the temporary check is no longer publicly readable because the Worker is stopped and will expire within 36 hours. The general-user Limited Data Relay remains paused with its no-glucose-storage boundary.
 
