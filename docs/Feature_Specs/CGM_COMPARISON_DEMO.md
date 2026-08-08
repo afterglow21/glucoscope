@@ -104,6 +104,12 @@ This is a public, non-anonymous display of Kazuma's own consented data. GlucoSco
 
 The public page:
 
+- uses a Japanese title, one-sentence introduction, and short non-ranking notice so
+  children, older adults, and visitors without IT knowledge can reach the graph quickly;
+- explains near the top that Kazuma personally purchased and is wearing Libre 2 and G7,
+  and that the three-source live view is temporary; the current approximate end dates are
+  2026-08-21 for Libre 2 and 2026-08-17 for G7, both labelled as estimates that may end early;
+  all three sources are expected to appear together only through the earlier G7 date;
 - shows live series on the same rolling 24-hour axis, labelled in 24-hour Japan time
   as `昨日`, `今日`, and `現在` without exposing an exact calendar date;
 - retains `Day N HH:mm` elapsed-time labels for synthetic and anonymized datasets;
@@ -111,9 +117,16 @@ The public page:
   the back-forward cache, while keeping only one refresh request and one timer active;
 - allows each available series to be shown or hidden;
 - does not interpolate missing points;
-- reports only matched-point count, observed display spread, and missing-point count;
-- labels those summaries as observations, not accuracy or medical conclusions;
-- states the verification and availability status for each route;
+- shows the current live, delayed, pending, or synthetic state without exposing detailed
+  route, matching, spread, missing-point, or Worker/Secret explanations on the main page;
+- keeps those detailed implementation and safety boundaries in the Project Bible and
+  this feature specification instead of placing specialist panels below the graph;
+- shows one simple card per CGM with TIR (`70–180`), TAR (`>180`), and TBR (`<70`)
+  calculated from the readings in the selected time range and labelled as an estimate;
+  Japanese range labels are primary, and the page states that these are percentages of
+  received readings that may differ from each manufacturer's official app report;
+- includes only a quiet optional-support link to the explanatory support page, not a
+  direct payment link or a feature benefit;
 - keeps the original CGM and pump applications as the source for alerts and treatment decisions.
 
 ## Publication data schema
@@ -134,7 +147,7 @@ The validator rejects URLs, exact calendar dates, private credential or account 
 
 `tools/cgm-comparison-capture/` remains an unlinked, `noindex` browser helper for a later reviewed three-source study snapshot. It uses browser memory only, performs no background polling, loads no analytics, converts exact timestamps to elapsed minutes, and downloads a publication candidate to Kazuma's device. A candidate is not an approved public artifact.
 
-Raw exports, connection details, manufacturer credentials, exact dates, sensor identifiers, treatment information, and unreviewed candidate files must remain out of Git. `private/cgm-comparison/` and `demos/cgm-comparison/data/candidate-*.json` are ignored as an additional accident-prevention layer.
+Raw exports, connection details, manufacturer credentials, exact measurement or session dates, sensor identifiers, treatment information, and unreviewed candidate files must remain out of Git. The approximate public sensor end-date notices expressly approved above are public UI metadata; they are the only stated date exception and must not enter dataset payloads. `private/cgm-comparison/` and `demos/cgm-comparison/data/candidate-*.json` are ignored as an additional accident-prevention layer.
 
 ## Activation gates
 

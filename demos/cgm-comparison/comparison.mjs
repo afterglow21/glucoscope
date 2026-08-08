@@ -1,16 +1,16 @@
 import {
-  computeObservationSummary,
+  computeRangePercentages,
   filterSourcesByWindow,
   formatElapsedMinute,
   formatLiveClockMinute,
   validateDataset
-} from "./comparison-core.mjs?v=20260808-clock-axis-1";
+} from "./comparison-core.mjs?v=20260808-simple-demo-1";
 import {
   buildLiveComparisonDataset,
   canPreserveLiveDataset,
   fetchOptionalPublicFeed,
   normalizePublicFeedEndpoint
-} from "./live-comparison-core.mjs?v=20260808-clock-axis-1";
+} from "./live-comparison-core.mjs?v=20260808-simple-demo-1";
 import { createLiveRefreshController } from "./live-refresh-core.mjs?v=20260808-clock-axis-1";
 
 const DATASET_URL = "./data/sample.json";
@@ -50,6 +50,14 @@ function formatTimelineMinute(totalMinutes) {
   });
 }
 
+function renderDatasetWindow() {
+  const selectedRange = state.hours === "all" ? "全期間" : `${state.hours}時間`;
+  const updatedText = state.dataset.status === "live"
+    ? ` · 約${Math.max(0, Math.round((Date.now() - state.dataset.updatedAt) / 60_000))}分前に更新`
+    : "";
+  byId("datasetWindow").textContent = `表示中：${selectedRange}${updatedText}`;
+}
+
 function renderDatasetHeader() {
   const status = byId("datasetStatus");
   const isSynthetic = state.dataset.status === "synthetic";
@@ -86,11 +94,7 @@ function renderDatasetHeader() {
   modeNotice.className = `comparison-mode-notice ${isLive
     ? hasDelayedSources ? "comparison-mode-notice-delayed" : "comparison-mode-notice-live"
     : isSynthetic ? "comparison-mode-notice-synthetic" : "comparison-mode-notice-anonymized"}`;
-  const updatedText = isLive
-    ? ` · 約${Math.max(0, Math.round((Date.now() - state.dataset.updatedAt) / 60_000))}分前に更新`
-    : "";
-  byId("datasetWindow").textContent = `${Math.round(state.dataset.durationMinutes / 60)}時間の比較ウィンドウ${updatedText}`;
-  byId("datasetDisclosure").textContent = state.dataset.disclosure;
+  renderDatasetWindow();
 }
 
 function renderSourceControls() {
@@ -119,36 +123,9 @@ function renderSourceControls() {
       }
       renderSourceControls();
       renderChart();
-      renderSummary();
     });
     return button;
   }));
-}
-
-function renderSourceCards() {
-  const cards = state.dataset.sources.map((source) => {
-    const article = document.createElement("article");
-    const isAvailable = source.dataStatus === "available" && source.readings.length > 0;
-    const isDelayed = state.dataset.status === "live" && isAvailable && source.isStale === true;
-    article.className = `comparison-source-card comparison-card${isDelayed ? " comparison-source-card-delayed" : ""}`;
-    article.style.setProperty("--source-color", source.color);
-    const sourceStateLabel = state.dataset.status === "synthetic"
-      ? "現在表示：合成データ"
-      : isAvailable
-        ? isDelayed
-          ? "現在表示：更新が遅れています"
-          : source.verificationLabel
-        : "現在表示：準備中";
-    article.innerHTML = `
-      <h3>${source.label}</h3>
-      <span class="comparison-source-state${isDelayed ? " comparison-source-state-delayed" : ""}">${sourceStateLabel}</span>
-      <p class="comparison-source-route">${source.captureRoute}</p>
-      <p class="comparison-source-note">${source.note}</p>
-      <p class="comparison-source-meta">${source.dataStatus === "available" ? `現在の表示点: ${source.readings.length}` : "データ準備中"}</p>
-    `;
-    return article;
-  });
-  byId("sourceCards").replaceChildren(...cards);
 }
 
 function renderChart() {
@@ -216,21 +193,53 @@ function renderChart() {
     ? `${visibleSources.length}種類を表示しています。線の間を基準値や正解として扱いません。`
     : `${visibleSources.length}種類を表示しています。比較できるデータが届くまで、単独の表示として見られます。`;
   byId("chartMessage").textContent = state.loadNotice ? `${state.loadNotice} ${baseMessage}` : baseMessage;
+  const selectedRange = state.hours === "all" ? "全期間" : `${state.hours}時間`;
+  const sourceNames = visibleSources.map((source) => source.label).join("、");
+  byId("chartTextSummary").textContent = sourceNames
+    ? `選択中：${selectedRange}。${sourceNames}の折れ線を同じ時間軸で表示しています。各CGMの割合はグラフの次にあります。`
+    : `選択中：${selectedRange}。表示できるCGMデータはありません。`;
 }
 
-function renderSummary() {
-  const visibleSources = getVisibleSources();
-  if (visibleSources.length < 2) {
-    byId("matchedCount").textContent = "2種類以上で比較";
-    byId("medianSpread").textContent = "--";
-    byId("missingCount").textContent = "--";
-    return;
-  }
+function createRangeMetric(label, rangeLabel, value, className) {
+  const item = document.createElement("div");
+  item.className = `comparison-range-metric ${className}`;
+  const term = document.createElement("dt");
+  term.textContent = label;
+  const range = document.createElement("small");
+  range.textContent = rangeLabel;
+  term.append(range);
+  const result = document.createElement("dd");
+  result.textContent = value == null ? "--" : `${value.toFixed(1)}%`;
+  item.append(term, result);
+  return item;
+}
 
-  const summary = computeObservationSummary(visibleSources, state.dataset.matchToleranceMinutes);
-  byId("matchedCount").textContent = `${summary.matchedCount}時点`;
-  byId("medianSpread").textContent = summary.medianSpread == null ? "--" : `${Math.round(summary.medianSpread)} mg/dL`;
-  byId("missingCount").textContent = `${summary.missingCount}点`;
+function renderRangeSummaries() {
+  const sources = filterSourcesByWindow(state.dataset.sources, getWindowStart());
+  const cards = sources.map((source) => {
+    const summary = computeRangePercentages(source.readings);
+    const card = document.createElement("article");
+    card.className = "comparison-range-card comparison-card";
+    card.style.setProperty("--source-color", source.color);
+
+    const heading = document.createElement("h3");
+    heading.textContent = source.label;
+    const metrics = document.createElement("dl");
+    metrics.className = "comparison-range-metrics";
+    metrics.append(
+      createRangeMetric("範囲内（TIR）", "70〜180 mg/dL", summary.tir, "comparison-range-metric-tir"),
+      createRangeMetric("範囲より上（TAR）", "180 mg/dLより上", summary.tar, "comparison-range-metric-tar"),
+      createRangeMetric("範囲より下（TBR）", "70 mg/dL未満", summary.tbr, "comparison-range-metric-tbr")
+    );
+    const note = document.createElement("p");
+    note.className = "comparison-range-card-note";
+    note.textContent = summary.readingCount > 0
+      ? "届いた値から計算した目安"
+      : "表示できるデータがありません";
+    card.append(heading, metrics, note);
+    return card;
+  });
+  byId("rangeSummaryCards").replaceChildren(...cards);
 }
 
 function bindRangeControls() {
@@ -241,8 +250,9 @@ function bindRangeControls() {
     for (const candidate of byId("rangeControls").querySelectorAll("button")) {
       candidate.classList.toggle("active", candidate === button);
     }
+    renderDatasetWindow();
     renderChart();
-    renderSummary();
+    renderRangeSummaries();
   });
 }
 
@@ -324,9 +334,8 @@ async function loadDataset({ preserveLiveOnError = false } = {}) {
     .map((source) => source.id));
   renderDatasetHeader();
   renderSourceControls();
-  renderSourceCards();
   renderChart();
-  renderSummary();
+  renderRangeSummaries();
 }
 
 function getLiveRefreshDelayMs() {

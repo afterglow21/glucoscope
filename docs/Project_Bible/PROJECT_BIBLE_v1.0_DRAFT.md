@@ -2483,9 +2483,26 @@ The public page may show:
 - recording cadence and missing points;
 - the honest verification status of each route.
 
-Raw exports, exact calendar dates, account information, URLs, credentials,
-sensor identifiers, treatment events, insulin, meals, medication,
-pump settings, symptoms, and location information must remain out of Git.
+On 2026-08-08, the visitor-facing page was simplified for children, older adults,
+and people without IT knowledge. It now prioritizes a Japanese title, one-sentence
+introduction, concise non-ranking notice, display controls, and the graph. The detailed
+source-route cards, matched/spread/missing summary cards, and method/privacy panel were
+removed from the main page; their safety and operating boundaries remain in this Bible
+and the feature specification. A later refinement keeps only one simple per-CGM card for
+TIR (`70–180`), TAR (`>180`), and TBR (`<70`), calculated from readings in the selected
+time range and described as an estimate. The introduction also states that Kazuma personally
+purchased and is wearing Libre 2 and G7, so the three-source live view is temporary. Based on
+the remaining-day estimate recorded on 2026-08-08, the visible approximate end dates are
+2026-08-21 for Libre 2 and 2026-08-17 for G7; both are labelled as estimates that may end early,
+and the three-source view is expected to remain complete only through the earlier G7 date.
+A quiet footer link may lead to the explanatory optional development-support page, without
+linking directly to payment or promising feature benefits.
+
+Raw exports and exact measurement or session calendar dates must remain out of Git.
+The expressly approved approximate public sensor end-date notices above are public UI
+metadata and the only stated date exception; they must not enter dataset payloads.
+Account information, URLs, credentials, sensor identifiers, treatment events, insulin,
+meals, medication, pump settings, symptoms, and location information must remain out of Git.
 
 The demo-only Worker must keep each Gluroo source URL and API Secret
 in source-specific Cloudflare Secrets, not frontend code or Git.
@@ -2833,9 +2850,29 @@ Dexcom G7は公開比較ページで1回のライブ表示確認を完了しま�
 - 記録間隔と、データがなかった時間を見る
 - それぞれの経路で実際に確認できた範囲を正直に示す
 
-元のエクスポート、正確な日付、アカウント情報、URL、接続情報、
-センサー識別情報、治療記録、インスリン、食事、薬、ポンプ設定、
-症状、位置情報はGitへ追加しません。
+2026年8月8日、子ども、お年寄り、IT知識を前提にしない人にも
+グラフへ迷わず進めるよう、公開ページの表示を簡素化しました。
+日本語の題名、1文の説明、短い優劣・医療判断の注意、表示切替、グラフを中心にし、
+経路ごとの詳しいカード、近い時刻・表示の開き・欠測の集計カード、
+公開方法の技術説明パネルはメイン画面から外しました。
+安全・運用上の境界は、このPROJECT_BIBLEと機能仕様に残します。
+その後の調整で、選んだ時間に届いた表示から計算する目安として、
+各CGMのTIR（70〜180）、TAR（180より上）、TBR（70未満）だけを
+簡潔なカードで残すことにしました。
+冒頭には、Libre 2とG7がKazuma自身で購入し装着しているセンサーであり、
+3種類がそろうライブ表示は期間限定であることも示します。
+2026年8月8日に確認した残り日数の目安から、Libre 2は2026年8月21日ごろ、
+G7は2026年8月17日ごろまでと表示し、どちらも予定より早く終了する場合がある
+目安として案内します。3種類がそろう表示は、先に期限を迎えるG7の
+8月17日ごろまでの予定であることも明記します。
+画面下部には、決済へ直接送らず機能特典も約束しない、
+任意の開発支援の説明ページへの控えめなリンクを置けます。
+
+元のエクスポートと、測定・記録期間の正確な日付はGitへ追加しません。
+上記で明示的に承認したセンサー公開終了日の目安だけは、公開画面の案内情報として
+この日付ルールの例外とします。ただし、データセット本体には含めません。
+アカウント情報、URL、接続情報、センサー識別情報、治療記録、インスリン、
+食事、薬、ポンプ設定、症状、位置情報はGitへ追加しません。
 
 デモ専用Workerの各Gluroo送信先URLとAPI Secretは、
 ソースごとに分け、フロントやGitではなくCloudflare Secretsだけに置きます。

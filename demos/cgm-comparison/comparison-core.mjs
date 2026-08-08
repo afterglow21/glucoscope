@@ -116,6 +116,26 @@ export function filterSourcesByWindow(sources, startMinute) {
   }));
 }
 
+export function computeRangePercentages(readings) {
+  const values = Array.isArray(readings)
+    ? readings
+      .map((reading) => reading?.[1])
+      .filter((value) => typeof value === "number" && Number.isFinite(value))
+    : [];
+  if (!values.length) {
+    return { readingCount: 0, tir: null, tar: null, tbr: null };
+  }
+
+  const total = values.length;
+  const toPercent = (count) => Number(((count / total) * 100).toFixed(1));
+  return {
+    readingCount: total,
+    tir: toPercent(values.filter((value) => value >= 70 && value <= 180).length),
+    tar: toPercent(values.filter((value) => value > 180).length),
+    tbr: toPercent(values.filter((value) => value < 70).length)
+  };
+}
+
 export function findNearestReading(readings, minute, toleranceMinutes = 3) {
   let nearest = null;
   let nearestDistance = Infinity;

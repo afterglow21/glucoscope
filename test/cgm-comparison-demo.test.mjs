@@ -5,6 +5,7 @@ import { access, readFile } from "node:fs/promises";
 import {
   buildMatchedComparisons,
   computeObservationSummary,
+  computeRangePercentages,
   formatElapsedMinute,
   formatLiveClockMinute,
   validateDataset
@@ -332,6 +333,32 @@ test("comparison matching uses nearby readings without inventing a reference sou
   });
 });
 
+test("TIR TAR and TBR use the same gentle display boundaries as GlucoScope", () => {
+  assert.deepEqual(computeRangePercentages([
+    [0, 69],
+    [5, 70],
+    [10, 180],
+    [15, 181]
+  ]), {
+    readingCount: 4,
+    tir: 50,
+    tar: 25,
+    tbr: 25
+  });
+  assert.deepEqual(computeRangePercentages([]), {
+    readingCount: 0,
+    tir: null,
+    tar: null,
+    tbr: null
+  });
+  assert.deepEqual(computeRangePercentages([[0, null], [5, "120"], [10, 100]]), {
+    readingCount: 1,
+    tir: 100,
+    tar: 0,
+    tbr: 0
+  });
+});
+
 test("elapsed labels expose no calendar date", () => {
   assert.equal(formatElapsedMinute(0), "Day 1 00:00");
   assert.equal(formatElapsedMinute(1505), "Day 2 01:05");
@@ -462,17 +489,17 @@ test("public demo is linked while the capture helper stays unlinked and noindex"
   const comparisonModule = await readFile(new URL("../demos/cgm-comparison/comparison.mjs", import.meta.url), "utf8");
   const liveConfig = await readFile(new URL("../demos/cgm-comparison/live-config.js", import.meta.url), "utf8");
   assert.match(rootIndex, /href="demos\/cgm-comparison\/"/);
+  assert.match(rootIndex, /3種類のCGMの比較デモ/);
+  assert.match(rootIndex, /比較デモを見る →/);
   assert.doesNotMatch(rootIndex, /tools\/cgm-comparison-capture/);
   assert.match(demo, /vendor\/chart\.js\/chart\.umd\.min\.js/);
   assert.match(demo, /analytics-loader\.js/);
   assert.match(demo, /js\/data-source\.js/);
   assert.match(demo, /live-config\.js\?v=20260807-three-cgm-live-1/);
-  assert.match(demo, /comparison\.mjs\?v=20260808-clock-axis-1/);
+  assert.match(demo, /comparison\.mjs\?v=20260808-simple-demo-1/);
   assert.match(demo, /現在は合成データです。3本の線は表示確認用で、Kazumaの実測値ではありません/);
   assert.match(comparisonModule, /現在は実測ライブデータです。取得できた\$\{liveSourceCount\}種類/);
   assert.match(comparisonModule, /現在は合成データです。3本の線は表示確認用で、Kazumaの実測値ではありません/);
-  assert.match(comparisonModule, /現在表示：合成データ/);
-  assert.match(comparisonModule, /現在表示：準備中/);
   assert.match(comparisonModule, /error instanceof DemoFeedPausedError/);
   assert.match(comparisonModule, /公開デモは停止中のため、合成データを表示しています/);
   assert.match(capture, /name="robots" content="noindex,nofollow,noarchive"/);
@@ -492,25 +519,62 @@ test("live rendering gently identifies delayed sources and caps the preserved vi
   const comparisonModule = await readFile(new URL("../demos/cgm-comparison/comparison.mjs", import.meta.url), "utf8");
   const comparisonCss = await readFile(new URL("../demos/cgm-comparison/comparison.css", import.meta.url), "utf8");
   assert.match(comparisonModule, /更新が遅れているデータあり/);
-  assert.match(comparisonModule, /現在表示：更新が遅れています/);
   assert.match(comparisonModule, /CGMや機器の停止を意味する表示ではありません/);
   assert.match(comparisonModule, /source\.isStale === true/);
   assert.match(comparisonModule, /canPreserveLiveDataset\(state\.dataset, state\.liveLoadedAt, Date\.now\(\)\)/);
   assert.match(comparisonModule, /古い表示を残さず合成データへ切り替えました/);
-  assert.match(comparisonModule, /live-comparison-core\.mjs\?v=20260808-clock-axis-1/);
+  const liveComparisonCore = await readFile(new URL("../demos/cgm-comparison/live-comparison-core.mjs", import.meta.url), "utf8");
+  assert.match(comparisonModule, /comparison-core\.mjs\?v=20260808-simple-demo-1/);
+  assert.match(comparisonModule, /live-comparison-core\.mjs\?v=20260808-simple-demo-1/);
+  assert.match(liveComparisonCore, /comparison-core\.mjs\?v=20260808-simple-demo-1/);
   assert.match(comparisonModule, /live-refresh-core\.mjs\?v=20260808-clock-axis-1/);
   assert.match(comparisonModule, /日本時間（24時間表記・昨日／今日・右端が現在）/);
   assert.match(comparisonModule, /visibilitychange/);
   assert.match(comparisonModule, /pageshow/);
   assert.match(comparisonCss, /\.comparison-status-delayed/);
-  assert.match(comparisonCss, /\.comparison-source-state-delayed/);
+  assert.match(comparisonCss, /\.comparison-mode-notice-delayed/);
 });
 
-test("Method and privacy covers both Gluroo-backed public demo routes and Secrets", async () => {
+test("public comparison keeps the visitor-facing page simple and links to optional support", async () => {
   const demo = await readFile(new URL("../demos/cgm-comparison/index.html", import.meta.url), "utf8");
-  assert.match(demo, /Libre 2とDexcom G7は公開デモ専用Worker/);
-  assert.match(demo, /Libre 2とDexcom G7それぞれのGluroo URLとAPI SecretはCloudflare Secret/);
-  assert.match(demo, /comparison\.mjs\?v=20260808-clock-axis-1/);
+  const comparisonModule = await readFile(new URL("../demos/cgm-comparison/comparison.mjs", import.meta.url), "utf8");
+  assert.match(demo, /<h1>3種類のCGMの比較デモ<\/h1>/);
+  assert.match(demo, /Guardian 4、FreeStyle Libre 2、Dexcom G7の表示を、どれが「良い」と決めずに並べて観察するページです。/);
+  assert.doesNotMatch(demo, /値の違い、更新の間隔、データが届かなかった時間/);
+  assert.match(demo, /これはCGMの精度試験、優劣評価、医療判断のための比較ではありません。/);
+  assert.match(demo, /どのCGMも基準値や正解として扱いません。機器の精度、優劣、医療判断を示すものではありません。/);
+  assert.doesNotMatch(demo, /それぞれのデータ|近い時刻でそろった表示|表示の開き|届かなかった表示|公開するときに守ること/);
+  assert.doesNotMatch(demo, /id="(?:datasetDisclosure|sourceCards|matchedCount|medianSpread|missingCount)"/);
+  assert.match(demo, /href="\.\.\/\.\.\/pages\/about\/support-development\.html"/);
+  assert.match(demo, /GlucoScopeの開発をそっと応援する（任意）/);
+  assert.doesNotMatch(demo, /buy\.stripe\.com/);
+  assert.doesNotMatch(comparisonModule, /computeObservationSummary|renderSourceCards|renderSummary|datasetDisclosure/);
+  assert.match(comparisonModule, /表示中：\$\{selectedRange\}/);
+  assert.match(demo, /comparison\.mjs\?v=20260808-simple-demo-1/);
+});
+
+test("public comparison explains the limited sensor period and shows three simple range cards", async () => {
+  const demo = await readFile(new URL("../demos/cgm-comparison/index.html", import.meta.url), "utf8");
+  const comparisonModule = await readFile(new URL("../demos/cgm-comparison/comparison.mjs", import.meta.url), "utf8");
+  assert.match(demo, /実際のデータを期間限定で公開しています/);
+  assert.match(demo, /開発者のKazumaが自費で購入し、実際に装着しているセンサー/);
+  assert.match(demo, /3種類がそろう表示は、先に期限を迎えるG7の8月17日ごろまでの予定です/);
+  assert.match(demo, /datetime="2026-08-21">2026年8月21日ごろまで（予定）/);
+  assert.match(demo, /datetime="2026-08-17">2026年8月17日ごろまで（予定）/);
+  assert.match(demo, /センサーの状態により、予定より早く終了する場合があります/);
+  assert.match(demo, /それぞれのTIR・TAR・TBR/);
+  assert.match(demo, /届いた値の割合です。公式アプリのレポートとは異なる場合があります/);
+  assert.match(demo, /aria-describedby="chartMessage chartTextSummary"/);
+  assert.match(comparisonModule, /computeRangePercentages/);
+  assert.match(comparisonModule, /rangeSummaryCards/);
+  assert.match(comparisonModule, /70〜180 mg\/dL/);
+  assert.match(comparisonModule, /180 mg\/dLより上/);
+  assert.match(comparisonModule, /70 mg\/dL未満/);
+  assert.match(comparisonModule, /範囲内（TIR）/);
+  assert.match(comparisonModule, /範囲より上（TAR）/);
+  assert.match(comparisonModule, /範囲より下（TBR）/);
+  assert.match(comparisonModule, /届いた値から計算した目安/);
+  assert.match(comparisonModule, /chartTextSummary/);
 });
 
 test("comparison and capture helper local links and assets resolve", async () => {
