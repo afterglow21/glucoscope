@@ -7,14 +7,14 @@ const app = await readFile(new URL("../js/app.js", import.meta.url), "utf8");
 const localProfile = await readFile(new URL("../js/local-profile.js", import.meta.url), "utf8");
 const usageClient = await readFile(new URL("../js/usage-client.js", import.meta.url), "utf8");
 
-test("usage sharing rollout is opt-in and its frontend and analytics gates stay in lockstep", () => {
-  assert.match(index, /name="glucoscope-usage-profile-enabled" content="true"/);
+test("paused usage sharing keeps its frontend and analytics gates in lockstep", () => {
+  assert.match(index, /name="glucoscope-usage-profile-enabled" content="false"/);
   assert.match(index, /id="usageProfileCard"/);
   assert.match(index, /id="usageProfilePreparing"[^>]*>この機能はただいま準備中です/);
   assert.match(index, /id="usageProfileNotice"[^>]*hidden/);
   assert.match(index, /id="usageProfileActive"[^>]*hidden/);
   assert.match(index, /id="usageProfileStopped"[^>]*hidden/);
-  assert.match(app, /const USAGE_PROFILE_ENABLED = true;/);
+  assert.match(app, /const USAGE_PROFILE_ENABLED = false;/);
   const metaEnabled = index.match(/name="glucoscope-usage-profile-enabled" content="(true|false)"/)?.[1];
   const appEnabled = app.match(/const USAGE_PROFILE_ENABLED = (true|false);/)?.[1];
   assert.equal(metaEnabled, appEnabled, "the pre-enrollment analytics gate must match the UI flag");
@@ -100,8 +100,8 @@ test("AI usage is recorded only for a completed new OpenAI generation", () => {
 test("local display-name storage remains network-free and server sync is separate", () => {
   assert.doesNotMatch(localProfile, /\b(?:fetch|XMLHttpRequest|sendBeacon|WebSocket)\b/u);
   assert.match(index, /js\/local-profile\.js\?v=20260811-usage-profile-stage-1/);
-  assert.match(index, /js\/usage-client\.js\?v=20260811-usage-profile-rollout-1/);
-  assert.match(index, /js\/app\.js\?v=20260811-usage-profile-rollout-1/);
+  assert.match(index, /js\/usage-client\.js\?v=20260812-usage-profile-paused-1/);
+  assert.match(index, /js\/app\.js\?v=20260812-usage-profile-paused-1/);
   assert.match(app, /updateUsageProfileDisplayName\(result\.profile\.displayName\)/);
   assert.match(app, /updateUsageProfileDisplayName\(""\)/);
   assert.match(app, /if \(!state\.enabled \|\| !state\.registered\) return;/);
