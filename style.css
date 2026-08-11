@@ -7260,6 +7260,19 @@ body.local-profile-dialog-open {
   font-size:12px !important;
 }
 
+.usage-profile-operational-note,
+.usage-profile-retention-note {
+  color:#b9c9dc !important;
+  font-size:12px !important;
+}
+
+.usage-profile-retention-note a {
+  display:inline-block;
+  margin-top:4px;
+  color:#b7f7d0;
+  font-weight:700;
+}
+
 .usage-profile-actions {
   display:flex;
   flex-wrap:wrap;

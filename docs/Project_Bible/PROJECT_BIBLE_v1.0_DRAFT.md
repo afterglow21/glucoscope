@@ -2786,7 +2786,7 @@ Guardian 4、FreeStyle Libre 2、Dexcom G7を、
 
 1. ユーザー基盤・最小限の利用分析の設計
    - Phase 1Aとして、任意の表示名だけを端末内へ保存する準備画面を実装した。
-   - 次は、収集項目と目的の説明、簡単な停止方法、保存期間、書き出し・削除、利用回数APIの境界を固める。
+   - Phase 1Bとして、収集項目と目的の説明、簡単な停止方法、90日保存、書き出し・削除、利用回数API、D1とWorkerを実装した。2026年8月12日JSTにWorker境界確認を完了して監督下のopt-in受け入れを開始した。次は最初の端末で開始・停止・再開・書き出し・削除を確認する。
 2. その設計を前提にした管理者ダッシュボード
 3. Plus 30日パスと、任意の開発支援への分かりやすい導線
 4. ユーザー展開開始後に、横向きグラフだけへ追加する任意の常時表示モード
@@ -3231,10 +3231,21 @@ sent. The same person on two browsers appears as two profiles, and erasing brows
 storage prevents recovery or cross-device merging. This identity must not be reused for
 Plus, payment, or medical data.
 
+The notice must also disclose the random profile ID, sharing state, notice version, and
+created, updated, and last-used times needed to operate the browser profile. Daily data
+and inactive browser profiles use a maximum 90-day live-D1 boundary. Cloudflare D1 Time
+Travel is always on: deleted live data may remain recoverable for up to 7 days on the
+Free plan or up to 30 days on a Paid plan. The public notice may summarize this and link
+to Privacy Notes, which must state the exact plan-dependent periods.
+
 The Phase 1B client and controls are initially checked in with collection disabled.
 While disabled, the public screen says the feature is in preparation, does not invite a
 new registration, and sends no profile or usage event. A previously registered browser
 must still be able to stop future collection and export or delete its existing record.
+Stop and Delete must fail closed on the device: locally block new events and clear
+pending AI events before the network request. Keep the bearer credential when the
+server request fails so export or deletion can be retried, and remove it only after a
+successful server deletion.
 
 On 2026-08-11, one itemized explicit approval completed the stopped production
 foundation without starting collection. D1 `glucoscope-usage` was created in APAC and
@@ -3252,6 +3263,19 @@ This is a verified stopped production shell, not collection enablement. Collecti
 frontend connection require a separate approval after the public notice, retention and
 Cloudflare recovery-history boundaries, stop, export, and deletion have received their
 final pre-rollout check.
+
+On 2026-08-12 JST, the separately approved supervised opt-in acceptance started with
+100% of Usage Worker traffic on corrected Version
+`858cf438-b3d2-4a8c-801c-344503e0c58e`. The checked-in Worker switch remains `false`,
+and stopped Version `3c2c3d19-3744-4d01-8e62-76a0f1bdd5bf` remains the rollback.
+The first enabled smoke check was rolled back with all D1 counts still zero after a
+Siteverify request-format incompatibility was found. The request was aligned with the
+proven relay format (`URLSearchParams` and `application/x-www-form-urlencoded`) and the
+corrected Version passed allowed preflight `204`, wrong and missing Origin `403`, invalid
+dummy Turnstile `403 turnstile_failed`, `no-store`, and `Vary: Origin`. All three D1
+tables and the administrator view still had zero rows. The frontend is opt-in and creates
+nothing merely from a page view. One-device start, stop, resume, export, and deletion
+acceptance remains pending. The general-user relay remains independently stopped.
 
 Product analytics must remain separate from public Web Analytics, CGM transport, and
 glucose storage. Do not place glucose values, graphs, AI-letter contents, Nightscout or
@@ -3304,10 +3328,19 @@ Lucky Gluco No.51〜70とUnicorn Glucoは除外し、想い出IDや出会った�
 同じ人が2つのブラウザで使うと2件になり、ブラウザ保存を消すと復旧・端末統合はできません。
 この識別情報をPlus、決済、医療データへ流用しません。
 
+運営に必要なランダムなprofile ID、共有状態、説明版、作成・更新・最終利用日時も案内します。
+日別記録と利用のない端末プロフィールは、稼働中のD1で90日を上限とします。
+Cloudflare D1のTime Travelは常時有効で、稼働DBから削除した後もFreeプランでは最長7日、
+Paidプランでは最長30日、復旧可能な履歴に残る場合があります。開始画面では短く案内し、
+Privacy Notesでプラン別期間を明記します。
+
 Phase 1Bのクライアントと操作画面は、最初は収集停止の設定でGitへ追加します。
 停止中の公開画面は「準備中」と表示して新規登録へ誘導せず、プロフィールや利用イベントを
 送りません。過去に登録済みのブラウザがある場合は、停止中でも今後の共有停止と、
 既存記録の書き出し・削除を利用できます。
+停止または削除では、通信結果を待たず端末側を先に停止してpending AI eventを消します。
+通信に失敗した時はbearer credentialを残して書き出し・削除を再試行できるようにし、
+サーバー削除成功後だけ端末の利用プロフィールキーを削除します。
 
 2026年8月11日、項目を明示した1回の承認の範囲で、収集を開始せず停止状態の本番基盤を
 整えました。APACにD1 `glucoscope-usage` を作成して初期migrationを適用し、3つの
@@ -3323,6 +3356,18 @@ preflightは`204`、profileとeventの書き込みは停止中の`503`、不許�
 これは停止した本番の器の確認であり、収集開始ではありません。公開案内、保存期間と
 Cloudflareの復旧履歴、停止・書き出し・削除を最終確認した後も、収集有効化と
 フロント接続には別の明示承認が必要です。
+
+2026年8月12日JST、別に承認された監督下のopt-in受け入れを開始し、修正版Version
+`858cf438-b3d2-4a8c-801c-344503e0c58e`へUsage Worker通信の100%を向けました。
+Gitに保存するWorkerスイッチは`false`のまま、停止Version
+`3c2c3d19-3744-4d01-8e62-76a0f1bdd5bf`をrollback先として維持します。最初の有効確認では
+Siteverify要求形式の互換性問題を見つけ、D1がすべて0件のまま停止へ戻しました。既存リレーで
+確認済みの`URLSearchParams`と`application/x-www-form-urlencoded`へ揃えて再デプロイし、
+許可Originのpreflight `204`、不許可・Originなしの`403`、無効ダミーTurnstileの
+`403 turnstile_failed`、`no-store`、`Vary: Origin`を確認しました。3つのD1 tableと管理者viewは
+引き続き0件です。ページを開くだけでは何も作成・送信せず、本人が共有開始を押してTurnstileを
+完了した場合だけ始まります。最初の端末での開始・停止・再開・書き出し・削除は未確認です。
+一般利用者向け限定中継は独立して停止中です。
 
 プロダクト内の利用分析は、未ログインの公開Web Analytics、CGMの通信、
 血糖データの保存とは分離します。血糖値、グラフ、AIお手紙本文、

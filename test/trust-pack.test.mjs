@@ -147,12 +147,16 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(privacy, /Natural expiry remains a separate, non-blocking stopped\/failure-path check/);
   assert.match(privacy, /The next three paragraphs are historical checkpoints/);
   assert.match(privacy, /ユーザー版は、前の項目のとおり現在送信しません/);
+  assert.match(privacy, /ランダムなprofile ID、共有状態、説明版、作成・更新・最終利用日時/);
+  assert.match(privacy, /Freeプランでは最長7日、Paidプランでは最長30日/);
+  assert.match(privacy, /停止または削除を押した端末では先に新しい送信を止め/);
+  assert.match(privacy, /up to 7 days on the Free plan or up to 30 days on a Paid plan/);
   assert.match(safety, /接続失敗は、CGMやポンプが止まったことを意味しません/);
   assert.match(support, /Gluroo、Nightscout、Azure、Cloudflare、OpenAI/);
   assert.match(support, /GlucoScopeや限定中継についての質問・不具合報告は、GlurooではなくGlucoScopeが受けます/);
   assert.match(roadmap, /初回告知はまだ実施していません/);
   assert.match(roadmap, /公開3CGM比較ラボは、安全対応と別の継続公開判断を経てライブ公開を開始しました/);
-  assert.match(roadmap, /ユーザー基盤と最小限の利用分析は停止状態の基盤確認まで完了しました/);
+  assert.match(roadmap, /最初の端末で全操作を確認してから継続公開の範囲を決めます/);
   assert.match(roadmap, /管理者ダッシュボードをつくります/);
   assert.match(roadmap, /Plus 30日パスと、任意の開発支援への分かりやすい導線/);
   assert.match(roadmap, /ユーザー展開を始めた後、横向きグラフだけで本人が選べる常時表示モード/);
@@ -164,7 +168,7 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(roadmap, /今回確認できたのは1回の公開ページ受け入れです。継続運用、複数回のブラウザ表示更新、古いデータ表示・自然失効は未確認/);
   assert.match(roadmap, /21:25 JSTの停止中Cron後も両KVキーの期限は停止後の基準から変わらず、想定した2キーだけでmetadataもありませんでした/);
   assert.match(roadmap, /The public 3CGM Comparison Lab began continuous live publication/);
-  assert.match(roadmap, /The stopped user-foundation backend is verified/);
+  assert.match(roadmap, /Complete the full lifecycle on the first device before deciding the continuing rollout scope/);
   assert.match(roadmap, /After user rollout begins, add an opt-in always-on mode only for the landscape graph/);
   assert.match(roadmap, /After the 21:25 JST stopped Cron, both KV expirations were unchanged from the post-stop baseline/);
   assert.match(roadmap, /Libreだけを一時有効にしたVersion `2e72847d-5011-47c5-80e6-8cb931a1b141`/);

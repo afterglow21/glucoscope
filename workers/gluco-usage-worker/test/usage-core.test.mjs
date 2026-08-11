@@ -8,12 +8,15 @@ import {
   runUsageCleanup,
   UsageApiError,
 } from "../src/usage-core.js";
+import { verifyTurnstileToken } from "../src/turnstile.js";
 
 const ORIGIN = "https://afterglow21.github.io";
 const NOW = Date.parse("2026-08-11T03:00:00.000Z");
 const PROFILE_ID = "11111111-1111-4111-8111-111111111111";
 const PROFILE_TOKEN = "A".repeat(43);
 const PROFILE_TOKEN_HASH = "h".repeat(43);
+const TURNSTILE_TOKEN = "turnstile-test-token";
+const TURNSTILE_SECRET = "test-only-turnstile-secret";
 
 const ENABLED_ENV = Object.freeze({
   USAGE_COLLECTION_ENABLED: "true",
@@ -28,6 +31,16 @@ const ENABLED_ENV = Object.freeze({
   EVENT_RECEIPT_RETENTION_DAYS: "7",
   INACTIVE_PROFILE_RETENTION_DAYS: "90",
 });
+
+function turnstileEnv(overrides = {}) {
+  return {
+    TURNSTILE_SECRET_KEY: TURNSTILE_SECRET,
+    TURNSTILE_EXPECTED_HOSTNAME: "afterglow21.github.io",
+    TURNSTILE_EXPECTED_ACTION: "glucoscope-usage-profile",
+    TURNSTILE_TIMEOUT_MS: "100",
+    ...overrides,
+  };
+}
 
 function eventId(number) {
   return `00000000-0000-4000-8000-${String(number).padStart(12, "0")}`;
@@ -255,6 +268,122 @@ test("migration limits the schema and adds a D1-only admin view", () => {
   assert.match(migration, /CREATE VIEW admin_device_usage/u);
   assert.match(migration, /ai_generation_success_total/u);
   assert.doesNotMatch(migration, /glucose|nightscout|gluroo|api_secret|user_agent|ip_address/iu);
+});
+
+test("Turnstile Siteverify sends only URL-encoded secret and response fields", async () => {
+  let seenUrl;
+  let seenInit;
+  const config = Object.freeze({ marker: "usage-profile" });
+  const result = await verifyTurnstileToken({
+    token: TURNSTILE_TOKEN,
+    env: turnstileEnv(),
+    config,
+  }, async (url, init) => {
+    seenUrl = url;
+    seenInit = init;
+    return Response.json({
+      success: true,
+      hostname: "afterglow21.github.io",
+      action: "glucoscope-usage-profile",
+    });
+  });
+
+  assert.deepEqual(result, { ok: true, config });
+  assert.equal(seenUrl, "https://challenges.cloudflare.com/turnstile/v0/siteverify");
+  assert.equal(seenInit.method, "POST");
+  assert.deepEqual(seenInit.headers, {
+    "Content-Type": "application/x-www-form-urlencoded",
+  });
+  assert.equal(seenInit.redirect, undefined);
+  assert.equal(seenInit.signal instanceof AbortSignal, true);
+  assert.equal(seenInit.body instanceof URLSearchParams, true);
+  assert.deepEqual([...seenInit.body.entries()], [
+    ["secret", TURNSTILE_SECRET],
+    ["response", TURNSTILE_TOKEN],
+  ]);
+});
+
+test("Turnstile Siteverify timeout fails closed", async () => {
+  await assert.rejects(
+    verifyTurnstileToken({
+      token: TURNSTILE_TOKEN,
+      env: turnstileEnv({ TURNSTILE_TIMEOUT_MS: "5" }),
+      config: {},
+    }, async (url, init) => new Promise((resolve, reject) => {
+      init.signal.addEventListener("abort", () => reject(init.signal.reason), { once: true });
+    })),
+    (error) => {
+      assert.equal(error.code, "turnstile_unavailable");
+      assert.equal(error.status, 503);
+      return true;
+    },
+  );
+});
+
+test("Turnstile Siteverify transport, HTTP, and JSON failures stay closed", async () => {
+  const failures = [
+    [async () => { throw new TypeError("network detail"); }, "turnstile_unavailable", 503],
+    [async () => new Response("provider detail", { status: 503 }), "turnstile_unavailable", 503],
+    [async () => new Response("not-json"), "turnstile_failed", 403],
+  ];
+
+  for (const [fetchImpl, expectedCode, expectedStatus] of failures) {
+    await assert.rejects(
+      verifyTurnstileToken({
+        token: TURNSTILE_TOKEN,
+        env: turnstileEnv(),
+        config: {},
+      }, fetchImpl),
+      (error) => {
+        assert.equal(error.code, expectedCode);
+        assert.equal(error.status, expectedStatus);
+        assert.equal(String(error).includes("network detail"), false);
+        assert.equal(String(error).includes("provider detail"), false);
+        assert.equal(String(error).includes("not-json"), false);
+        return true;
+      },
+    );
+  }
+});
+
+test("Turnstile Siteverify rejects missing secrets and verification mismatches", async () => {
+  let fetchCalls = 0;
+  await assert.rejects(
+    verifyTurnstileToken({
+      token: TURNSTILE_TOKEN,
+      env: turnstileEnv({ TURNSTILE_SECRET_KEY: "short" }),
+      config: {},
+    }, async () => {
+      fetchCalls += 1;
+      return Response.json({ success: true });
+    }),
+    (error) => {
+      assert.equal(error.code, "service_unavailable");
+      assert.equal(error.status, 503);
+      return true;
+    },
+  );
+  assert.equal(fetchCalls, 0);
+
+  const mismatches = [
+    { success: false, hostname: "afterglow21.github.io", action: "glucoscope-usage-profile" },
+    { success: true, hostname: "other.example", action: "glucoscope-usage-profile" },
+    { success: true, hostname: "afterglow21.github.io", action: "other-action" },
+  ];
+  for (const siteverifyResult of mismatches) {
+    await assert.rejects(
+      verifyTurnstileToken({
+        token: TURNSTILE_TOKEN,
+        env: turnstileEnv(),
+        config: {},
+      }, async () => Response.json(siteverifyResult)),
+      (error) => {
+        assert.equal(error.code, "turnstile_failed");
+        assert.equal(error.status, 403);
+        return true;
+      },
+    );
+  }
 });
 
 test("global kill switch rejects profile creation before Turnstile or D1", async () => {

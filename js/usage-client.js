@@ -6,18 +6,22 @@
   const NOTICE_VERSION = "2026-08-11";
   const MAX_DISPLAY_NAME_CODE_POINTS = 30;
   const MAX_PENDING_AI_EVENTS = 20;
+  const MAX_LIFECYCLE_GENERATION = 1_000_000_000;
   const CONTROL_AND_BIDI_PATTERN = /[\u0000-\u001f\u007f-\u009f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/gu;
   const PROFILE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
   const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/u;
   const EVENT_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
   let configuration = Object.freeze({ enabled: false, endpoint: "" });
+  let sessionCollectionBlocked = false;
+  let lifecycleEpoch = 0;
 
   function defaultStoredState() {
     return {
       schemaVersion: SCHEMA_VERSION,
       profileId: "",
       profileToken: "",
+      lifecycleGeneration: 0,
       collectionEnabled: false,
       lastVisitDay: "",
       ordinaryMemoryCount: -1,
@@ -78,10 +82,16 @@
     if (!PROFILE_ID_PATTERN.test(profileId) || !TOKEN_PATTERN.test(profileToken)) return null;
 
     const ordinaryMemoryCount = Number(input.ordinaryMemoryCount);
+    const lifecycleGeneration = Number(input.lifecycleGeneration);
     return {
       schemaVersion: SCHEMA_VERSION,
       profileId,
       profileToken,
+      lifecycleGeneration: Number.isInteger(lifecycleGeneration)
+        && lifecycleGeneration >= 0
+        && lifecycleGeneration <= MAX_LIFECYCLE_GENERATION
+        ? lifecycleGeneration
+        : 0,
       collectionEnabled: input.collectionEnabled === true,
       lastVisitDay: /^\d{4}-\d{2}-\d{2}$/u.test(String(input.lastVisitDay || ""))
         ? String(input.lastVisitDay)
@@ -131,6 +141,59 @@
     }
   }
 
+  function advanceLifecycleEpoch() {
+    lifecycleEpoch = lifecycleEpoch >= MAX_LIFECYCLE_GENERATION ? 1 : lifecycleEpoch + 1;
+    return lifecycleEpoch;
+  }
+
+  function nextLifecycleGeneration(currentGeneration) {
+    return currentGeneration >= MAX_LIFECYCLE_GENERATION ? 1 : currentGeneration + 1;
+  }
+
+  function getCurrentOperationState(
+    startedState,
+    startedEpoch,
+    { requireCollectionEnabled = true } = {}
+  ) {
+    const currentResult = readStoredState();
+    const currentState = currentResult.state;
+    if (
+      lifecycleEpoch !== startedEpoch
+      || !currentResult.ok
+      || currentState.profileId !== startedState.profileId
+      || currentState.profileToken !== startedState.profileToken
+      || currentState.lifecycleGeneration !== startedState.lifecycleGeneration
+      || (requireCollectionEnabled && (
+        sessionCollectionBlocked || !currentState.collectionEnabled
+      ))
+    ) {
+      return {
+        ok: currentResult.ok,
+        skipped: true,
+        error: currentResult.error,
+        state: currentState
+      };
+    }
+
+    return { ok: true, skipped: false, error: null, state: currentState };
+  }
+
+  function persistInFlightEventState(
+    startedState,
+    startedEpoch,
+    updateState,
+    options = {}
+  ) {
+    const currentResult = getCurrentOperationState(startedState, startedEpoch, options);
+    if (!currentResult.ok || currentResult.skipped) return currentResult;
+
+    const nextState = updateState(currentResult.state);
+    const writeResult = writeStoredState(nextState);
+    return writeResult.ok
+      ? { ok: true, skipped: false, state: nextState }
+      : { ok: false, skipped: false, error: writeResult.error, state: currentResult.state };
+  }
+
   function preflightStartStorage() {
     const storage = getStorage();
     if (!storage) return { ok: false, error: "storage_unavailable" };
@@ -165,7 +228,9 @@
       ok: readResult.ok,
       enabled: configuration.enabled,
       registered: Boolean(readResult.ok && state.profileId && state.profileToken),
-      collectionEnabled: Boolean(readResult.ok && state.collectionEnabled),
+      collectionEnabled: Boolean(
+        readResult.ok && state.collectionEnabled && !sessionCollectionBlocked
+      ),
       profileId: readResult.ok ? state.profileId : "",
       error: readResult.error
     };
@@ -259,6 +324,9 @@
       return { ok: false, error: storagePreflight.error, state: getState() };
     }
 
+    const startEpoch = advanceLifecycleEpoch();
+    const startGeneration = nextLifecycleGeneration(existing.state.lifecycleGeneration);
+    sessionCollectionBlocked = true;
     const result = await requestJson("/v1/profiles", {
       method: "POST",
       body: {
@@ -266,7 +334,10 @@
         turnstileToken
       }
     });
-    if (!result.ok) return { ...result, state: getState() };
+    if (!result.ok) {
+      if (lifecycleEpoch === startEpoch) sessionCollectionBlocked = false;
+      return { ...result, state: getState() };
+    }
 
     const profile = result.data?.profile;
     const profileToken = String(result.data?.profileToken || "");
@@ -274,6 +345,7 @@
       schemaVersion: SCHEMA_VERSION,
       profileId: profile?.id,
       profileToken,
+      lifecycleGeneration: startGeneration,
       collectionEnabled: profile?.collectionEnabled === true,
       lastVisitDay: "",
       ordinaryMemoryCount: -1,
@@ -283,7 +355,27 @@
       if (TOKEN_PATTERN.test(profileToken)) {
         await requestJson("/v1/me", { method: "DELETE", token: profileToken });
       }
+      if (lifecycleEpoch === startEpoch) sessionCollectionBlocked = false;
       return { ok: false, error: "invalid_server_response", state: getState() };
+    }
+
+    const currentBeforeWrite = readStoredState();
+    if (
+      lifecycleEpoch !== startEpoch
+      || !currentBeforeWrite.ok
+      || currentBeforeWrite.state.profileId
+      || currentBeforeWrite.state.profileToken
+    ) {
+      const cleanupResult = await requestJson("/v1/me", {
+        method: "DELETE",
+        token: profileToken
+      });
+      return {
+        ok: false,
+        error: "stale_operation",
+        serverCleanupPending: !cleanupResult.ok,
+        state: getState()
+      };
     }
 
     const writeResult = writeStoredState(storedState);
@@ -292,12 +384,21 @@
         method: "DELETE",
         token: profileToken
       });
-      if (cleanupResult.ok) {
+      if (cleanupResult.ok && lifecycleEpoch === startEpoch) {
+        const cleanupState = readStoredState();
         try {
-          getStorage()?.removeItem(STORAGE_KEY);
+          if (
+            cleanupState.ok
+            && cleanupState.state.profileId === storedState.profileId
+            && cleanupState.state.profileToken === storedState.profileToken
+            && cleanupState.state.lifecycleGeneration === storedState.lifecycleGeneration
+          ) {
+            getStorage()?.removeItem(STORAGE_KEY);
+          }
         } catch (cleanupError) {
           // The server record is already gone; a broken browser store cannot be repaired here.
         }
+        sessionCollectionBlocked = false;
       }
       return {
         ok: false,
@@ -306,6 +407,10 @@
         state: getState()
       };
     }
+    if (lifecycleEpoch !== startEpoch) {
+      return { ok: false, error: "stale_operation", state: getState() };
+    }
+    sessionCollectionBlocked = false;
     return { ok: true, state: getState(), profile: { displayName: normalizeDisplayName(profile?.displayName) } };
   }
 
@@ -319,29 +424,49 @@
   }
 
   async function flushPendingAiEvents(state) {
-    if (!configuration.enabled || !state.collectionEnabled || state.pendingAiEvents.length === 0) {
+    if (
+      !configuration.enabled
+      || sessionCollectionBlocked
+      || !state.collectionEnabled
+      || state.pendingAiEvents.length === 0
+    ) {
       return { ok: true, state };
     }
+    const operationEpoch = lifecycleEpoch;
     const result = await sendEvents(state, state.pendingAiEvents);
     if (!result.ok) return { ...result, state };
-    const nextState = { ...state, pendingAiEvents: [] };
-    const writeResult = writeStoredState(nextState);
-    return writeResult.ok
-      ? { ok: true, state: nextState }
-      : { ok: false, error: writeResult.error, state };
+    const sentEventIds = new Set(state.pendingAiEvents.map((event) => event.eventId));
+    const persistResult = persistInFlightEventState(state, operationEpoch, (currentState) => ({
+      ...currentState,
+      pendingAiEvents: currentState.pendingAiEvents.filter(
+        (event) => !sentEventIds.has(event.eventId)
+      )
+    }));
+    return persistResult.ok
+      ? { ok: true, skipped: persistResult.skipped, state: persistResult.state }
+      : { ok: false, error: persistResult.error, state: persistResult.state };
   }
 
   async function init() {
     const readResult = readStoredState();
     if (!readResult.ok) return publicState(readResult);
-    if (!configuration.enabled || !readResult.state.collectionEnabled) return publicState(readResult);
+    if (
+      !configuration.enabled
+      || sessionCollectionBlocked
+      || !readResult.state.collectionEnabled
+    ) return publicState(readResult);
     await flushPendingAiEvents(readResult.state);
     return getState();
   }
 
   async function recordVisit() {
     const readResult = readStoredState();
-    if (!configuration.enabled || !readResult.ok || !readResult.state.collectionEnabled) {
+    if (
+      !configuration.enabled
+      || sessionCollectionBlocked
+      || !readResult.ok
+      || !readResult.state.collectionEnabled
+    ) {
       return { ok: false, skipped: true, error: readResult.error || "collection_stopped" };
     }
 
@@ -351,15 +476,26 @@
 
     const eventId = createEventId();
     if (!EVENT_ID_PATTERN.test(eventId)) return { ok: false, error: "secure_id_unavailable" };
+    const operationEpoch = lifecycleEpoch;
     const result = await sendEvents(state, [{ type: "visit_day", eventId }]);
     if (!result.ok) return result;
-    const writeResult = writeStoredState({ ...state, lastVisitDay: day });
-    return writeResult.ok ? { ok: true } : { ok: false, error: writeResult.error };
+    const persistResult = persistInFlightEventState(state, operationEpoch, (currentState) => ({
+      ...currentState,
+      lastVisitDay: day
+    }));
+    return persistResult.ok
+      ? { ok: true, skipped: persistResult.skipped }
+      : { ok: false, error: persistResult.error };
   }
 
   async function recordAiGeneration(input = {}) {
     const readResult = readStoredState();
-    if (!configuration.enabled || !readResult.ok || !readResult.state.collectionEnabled) {
+    if (
+      !configuration.enabled
+      || sessionCollectionBlocked
+      || !readResult.ok
+      || !readResult.state.collectionEnabled
+    ) {
       return { ok: false, skipped: true, error: readResult.error || "collection_stopped" };
     }
 
@@ -372,12 +508,20 @@
       return { ok: true, skipped: true, reason: "already_queued" };
     }
     const event = { type: "ai_generation_success", eventId };
+    const operationEpoch = lifecycleEpoch;
     const result = await sendEvents(state, [event]);
     if (result.ok) return { ok: true, eventId };
 
-    const pendingAiEvents = [...state.pendingAiEvents, event].slice(-MAX_PENDING_AI_EVENTS);
-    const writeResult = writeStoredState({ ...state, pendingAiEvents });
-    return { ok: false, queued: writeResult.ok, eventId, error: result.error };
+    const persistResult = persistInFlightEventState(state, operationEpoch, (currentState) => ({
+      ...currentState,
+      pendingAiEvents: [...currentState.pendingAiEvents, event].slice(-MAX_PENDING_AI_EVENTS)
+    }));
+    return {
+      ok: false,
+      queued: persistResult.ok && !persistResult.skipped,
+      eventId,
+      error: result.error
+    };
   }
 
   async function syncOrdinaryMemoryCount(value) {
@@ -387,7 +531,12 @@
     }
 
     const readResult = readStoredState();
-    if (!configuration.enabled || !readResult.ok || !readResult.state.collectionEnabled) {
+    if (
+      !configuration.enabled
+      || sessionCollectionBlocked
+      || !readResult.ok
+      || !readResult.state.collectionEnabled
+    ) {
       return { ok: false, skipped: true, error: readResult.error || "collection_stopped" };
     }
     const state = readResult.state;
@@ -397,14 +546,20 @@
 
     const eventId = createEventId();
     if (!EVENT_ID_PATTERN.test(eventId)) return { ok: false, error: "secure_id_unavailable" };
+    const operationEpoch = lifecycleEpoch;
     const result = await sendEvents(state, [{
       type: "ordinary_gluco_memory_count",
       eventId,
       count
     }]);
     if (!result.ok) return result;
-    const writeResult = writeStoredState({ ...state, ordinaryMemoryCount: count });
-    return writeResult.ok ? { ok: true } : { ok: false, error: writeResult.error };
+    const persistResult = persistInFlightEventState(state, operationEpoch, (currentState) => ({
+      ...currentState,
+      ordinaryMemoryCount: Math.max(currentState.ordinaryMemoryCount, count)
+    }));
+    return persistResult.ok
+      ? { ok: true, skipped: persistResult.skipped }
+      : { ok: false, error: persistResult.error };
   }
 
   async function updateProfile(input = {}) {
@@ -427,21 +582,85 @@
       return { ok: false, error: "no_changes", state: getState() };
     }
 
+    const hasCollectionChange = Object.prototype.hasOwnProperty.call(body, "collectionEnabled");
+    let operationEpoch = lifecycleEpoch;
+    let stateForUpdate = readResult.state;
+    let lifecycleWrite = { ok: true, error: null };
+    if (hasCollectionChange) {
+      operationEpoch = advanceLifecycleEpoch();
+      stateForUpdate = {
+        ...readResult.state,
+        lifecycleGeneration: nextLifecycleGeneration(readResult.state.lifecycleGeneration)
+      };
+      if (!body.collectionEnabled) {
+        // Stop locally before the network request. A failed/offline PATCH must never
+        // leave automatic visit, AI, or memory events active in this browser session.
+        sessionCollectionBlocked = true;
+        stateForUpdate.collectionEnabled = false;
+        stateForUpdate.pendingAiEvents = [];
+      }
+      lifecycleWrite = writeStoredState(stateForUpdate);
+      if (body.collectionEnabled && !lifecycleWrite.ok) {
+        return { ok: false, error: lifecycleWrite.error, state: getState() };
+      }
+    }
+
     const result = await requestJson("/v1/me", {
       method: "PATCH",
       token: readResult.state.profileToken,
       body
     });
-    if (!result.ok) return { ...result, state: getState() };
+    if (!result.ok) {
+      return {
+        ...result,
+        localStopped: body.collectionEnabled === false,
+        localStopPersisted: body.collectionEnabled === false ? lifecycleWrite.ok : undefined,
+        state: getState()
+      };
+    }
+    if (hasCollectionChange && !lifecycleWrite.ok) {
+      return {
+        ok: false,
+        error: lifecycleWrite.error,
+        localStopped: body.collectionEnabled === false,
+        localStopPersisted: false,
+        state: getState()
+      };
+    }
+    if (!hasCollectionChange) {
+      const currentResult = getCurrentOperationState(
+        stateForUpdate,
+        operationEpoch,
+        { requireCollectionEnabled: false }
+      );
+      return currentResult.ok
+        ? { ok: true, skipped: currentResult.skipped, state: getState() }
+        : { ok: false, error: currentResult.error, state: getState() };
+    }
 
-    const nextEnabled = typeof result.data?.profile?.collectionEnabled === "boolean"
-      ? result.data.profile.collectionEnabled
-      : body.collectionEnabled ?? readResult.state.collectionEnabled;
-    const nextState = { ...readResult.state, collectionEnabled: nextEnabled };
-    const writeResult = writeStoredState(nextState);
-    return writeResult.ok
-      ? { ok: true, state: getState() }
-      : { ok: false, error: writeResult.error, state: getState() };
+    const nextEnabled = body.collectionEnabled === false
+      ? false
+      : typeof result.data?.profile?.collectionEnabled === "boolean"
+        ? result.data.profile.collectionEnabled
+        : true;
+    const persistResult = persistInFlightEventState(
+      stateForUpdate,
+      operationEpoch,
+      (currentState) => ({ ...currentState, collectionEnabled: nextEnabled }),
+      { requireCollectionEnabled: false }
+    );
+    if (
+      persistResult.ok
+      && !persistResult.skipped
+      && hasCollectionChange
+      && body.collectionEnabled
+      && nextEnabled
+    ) {
+      sessionCollectionBlocked = false;
+    }
+    return persistResult.ok
+      ? { ok: true, skipped: persistResult.skipped, state: getState() }
+      : { ok: false, error: persistResult.error, state: getState() };
   }
 
   async function exportData() {
@@ -460,16 +679,47 @@
     if (!readResult.ok || !readResult.state.profileToken) {
       return { ok: false, error: readResult.error || "profile_not_found", state: getState() };
     }
+    // Deletion also stops local collection first. If the server cannot be reached,
+    // keep the credential for retry/export while sending no further events.
+    advanceLifecycleEpoch();
+    sessionCollectionBlocked = true;
+    const stoppedState = {
+      ...readResult.state,
+      lifecycleGeneration: nextLifecycleGeneration(readResult.state.lifecycleGeneration),
+      collectionEnabled: false,
+      pendingAiEvents: []
+    };
+    const localStopWrite = writeStoredState(stoppedState);
+
     const result = await requestJson("/v1/me", {
       method: "DELETE",
       token: readResult.state.profileToken
     });
-    if (!result.ok) return { ...result, state: getState() };
+    if (!result.ok) {
+      return {
+        ...result,
+        localStopped: true,
+        localStopPersisted: localStopWrite.ok,
+        state: getState()
+      };
+    }
+
+    const currentBeforeDelete = readStoredState();
+    if (!currentBeforeDelete.ok) {
+      return { ok: false, error: currentBeforeDelete.error, state: getState() };
+    }
+    const currentMatchesDeletedProfile =
+      currentBeforeDelete.state.profileId === readResult.state.profileId
+      && currentBeforeDelete.state.profileToken === readResult.state.profileToken;
+    if (!currentMatchesDeletedProfile) {
+      return { ok: true, skipped: true, state: getState() };
+    }
 
     const storage = getStorage();
     if (!storage) return { ok: false, error: "storage_unavailable", state: getState() };
     try {
       storage.removeItem(STORAGE_KEY);
+      sessionCollectionBlocked = false;
       return { ok: true, state: getState() };
     } catch (error) {
       return { ok: false, error: "storage_delete_failed", state: getState() };

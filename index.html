@@ -24,8 +24,8 @@
   <title>GlucoScope</title>
   <!-- GlucoScope Limited Data Relay: the public endpoint is configured for paused acceptance testing only. -->
   <meta name="glucoscope-data-relay-endpoint" content="https://glucoscope-data-relay.afterglow21.workers.dev">
-  <meta name="glucoscope-usage-profile-enabled" content="false">
-  <link rel="stylesheet" href="style.css?v=20260811-usage-profile-stage-1">
+  <meta name="glucoscope-usage-profile-enabled" content="true">
+  <link rel="stylesheet" href="style.css?v=20260811-usage-profile-rollout-1">
 </head>
 <body>
 
@@ -226,14 +226,19 @@
         <p id="usageProfilePreparing" class="usage-profile-preparing" data-i18n-key="usageProfilePreparing">この機能はただいま準備中です。いまは表示名だけがこの端末に保存され、利用状況は送信されません。</p>
 
         <div id="usageProfileNotice" class="usage-profile-notice" hidden>
-          <p data-i18n-key="usageProfileNoticeLead">共有を始めると、GlucoScopeをよりよくするために、Kazumaが次の内容だけを確認できます。</p>
+          <p data-i18n-key="usageProfileNoticeLead">共有を始めると、GlucoScopeをよりよくするために、Kazumaが次の利用状況を確認できます。</p>
           <ul>
             <li data-i18n-key="usageProfileNoticeDisplayName">任意の表示名</li>
-            <li data-i18n-key="usageProfileNoticeVisitDays">GlucoScopeを利用した日数</li>
+            <li data-i18n-key="usageProfileNoticeVisitDays">過去90日間にGlucoScopeを利用した日数</li>
             <li data-i18n-key="usageProfileNoticeAiCount">新しく成功したAI分析の回数</li>
             <li data-i18n-key="usageProfileNoticeMemoryCount">通常のグルコの想い出（No.1〜50）の数</li>
           </ul>
           <p class="usage-profile-boundary" data-i18n-key="usageProfileNoticeBoundary">血糖値、グラフ、接続情報、AIお手紙の内容は送りません。共有しなくても、血糖表示などの基本機能はそのまま使えます。</p>
+          <p class="usage-profile-operational-note" data-i18n-key="usageProfileOperationalNote">この端末を区別するランダムな番号と、共有の状態・開始日時・最終利用日時も保存します。</p>
+          <p class="usage-profile-retention-note">
+            <span data-i18n-key="usageProfileRetentionNote">記録はCloudflareで処理し、通常の保存場所では90日を上限にします。いつでも停止・書き出し・削除できます。</span>
+            <a href="pages/trust/privacy-notes.html" data-i18n-key="usageProfilePrivacyLink">保存と削除の詳しい説明</a>
+          </p>
           <p class="usage-profile-device-note" data-i18n-key="usageProfileDeviceNote">これはアカウントではなく、このブラウザだけの端末プロフィールです。別の端末とはまとまらず、ブラウザのデータを消すと引き継げません。</p>
           <div class="usage-profile-actions">
             <button id="usageProfileStartButton" class="usage-profile-primary-button" type="button" data-i18n-key="usageProfileStartButton">この端末の利用状況を共有する</button>
@@ -826,11 +831,11 @@
 <script src="js/data-source.js?v=20260721-user-foundation-3-2"></script>
 <script src="js/data-relay-client.js?v=20260806-turnstile-server-code-1"></script>
 <script src="js/local-profile.js?v=20260811-usage-profile-stage-1"></script>
-<script src="js/usage-client.js?v=20260811-usage-profile-stage-1"></script>
+<script src="js/usage-client.js?v=20260811-usage-profile-rollout-1"></script>
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js?v=20260721-user-foundation-3"></script>
-<script src="js/app.js?v=20260811-usage-profile-stage-1"></script>
+<script src="js/app.js?v=20260811-usage-profile-rollout-1"></script>
 <!-- Cloudflare Web Analytics: aggregate page-view and performance metrics only -->
 <script src="js/analytics-loader.js?v=20260811-usage-profile-stage-1"></script>
 <!-- End Cloudflare Web Analytics -->

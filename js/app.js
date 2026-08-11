@@ -42,7 +42,7 @@ const GLUCO_CELEBRATION_THRESHOLDS = Object.freeze({
 });
 const TURNSTILE_SITE_KEY = "0x4AAAAAADyftbRcWQW23mEa";
 const TURNSTILE_SCRIPT_ID = "glucoscope-turnstile-script";
-const USAGE_PROFILE_ENABLED = false;
+const USAGE_PROFILE_ENABLED = true;
 const USAGE_PROFILE_ENDPOINT = "https://glucoscope-usage.afterglow21.workers.dev";
 const PRODUCTION_AI_LETTER_WORKER_ENDPOINT = "https://gluco-letter-worker.afterglow21.workers.dev/api/gluco-letter";
 const LOCAL_AI_LETTER_WORKER_ENDPOINT = "http://127.0.0.1:8787/api/gluco-letter";
@@ -247,12 +247,15 @@ const translations = {
     usageProfileBadgeActive: "共有中",
     usageProfileBadgeStopped: "停止中",
     usageProfilePreparing: "この機能はただいま準備中です。いまは表示名だけがこの端末に保存され、利用状況は送信されません。",
-    usageProfileNoticeLead: "共有を始めると、GlucoScopeをよりよくするために、Kazumaが次の内容だけを確認できます。",
+    usageProfileNoticeLead: "共有を始めると、GlucoScopeをよりよくするために、Kazumaが次の利用状況を確認できます。",
     usageProfileNoticeDisplayName: "任意の表示名",
-    usageProfileNoticeVisitDays: "GlucoScopeを利用した日数",
+    usageProfileNoticeVisitDays: "過去90日間にGlucoScopeを利用した日数",
     usageProfileNoticeAiCount: "新しく成功したAI分析の回数",
     usageProfileNoticeMemoryCount: "通常のグルコの想い出（No.1〜50）の数",
     usageProfileNoticeBoundary: "血糖値、グラフ、接続情報、AIお手紙の内容は送りません。共有しなくても、血糖表示などの基本機能はそのまま使えます。",
+    usageProfileOperationalNote: "この端末を区別するランダムな番号と、共有の状態・開始日時・最終利用日時も保存します。",
+    usageProfileRetentionNote: "記録はCloudflareで処理し、通常の保存場所では90日を上限にします。いつでも停止・書き出し・削除できます。",
+    usageProfilePrivacyLink: "保存と削除の詳しい説明",
     usageProfileDeviceNote: "これはアカウントではなく、このブラウザだけの端末プロフィールです。別の端末とはまとまらず、ブラウザのデータを消すと引き継げません。",
     usageProfileStartButton: "この端末の利用状況を共有する",
     usageProfileSkipButton: "今はしない",
@@ -271,10 +274,10 @@ const translations = {
     usageProfileStoppedStatus: "新しい利用状況の共有を停止しました。",
     usageProfileResumedStatus: "利用状況の共有を再開しました。",
     usageProfileExportedStatus: "この端末の記録を書き出しました。",
-    usageProfileDeletedStatus: "Cloudflare上の端末プロフィールと利用記録を削除しました。端末内の表示名や血糖データは削除していません。",
+    usageProfileDeletedStatus: "現在使っているCloudflare D1から端末プロフィールと利用記録を削除しました。復旧用履歴には最大30日残る場合があります。端末内の表示名や血糖データは削除していません。",
     usageProfileStartError: "共有を始められませんでした。利用状況は送信していません。",
     usageProfileActionError: "操作を完了できませんでした。少し時間をおいて、もう一度試してください。",
-    usageProfileDeleteConfirm: "Cloudflare上のこの端末プロフィールと利用記録を削除しますか？ 端末内の表示名、データ接続、血糖データ、グルコの想い出は削除しません。",
+    usageProfileDeleteConfirm: "現在使っているCloudflare D1から、この端末プロフィールと利用記録を削除しますか？ 削除後も復旧用履歴には最大30日残る場合があります。端末内の表示名、データ接続、血糖データ、グルコの想い出は削除しません。",
     usageProfileTurnstileLabel: "利用状況共有の安全確認",
     dataSourceDialogTitle: "データ接続（工事中）",
     dataSourceDialogLead: "現在は一般公開に向けた準備中です。つなぎ方は確認できますが、Gluroo接続はまだ限定テスト中です。",
@@ -579,12 +582,15 @@ const translations = {
     usageProfileBadgeActive: "Sharing",
     usageProfileBadgeStopped: "Stopped",
     usageProfilePreparing: "This feature is still being prepared. For now, only the display name is saved in this browser, and no usage information is sent.",
-    usageProfileNoticeLead: "If you start sharing, Kazuma can see only the following information to help improve GlucoScope.",
+    usageProfileNoticeLead: "If you start sharing, Kazuma can see the following usage information to help improve GlucoScope.",
     usageProfileNoticeDisplayName: "Your optional display name",
-    usageProfileNoticeVisitDays: "The number of days GlucoScope was used",
+    usageProfileNoticeVisitDays: "The number of days GlucoScope was used during the past 90 days",
     usageProfileNoticeAiCount: "The number of newly completed AI analyses",
     usageProfileNoticeMemoryCount: "The number of ordinary Gluco memories (No. 1–50)",
     usageProfileNoticeBoundary: "Glucose values, graphs, connection details, and AI letter contents are not sent. Core features such as glucose display still work if you do not share.",
+    usageProfileOperationalNote: "A random identifier for this browser, sharing state, and created and last-used times are also stored.",
+    usageProfileRetentionNote: "Records are processed by Cloudflare and kept in the live store for no more than 90 days. You can stop, export, or delete them at any time.",
+    usageProfilePrivacyLink: "Details about storage and deletion",
     usageProfileDeviceNote: "This is a browser profile, not an account. It is separate on each device and cannot be recovered if this browser’s data is erased.",
     usageProfileStartButton: "Share usage from this device",
     usageProfileSkipButton: "Not now",
@@ -603,10 +609,10 @@ const translations = {
     usageProfileStoppedStatus: "New usage sharing has stopped.",
     usageProfileResumedStatus: "Usage sharing has resumed.",
     usageProfileExportedStatus: "This device’s record was exported.",
-    usageProfileDeletedStatus: "The browser profile and usage record were deleted from Cloudflare. The local display name and glucose data were not deleted.",
+    usageProfileDeletedStatus: "The browser profile and usage record were deleted from the live Cloudflare D1 database. Recovery history may remain for up to 30 days. The local display name and glucose data were not deleted.",
     usageProfileStartError: "Sharing could not be started. No usage information was sent.",
     usageProfileActionError: "The action could not be completed. Please try again later.",
-    usageProfileDeleteConfirm: "Delete this browser profile and its usage record from Cloudflare? The local display name, data connection, glucose data, and Gluco memories will remain on this device.",
+    usageProfileDeleteConfirm: "Delete this browser profile and its usage record from the live Cloudflare D1 database? Recovery history may remain for up to 30 days. The local display name, data connection, glucose data, and Gluco memories will remain on this device.",
     usageProfileTurnstileLabel: "Usage-sharing safety check",
     dataSourceDialogTitle: "Data connection (under construction)",
     dataSourceDialogLead: "We are preparing this feature for public release. You can review the connection steps, but Gluroo connection is still in limited testing.",
@@ -1474,8 +1480,20 @@ async function handleUsageProfileStart(turnstileToken) {
   renderUsageProfileState();
 
   try {
-    const displayName = readLocalProfile().profile?.displayName || "";
-    requireUsageProfileResult(await usageProfileManager?.start?.({ displayName, turnstileToken }));
+    const displayName = document.getElementById("localProfileDisplayName")?.value || "";
+    const started = requireUsageProfileResult(
+      await usageProfileManager?.start?.({ displayName, turnstileToken })
+    );
+    const localResult = localProfileManager?.save?.({
+      displayName: started.profile?.displayName ?? displayName
+    });
+    if (localResult?.ok) {
+      const displayNameInput = document.getElementById("localProfileDisplayName");
+      if (displayNameInput) displayNameInput.value = localResult.profile.displayName;
+      const deleteButton = document.getElementById("localProfileDeleteButton");
+      if (deleteButton) deleteButton.hidden = !localResult.stored;
+      updateLocalProfileEntryLabels();
+    }
     usageProfileSkippedForSession = false;
     await Promise.allSettled([
       recordUsageProfileVisit(),

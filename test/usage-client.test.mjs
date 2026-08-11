@@ -7,6 +7,8 @@ const source = fs.readFileSync(new URL("../js/usage-client.js", import.meta.url)
 const STORAGE_KEY = "glucoscope.usageProfile.v1";
 const PROFILE_ID = "123e4567-e89b-42d3-a456-426614174000";
 const PROFILE_TOKEN = "A".repeat(43);
+const NEW_PROFILE_ID = "123e4567-e89b-42d3-a456-426614174999";
+const NEW_PROFILE_TOKEN = "B".repeat(43);
 
 function createStorage(initialValues = {}) {
   const values = new Map(Object.entries(initialValues));
@@ -33,6 +35,7 @@ function stored(overrides = {}) {
     schemaVersion: 1,
     profileId: PROFILE_ID,
     profileToken: PROFILE_TOKEN,
+    lifecycleGeneration: 0,
     collectionEnabled: true,
     lastVisitDay: "",
     ordinaryMemoryCount: -1,
@@ -82,6 +85,18 @@ test("module import and disabled init create no identifier, storage write, or re
   assert.equal(calls.length, 0);
 });
 
+test("enabled init without an explicit start creates no profile, storage write, or request", async () => {
+  const { api, storage, calls } = loadModule();
+  configure(api, true);
+  await api.init();
+  assert.equal(api.getState().registered, false);
+  assert.equal((await api.recordVisit()).skipped, true);
+  assert.equal((await api.syncOrdinaryMemoryCount(0)).skipped, true);
+  assert.equal(storage.calls.set, 0);
+  assert.equal(storage.calls.remove, 0);
+  assert.equal(calls.length, 0);
+});
+
 test("start is explicit and sends only the profile allowlist", async () => {
   const storage = createStorage();
   const seen = [];
@@ -117,6 +132,7 @@ test("start is explicit and sends only the profile allowlist", async () => {
     "schemaVersion",
     "profileId",
     "profileToken",
+    "lifecycleGeneration",
     "collectionEnabled",
     "lastVisitDay",
     "ordinaryMemoryCount",
@@ -262,6 +278,225 @@ test("ordinary memory snapshots are monotonic and bounded to 0 through 50", asyn
   assert.equal(event.count, 4);
 });
 
+test("an in-flight visit cannot restore collection after a failed stop", async () => {
+  const storage = createStorage({ [STORAGE_KEY]: stored() });
+  let releaseVisit;
+  const visitResponse = new Promise((resolve) => { releaseVisit = resolve; });
+  const { api } = loadModule({
+    storage,
+    fetchImpl: async (url, init) => {
+      if (init.method === "PATCH") {
+        return Response.json({ ok: false, error: "temporary" }, { status: 503 });
+      }
+      return visitResponse;
+    }
+  });
+  configure(api);
+
+  const inFlightVisit = api.recordVisit();
+  const stopped = await api.updateProfile({ collectionEnabled: false });
+  assert.equal(stopped.ok, false);
+  releaseVisit(Response.json({ ok: true, results: [{ accepted: true }] }));
+  assert.equal((await inFlightVisit).ok, true);
+  assert.equal(JSON.parse(storage.getItem(STORAGE_KEY)).collectionEnabled, false);
+  assert.equal(api.getState().collectionEnabled, false);
+});
+
+test("an in-flight AI failure cannot recreate a profile after deletion", async () => {
+  const storage = createStorage({ [STORAGE_KEY]: stored() });
+  let rejectAi;
+  const aiResponse = new Promise((resolve, reject) => { rejectAi = reject; });
+  const { api } = loadModule({
+    storage,
+    fetchImpl: async (url, init) => {
+      if (init.method === "DELETE") return Response.json({ ok: true, deleted: true });
+      return aiResponse;
+    }
+  });
+  configure(api);
+
+  const inFlightAi = api.recordAiGeneration();
+  assert.equal((await api.deleteData()).ok, true);
+  rejectAi(new Error("offline"));
+  const aiResult = await inFlightAi;
+  assert.equal(aiResult.ok, false);
+  assert.equal(aiResult.queued, false);
+  assert.equal(storage.getItem(STORAGE_KEY), null);
+  assert.equal(api.getState().registered, false);
+});
+
+test("an in-flight memory update cannot override a successful stop", async () => {
+  const storage = createStorage({ [STORAGE_KEY]: stored() });
+  let releaseMemory;
+  const memoryResponse = new Promise((resolve) => { releaseMemory = resolve; });
+  const { api } = loadModule({
+    storage,
+    fetchImpl: async (url, init) => {
+      if (init.method === "PATCH") {
+        return Response.json({ ok: true, profile: { collectionEnabled: true } });
+      }
+      return memoryResponse;
+    }
+  });
+  configure(api);
+
+  const inFlightMemory = api.syncOrdinaryMemoryCount(4);
+  assert.equal((await api.updateProfile({ collectionEnabled: false })).ok, true);
+  releaseMemory(Response.json({ ok: true, results: [{ accepted: true }] }));
+  assert.equal((await inFlightMemory).ok, true);
+  const persisted = JSON.parse(storage.getItem(STORAGE_KEY));
+  assert.equal(persisted.collectionEnabled, false);
+  assert.equal(persisted.ordinaryMemoryCount, -1);
+  assert.equal(api.getState().collectionEnabled, false);
+});
+
+test("a pre-stop failed AI event stays discarded after stop and resume", async () => {
+  const storage = createStorage({ [STORAGE_KEY]: stored() });
+  let rejectAi;
+  const aiResponse = new Promise((resolve, reject) => { rejectAi = reject; });
+  const { api } = loadModule({
+    storage,
+    fetchImpl: async (url, init) => {
+      if (init.method === "PATCH") {
+        const patch = JSON.parse(init.body);
+        return Response.json({
+          ok: true,
+          profile: { collectionEnabled: patch.collectionEnabled }
+        });
+      }
+      return aiResponse;
+    }
+  });
+  configure(api);
+
+  const inFlightAi = api.recordAiGeneration();
+  assert.equal((await api.updateProfile({ collectionEnabled: false })).ok, true);
+  assert.equal((await api.updateProfile({ collectionEnabled: true })).ok, true);
+  rejectAi(new Error("offline"));
+  const aiResult = await inFlightAi;
+  assert.equal(aiResult.queued, false);
+  const persisted = JSON.parse(storage.getItem(STORAGE_KEY));
+  assert.equal(persisted.collectionEnabled, true);
+  assert.deepEqual(persisted.pendingAiEvents, []);
+});
+
+test("a delayed display-name PATCH cannot replace a profile created after deletion", async () => {
+  const storage = createStorage({ [STORAGE_KEY]: stored() });
+  let releaseDisplayPatch;
+  const displayPatchResponse = new Promise((resolve) => { releaseDisplayPatch = resolve; });
+  const { api } = loadModule({
+    storage,
+    fetchImpl: async (url, init) => {
+      if (init.method === "PATCH") return displayPatchResponse;
+      if (init.method === "DELETE") return Response.json({ ok: true, deleted: true });
+      if (init.method === "POST" && url.endsWith("/v1/profiles")) {
+        return Response.json({
+          ok: true,
+          profile: { id: NEW_PROFILE_ID, displayName: "new", collectionEnabled: true },
+          profileToken: NEW_PROFILE_TOKEN
+        }, { status: 201 });
+      }
+      return Response.json({ ok: true, results: [] });
+    }
+  });
+  configure(api);
+
+  const delayedPatch = api.updateProfile({ displayName: "old" });
+  assert.equal((await api.deleteData()).ok, true);
+  assert.equal((await api.start({ displayName: "new", turnstileToken: "token" })).ok, true);
+  releaseDisplayPatch(Response.json({
+    ok: true,
+    profile: { displayName: "old", collectionEnabled: true }
+  }));
+  assert.equal((await delayedPatch).skipped, true);
+  const persisted = JSON.parse(storage.getItem(STORAGE_KEY));
+  assert.equal(persisted.profileId, NEW_PROFILE_ID);
+  assert.equal(persisted.profileToken, NEW_PROFILE_TOKEN);
+  assert.equal(persisted.collectionEnabled, true);
+});
+
+test("a delayed resume PATCH cannot recreate credentials after deletion", async () => {
+  const storage = createStorage({
+    [STORAGE_KEY]: stored({ collectionEnabled: false, lifecycleGeneration: 4 })
+  });
+  let releaseResume;
+  const resumeResponse = new Promise((resolve) => { releaseResume = resolve; });
+  const { api } = loadModule({
+    storage,
+    fetchImpl: async (url, init) => {
+      if (init.method === "PATCH") return resumeResponse;
+      if (init.method === "DELETE") return Response.json({ ok: true, deleted: true });
+      return Response.json({ ok: true });
+    }
+  });
+  configure(api);
+
+  const delayedResume = api.updateProfile({ collectionEnabled: true });
+  assert.equal((await api.deleteData()).ok, true);
+  releaseResume(Response.json({ ok: true, profile: { collectionEnabled: true } }));
+  assert.equal((await delayedResume).skipped, true);
+  assert.equal(storage.getItem(STORAGE_KEY), null);
+  assert.equal(api.getState().registered, false);
+});
+
+test("a display-name PATCH finishing during resume never rewrites collection state", async () => {
+  const storage = createStorage({
+    [STORAGE_KEY]: stored({ collectionEnabled: false, lifecycleGeneration: 7 })
+  });
+  let releaseResume;
+  let releaseDisplay;
+  const resumeResponse = new Promise((resolve) => { releaseResume = resolve; });
+  const displayResponse = new Promise((resolve) => { releaseDisplay = resolve; });
+  const { api } = loadModule({
+    storage,
+    fetchImpl: async (url, init) => {
+      const body = JSON.parse(init.body);
+      return Object.prototype.hasOwnProperty.call(body, "collectionEnabled")
+        ? resumeResponse
+        : displayResponse;
+    }
+  });
+  configure(api);
+
+  const resume = api.updateProfile({ collectionEnabled: true });
+  const display = api.updateProfile({ displayName: "new name" });
+  releaseResume(Response.json({ ok: true, profile: { collectionEnabled: true } }));
+  assert.equal((await resume).ok, true);
+  const writesAfterResume = storage.calls.set;
+  releaseDisplay(Response.json({
+    ok: true,
+    profile: { displayName: "new name", collectionEnabled: true }
+  }));
+  assert.equal((await display).ok, true);
+  assert.equal(storage.calls.set, writesAfterResume);
+  assert.equal(JSON.parse(storage.getItem(STORAGE_KEY)).collectionEnabled, true);
+});
+
+test("a successful delete removes its credentials even if resume advanced the generation", async () => {
+  const storage = createStorage({ [STORAGE_KEY]: stored() });
+  let releaseDelete;
+  const deleteResponse = new Promise((resolve) => { releaseDelete = resolve; });
+  const { api } = loadModule({
+    storage,
+    fetchImpl: async (url, init) => {
+      if (init.method === "DELETE") return deleteResponse;
+      if (init.method === "PATCH") {
+        return Response.json({ ok: true, profile: { collectionEnabled: true } });
+      }
+      return Response.json({ ok: true });
+    }
+  });
+  configure(api);
+
+  const deleting = api.deleteData();
+  assert.equal((await api.updateProfile({ collectionEnabled: true })).ok, true);
+  assert.equal(JSON.parse(storage.getItem(STORAGE_KEY)).collectionEnabled, true);
+  releaseDelete(Response.json({ ok: true, deleted: true }));
+  assert.equal((await deleting).ok, true);
+  assert.equal(storage.getItem(STORAGE_KEY), null);
+  assert.equal(api.getState().registered, false);
+});
+
 test("stopping collection prevents events while export and deletion remain available", async () => {
   const storage = createStorage({ [STORAGE_KEY]: stored() });
   const seen = [];
@@ -287,17 +522,68 @@ test("stopping collection prevents events while export and deletion remain avail
   assert.deepEqual(JSON.parse(seen[0].init.body), { collectionEnabled: false });
 });
 
-test("delete keeps local credentials when the server delete fails", async () => {
+test("a failed stop stays locally stopped and blocks every later event", async () => {
   const storage = createStorage({ [STORAGE_KEY]: stored() });
+  const seen = [];
+  let stopFailed = false;
   const { api } = loadModule({
     storage,
-    fetchImpl: async () => Response.json({ ok: false, error: "temporary" }, { status: 503 })
+    fetchImpl: async (url, init) => {
+      seen.push({ url, init });
+      if (!stopFailed) {
+        stopFailed = true;
+        return Response.json({ ok: false, error: "temporary" }, { status: 503 });
+      }
+      return Response.json({
+        ok: true,
+        profile: { displayName: "新しい名前", collectionEnabled: true }
+      });
+    }
+  });
+  configure(api);
+
+  const result = await api.updateProfile({ collectionEnabled: false });
+  assert.equal(result.ok, false);
+  assert.equal(result.localStopped, true);
+  assert.equal(result.localStopPersisted, true);
+  assert.equal(api.getState().collectionEnabled, false);
+  assert.equal(JSON.parse(storage.getItem(STORAGE_KEY)).collectionEnabled, false);
+  assert.deepEqual(JSON.parse(storage.getItem(STORAGE_KEY)).pendingAiEvents, []);
+
+  // A later display-name-only PATCH must not trust the server's older active state
+  // and silently undo the local privacy stop.
+  assert.equal((await api.updateProfile({ displayName: "新しい名前" })).ok, true);
+  assert.equal(api.getState().collectionEnabled, false);
+  assert.equal(JSON.parse(storage.getItem(STORAGE_KEY)).collectionEnabled, false);
+
+  assert.equal((await api.recordVisit()).skipped, true);
+  assert.equal((await api.recordAiGeneration()).skipped, true);
+  assert.equal((await api.syncOrdinaryMemoryCount(4)).skipped, true);
+  assert.equal(seen.length, 2);
+});
+
+test("delete keeps local credentials when the server delete fails", async () => {
+  const storage = createStorage({ [STORAGE_KEY]: stored() });
+  const seen = [];
+  const { api } = loadModule({
+    storage,
+    fetchImpl: async (url, init) => {
+      seen.push({ url, init });
+      return Response.json({ ok: false, error: "temporary" }, { status: 503 });
+    }
   });
   configure(api);
   const result = await api.deleteData();
   assert.equal(result.ok, false);
+  assert.equal(result.localStopped, true);
   assert.notEqual(storage.getItem(STORAGE_KEY), null);
   assert.equal(storage.calls.remove, 0);
+  assert.equal(api.getState().collectionEnabled, false);
+  assert.equal(JSON.parse(storage.getItem(STORAGE_KEY)).collectionEnabled, false);
+  assert.equal((await api.recordVisit()).skipped, true);
+  assert.equal((await api.recordAiGeneration()).skipped, true);
+  assert.equal((await api.syncOrdinaryMemoryCount(4)).skipped, true);
+  assert.equal(seen.length, 1);
 });
 
 test("broken or unavailable storage fails closed without making a request", async () => {

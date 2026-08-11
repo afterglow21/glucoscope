@@ -1,8 +1,8 @@
-# GlucoScope Usage Worker – stopped production foundation
+# GlucoScope Usage Worker – supervised opt-in acceptance
 
 This directory contains a dedicated, dependency-light Cloudflare Worker and D1 schema for minimal device-profile usage counts.
 
-The stopped production foundation was created and verified on 2026-08-11. Collection has not started: the checked-in and deployed kill switch is `USAGE_COLLECTION_ENABLED=false`, the public frontend remains `USAGE_PROFILE_ENABLED=false`, and the separate general-user relay remains `RELAY_ENABLED=false`.
+The stopped production foundation was created and verified on 2026-08-11. On 2026-08-12 JST, the dedicated Worker entered a supervised opt-in acceptance: production traffic is on Version `858cf438-b3d2-4a8c-801c-344503e0c58e` with the runtime collection switch enabled, while the checked-in `wrangler.jsonc` remains fail-safe at `USAGE_COLLECTION_ENABLED=false`. The frontend in this release exposes the start control, but opening the page alone creates no profile or usage record. The separate general-user relay remains `RELAY_ENABLED=false`.
 
 ## Stopped production checkpoint (2026-08-11)
 
@@ -14,6 +14,14 @@ The stopped production foundation was created and verified on 2026-08-11. Collec
 - `workers_dev=true`, `preview_urls=false`, `observability.enabled=false`, and `observability.logs.invocation_logs=false` were verified in the deployed configuration.
 
 This checkpoint verifies a reachable but stopped production shell. It does not authorize collection, frontend connection, or a Friends & Family rollout.
+
+## Supervised opt-in checkpoint (2026-08-12 JST)
+
+- The active Worker Version is `858cf438-b3d2-4a8c-801c-344503e0c58e` at 100% traffic. The reviewed rollback remains stopped Version `3c2c3d19-3744-4d01-8e62-76a0f1bdd5bf`.
+- The first enabled smoke check exposed a Siteverify request-format incompatibility before any profile was created. Traffic was returned to the stopped Version, the request was aligned with the proven relay pattern (`URLSearchParams` plus `application/x-www-form-urlencoded`), and the corrected Version was deployed only after 17 Worker tests passed.
+- Allowed-origin preflight returns `204`; wrong-origin and originless requests return `403 origin_not_allowed`; a correctly formed request with a dummy invalid Turnstile token returns `403 turnstile_failed`.
+- All checked responses use `Cache-Control: no-store` and `Vary: Origin`. Immediately after the checks, the three D1 tables and the administrator view still returned 0 rows.
+- The public frontend remains opt-in: no browser profile, identifier, visit, AI count, or memory count is created until the person presses the sharing button and completes Turnstile. The first real-device start, stop, export, and delete acceptance is still pending.
 
 ## Boundary
 
@@ -31,7 +39,7 @@ The Worker may store only:
 - the maximum ordinary Gluco-memory count snapshot, from 0 through 50;
 - short-lived event receipts used only for idempotency.
 
-It must not receive or store glucose values, reading times, TIR/TAR/TBR, CGM type, AI text, analysis period, Nightscout or Gluroo connection details, treatment information, IP address, raw User-Agent, referrer, query strings, or arbitrary event metadata. Display names, profile tokens, token hashes, request bodies, and profile IDs must never be written to application logs.
+The JSON usage payload must not contain glucose values, reading times, TIR/TAR/TBR, CGM type, AI text, analysis period, Nightscout or Gluroo connection details, treatment information, IP address, raw User-Agent, referrer, query strings, or arbitrary event metadata. The Worker must not read, application-log, or D1-store IP addresses, raw User-Agent, or referrer. Cloudflare may process transport and security metadata under its own policies. Display names, profile tokens, token hashes, request bodies, and profile IDs must never be written to application logs.
 
 ## API contract
 
@@ -129,7 +137,7 @@ Possible result statuses are `accepted`, `duplicate`, and `daily_limit`. A `visi
 - `GET /v1/me/export` returns one allowlisted profile record and up to 90 days of daily counts.
 - `DELETE /v1/me` deletes the profile, daily counts, and event receipts from the live D1 database.
 
-D1 Time Travel may retain recoverable pre-deletion history for the Cloudflare plan's recovery window. That residual recovery boundary must be stated in the public privacy wording before collection starts.
+D1 Time Travel is always on and may retain recoverable pre-deletion history for up to 7 days on the Workers Free plan or up to 30 days on a Workers Paid plan. The public privacy wording states both plan-dependent periods. A Time Travel restore is never a routine user-data recovery path: pause collection first, then ensure previously deleted records stay out of normal operation before resuming.
 
 ## Retention and cleanup
 
@@ -160,14 +168,12 @@ npm run deploy:dry
 
 There is intentionally no real `deploy` npm script.
 
-## Approval-gated next step
+## Supervised acceptance next step
 
-The stopped setup above is complete. Collection enablement remains a separate approval.
-
-1. Recheck the short collection notice, stop/export/delete controls, 90-day retention wording, Cloudflare recovery-history boundary, separate browser token storage, exact-origin CORS, and disabled observability.
-2. Confirm that D1 is still empty immediately before the first limited rollout.
-3. Obtain a separate explicit approval before changing the deployed collection switch to `true` or connecting the frontend.
-4. Start with a limited Friends & Family check and verify profile creation, event allowlists, export, deletion, cleanup, and the D1-only administrator view without printing production content.
+1. On one user-controlled device, open “Your settings,” start sharing, and complete Turnstile.
+2. Confirm only aggregate row counts and allowlisted administrator-view columns; do not print a display name, profile ID, token, or production record.
+3. Verify stop, resume, allowlisted export, and deletion, then confirm the live D1 rows are removed.
+4. Decide separately whether to return the frontend and Worker to stopped mode or continue a small open beta.
 5. Keep the general-user relay decision independent; do not change `RELAY_ENABLED=false` as part of usage-profile rollout.
 
 Secret values, profile tokens, display names, and production database content must never be copied into Git, command arguments, screenshots, logs, fixtures, or support messages.
