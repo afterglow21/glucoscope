@@ -1,10 +1,12 @@
 const dataSourceManager = window.GlucoScopeDataSource || null;
+const localProfileManager = window.GlucoScopeLocalProfile || null;
 let activeDataSourceConfig = dataSourceManager?.getActiveConfig?.() || null;
 let activeDataSourceAdapter = activeDataSourceConfig && dataSourceManager
   ? dataSourceManager.createAdapter(activeDataSourceConfig)
   : null;
 let dataRefreshTimer = null;
 let testedDataSourceConfig = null;
+let localProfileDialogOpener = null;
 
 let glucoseChart = null;
 let currentLanguage = localStorage.getItem("glucoscope.language.v1") || "ja";
@@ -217,6 +219,23 @@ const translations = {
     dataSourceButtonUser: "データ接続（工事中）",
     mobileMoreDataSource: "データ接続（工事中）",
     mobileMoreDataSourceNote: "準備中 · Gluroo / Nightscout",
+    localProfileButton: "あなたの設定",
+    localProfileButtonNote: "表示名をこの端末に保存",
+    localProfileButtonSavedNote: "この端末に保存済み",
+    localProfileEyebrow: "この端末だけの設定",
+    localProfileDialogTitle: "あなたの設定",
+    localProfileDialogLead: "GlucoScopeで使う表示名を、この端末のブラウザに保存できます。いまは管理者には送信されません。",
+    localProfileDisplayNameLabel: "表示名（任意）",
+    localProfileDisplayNameHelp: "本名でなくて大丈夫です。ニックネームをあとから変更・削除できます（最大30文字）。",
+    localProfileSaveButton: "保存する",
+    localProfileDeleteButton: "この端末から表示名を削除",
+    localProfileSaved: "表示名をこの端末に保存しました。管理者には送信していません。",
+    localProfileEmpty: "表示名は空欄です。この端末には保存していません。",
+    localProfileDeleted: "この端末から表示名を削除しました。",
+    localProfileStorageError: "この端末には保存できませんでした。表示名は送信していません。",
+    localProfileDeleteError: "この端末から削除できませんでした。表示名は送信していません。",
+    localProfileDeleteConfirm: "この端末に保存した表示名を削除しますか？ データ接続やグルコの想い出は削除しません。",
+    localProfileCloseLabel: "閉じる",
     dataSourceDialogTitle: "データ接続（工事中）",
     dataSourceDialogLead: "現在は一般公開に向けた準備中です。つなぎ方は確認できますが、Gluroo接続はまだ限定テスト中です。",
     dataSourceChooseLead: "血糖データのつなぎ方を、どちらか1つ選びます。",
@@ -497,6 +516,23 @@ const translations = {
     dataSourceButtonUser: "Data connection (under construction)",
     mobileMoreDataSource: "Data connection (under construction)",
     mobileMoreDataSourceNote: "In preparation · Gluroo / Nightscout",
+    localProfileButton: "Your settings",
+    localProfileButtonNote: "Save a display name on this device",
+    localProfileButtonSavedNote: "Saved on this device",
+    localProfileEyebrow: "Settings on this device",
+    localProfileDialogTitle: "Your settings",
+    localProfileDialogLead: "You can save a display name for GlucoScope in this browser. It is not currently sent to the administrator.",
+    localProfileDisplayNameLabel: "Display name (optional)",
+    localProfileDisplayNameHelp: "It does not need to be your real name. You can change or delete the nickname later (up to 30 characters).",
+    localProfileSaveButton: "Save",
+    localProfileDeleteButton: "Delete the display name from this device",
+    localProfileSaved: "The display name was saved on this device. It was not sent to the administrator.",
+    localProfileEmpty: "The display name is blank and was not saved on this device.",
+    localProfileDeleted: "The display name was deleted from this device.",
+    localProfileStorageError: "This device could not save the display name. It was not sent.",
+    localProfileDeleteError: "This device could not delete the display name. It was not sent.",
+    localProfileDeleteConfirm: "Delete the saved display name from this device? Your data connection and Gluco memories will not be deleted.",
+    localProfileCloseLabel: "Close",
     dataSourceDialogTitle: "Data connection (under construction)",
     dataSourceDialogLead: "We are preparing this feature for public release. You can review the connection steps, but Gluroo connection is still in limited testing.",
     dataSourceChooseLead: "Choose one way to connect your glucose data.",
@@ -1195,6 +1231,165 @@ function setupDataSourceFoundation() {
   }
 
   return hasActiveDataSource();
+}
+
+function setLocalProfileStatus(messageKey = "", type = "") {
+  const status = document.getElementById("localProfileStatus");
+  if (!status) return;
+  status.classList.remove("success", "error");
+  if (type) status.classList.add(type);
+  status.dataset.messageKey = messageKey;
+  status.textContent = messageKey ? t(messageKey) : "";
+}
+
+function readLocalProfile() {
+  if (!localProfileManager?.read) {
+    return {
+      ok: false,
+      stored: false,
+      profile: { displayName: "" }
+    };
+  }
+  return localProfileManager.read();
+}
+
+function updateLocalProfileEntryLabels() {
+  const result = readLocalProfile();
+  const mobileButton = document.getElementById("mobileLocalProfileButton");
+  const mobileSmall = mobileButton?.querySelector("small");
+  if (mobileSmall) {
+    mobileSmall.textContent = t(result.stored ? "localProfileButtonSavedNote" : "localProfileButtonNote");
+  }
+  document.getElementById("localProfileDialogClose")?.setAttribute("aria-label", t("localProfileCloseLabel"));
+}
+
+function populateLocalProfileForm() {
+  const result = readLocalProfile();
+  const profile = result.profile || { displayName: "" };
+  const displayNameInput = document.getElementById("localProfileDisplayName");
+  if (displayNameInput) {
+    displayNameInput.value = profile.displayName || "";
+    displayNameInput.setAttribute("aria-invalid", "false");
+  }
+
+  const deleteButton = document.getElementById("localProfileDeleteButton");
+  if (deleteButton) deleteButton.hidden = !result.stored;
+  setLocalProfileStatus(result.ok ? "" : "localProfileStorageError", result.ok ? "" : "error");
+}
+
+function getLocalProfileDialogFocusableElements() {
+  const dialog = document.getElementById("localProfileDialog");
+  if (!dialog) return [];
+  return [...dialog.querySelectorAll('button:not([disabled]), input:not([disabled])')]
+    .filter((element) => !element.hidden && element.getAttribute("aria-hidden") !== "true");
+}
+
+function openLocalProfileDialog(opener = null) {
+  const dialog = document.getElementById("localProfileDialog");
+  if (!dialog) return;
+  localProfileDialogOpener = opener || document.activeElement;
+  populateLocalProfileForm();
+  dialog.hidden = false;
+  document.body.classList.add("local-profile-dialog-open");
+  window.requestAnimationFrame(() => document.getElementById("localProfileDisplayName")?.focus());
+}
+
+function closeLocalProfileDialog() {
+  const dialog = document.getElementById("localProfileDialog");
+  if (!dialog || dialog.hidden) return;
+  dialog.hidden = true;
+  document.body.classList.remove("local-profile-dialog-open");
+  const opener = localProfileDialogOpener;
+  localProfileDialogOpener = null;
+  if (opener && typeof opener.focus === "function") opener.focus();
+}
+
+function handleLocalProfileSave(event) {
+  event?.preventDefault?.();
+  if (!localProfileManager?.save) {
+    setLocalProfileStatus("localProfileStorageError", "error");
+    return;
+  }
+
+  const result = localProfileManager.save({
+    displayName: document.getElementById("localProfileDisplayName")?.value || ""
+  });
+
+  if (!result.ok) {
+    setLocalProfileStatus("localProfileStorageError", "error");
+    return;
+  }
+
+  const displayNameInput = document.getElementById("localProfileDisplayName");
+  if (displayNameInput) displayNameInput.value = result.profile.displayName;
+  const deleteButton = document.getElementById("localProfileDeleteButton");
+  if (deleteButton) deleteButton.hidden = !result.stored;
+  setLocalProfileStatus(result.stored ? "localProfileSaved" : "localProfileEmpty", "success");
+  updateLocalProfileEntryLabels();
+}
+
+function handleLocalProfileDelete() {
+  if (!localProfileManager?.clear) {
+    setLocalProfileStatus("localProfileDeleteError", "error");
+    return;
+  }
+  if (!window.confirm(t("localProfileDeleteConfirm"))) return;
+
+  const result = localProfileManager.clear();
+  if (!result.ok) {
+    setLocalProfileStatus("localProfileDeleteError", "error");
+    return;
+  }
+
+  const displayNameInput = document.getElementById("localProfileDisplayName");
+  if (displayNameInput) displayNameInput.value = "";
+  const deleteButton = document.getElementById("localProfileDeleteButton");
+  if (deleteButton) deleteButton.hidden = true;
+  displayNameInput?.focus();
+  setLocalProfileStatus("localProfileDeleted", "success");
+  updateLocalProfileEntryLabels();
+}
+
+function setupLocalProfileFoundation() {
+  const dialog = document.getElementById("localProfileDialog");
+  const form = document.getElementById("localProfileForm");
+  const openButtons = [
+    document.getElementById("localProfileButton"),
+    document.getElementById("mobileLocalProfileButton")
+  ].filter(Boolean);
+
+  openButtons.forEach((button) => {
+    button.addEventListener("click", () => openLocalProfileDialog(button));
+  });
+  document.getElementById("localProfileDialogClose")?.addEventListener("click", closeLocalProfileDialog);
+  document.getElementById("localProfileDeleteButton")?.addEventListener("click", handleLocalProfileDelete);
+  form?.addEventListener("submit", handleLocalProfileSave);
+
+  dialog?.addEventListener("click", (event) => {
+    if (event.target === dialog) closeLocalProfileDialog();
+  });
+  dialog?.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeLocalProfileDialog();
+      return;
+    }
+    if (event.key !== "Tab") return;
+
+    const focusable = getLocalProfileDialogFocusableElements();
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+
+  updateLocalProfileEntryLabels();
 }
 
 function startDataRefresh() {
@@ -2649,6 +2844,11 @@ function applyLanguage() {
   updateRuleCommentDisplay();
   updateAiLetterControls();
   updateDataSourceUiLabels();
+  updateLocalProfileEntryLabels();
+  const localProfileStatus = document.getElementById("localProfileStatus");
+  if (localProfileStatus?.dataset.messageKey) {
+    localProfileStatus.textContent = t(localProfileStatus.dataset.messageKey);
+  }
   syncMobileApp();
 }
 
@@ -5764,6 +5964,7 @@ function setupViewTabs() {
 // data/AI initialization step has a temporary error.
 setupViewTabs();
 setupLanguageSwitch();
+setupLocalProfileFoundation();
 setupMobileDisplayMode();
 setupUnicornVisualDebugPreview();
 setupMobileApp();

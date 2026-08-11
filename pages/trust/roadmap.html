@@ -51,8 +51,9 @@
         <p>Friends &amp; Family Previewは公開済みです。AI利用カウンター、共有KVキャッシュ、CORS制限、Trust Pack、Web Analyticsは実装済みで、UsageカウンターとDashboardの本番精度、Trust Pack / Aboutのサイト全体確認が残っています。初回告知はまだ実施していません。一般利用者向けの最初の実機確認では、途中画面をまとめたガイドだけでは一人で進めにくく、SKIPする画面とアプリの見分け方を一画面ずつ案内する必要があることが分かりました。現在は、Glurooの全画面チェックポイントと、FreeStyle LibreLink・LibreLinkUp・Glurooを見分ける案内へ改訂しています。</p>
         <p><strong>公開3CGM比較ラボは、安全対応と別の継続公開判断を経てライブ公開を開始しました。約3時間の継続稼働を確認しました。開いたままの既存ブラウザタブでも、約5分後の自動更新を別の機会にもう1回確認し、これまでの確認は合計2回になりました。表示エラーはありませんでした。正常な5分更新中は、成功するたびにKVの最長36時間の期限が更新されるため、自然失効は起きません。自然失効は、更新が止まった場合の別の安全確認として扱い、公開継続の妨げにはしません。</strong></p>
         <p><strong>次の開発順</strong></p>
+        <p>第1段階の最初の小さな実装として、「あなたの設定」を追加しました。任意の表示名だけをこの端末へ保存できます。利用者ID、表示名に紐づく利用者別の利用回数、管理者へのプロフィール送信はまだ始めていません。次に、最小限の利用回数について、内容と目的を分かりやすく案内し、いつでも止められる仕組みを設計します。血糖・健康データや公開共有などの機微な用途は、別に明示的な同意を扱います。</p>
         <ol>
-          <li>ユーザー基盤・同意に基づく利用分析を設計します。表示名、アクセス、AI分析、グルコの想い出、支援・Plus状態などの候補と、保存・削除・閲覧権限を整理します。</li>
+          <li>ユーザー基盤と最小限の利用分析を設計します。端末内の任意表示名は実装済みです。次に、収集項目と目的の説明、停止方法、保存期間、書き出し・削除、利用回数APIの境界を固めます。</li>
           <li>その安全な基盤の上に、運営に必要な情報だけを見られる管理者ダッシュボードをつくります。</li>
           <li>Plus 30日パスと、任意の開発支援への分かりやすい導線を整えます。</li>
           <li>ユーザー展開を始めた後、横向きグラフだけで本人が選べる常時表示モードを追加します。</li>
@@ -79,8 +80,9 @@
         <p>Friends &amp; Family Preview is published. The AI usage counter, shared KV cache, CORS restriction, Trust Pack, and Web Analytics are implemented. Production-accuracy checks for the usage counter and dashboard and a site-wide Trust/About review remain. The first announcement has not yet been made. Real-device feedback also showed that each optional screen and app switch needs an exact, standalone onboarding step.</p>
         <p><strong>The public 3CGM Comparison Lab began continuous live publication after the frontend safety release and a separate continuing-publication decision. About three hours of continuous operation passed. At a later checkpoint, an existing browser tab completed one further five-minute auto-refresh, bringing the total confirmed browser refreshes to two, without display errors. During healthy five-minute refreshes, each successful write renews the KV's maximum 36-hour lifetime, so natural expiry does not occur. Natural expiry is a separate, non-blocking stopped/failure-path check.</strong></p>
         <p><strong>Next development order</strong></p>
+        <p>As the first small step of Phase 1, “Your settings” now saves only an optional display name on this device. No user identifier, per-user usage-count collection linked to the display name, or profile transmission to the administrator has started. Next, GlucoScope will design clearly explained minimal usage counts with an easy way to stop collection. Health or glucose data, public sharing, and other genuinely sensitive uses remain subject to separate explicit consent.</p>
         <ol>
-          <li>Design the user foundation and consented usage analytics, including retention, deletion, and access boundaries.</li>
+          <li>Design the user foundation and minimal usage analytics. The local optional display name is implemented; clear notice, stop controls, retention, export/deletion, and usage-count API boundaries come next.</li>
           <li>Build the administrator dashboard on that reviewed foundation.</li>
           <li>Design the Plus 30-day pass and clearer optional-support paths.</li>
           <li>After user rollout begins, add an opt-in always-on mode only for the landscape graph.</li>
@@ -108,7 +110,7 @@
     </section>
   </main>
   <!-- Cloudflare Web Analytics -->
-  <script src="../../js/analytics-loader.js?v=20260721-user-foundation-3-2"></script>
+  <script src="../../js/analytics-loader.js?v=20260811-simple-profile-1"></script>
   <!-- End Cloudflare Web Analytics -->
 </body>
 </html>

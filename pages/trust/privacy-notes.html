@@ -50,6 +50,12 @@
   <p>Apple、Google、Gluroo、CareLink、Dexcom、Libreなどのログインパスワードを、GlucoScopeへ入力してもらうことはありません。</p>
 </section>
 <section class="trust-section">
+  <h2>端末内の「あなたの設定」</h2>
+  <p>任意の表示名だけを、このブラウザへ保存できます。表示名は本名である必要はありません。現在はGlucoScopeのサーバーや管理者へ送信せず、利用者IDも作りません。</p>
+  <p>表示名を保存したかどうかだけで、Cloudflare Web Analyticsを停止・再開しません。将来、最小限の利用回数を記録する場合は、内容と目的、保存期間、管理者に見える範囲、停止・書き出し・削除方法を分かりやすく案内し、設定からいつでも止められるようにします。</p>
+  <p>血糖・健康データを保存する場合や、本人データを公開共有する場合などは、別に明示的な確認を行います。この設定は血糖データ接続、限定中継、AI、グルコの想い出と分離しています。</p>
+</section>
+<section class="trust-section">
   <h2>ユーザー版のAI</h2>
   <p>現在の共有AIキャッシュは公開デモ向けのため、利用者ごとの分離が完成するまで、ユーザー版からGlucoScopeのAI Workerへ血糖サマリーを送りません。ブラウザ内のいつものお話と、利用者自身がChatGPTへ渡すためのコピー機能は利用できます。</p>
 </section>
@@ -72,7 +78,7 @@
 </section>
 <section class="trust-section">
   <h2>公開ページのアクセス分析</h2>
-  <p>公開デモなどの公開ページにはCloudflare Web Analyticsを導入し、ページ閲覧や表示性能の全体傾向を確認しています。ただし、ユーザーモード中だけでなく、接続情報がこのブラウザに保存されている間は、AboutやTrustを含むGlucoScope内のページでWeb Analyticsのビーコンを読み込みません。保存状態を安全に確認できない場合も読み込みません。個々の人をGlucoScope内で識別するための独自IDや、独自の行動追跡イベントも追加していません。</p>
+  <p>公開デモなどの公開ページには、プライバシーを重視したCloudflare Web Analyticsを導入し、ページ閲覧や表示性能の全体傾向を確認しています。ただし、ユーザーモード中、接続情報がこのブラウザに保存されている間、または保存状態を安全に確認できない場合は、AboutやTrustを含むGlucoScope内のページでWeb Analyticsのビーコンを読み込みません。任意の表示名を保存または削除したことだけでは停止・再開しません。個々の人をGlucoScope内で識別するための独自IDや、独自の行動追跡イベントも追加していません。</p>
   <p>ユーザー版で使うChart.jsはGlucoScope内に同梱し、接続情報や血糖データを扱うページで外部CDNのグラフ用JavaScriptを実行しない構成にしています。</p>
   <p>血糖値、GlucoScore、AIお手紙本文、Nightscout URL、API情報をアクセス分析のイベント名や追加データとして送る実装は行いません。スマホの各タブ操作も、健康情報を含む個別イベントとして追跡しません。</p>
 </section>
@@ -104,6 +110,12 @@
   <p>GlucoScope does not ask for Apple, Google, Gluroo, CareLink, Dexcom, Libre, or other manufacturer login passwords.</p>
 </section>
 <section class="trust-section">
+  <h2>Local “Your settings”</h2>
+  <p>An optional display name can be saved only in this browser. A real name is not required. It is not currently sent to a GlucoScope server or the administrator, and no user identifier is created.</p>
+  <p>Saving the display name alone does not stop or start Cloudflare Web Analytics. Before recording minimal first-party usage counts in the future, GlucoScope will clearly explain the fields, purpose, retention, administrator visibility, and stop, export, and deletion controls, with an easy setting to stop collection.</p>
+  <p>Separate explicit confirmation will be used for health or glucose data, public sharing of a person's data, or another genuinely sensitive use. This setting remains separate from glucose connection, the limited relay, AI, and Gluco memories.</p>
+</section>
+<section class="trust-section">
   <h2>User-mode AI</h2>
   <p>The current shared AI cache is for the public demo. Until per-user isolation is complete, user-mode summaries are not sent to the GlucoScope AI Worker. The local Gluco reflection and copy-to-ChatGPT path remain available.</p>
 </section>
@@ -126,7 +138,7 @@
 </section>
 <section class="trust-section">
   <h2>Public web analytics</h2>
-  <p>Public-demo pages use Cloudflare Web Analytics to review aggregate page visits and performance. The analytics beacon is not loaded in user mode, while a GlucoScope user connection remains in local or session browser storage, or when that storage state cannot be checked. This applies across same-origin About and Trust pages. GlucoScope does not add a custom visitor ID or custom behavioral events.</p>
+  <p>Public-demo pages use privacy-first Cloudflare Web Analytics to review aggregate page visits and performance. The analytics beacon is not loaded in user mode, while a GlucoScope user connection remains in browser storage, or when that storage state cannot be checked. Saving or removing the optional local display name alone does not stop or start it. This applies across same-origin About and Trust pages. GlucoScope does not add a custom visitor ID or custom behavioral events.</p>
   <p>Chart.js is served from a reviewed local copy on the user-data page instead of running the chart library from a third-party CDN.</p>
   <p>Glucose values, GlucoScore, AI letter text, Nightscout URLs, and API information are not intentionally sent as analytics event names or additional analytics data. Mobile tab actions are not tracked as health-data events.</p>
 </section>
@@ -142,7 +154,7 @@
 </section>
   </main>
 <!-- Cloudflare Web Analytics -->
-<script src="../../js/analytics-loader.js?v=20260721-user-foundation-3-2"></script>
+<script src="../../js/analytics-loader.js?v=20260811-simple-profile-1"></script>
 <!-- End Cloudflare Web Analytics -->
 </body>
 </html>

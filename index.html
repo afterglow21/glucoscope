@@ -24,7 +24,7 @@
   <title>GlucoScope</title>
   <!-- GlucoScope Limited Data Relay: the public endpoint is configured for paused acceptance testing only. -->
   <meta name="glucoscope-data-relay-endpoint" content="https://glucoscope-data-relay.afterglow21.workers.dev">
-  <link rel="stylesheet" href="style.css?v=20260805-limited-relay-paused-1">
+  <link rel="stylesheet" href="style.css?v=20260811-simple-profile-1">
 </head>
 <body>
 
@@ -195,6 +195,37 @@
   </div>
 </div>
 
+<div id="localProfileDialog" class="local-profile-dialog" role="dialog" aria-modal="true" aria-labelledby="localProfileDialogTitle" aria-describedby="localProfileDialogLead" hidden>
+  <div class="local-profile-dialog-card">
+    <button id="localProfileDialogClose" class="local-profile-dialog-close" type="button" aria-label="閉じる">×</button>
+
+    <div class="local-profile-dialog-heading">
+      <span class="local-profile-dialog-icon" aria-hidden="true">🍀</span>
+      <div>
+        <p class="local-profile-eyebrow" data-i18n-key="localProfileEyebrow">この端末だけの設定</p>
+        <h2 id="localProfileDialogTitle" data-i18n-key="localProfileDialogTitle">あなたの設定</h2>
+      </div>
+    </div>
+
+    <p id="localProfileDialogLead" class="local-profile-lead" data-i18n-key="localProfileDialogLead">GlucoScopeで使う表示名を、この端末のブラウザに保存できます。いまは管理者には送信されません。</p>
+
+    <form id="localProfileForm" class="local-profile-form" novalidate>
+      <label class="local-profile-field" for="localProfileDisplayName">
+        <span data-i18n-key="localProfileDisplayNameLabel">表示名（任意）</span>
+        <input id="localProfileDisplayName" name="displayName" type="text" autocomplete="nickname" aria-describedby="localProfileDisplayNameHelp">
+        <small id="localProfileDisplayNameHelp" data-i18n-key="localProfileDisplayNameHelp">本名でなくて大丈夫です。ニックネームをあとから変更・削除できます（最大30文字）。</small>
+      </label>
+
+      <div id="localProfileStatus" class="local-profile-status" role="status" aria-live="polite"></div>
+
+      <div class="local-profile-actions">
+        <button id="localProfileSaveButton" class="local-profile-save-button" type="submit" data-i18n-key="localProfileSaveButton">保存する</button>
+        <button id="localProfileDeleteButton" class="local-profile-delete-button" type="button" data-i18n-key="localProfileDeleteButton" hidden>この端末から表示名を削除</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="dashboard">
   <header class="header">
     <div class="brand-block" aria-label="GlucoScope brand">
@@ -235,6 +266,7 @@
 
   <div class="view-toolbar-actions">
     <button id="dataSourceButton" type="button" class="data-source-toolbar-button">🔗 <span data-i18n-key="dataSourceButtonDemo">データ接続（工事中）</span></button>
+    <button id="localProfileButton" type="button" class="local-profile-toolbar-button">🍀 <span data-i18n-key="localProfileButton">あなたの設定</span></button>
     <div class="language-switch" aria-label="Language switch">
       <span data-i18n-key="languageLabel">Language</span>
       <button type="button" class="language-button active" data-language="ja">日本語</button>
@@ -481,6 +513,10 @@
     <button id="mobileDataSourceButton" type="button" class="mobile-data-source-button">
       <span aria-hidden="true">🔗</span>
       <span><strong data-i18n-key="mobileMoreDataSource">データ接続（工事中）</strong><small data-i18n-key="mobileMoreDataSourceNote">準備中 · Gluroo / Nightscout</small></span>
+    </button>
+    <button id="mobileLocalProfileButton" type="button" class="mobile-local-profile-button">
+      <span aria-hidden="true">🍀</span>
+      <span><strong data-i18n-key="localProfileButton">あなたの設定</strong><small data-i18n-key="localProfileButtonNote">表示名をこの端末に保存</small></span>
     </button>
     <div class="mobile-more-language">
       <span data-i18n-key="languageLabel">Language</span>
@@ -741,12 +777,13 @@
 <script src="js/api.js"></script>
 <script src="js/data-source.js?v=20260721-user-foundation-3-2"></script>
 <script src="js/data-relay-client.js?v=20260806-turnstile-server-code-1"></script>
+<script src="js/local-profile.js?v=20260811-simple-profile-1"></script>
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js?v=20260721-user-foundation-3"></script>
-<script src="js/app.js?v=20260808-cgm-demo-name-1"></script>
-<!-- Cloudflare Web Analytics: loaded only when no user connection is stored -->
-<script src="js/analytics-loader.js?v=20260721-user-foundation-3-2"></script>
+<script src="js/app.js?v=20260811-simple-profile-1"></script>
+<!-- Cloudflare Web Analytics: aggregate page-view and performance metrics only -->
+<script src="js/analytics-loader.js?v=20260811-simple-profile-1"></script>
 <!-- End Cloudflare Web Analytics -->
 </body>
 </html>

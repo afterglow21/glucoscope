@@ -6,11 +6,15 @@ import { readFile, readdir, stat } from "node:fs/promises";
 const rootUrl = new URL("../", import.meta.url);
 const analyticsSource = await readFile(new URL("../js/analytics-loader.js", import.meta.url), "utf8");
 
-function storageWith(value = null, throws = false) {
+const connectionStorageKey = "glucoscope.dataSource.v1";
+const sessionConnectionStorageKey = "glucoscope.dataSource.session.v1";
+const profileStorageKey = "glucoscope.localProfile.v1";
+
+function storageWith(values = {}, throws = false) {
   return {
-    getItem() {
+    getItem(key) {
       if (throws) throw new Error("storage unavailable");
-      return value;
+      return Object.prototype.hasOwnProperty.call(values, key) ? values[key] : null;
     }
   };
 }
@@ -20,14 +24,21 @@ function runAnalyticsLoader({
   pathname = "/index.html",
   localValue = null,
   sessionValue = null,
-  storageThrows = false
+  profileValue = null,
+  localStorageThrows = false,
+  sessionStorageThrows = false
 } = {}) {
   const appended = [];
   const context = {
     URLSearchParams,
     location: { search, pathname },
-    localStorage: storageWith(localValue, storageThrows),
-    sessionStorage: storageWith(sessionValue, storageThrows),
+    localStorage: storageWith({
+      [connectionStorageKey]: localValue,
+      [profileStorageKey]: profileValue
+    }, localStorageThrows),
+    sessionStorage: storageWith({
+      [sessionConnectionStorageKey]: sessionValue
+    }, sessionStorageThrows),
     document: {
       head: {
         appendChild(node) {
@@ -74,8 +85,24 @@ test("analytics is disabled in user mode and while either connection key is stor
   assert.equal(runAnalyticsLoader({ sessionValue: "session-config" }).length, 0);
 });
 
-test("analytics fails closed when browser storage cannot be inspected", () => {
-  assert.equal(runAnalyticsLoader({ storageThrows: true }).length, 0);
+test("a local display-name profile does not disable public Web Analytics", () => {
+  for (const profileValue of [
+    JSON.stringify({ schemaVersion: 1, displayName: "nickname" }),
+    JSON.stringify({
+      schemaVersion: 1,
+      displayName: "legacy",
+      futureUsageSharingPreference: "willing"
+    }),
+    "{broken"
+  ]) {
+    assert.equal(runAnalyticsLoader({ profileValue }).length, 1);
+  }
+  assert.doesNotMatch(analyticsSource, /glucoscope\.localProfile\.v1|LOCAL_PROFILE_STORAGE_KEY/);
+});
+
+test("analytics fails closed when either browser storage cannot be inspected", () => {
+  assert.equal(runAnalyticsLoader({ localStorageThrows: true }).length, 0);
+  assert.equal(runAnalyticsLoader({ sessionStorageThrows: true }).length, 0);
 });
 
 test("active HTML pages do not directly execute remote runtime scripts", async () => {

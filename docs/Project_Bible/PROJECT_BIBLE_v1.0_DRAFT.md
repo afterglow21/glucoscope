@@ -2737,7 +2737,7 @@ Version.
 
 The implementation order chosen on 2026-08-08 is:
 
-1. Design the user foundation and consented usage analytics.
+1. Design the user foundation and minimal usage analytics.
 2. Build the administrator dashboard on that reviewed foundation.
 3. Design and implement the Plus 30-day pass and clearer optional-support paths.
 4. After user rollout begins, add an opt-in always-on mode only for the landscape graph.
@@ -2784,7 +2784,9 @@ Guardian 4、FreeStyle Libre 2、Dexcom G7を、
 
 2026年8月8日以降の実装優先順位は次のとおりです。
 
-1. ユーザー基盤・同意に基づく利用分析の設計
+1. ユーザー基盤・最小限の利用分析の設計
+   - Phase 1Aとして、任意の表示名だけを端末内へ保存する準備画面を実装した。
+   - 次は、収集項目と目的の説明、簡単な停止方法、保存期間、書き出し・削除、利用回数APIの境界を固める。
 2. その設計を前提にした管理者ダッシュボード
 3. Plus 30日パスと、任意の開発支援への分かりやすい導線
 4. ユーザー展開開始後に、横向きグラフだけへ追加する任意の常時表示モード
@@ -3118,6 +3120,8 @@ The initial implementation uses Cloudflare Web Analytics
 on public HTML pages through a local privacy-gated loader.
 The beacon must not load in user mode, while either user-connection
 browser-storage key exists, or when storage state cannot be checked.
+Saving or removing an optional local display name alone must not disable
+or enable public Web Analytics.
 This rule applies to every page on the same GlucoScope origin,
 including About and Trust pages.
 
@@ -3153,6 +3157,8 @@ the analytics implementation or collected information changes.
 ただし、ローカルのプライバシー判定用ローダーを通し、
 ユーザーモード中、接続情報の保存キーが1つでも存在する間、
 または保存状態を安全に確認できない場合は読み込みません。
+任意の表示名を保存または削除したことだけを理由に、
+公開Web Analyticsを停止または再開しません。
 このルールはAbout、Trustを含む同一GlucoScopeサイト内の全ページに適用します。
 
 次の情報を、
@@ -3187,16 +3193,27 @@ GlucoScope独自の利用者識別IDを追加しません。
 
 The next product-design sequence is fixed as follows:
 
-1. User foundation and consented usage analytics design
+1. User foundation and minimal usage analytics design
 2. Administrator dashboard
 3. Plus 30-day pass and optional-support paths
 4. Landscape-graph-only always-on mode after user rollout begins
 
 The user-foundation design may include a user-chosen display name and account-level
-counts such as visits, AI analyses, collected Gluco memories, and support or Plus state.
-Before collecting any of them, define explicit notice and consent, identifier format,
-access control, retention, correction, export, and deletion. The administrator must see
-only what is necessary to operate and improve GlucoScope.
+counts such as visits, AI analyses, collected Gluco memories, and the Plus entitlement
+needed to provide purchased features. Optional development support must not be linked
+to a profile or product analytics automatically.
+Before collecting ordinary, minimal product-use counts, provide a clear notice covering
+the fields, purpose, access, retention, correction, export, deletion, and an easy way to
+stop collection. Separate explicit consent is required before any future collection of
+health or glucose data, public sharing of a person's data, or another genuinely sensitive
+use. The administrator must see only what is necessary to operate and improve GlucoScope.
+
+The first implementation step is a local-only preparation screen. It may save only an
+optional display name in the current browser. It creates no user identifier and sends no
+profile or usage event. Saving the display name neither starts first-party usage
+collection nor changes public Web Analytics.
+The Gluco visitor seed is for local visual selection only and must not become an account
+or analytics identifier.
 
 Product analytics must remain separate from public Web Analytics, CGM transport, and
 glucose storage. Do not place glucose values, graphs, AI-letter contents, Nightscout or
@@ -3220,16 +3237,24 @@ viewing convenience, not an alarm or a substitute for the original CGM applicati
 
 次のプロダクト設計・実装順は、次のとおりとします。
 
-1. ユーザー基盤・同意に基づく利用分析の設計
+1. ユーザー基盤・最小限の利用分析の設計
 2. 管理者ダッシュボード
 3. Plus 30日パスと任意の開発支援への導線
 4. ユーザー展開開始後の、横向きグラフ限定の常時表示モード
 
 ユーザー基盤では、本人が決める表示名と、アクセス回数、AI分析回数、
-集めたグルコの想い出、支援またはPlusの状態などの利用集計を候補にできます。
-ただし、収集前に、分かりやすい説明と同意、識別子の形、閲覧権限、保存期間、
-訂正、書き出し、削除の方法を設計します。管理者が見られるのは、
+集めたグルコの想い出、購入機能を提供するために必要なPlus利用権などを候補にできます。
+任意の開発支援は、プロフィールや利用分析へ自動的に結びつけません。
+通常の最小限の利用回数を収集する前に、項目、目的、閲覧権限、保存期間、
+訂正、書き出し、削除、簡単な停止方法を分かりやすく案内します。
+将来、血糖・健康データを扱う場合、本人データを公開共有する場合、
+その他の機微な用途には、別途明示的な同意を求めます。管理者が見られるのは、
 GlucoScopeの運営と改善に必要な範囲だけにします。
+
+最初の実装は、端末内だけの準備画面とします。保存できるのは、任意の表示名だけです。
+利用者IDを作らず、プロフィールや利用イベントを送信しません。
+表示名の保存だけで利用状況収集を開始せず、公開Web Analyticsの動作も変えません。
+グルコ表示用のvisitor seedは、アカウントや利用分析の識別子へ流用しません。
 
 プロダクト内の利用分析は、未ログインの公開Web Analytics、CGMの通信、
 血糖データの保存とは分離します。血糖値、グラフ、AIお手紙本文、

@@ -152,7 +152,7 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(support, /GlucoScopeや限定中継についての質問・不具合報告は、GlurooではなくGlucoScopeが受けます/);
   assert.match(roadmap, /初回告知はまだ実施していません/);
   assert.match(roadmap, /公開3CGM比較ラボは、安全対応と別の継続公開判断を経てライブ公開を開始しました/);
-  assert.match(roadmap, /ユーザー基盤・同意に基づく利用分析を設計します/);
+  assert.match(roadmap, /ユーザー基盤と最小限の利用分析を設計します/);
   assert.match(roadmap, /管理者ダッシュボードをつくります/);
   assert.match(roadmap, /Plus 30日パスと、任意の開発支援への分かりやすい導線/);
   assert.match(roadmap, /ユーザー展開を始めた後、横向きグラフだけで本人が選べる常時表示モード/);
@@ -164,7 +164,7 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(roadmap, /今回確認できたのは1回の公開ページ受け入れです。継続運用、複数回のブラウザ表示更新、古いデータ表示・自然失効は未確認/);
   assert.match(roadmap, /21:25 JSTの停止中Cron後も両KVキーの期限は停止後の基準から変わらず、想定した2キーだけでmetadataもありませんでした/);
   assert.match(roadmap, /The public 3CGM Comparison Lab began continuous live publication/);
-  assert.match(roadmap, /Design the user foundation and consented usage analytics/);
+  assert.match(roadmap, /Design the user foundation and minimal usage analytics/);
   assert.match(roadmap, /After user rollout begins, add an opt-in always-on mode only for the landscape graph/);
   assert.match(roadmap, /After the 21:25 JST stopped Cron, both KV expirations were unchanged from the post-stop baseline/);
   assert.match(roadmap, /Libreだけを一時有効にしたVersion `2e72847d-5011-47c5-80e6-8cb931a1b141`/);

@@ -26,6 +26,7 @@
       return true;
     }
 
+    // The optional local display name is a UI setting and does not change public analytics.
     return storageContainsConnection("localStorage", STORAGE_KEY)
       || storageContainsConnection("sessionStorage", SESSION_STORAGE_KEY);
   }

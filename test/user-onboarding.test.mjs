@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 const index = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const userEntry = await readFile(new URL("../user.html", import.meta.url), "utf8");
 const app = await readFile(new URL("../js/app.js", import.meta.url), "utf8");
+const localProfile = await readFile(new URL("../js/local-profile.js", import.meta.url), "utf8");
 const relayClient = await readFile(new URL("../js/data-relay-client.js", import.meta.url), "utf8");
 const css = await readFile(new URL("../style.css", import.meta.url), "utf8");
 const guideCss = await readFile(new URL("../guides/guide.css", import.meta.url), "utf8");
@@ -18,10 +19,66 @@ const guardianGuide = await readFile(new URL("../guides/guardian-monitor/index.h
 test("public data connection remains clickable while clearly marked under construction", () => {
   assert.match(index, /データ接続（工事中）/);
   assert.match(index, /Gluroo接続はまだ限定テスト中/);
-  assert.match(index, /js\/app\.js\?v=20260808-cgm-demo-name-1/);
+  assert.match(index, /js\/app\.js\?v=20260811-simple-profile-1/);
   assert.match(app, /dataSourceButtonDemo: "データ接続（工事中）"/);
   assert.match(app, /dataSourceDialogTitle: "Data connection \(under construction\)"/);
   assert.doesNotMatch(index, /id="dataSourceButton"[^>]+disabled/);
+});
+
+test("local profile is a simple optional display-name setting stored only on this device", () => {
+  assert.match(index, /id="localProfileDialog"/);
+  assert.match(index, /id="localProfileButton"/);
+  assert.match(index, /id="mobileLocalProfileButton"/);
+  assert.match(index, /GlucoScopeで使う表示名を、この端末のブラウザに保存できます/);
+  assert.match(index, /いまは管理者には送信されません/);
+  assert.match(index, /表示名（任意）/);
+  assert.match(index, /本名でなくて大丈夫です/);
+  assert.match(index, /この端末から表示名を削除/);
+
+  const profileStart = index.indexOf('id="localProfileDialog"');
+  const profileEnd = index.indexOf('<div class="dashboard">', profileStart);
+  const profileDialog = index.slice(profileStart, profileEnd);
+  assert.doesNotMatch(profileDialog, /dataSourceRelayConsent/);
+  assert.doesNotMatch(profileDialog, /type="radio"|localProfileUsageSharingPreference|localProfilePreference/);
+  assert.doesNotMatch(profileDialog, /利用分析|協力して|同意|あとで決める/);
+  assert.match(profileDialog, /autocomplete="nickname"/);
+  assert.doesNotMatch(profileDialog, /id="localProfileDisplayName"[^>]+maxlength=/);
+  assert.match(profileDialog, /role="status" aria-live="polite"/);
+
+  const jaProfileCopyStart = app.indexOf('localProfileButton: "あなたの設定"');
+  const jaProfileCopyEnd = app.indexOf("dataSourceDialogTitle:", jaProfileCopyStart);
+  const enProfileCopyStart = app.indexOf('localProfileButton: "Your settings"');
+  const enProfileCopyEnd = app.indexOf("dataSourceDialogTitle:", enProfileCopyStart);
+  const profileTranslations = `${app.slice(jaProfileCopyStart, jaProfileCopyEnd)}\n${app.slice(enProfileCopyStart, enProfileCopyEnd)}`;
+  assert.doesNotMatch(profileTranslations, /localProfilePreference|UsageSharing|利用分析|協力して|同意|willing|unwilling|undecided|usage analytics|consent/i);
+});
+
+test("local profile controls stay local, fail closed, and preserve accessible dialog behavior", () => {
+  assert.match(index, /js\/local-profile\.js\?v=20260811-simple-profile-1/);
+  assert.match(localProfile, /glucoscope\.localProfile\.v1/);
+  assert.doesNotMatch(localProfile, /\b(?:fetch|XMLHttpRequest|sendBeacon|WebSocket)\b/);
+  assert.doesNotMatch(localProfile, /visitorSeed|dataSourceRelayConsent|futureUsage|UsageSharing|willing|unwilling|undecided|consent/i);
+
+  const populateStart = app.indexOf("function populateLocalProfileForm");
+  const populateEnd = app.indexOf("function getLocalProfileDialogFocusableElements", populateStart);
+  const populateHandler = app.slice(populateStart, populateEnd);
+  const saveStart = app.indexOf("function handleLocalProfileSave");
+  const saveEnd = app.indexOf("function handleLocalProfileDelete", saveStart);
+  const saveHandler = app.slice(saveStart, saveEnd);
+  const deleteStart = app.indexOf("function handleLocalProfileDelete");
+  const deleteEnd = app.indexOf("function setupLocalProfileFoundation", deleteStart);
+  const deleteHandler = app.slice(deleteStart, deleteEnd);
+  assert.match(saveHandler, /localProfileManager\.save\(\{\s*displayName:[\s\S]*?\}\)/);
+  assert.match(saveHandler, /result\.stored \? "localProfileSaved" : "localProfileEmpty"/);
+  assert.doesNotMatch(`${populateHandler}\n${saveHandler}\n${deleteHandler}`, /localProfileUsageSharingPreference|futureUsageSharingPreference|type="radio"/);
+  assert.match(app, /requestAnimationFrame\(\(\) => document\.getElementById\("localProfileDisplayName"\)\?\.focus\(\)\)/);
+  assert.match(app, /if \(event\.key === "Escape"\)/);
+  assert.match(app, /if \(event\.key !== "Tab"\) return/);
+  assert.match(app, /opener\.focus\(\)/);
+  assert.match(app, /window\.confirm\(t\("localProfileDeleteConfirm"\)\)/);
+  assert.match(deleteHandler, /displayNameInput\?\.focus\(\)/);
+  assert.match(css, /\.local-profile-save-button,[\s\S]*min-height:46px/);
+  assert.match(css, /\.local-profile-field input[\s\S]*font-size:16px/);
 });
 
 test("user onboarding says only one numbered connection method is needed", () => {
