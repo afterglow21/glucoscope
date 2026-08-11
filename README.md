@@ -243,7 +243,7 @@ CORS limits which browser pages can read the API response. It is not a replaceme
 
 ## Cloudflare Web Analytics
 
-Public-demo HTML pages use a local privacy-gated loader for Cloudflare Web Analytics aggregate page-view and performance monitoring. The loader does not fetch the analytics beacon when `mode=user` is active, when either GlucoScope user-connection storage key exists, or when browser storage cannot be checked. Saving or removing the optional local display name alone does not disable or enable Cloudflare Web Analytics. This applies across the same-origin About and Trust pages as well as the main page. The archived `backup/` pages and setup guides are excluded.
+Public-demo HTML pages use a local privacy-gated loader for Cloudflare Web Analytics aggregate page-view and performance monitoring. The loader does not fetch the analytics beacon when `mode=user` is active, when either GlucoScope user-connection storage key exists, when the usage browser-profile key containing a bearer credential exists, when the main page is configured to offer usage-profile enrollment, or when browser storage cannot be checked. Saving or removing the optional local display name alone does not disable or enable Cloudflare Web Analytics. This applies across the same-origin About and Trust pages as well as the main page. The archived `backup/` pages and setup guides are excluded.
 
 Chart.js 4.5.1 is vendored under `vendor/chart.js/` with its MIT license. The user-data page therefore does not execute the chart runtime from a third-party CDN in the same origin context as browser-stored connection details.
 

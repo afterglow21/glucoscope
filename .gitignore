@@ -13,5 +13,10 @@ workers/gluco-demo-feed/worker-configuration.d.ts
 workers/gluco-demo-feed/.wrangler/
 workers/gluco-demo-feed/.dev.vars*
 workers/gluco-demo-feed/.env*
+workers/gluco-usage-worker/node_modules/
+workers/gluco-usage-worker/worker-configuration.d.ts
+workers/gluco-usage-worker/.wrangler/
+workers/gluco-usage-worker/.dev.vars*
+workers/gluco-usage-worker/.env*
 private/cgm-comparison/
 demos/cgm-comparison/data/candidate-*.json

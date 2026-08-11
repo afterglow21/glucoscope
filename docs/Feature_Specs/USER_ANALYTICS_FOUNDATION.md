@@ -1,6 +1,6 @@
 # GlucoScope 利用者設定・利用分析基盤
 
-Status: Phase 1A local preview implemented / per-user server collection not implemented
+Status: Phase 1A local preview implemented / Phase 1B stopped production foundation verified / collection and frontend disabled / no production collection
 
 Last reviewed: 2026-08-11
 
@@ -62,7 +62,7 @@ Phase 1Aでは利用者IDを生成しない。既存の `glucoscope.visitorSeed.
 - 保存できない場合も通信へフォールバックしない
 - 削除はこの保存キーだけを `removeItem` し、`localStorage.clear()` を使わない
 
-任意の表示名を保存したことだけを理由に、公開Cloudflare Web Analyticsを停止または再開しない。ユーザーモード中、接続情報保存中、保存状態を安全に確認できない場合にWeb Analyticsを止める既存境界は維持する。
+任意の表示名を保存したことだけを理由に、公開Cloudflare Web Analyticsを停止または再開しない。ユーザーモード中、接続情報保存中、保存状態を安全に確認できない場合にWeb Analyticsを止める既存境界は維持する。bearer credentialを含む端末プロフィールキーが存在する間も、第三者スクリプトと同じページで共存させないためWeb Analyticsを停止する。
 
 ## 6. 利用分析へ入れない情報
 
@@ -142,3 +142,63 @@ Plus 30日パスの利用権は、購入した機能を提供するための別�
 - Plus 30日パス
 
 これらは別の実装判断と、必要な場合はCloudflare変更前の明示確認を挟む。
+
+## 12. Phase 1B: 端末プロフィールの停止状態実装
+
+早いユーザー公開と将来の利用者別集計を両立するため、最初からアカウント作成やログインを求めず、ブラウザごとの「端末プロフィール」を使う。これは人を一意に表すアカウントではない。同じ人が2台の端末で使うと2件として見え、ブラウザの保存データを消した場合は別端末へ復旧・統合できない。Plus利用権、決済、本人確認には流用しない。
+
+端末プロフィールを始める前に、法律文書のようなチェックボックスは置かず、短い案内と次の2つの選択肢を示す。
+
+- `この端末の利用状況を共有する`
+- `今はしない`
+
+案内では、Kazumaが見られる項目、入れない情報、基本機能への影響がないこと、端末ごとのプロフィールであることを明記する。表示名を端末へ保存しただけでは共有を開始しない。共有を始める操作の直前だけTurnstileを表示し、actionは `glucoscope-usage-profile` とする。
+
+Phase 1Bで扱ってよいのは次だけとする。
+
+- 任意の表示名
+- 1日につき最大1回の利用日
+- 新しく正常に完了したAI分析の回数
+- 通常のグルコの想い出 No.1〜50 の現在数
+
+AI分析は、OpenAIから新しく正常に生成され、`generation.complete=true` で、共有・端末キャッシュ・stale fallbackではない応答だけを候補とする。現在のユーザーモードではAI分析自体が準備中のため、一般公開でのAI回数はその別工程が完了するまで増えない。
+
+グルコの想い出は、血糖状態から影響を受け得るLucky Gluco No.51〜70と、最新値100 mg/dLをきっかけにするUnicorn Glucoを必ず除外する。ID、初めて出会った日、出会った回数も送らず、No.1〜50の異なる件数を0〜50の整数で送る。
+
+端末内の識別情報は `glucoscope.usageProfile.v1` へ分離する。既存の `glucoscope.localProfile.v1` と `local-profile.js` はネットワークを使わないPhase 1A境界を維持する。サーバーが作る不透明なprofile IDとbearer tokenはURL、query、hash、ログへ入れず、サーバーではtokenのhashだけを保存する。`glucoscope.usageProfile.v1` が存在するページでは公開Cloudflare Web Analyticsを読み込まず、任意表示名だけの `glucoscope.localProfile.v1` は停止条件にしない。
+
+本人向け操作として、共有の停止・再開、allowlist JSON書き出し、サーバー上の端末プロフィールと利用記録の削除を用意する。停止中は新しい利用イベントを書き込まない。サーバー削除が成功するまでは端末tokenを残し、成功後だけ利用プロフィール用キーを削除する。端末内の表示名、データ接続、血糖データ、AIキャッシュ、グルコの想い出は連動して削除しない。
+
+日別集計は90日ローリングとし、90日利用のない端末プロフィールも削除候補とする。稼働DBから削除した後もCloudflare D1の復旧履歴に残る期間は、実際のWorkersプランと導入時点の公式仕様を確認してPrivacy Notesへ明記する。
+
+現在の公開コードでは `USAGE_PROFILE_ENABLED=false` とし、同じ値をindexのusage-profile meta gateにも反映する。「あなたの設定」には準備中と表示し、開始案内と操作ボタンは利用者へ出さず、`configure({ enabled: false })` 後のクライアントは通信しない。将来 `true` にする場合、端末プロフィールを作れるメインページでは登録前からCloudflare Web Analyticsを読み込まない。D1作成、database ID反映、migration、Secret登録、停止Worker deployは、項目を明示した事前承認の範囲で2026-08-11に完了した。収集有効化とフロント接続は、その停止状態を検証した後の別承認とする。
+
+### Phase 1Bの受け入れ条件
+
+- disabled状態では初期化、表示名保存、再読込、利用日・想い出同期で通信が0件
+- 共有開始前の表示名は従来どおり端末内だけに残る
+- 開始時だけTurnstileを使い、チェックボックスや同意という語を追加しない
+- 同じ端末の再読込で新しいprofileを作らず、利用日は同日1回だけ
+- AIのキャッシュ、fallback、失敗、ボタン押下だけでは加算しない
+- 想い出はNo.1〜50の件数だけで、No.51〜70とUnicornを送らない
+- 停止中は新しいイベントを送信せず、血糖表示等は変わらない
+- 書き出しは本人のallowlist項目だけで、別profileを取得できない
+- 削除失敗時は端末tokenを保持し、成功時だけserver profileと利用記録をcascade削除する
+- 管理者一覧を公開APIにせず、認証された管理者経路だけに限定する
+- 一般利用者向け限定中継の `RELAY_ENABLED=false` を変更しない
+
+## 13. 2026-08-11 停止状態の本番基盤確認
+
+項目を明示した事前承認の範囲で、収集を開始せずに次を完了した。
+
+- APACにD1 `glucoscope-usage` を作成し、`0001_initial_usage_schema.sql` を適用
+- `profiles`、`usage_daily`、`event_receipts` の各テーブルと `admin_device_usage` viewが存在することを確認
+- 確認時点で上記3テーブルとviewはすべて0件
+- `TURNSTILE_SECRET_KEY` というSecret名をWorkerへ登録（値は記録・表示・Git追加していない）
+- `https://glucoscope-usage.afterglow21.workers.dev` へ停止状態で正式設定をデプロイ
+- 確認時のCurrent Version IDは `3c2c3d19-3744-4d01-8e62-76a0f1bdd5bf`
+- 許可Originのpreflightは`204`、profile作成とevents送信は停止中の`503`、不許可OriginとOriginなしは`403`
+- `workers_dev=true`、`preview_urls=false`、`observability.enabled=false`、`observability.logs.invocation_logs=false`
+- Worker側 `USAGE_COLLECTION_ENABLED=false`、フロント側 `USAGE_PROFILE_ENABLED=false`、一般利用者向け限定中継 `RELAY_ENABLED=false` を維持
+
+これは停止した本番の器と境界の確認であり、利用状況の収集開始、フロント接続、Friends & Family展開の承認ではない。収集有効化は、公開案内、Cloudflareの復旧履歴、開始・停止・書き出し・削除、90日保存の最終確認後に、別の明示承認を必要とする。

@@ -3119,7 +3119,9 @@ to understand aggregate page visits and page performance.
 The initial implementation uses Cloudflare Web Analytics
 on public HTML pages through a local privacy-gated loader.
 The beacon must not load in user mode, while either user-connection
-browser-storage key exists, or when storage state cannot be checked.
+browser-storage key exists, while the usage browser-profile key containing a
+bearer credential exists, on the main page while usage-profile enrollment is
+available, or when storage state cannot be checked.
 Saving or removing an optional local display name alone must not disable
 or enable public Web Analytics.
 This rule applies to every page on the same GlucoScope origin,
@@ -3156,6 +3158,8 @@ the analytics implementation or collected information changes.
 公開HTMLページにCloudflare Web Analyticsを導入します。
 ただし、ローカルのプライバシー判定用ローダーを通し、
 ユーザーモード中、接続情報の保存キーが1つでも存在する間、
+bearer credentialを含む利用状況共有の端末プロフィールキーが存在する間、
+メインページで端末プロフィールの共有開始が利用可能な間、
 または保存状態を安全に確認できない場合は読み込みません。
 任意の表示名を保存または削除したことだけを理由に、
 公開Web Analyticsを停止または再開しません。
@@ -3198,9 +3202,10 @@ The next product-design sequence is fixed as follows:
 3. Plus 30-day pass and optional-support paths
 4. Landscape-graph-only always-on mode after user rollout begins
 
-The user-foundation design may include a user-chosen display name and account-level
-counts such as visits, AI analyses, collected Gluco memories, and the Plus entitlement
-needed to provide purchased features. Optional development support must not be linked
+The user-foundation design may include a user-chosen display name and minimal
+counts such as visit days, newly completed AI analyses, and ordinary Gluco memories.
+Account-level identity and the Plus entitlement needed to provide purchased features
+are later boundaries. Optional development support must not be linked
 to a profile or product analytics automatically.
 Before collecting ordinary, minimal product-use counts, provide a clear notice covering
 the fields, purpose, access, retention, correction, export, deletion, and an easy way to
@@ -3214,6 +3219,39 @@ profile or usage event. Saving the display name neither starts first-party usage
 collection nor changes public Web Analytics.
 The Gluco visitor seed is for local visual selection only and must not become an account
 or analytics identifier.
+
+The staged Phase 1B implementation uses a separate browser profile, not an account.
+It shows one short notice and separate `Share usage from this device` and `Not now`
+buttons, without adding a checkbox or blocking core features. A browser profile may
+send only the optional display name, one visit day per day, genuinely new completed AI
+generation counts, and the current count of ordinary Gluco memories No. 1–50. Lucky
+Gluco No. 51–70 and Unicorn Gluco must be excluded because their appearance can be
+influenced by glucose-derived conditions. Memory IDs and encounter dates must not be
+sent. The same person on two browsers appears as two profiles, and erasing browser
+storage prevents recovery or cross-device merging. This identity must not be reused for
+Plus, payment, or medical data.
+
+The Phase 1B client and controls are initially checked in with collection disabled.
+While disabled, the public screen says the feature is in preparation, does not invite a
+new registration, and sends no profile or usage event. A previously registered browser
+must still be able to stop future collection and export or delete its existing record.
+
+On 2026-08-11, one itemized explicit approval completed the stopped production
+foundation without starting collection. D1 `glucoscope-usage` was created in APAC and
+the initial migration was applied. The three tables and the D1-only administrator view
+all returned zero rows. The required Secret binding name `TURNSTILE_SECRET_KEY` was
+registered without recording its value. The stopped Worker was deployed at
+`https://glucoscope-usage.afterglow21.workers.dev`; the verified current Version ID was
+`3c2c3d19-3744-4d01-8e62-76a0f1bdd5bf`. Allowed-origin preflight returned `204`,
+profile and event writes returned paused `503`, and wrong-origin and originless requests
+returned `403`. The deployment keeps `workers_dev=true`, `preview_urls=false`,
+observability and invocation logs disabled, `USAGE_COLLECTION_ENABLED=false`, frontend
+`USAGE_PROFILE_ENABLED=false`, and general-user `RELAY_ENABLED=false`.
+
+This is a verified stopped production shell, not collection enablement. Collection and
+frontend connection require a separate approval after the public notice, retention and
+Cloudflare recovery-history boundaries, stop, export, and deletion have received their
+final pre-rollout check.
 
 Product analytics must remain separate from public Web Analytics, CGM transport, and
 glucose storage. Do not place glucose values, graphs, AI-letter contents, Nightscout or
@@ -3242,8 +3280,9 @@ viewing convenience, not an alarm or a substitute for the original CGM applicati
 3. Plus 30日パスと任意の開発支援への導線
 4. ユーザー展開開始後の、横向きグラフ限定の常時表示モード
 
-ユーザー基盤では、本人が決める表示名と、アクセス回数、AI分析回数、
-集めたグルコの想い出、購入機能を提供するために必要なPlus利用権などを候補にできます。
+ユーザー基盤では、本人が決める表示名と、利用した日数、新しく完了したAI分析回数、
+通常のグルコの想い出数などを候補にできます。アカウントとしての本人識別と、
+購入機能を提供するために必要なPlus利用権は、後の別の境界とします。
 任意の開発支援は、プロフィールや利用分析へ自動的に結びつけません。
 通常の最小限の利用回数を収集する前に、項目、目的、閲覧権限、保存期間、
 訂正、書き出し、削除、簡単な停止方法を分かりやすく案内します。
@@ -3255,6 +3294,35 @@ GlucoScopeの運営と改善に必要な範囲だけにします。
 利用者IDを作らず、プロフィールや利用イベントを送信しません。
 表示名の保存だけで利用状況収集を開始せず、公開Web Analyticsの動作も変えません。
 グルコ表示用のvisitor seedは、アカウントや利用分析の識別子へ流用しません。
+
+停止状態で準備するPhase 1Bは、アカウントではなくブラウザごとの端末プロフィールです。
+短い案内と「この端末の利用状況を共有する」「今はしない」を分けて表示し、
+チェックボックスを追加せず、共有しなくても基本機能を使えるようにします。
+送ってよいのは、任意の表示名、1日最大1回の利用日、新しく正常に完了したAI分析回数、
+通常のグルコの想い出No.1〜50の現在数だけです。血糖由来の条件が出現に影響し得る
+Lucky Gluco No.51〜70とUnicorn Glucoは除外し、想い出IDや出会った日も送りません。
+同じ人が2つのブラウザで使うと2件になり、ブラウザ保存を消すと復旧・端末統合はできません。
+この識別情報をPlus、決済、医療データへ流用しません。
+
+Phase 1Bのクライアントと操作画面は、最初は収集停止の設定でGitへ追加します。
+停止中の公開画面は「準備中」と表示して新規登録へ誘導せず、プロフィールや利用イベントを
+送りません。過去に登録済みのブラウザがある場合は、停止中でも今後の共有停止と、
+既存記録の書き出し・削除を利用できます。
+
+2026年8月11日、項目を明示した1回の承認の範囲で、収集を開始せず停止状態の本番基盤を
+整えました。APACにD1 `glucoscope-usage` を作成して初期migrationを適用し、3つの
+tableとD1内だけの管理者viewがすべて0件であることを確認しました。Secret名
+`TURNSTILE_SECRET_KEY` を値を記録せず登録し、停止Workerを
+`https://glucoscope-usage.afterglow21.workers.dev` へデプロイしました。確認時の
+Current Version IDは `3c2c3d19-3744-4d01-8e62-76a0f1bdd5bf` です。許可Originの
+preflightは`204`、profileとeventの書き込みは停止中の`503`、不許可OriginとOriginなしは
+`403`でした。`workers_dev=true`、`preview_urls=false`、observabilityとinvocation logsを
+無効にし、Worker側 `USAGE_COLLECTION_ENABLED=false`、フロント側
+`USAGE_PROFILE_ENABLED=false`、一般利用者向け `RELAY_ENABLED=false` を維持しています。
+
+これは停止した本番の器の確認であり、収集開始ではありません。公開案内、保存期間と
+Cloudflareの復旧履歴、停止・書き出し・削除を最終確認した後も、収集有効化と
+フロント接続には別の明示承認が必要です。
 
 プロダクト内の利用分析は、未ログインの公開Web Analytics、CGMの通信、
 血糖データの保存とは分離します。血糖値、グラフ、AIお手紙本文、

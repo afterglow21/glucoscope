@@ -1,0 +1,52 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "glucoscope-usage",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-11",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": {
+    "enabled": false,
+    "logs": {
+      "invocation_logs": false
+    }
+  },
+  "secrets": {
+    "required": [
+      "TURNSTILE_SECRET_KEY"
+    ]
+  },
+  "d1_databases": [
+    {
+      "binding": "USAGE_DB",
+      "database_name": "glucoscope-usage",
+      "database_id": "31db1c25-65a3-44e2-b878-73b18477d4a5",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "17 18 * * *"
+    ]
+  },
+  "vars": {
+    "USAGE_COLLECTION_ENABLED": "false",
+    "USAGE_NOTICE_VERSION": "2026-08-11",
+    "USAGE_TIMEZONE_OFFSET_HOURS": "9",
+    "CORS_ALLOWED_ORIGIN": "https://afterglow21.github.io",
+    "CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN": "false",
+    "MAX_REQUEST_BYTES": "8192",
+    "MAX_EVENTS_PER_REQUEST": "20",
+    "PROFILE_DAILY_REQUEST_LIMIT": "250",
+    "AI_GENERATION_SUCCESS_DAILY_LIMIT": "30",
+    "DAILY_USAGE_RETENTION_DAYS": "90",
+    "EVENT_RECEIPT_RETENTION_DAYS": "7",
+    "INACTIVE_PROFILE_RETENTION_DAYS": "90",
+    "TURNSTILE_EXPECTED_HOSTNAME": "afterglow21.github.io",
+    "TURNSTILE_EXPECTED_ACTION": "glucoscope-usage-profile",
+    "TURNSTILE_TIMEOUT_MS": "10000"
+  }
+}

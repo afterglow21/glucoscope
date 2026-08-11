@@ -19,7 +19,7 @@ const guardianGuide = await readFile(new URL("../guides/guardian-monitor/index.h
 test("public data connection remains clickable while clearly marked under construction", () => {
   assert.match(index, /データ接続（工事中）/);
   assert.match(index, /Gluroo接続はまだ限定テスト中/);
-  assert.match(index, /js\/app\.js\?v=20260811-simple-profile-1/);
+  assert.match(index, /js\/app\.js\?v=20260811-usage-profile-stage-1/);
   assert.match(app, /dataSourceButtonDemo: "データ接続（工事中）"/);
   assert.match(app, /dataSourceDialogTitle: "Data connection \(under construction\)"/);
   assert.doesNotMatch(index, /id="dataSourceButton"[^>]+disabled/);
@@ -30,7 +30,7 @@ test("local profile is a simple optional display-name setting stored only on thi
   assert.match(index, /id="localProfileButton"/);
   assert.match(index, /id="mobileLocalProfileButton"/);
   assert.match(index, /GlucoScopeで使う表示名を、この端末のブラウザに保存できます/);
-  assert.match(index, /いまは管理者には送信されません/);
+  assert.match(index, /共有機能を始めない限り、管理者には送信されません/);
   assert.match(index, /表示名（任意）/);
   assert.match(index, /本名でなくて大丈夫です/);
   assert.match(index, /この端末から表示名を削除/);
@@ -54,7 +54,7 @@ test("local profile is a simple optional display-name setting stored only on thi
 });
 
 test("local profile controls stay local, fail closed, and preserve accessible dialog behavior", () => {
-  assert.match(index, /js\/local-profile\.js\?v=20260811-simple-profile-1/);
+  assert.match(index, /js\/local-profile\.js\?v=20260811-usage-profile-stage-1/);
   assert.match(localProfile, /glucoscope\.localProfile\.v1/);
   assert.doesNotMatch(localProfile, /\b(?:fetch|XMLHttpRequest|sendBeacon|WebSocket)\b/);
   assert.doesNotMatch(localProfile, /visitorSeed|dataSourceRelayConsent|futureUsage|UsageSharing|willing|unwilling|undecided|consent/i);

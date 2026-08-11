@@ -9,6 +9,7 @@ const analyticsSource = await readFile(new URL("../js/analytics-loader.js", impo
 const connectionStorageKey = "glucoscope.dataSource.v1";
 const sessionConnectionStorageKey = "glucoscope.dataSource.session.v1";
 const profileStorageKey = "glucoscope.localProfile.v1";
+const usageProfileStorageKey = "glucoscope.usageProfile.v1";
 
 function storageWith(values = {}, throws = false) {
   return {
@@ -25,6 +26,8 @@ function runAnalyticsLoader({
   localValue = null,
   sessionValue = null,
   profileValue = null,
+  usageProfileValue = null,
+  usageEnrollmentAvailable = false,
   localStorageThrows = false,
   sessionStorageThrows = false
 } = {}) {
@@ -34,12 +37,21 @@ function runAnalyticsLoader({
     location: { search, pathname },
     localStorage: storageWith({
       [connectionStorageKey]: localValue,
-      [profileStorageKey]: profileValue
+      [profileStorageKey]: profileValue,
+      [usageProfileStorageKey]: usageProfileValue
     }, localStorageThrows),
     sessionStorage: storageWith({
       [sessionConnectionStorageKey]: sessionValue
     }, sessionStorageThrows),
     document: {
+      querySelector(selector) {
+        if (selector !== 'meta[name="glucoscope-usage-profile-enabled"]') return null;
+        return {
+          getAttribute(name) {
+            return name === "content" && usageEnrollmentAvailable ? "true" : "false";
+          }
+        };
+      },
       head: {
         appendChild(node) {
           appended.push(node);
@@ -100,6 +112,20 @@ test("a local display-name profile does not disable public Web Analytics", () =>
   assert.doesNotMatch(analyticsSource, /glucoscope\.localProfile\.v1|LOCAL_PROFILE_STORAGE_KEY/);
 });
 
+test("a usage profile disables public Web Analytics before a bearer token can coexist with it", () => {
+  for (const usageProfileValue of [
+    JSON.stringify({ schemaVersion: 1, profileId: "opaque", profileToken: "sensitive" }),
+    "{broken"
+  ]) {
+    assert.equal(runAnalyticsLoader({ usageProfileValue }).length, 0);
+  }
+  assert.match(analyticsSource, /glucoscope\.usageProfile\.v1/);
+});
+
+test("the main page disables Web Analytics before usage enrollment can create a bearer token", () => {
+  assert.equal(runAnalyticsLoader({ usageEnrollmentAvailable: true }).length, 0);
+});
+
 test("analytics fails closed when either browser storage cannot be inspected", () => {
   assert.equal(runAnalyticsLoader({ localStorageThrows: true }).length, 0);
   assert.equal(runAnalyticsLoader({ sessionStorageThrows: true }).length, 0);
@@ -117,7 +143,7 @@ test("main, About, and Trust pages use the local analytics privacy gate", async 
   const files = ["index.html", ...await collectHtmlFiles("pages/about/"), ...await collectHtmlFiles("pages/trust/")];
   for (const file of files) {
     const html = await readFile(new URL(`../${file}`, import.meta.url), "utf8");
-    assert.match(html, /analytics-loader\.js/, file);
+    assert.match(html, /analytics-loader\.js\?v=20260811-usage-profile-stage-1/, file);
     assert.doesNotMatch(html, /static\.cloudflareinsights\.com/, file);
   }
 });

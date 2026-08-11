@@ -3,6 +3,7 @@
 
   const STORAGE_KEY = "glucoscope.dataSource.v1";
   const SESSION_STORAGE_KEY = "glucoscope.dataSource.session.v1";
+  const USAGE_PROFILE_STORAGE_KEY = "glucoscope.usageProfile.v1";
   const ANALYTICS_URL = "https://static.cloudflareinsights.com/beacon.min.js";
   const ANALYTICS_TOKEN = "5dec761abbfe4147b1fecebc68f8e382";
 
@@ -22,12 +23,20 @@
       const params = new URLSearchParams(root?.location?.search || "");
       if (params.get("mode") === "user") return true;
       if (/\/user\.html$/i.test(root?.location?.pathname || "")) return true;
+      const usageProfileMeta = root?.document?.querySelector?.(
+        'meta[name="glucoscope-usage-profile-enabled"]'
+      );
+      if (String(usageProfileMeta?.getAttribute?.("content") || "").toLowerCase() === "true") {
+        return true;
+      }
     } catch (error) {
       return true;
     }
 
-    // The optional local display name is a UI setting and does not change public analytics.
+    // The optional local display name is only a UI setting. A usage-profile key may
+    // contain a bearer credential, so third-party analytics must not share its page.
     return storageContainsConnection("localStorage", STORAGE_KEY)
+      || storageContainsConnection("localStorage", USAGE_PROFILE_STORAGE_KEY)
       || storageContainsConnection("sessionStorage", SESSION_STORAGE_KEY);
   }
 

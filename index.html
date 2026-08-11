@@ -24,7 +24,8 @@
   <title>GlucoScope</title>
   <!-- GlucoScope Limited Data Relay: the public endpoint is configured for paused acceptance testing only. -->
   <meta name="glucoscope-data-relay-endpoint" content="https://glucoscope-data-relay.afterglow21.workers.dev">
-  <link rel="stylesheet" href="style.css?v=20260811-simple-profile-1">
+  <meta name="glucoscope-usage-profile-enabled" content="false">
+  <link rel="stylesheet" href="style.css?v=20260811-usage-profile-stage-1">
 </head>
 <body>
 
@@ -207,7 +208,7 @@
       </div>
     </div>
 
-    <p id="localProfileDialogLead" class="local-profile-lead" data-i18n-key="localProfileDialogLead">GlucoScopeで使う表示名を、この端末のブラウザに保存できます。いまは管理者には送信されません。</p>
+    <p id="localProfileDialogLead" class="local-profile-lead" data-i18n-key="localProfileDialogLead">GlucoScopeで使う表示名を、この端末のブラウザに保存できます。下の共有機能を始めない限り、管理者には送信されません。</p>
 
     <form id="localProfileForm" class="local-profile-form" novalidate>
       <label class="local-profile-field" for="localProfileDisplayName">
@@ -215,6 +216,53 @@
         <input id="localProfileDisplayName" name="displayName" type="text" autocomplete="nickname" aria-describedby="localProfileDisplayNameHelp">
         <small id="localProfileDisplayNameHelp" data-i18n-key="localProfileDisplayNameHelp">本名でなくて大丈夫です。ニックネームをあとから変更・削除できます（最大30文字）。</small>
       </label>
+
+      <section id="usageProfileCard" class="usage-profile-card" aria-labelledby="usageProfileCardTitle">
+        <div class="usage-profile-card-head">
+          <strong id="usageProfileCardTitle" data-i18n-key="usageProfileCardTitle">利用状況の共有</strong>
+          <span id="usageProfileStateBadge" class="usage-profile-state-badge" data-i18n-key="usageProfileBadgePreparing">準備中</span>
+        </div>
+
+        <p id="usageProfilePreparing" class="usage-profile-preparing" data-i18n-key="usageProfilePreparing">この機能はただいま準備中です。いまは表示名だけがこの端末に保存され、利用状況は送信されません。</p>
+
+        <div id="usageProfileNotice" class="usage-profile-notice" hidden>
+          <p data-i18n-key="usageProfileNoticeLead">共有を始めると、GlucoScopeをよりよくするために、Kazumaが次の内容だけを確認できます。</p>
+          <ul>
+            <li data-i18n-key="usageProfileNoticeDisplayName">任意の表示名</li>
+            <li data-i18n-key="usageProfileNoticeVisitDays">GlucoScopeを利用した日数</li>
+            <li data-i18n-key="usageProfileNoticeAiCount">新しく成功したAI分析の回数</li>
+            <li data-i18n-key="usageProfileNoticeMemoryCount">通常のグルコの想い出（No.1〜50）の数</li>
+          </ul>
+          <p class="usage-profile-boundary" data-i18n-key="usageProfileNoticeBoundary">血糖値、グラフ、接続情報、AIお手紙の内容は送りません。共有しなくても、血糖表示などの基本機能はそのまま使えます。</p>
+          <p class="usage-profile-device-note" data-i18n-key="usageProfileDeviceNote">これはアカウントではなく、このブラウザだけの端末プロフィールです。別の端末とはまとまらず、ブラウザのデータを消すと引き継げません。</p>
+          <div class="usage-profile-actions">
+            <button id="usageProfileStartButton" class="usage-profile-primary-button" type="button" data-i18n-key="usageProfileStartButton">この端末の利用状況を共有する</button>
+            <button id="usageProfileSkipButton" class="usage-profile-secondary-button" type="button" data-i18n-key="usageProfileSkipButton">今はしない</button>
+          </div>
+          <div id="usageProfileTurnstile" class="usage-profile-turnstile" hidden aria-label="利用状況共有の安全確認"></div>
+        </div>
+
+        <div id="usageProfileActive" class="usage-profile-state-panel" hidden>
+          <p data-i18n-key="usageProfileActive">この端末の利用状況を共有しています。いつでも停止、書き出し、削除できます。</p>
+          <div class="usage-profile-actions">
+            <button id="usageProfileStopButton" class="usage-profile-secondary-button" type="button" data-i18n-key="usageProfileStopButton">共有を停止する</button>
+            <button id="usageProfileExportActiveButton" class="usage-profile-secondary-button" type="button" data-i18n-key="usageProfileExportButton">自分の記録を書き出す</button>
+            <button id="usageProfileDeleteActiveButton" class="usage-profile-delete-button" type="button" data-i18n-key="usageProfileDeleteButton">共有した記録を削除する</button>
+          </div>
+        </div>
+
+        <div id="usageProfileStopped" class="usage-profile-state-panel" hidden>
+          <p id="usageProfileStoppedMessage" data-i18n-key="usageProfileStopped">共有を停止しています。新しい利用回数は送りません。これまでの記録は、再開、書き出し、削除ができます。</p>
+          <div class="usage-profile-actions">
+            <button id="usageProfileResumeButton" class="usage-profile-primary-button" type="button" data-i18n-key="usageProfileResumeButton">共有を再開する</button>
+            <button id="usageProfileStopDisabledButton" class="usage-profile-secondary-button" type="button" data-i18n-key="usageProfileStopDisabledButton" hidden>今後の共有も停止する</button>
+            <button id="usageProfileExportStoppedButton" class="usage-profile-secondary-button" type="button" data-i18n-key="usageProfileExportButton">自分の記録を書き出す</button>
+            <button id="usageProfileDeleteStoppedButton" class="usage-profile-delete-button" type="button" data-i18n-key="usageProfileDeleteButton">共有した記録を削除する</button>
+          </div>
+        </div>
+
+        <div id="usageProfileStatus" class="usage-profile-status" role="status" aria-live="polite"></div>
+      </section>
 
       <div id="localProfileStatus" class="local-profile-status" role="status" aria-live="polite"></div>
 
@@ -777,13 +825,14 @@
 <script src="js/api.js"></script>
 <script src="js/data-source.js?v=20260721-user-foundation-3-2"></script>
 <script src="js/data-relay-client.js?v=20260806-turnstile-server-code-1"></script>
-<script src="js/local-profile.js?v=20260811-simple-profile-1"></script>
+<script src="js/local-profile.js?v=20260811-usage-profile-stage-1"></script>
+<script src="js/usage-client.js?v=20260811-usage-profile-stage-1"></script>
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js?v=20260721-user-foundation-3"></script>
-<script src="js/app.js?v=20260811-simple-profile-1"></script>
+<script src="js/app.js?v=20260811-usage-profile-stage-1"></script>
 <!-- Cloudflare Web Analytics: aggregate page-view and performance metrics only -->
-<script src="js/analytics-loader.js?v=20260811-simple-profile-1"></script>
+<script src="js/analytics-loader.js?v=20260811-usage-profile-stage-1"></script>
 <!-- End Cloudflare Web Analytics -->
 </body>
 </html>

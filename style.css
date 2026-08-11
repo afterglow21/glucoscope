@@ -7173,6 +7173,161 @@ body.local-profile-dialog-open {
   line-height:1.65;
 }
 
+.usage-profile-card {
+  display:grid;
+  gap:12px;
+  padding:15px;
+  border:1px solid rgba(110,231,183,.18);
+  border-radius:16px;
+  background:linear-gradient(180deg,rgba(15,118,110,.10),rgba(15,23,42,.22));
+}
+
+.usage-profile-card-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.usage-profile-card-head strong {
+  color:#ecfdf5;
+  font-size:15px;
+}
+
+.usage-profile-state-badge {
+  flex:0 0 auto;
+  padding:4px 9px;
+  border:1px solid rgba(148,163,184,.26);
+  border-radius:999px;
+  background:rgba(30,41,59,.64);
+  color:#cbd5e1;
+  font-size:11px;
+  font-weight:900;
+}
+
+.usage-profile-state-badge.is-active {
+  border-color:rgba(74,222,128,.34);
+  background:rgba(22,101,52,.26);
+  color:#bbf7d0;
+}
+
+.usage-profile-state-badge.is-stopped {
+  border-color:rgba(251,191,36,.30);
+  background:rgba(120,53,15,.22);
+  color:#fde68a;
+}
+
+.usage-profile-preparing,
+.usage-profile-notice p,
+.usage-profile-state-panel p {
+  margin:0;
+  color:#c5d4e6;
+  font-size:13px;
+  line-height:1.7;
+}
+
+.usage-profile-notice,
+.usage-profile-state-panel {
+  display:grid;
+  gap:11px;
+}
+
+.usage-profile-notice[hidden],
+.usage-profile-state-panel[hidden],
+.usage-profile-turnstile[hidden] {
+  display:none !important;
+}
+
+.usage-profile-notice ul {
+  display:grid;
+  gap:5px;
+  margin:0;
+  padding-left:1.35em;
+  color:#dbeafe;
+  font-size:13px;
+  line-height:1.6;
+}
+
+.usage-profile-boundary {
+  padding:10px 11px;
+  border-radius:12px;
+  background:rgba(15,23,42,.38);
+  color:#d9fbe9 !important;
+}
+
+.usage-profile-device-note {
+  color:#aebfd3 !important;
+  font-size:12px !important;
+}
+
+.usage-profile-actions {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.usage-profile-primary-button,
+.usage-profile-secondary-button,
+.usage-profile-delete-button {
+  min-height:44px;
+  border-radius:12px;
+  padding:9px 12px;
+  font:inherit;
+  font-size:13px;
+  font-weight:850;
+  cursor:pointer;
+}
+
+.usage-profile-primary-button {
+  border:1px solid rgba(74,222,128,.42);
+  background:#1f8c52;
+  color:#fff;
+}
+
+.usage-profile-secondary-button {
+  border:1px solid rgba(148,163,184,.28);
+  background:rgba(30,41,59,.68);
+  color:#e2e8f0;
+}
+
+.usage-profile-delete-button {
+  border:1px solid rgba(248,113,113,.30);
+  background:rgba(127,29,29,.18);
+  color:#fecaca;
+}
+
+.usage-profile-primary-button:disabled,
+.usage-profile-secondary-button:disabled,
+.usage-profile-delete-button:disabled {
+  cursor:not-allowed;
+  opacity:.58;
+}
+
+.usage-profile-turnstile {
+  min-height:66px;
+  width:100%;
+  overflow:hidden;
+}
+
+.usage-profile-status {
+  min-height:0;
+  color:#b9c9dd;
+  font-size:12.5px;
+  line-height:1.6;
+}
+
+.usage-profile-status:not(:empty) {
+  min-height:20px;
+}
+
+.usage-profile-status.success {
+  color:#bbf7d0;
+}
+
+.usage-profile-status.error {
+  color:#fecaca;
+}
+
 .local-profile-status {
   min-height:22px;
   color:#b9c9dd;
@@ -7862,8 +8017,16 @@ body.local-profile-dialog-open {
     grid-template-columns:1fr;
   }
 
+  .usage-profile-actions {
+    display:grid;
+    grid-template-columns:1fr;
+  }
+
   .local-profile-save-button,
-  .local-profile-delete-button {
+  .local-profile-delete-button,
+  .usage-profile-primary-button,
+  .usage-profile-secondary-button,
+  .usage-profile-delete-button {
     width:100%;
   }
 

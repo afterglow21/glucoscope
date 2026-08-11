@@ -51,8 +51,10 @@
 </section>
 <section class="trust-section">
   <h2>端末内の「あなたの設定」</h2>
-  <p>任意の表示名だけを、このブラウザへ保存できます。表示名は本名である必要はありません。現在はGlucoScopeのサーバーや管理者へ送信せず、利用者IDも作りません。</p>
-  <p>表示名を保存したかどうかだけで、Cloudflare Web Analyticsを停止・再開しません。将来、最小限の利用回数を記録する場合は、内容と目的、保存期間、管理者に見える範囲、停止・書き出し・削除方法を分かりやすく案内し、設定からいつでも止められるようにします。</p>
+  <p>任意の表示名だけを、このブラウザへ保存できます。表示名は本名である必要はありません。利用状況の共有を別に始めない限り、GlucoScopeのサーバーや管理者へ送信しません。</p>
+  <p>端末プロフィールの共有画面と通信クライアントは停止状態で準備中です。いまは「準備中」と表示し、新しい端末プロフィールや利用記録を作りません。有効化する場合も、管理者が確認できる候補は任意表示名、1日最大1回の利用日、新しく成功したAI分析、通常のグルコの想い出No.1〜50の数だけです。血糖値、グラフ、接続情報、AIお手紙本文、Lucky Gluco No.51〜70、Unicorn Glucoは送りません。</p>
+  <p>これはアカウントではなくブラウザごとの端末プロフィールです。同じ人が別端末で使うと別々になり、ブラウザ保存を消すと復旧・統合できません。共有しなくても基本機能は変わりません。有効化前に、停止・書き出し・削除と90日保存、Cloudflareの復旧履歴を確認して案内します。過去に登録済みの端末がある場合は、新規開始を停止している間も書き出し・削除を使える設計にします。</p>
+  <p>表示名を保存したかどうかだけで、Cloudflare Web Analyticsを停止・再開しません。利用状況共有を始められる画面では開始前から読み込まず、端末プロフィールの認証情報がこのブラウザに保存されている間も、その情報を第三者スクリプトと同じページに置かないため読み込みません。</p>
   <p>血糖・健康データを保存する場合や、本人データを公開共有する場合などは、別に明示的な確認を行います。この設定は血糖データ接続、限定中継、AI、グルコの想い出と分離しています。</p>
 </section>
 <section class="trust-section">
@@ -78,7 +80,7 @@
 </section>
 <section class="trust-section">
   <h2>公開ページのアクセス分析</h2>
-  <p>公開デモなどの公開ページには、プライバシーを重視したCloudflare Web Analyticsを導入し、ページ閲覧や表示性能の全体傾向を確認しています。ただし、ユーザーモード中、接続情報がこのブラウザに保存されている間、または保存状態を安全に確認できない場合は、AboutやTrustを含むGlucoScope内のページでWeb Analyticsのビーコンを読み込みません。任意の表示名を保存または削除したことだけでは停止・再開しません。個々の人をGlucoScope内で識別するための独自IDや、独自の行動追跡イベントも追加していません。</p>
+  <p>公開デモなどの公開ページには、プライバシーを重視したCloudflare Web Analyticsを導入し、ページ閲覧や表示性能の全体傾向を確認しています。ただし、ユーザーモード中、利用状況共有を始められるメイン画面、接続情報または利用状況共有の端末プロフィールがこのブラウザに保存されている間、または保存状態を安全に確認できない場合は、AboutやTrustを含むGlucoScope内のページでWeb Analyticsのビーコンを読み込みません。任意の表示名を保存または削除したことだけでは停止・再開しません。個々の人をGlucoScope内で識別するための独自IDや、独自の行動追跡イベントも追加していません。</p>
   <p>ユーザー版で使うChart.jsはGlucoScope内に同梱し、接続情報や血糖データを扱うページで外部CDNのグラフ用JavaScriptを実行しない構成にしています。</p>
   <p>血糖値、GlucoScore、AIお手紙本文、Nightscout URL、API情報をアクセス分析のイベント名や追加データとして送る実装は行いません。スマホの各タブ操作も、健康情報を含む個別イベントとして追跡しません。</p>
 </section>
@@ -111,8 +113,10 @@
 </section>
 <section class="trust-section">
   <h2>Local “Your settings”</h2>
-  <p>An optional display name can be saved only in this browser. A real name is not required. It is not currently sent to a GlucoScope server or the administrator, and no user identifier is created.</p>
-  <p>Saving the display name alone does not stop or start Cloudflare Web Analytics. Before recording minimal first-party usage counts in the future, GlucoScope will clearly explain the fields, purpose, retention, administrator visibility, and stop, export, and deletion controls, with an easy setting to stop collection.</p>
+  <p>An optional display name can be saved in this browser. A real name is not required. It is not sent to a GlucoScope server or the administrator unless usage sharing is started separately.</p>
+  <p>The browser-profile screen and client are staged with collection disabled. The public screen says the feature is in preparation and creates no new browser profile or usage record. If enabled later, the only candidate fields visible to the administrator are the optional display name, at most one visit day per day, newly completed AI analyses, and the number of ordinary Gluco memories No. 1–50. Glucose values, graphs, connection details, AI letter contents, Lucky Gluco No. 51–70, and Unicorn Gluco are not sent.</p>
+  <p>This is a per-browser profile, not an account. The same person appears separately on another device, and erasing browser storage prevents recovery or merging. Core features work without sharing. Before enablement, stop, export, deletion, 90-day retention, and Cloudflare recovery-history behavior will be reviewed and explained. A previously registered browser remains able to export or delete its record while new starts are disabled.</p>
+  <p>Saving the display name alone does not stop or start Cloudflare Web Analytics. The main page does not load it when usage sharing can be started, and it also remains off while a browser-profile credential exists, so that credential does not coexist with a third-party script on the page.</p>
   <p>Separate explicit confirmation will be used for health or glucose data, public sharing of a person's data, or another genuinely sensitive use. This setting remains separate from glucose connection, the limited relay, AI, and Gluco memories.</p>
 </section>
 <section class="trust-section">
@@ -138,7 +142,7 @@
 </section>
 <section class="trust-section">
   <h2>Public web analytics</h2>
-  <p>Public-demo pages use privacy-first Cloudflare Web Analytics to review aggregate page visits and performance. The analytics beacon is not loaded in user mode, while a GlucoScope user connection remains in browser storage, or when that storage state cannot be checked. Saving or removing the optional local display name alone does not stop or start it. This applies across same-origin About and Trust pages. GlucoScope does not add a custom visitor ID or custom behavioral events.</p>
+  <p>Public-demo pages use privacy-first Cloudflare Web Analytics to review aggregate page visits and performance. The analytics beacon is not loaded in user mode, on the main page while usage sharing can be started, while a GlucoScope user connection or usage browser profile remains in browser storage, or when that storage state cannot be checked. Saving or removing the optional local display name alone does not stop or start it. This applies across same-origin About and Trust pages. GlucoScope does not add a custom visitor ID or custom behavioral events.</p>
   <p>Chart.js is served from a reviewed local copy on the user-data page instead of running the chart library from a third-party CDN.</p>
   <p>Glucose values, GlucoScore, AI letter text, Nightscout URLs, and API information are not intentionally sent as analytics event names or additional analytics data. Mobile tab actions are not tracked as health-data events.</p>
 </section>
@@ -154,7 +158,7 @@
 </section>
   </main>
 <!-- Cloudflare Web Analytics -->
-<script src="../../js/analytics-loader.js?v=20260811-simple-profile-1"></script>
+<script src="../../js/analytics-loader.js?v=20260811-usage-profile-stage-1"></script>
 <!-- End Cloudflare Web Analytics -->
 </body>
 </html>
