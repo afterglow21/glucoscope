@@ -243,6 +243,8 @@ Guide screenshots remain separate, replaceable assets. Fixed-position focus boxe
 
 Every source screenshot that represents a distinct screen or user decision should have a corresponding step or screen checkpoint. Optional screens must not disappear into a broad summary. The reviewed iPhone Gluroo 2.0.5 source set contains 34 screens from App Store search through Global Connect URL/token confirmation. The device branches additionally use the complete supplied sets of 27 LibreLink / LibreLinkUp captures and 10 Dexcom Share captures. CGM-specific screens remain alternative branches rather than actions every person must complete. Each guide must display or explain its reviewed environment and clearly warn that app updates, CGM choice, answers, language, and region may change the screen, wording, order, or whether a screen appears. When an exact app-icon image is not available as a reviewed local asset, the guide must not draw a look-alike and present it as official. It should instead show a clearly labeled app-identification card, exact app name, developer name, and official App Store link until the reviewed icon or screenshot is added.
 
+The reviewed LibreLink and LibreLinkUp icon pair supplied on 2026-08-12 is maintained as replaceable, metadata-free app-identification assets. The guide uses faithful crops of those icons together with the exact app and developer names and official App Store links; it does not redraw or recolor either third-party mark.
+
 ## Real-device test gate
 
 Dexcom and Libre sensors should not be activated only to test unfinished onboarding work. Before using limited-life test sensors, the following must be ready:

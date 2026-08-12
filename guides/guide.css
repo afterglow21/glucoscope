@@ -130,8 +130,6 @@ p{margin:0 0 12px}
 .guide-app-now span:not(.guide-app-icon),.guide-app-card span:not(.guide-app-icon){color:var(--guide-muted);font-size:.8rem}
 .guide-app-icon{flex:0 0 auto;display:grid;place-items:center;width:58px;height:58px;border-radius:15px;color:#fff;font-weight:900;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
 .guide-app-icon-gluroo{background:linear-gradient(145deg,#7156a8,#3e2f78)}
-.guide-app-icon-libre{background:linear-gradient(145deg,#ffd83d,#ee9c20);color:#27384d}
-.guide-app-icon-linkup{background:linear-gradient(145deg,#31a7d3,#19729e)}
 .guide-app-icon-dexcom{background:linear-gradient(145deg,#35a853,#13823b)}
 .guide-app-icon-mail{background:linear-gradient(145deg,#59a9ee,#246fb6)}
 .guide-app-compare{display:grid;gap:10px;margin-top:14px}
@@ -164,7 +162,7 @@ p{margin:0 0 12px}
 /* User Foundation 0.3.5: reviewed red-frame captures and official app identity */
 .guide-app-icon-image{flex:0 0 auto;display:block;width:58px;height:58px;object-fit:cover;border-radius:15px;border:1px solid var(--guide-border);box-shadow:0 3px 10px rgba(36,53,74,.10)}
 .guide-app-store-icon-link{flex:0 0 auto;display:grid;place-items:center;width:58px;height:58px;border-radius:15px;background:#f5f5f7;border:1px solid #d8d8dc;color:#1d1d1f;text-decoration:none;box-shadow:0 3px 10px rgba(36,53,74,.08)}
-.guide-app-store-icon-placeholder{font-size:.65rem!important;line-height:1.05!important;font-weight:900;text-align:center;color:#1d1d1f!important}
+.guide-app-store-icon-link .guide-app-icon-image{width:100%;height:100%;border:0;border-radius:inherit;box-shadow:none}
 .guide-app-store-icon-link:focus-visible{outline:3px solid #4e9bd6;outline-offset:3px}
 @media(max-width:720px){.guide-app-icon-image,.guide-app-store-icon-link{width:46px;height:46px;border-radius:12px}}
 

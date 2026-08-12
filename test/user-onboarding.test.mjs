@@ -255,7 +255,7 @@ test("Dexcom Share guide uses every supplied screen in one-screen steps", async 
   }
 });
 
-test("Libre guide identifies each app before switching", () => {
+test("Libre guide identifies each app before switching", async () => {
   assert.match(glurooGuide, /\.\.\/librelinkup/);
   assert.match(libreGuide, /FreeStyle LibreLink – JP/);
   assert.match(libreGuide, /Abbott Labs/);
@@ -266,10 +266,18 @@ test("Libre guide identifies each app before switching", () => {
   assert.match(libreGuide, /アプリアイコンは更新で変わる/);
   assert.match(libreGuide, /id1449296861/);
   assert.match(libreGuide, /id1234323923/);
+  assert.match(libreGuide, /guide\.css\?v=20260812-libre-app-icons-1/);
   assert.match(guideCss, /\.guide-app-now/);
   assert.match(libreGuide, /guide-app-store-icon-link/);
+  assert.equal((libreGuide.match(/images\/app-icons\/librelink-app\.png/g) || []).length, 2);
+  assert.equal((libreGuide.match(/images\/app-icons\/librelinkup-app\.png/g) || []).length, 2);
+  assert.match(libreGuide, /LibreLinkの黄色いアプリアイコン/);
+  assert.match(libreGuide, /LibreLinkUpの濃い紺色に黄色いマークのアプリアイコン/);
+  assert.doesNotMatch(libreGuide, /guide-app-store-icon-placeholder|guide-app-icon-libre|guide-app-icon-linkup/);
   assert.match(libreGuide, /gluroo-app-store\.webp/);
   assert.match(guideCss, /\.guide-app-icon-image/);
+  await access(new URL("../guides/librelinkup/images/app-icons/librelink-app.png", import.meta.url));
+  await access(new URL("../guides/librelinkup/images/app-icons/librelinkup-app.png", import.meta.url));
 });
 
 test("LibreLinkUp preparation guide explains invitation and credentials", () => {
