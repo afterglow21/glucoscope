@@ -78,9 +78,9 @@
 
       <div class="about-detail-mini-card">
         <div class="about-detail-mini-head"><span class="about-detail-mini-icon">🧭</span><h3><span class="about-detail-mini-title-en">Next Steps</span><span class="about-detail-mini-title-jp">次の課題</span></h3></div>
-        <p>端末プロフィールの実機確認では、最初の作成と日別記録に成功しましたが、成功後の再コールバックで誤ったエラーが表示されました。この時点でD1に残った既知の試験用プロフィール2件は、その後削除しました。cascade後の <code>profiles</code>、<code>usage_daily</code>、<code>event_receipts</code> は <code>0 / 0 / 0</code> です。新しい停止Version <code>7cb71965-74c3-47f9-b589-75cf6d669edb</code> をdeployment <code>25be2258-b72a-4e2c-8bf1-ab47781c48dc</code> で100%配信し、runtimeの <code>USAGE_COLLECTION_ENABLED=false</code>、許可Originのpreflight <code>204</code>、許可Originからのprofile <code>POST</code> が <code>503 usage_collection_paused</code>、不許可OriginとOriginなしが <code>403</code>、D1が再確認でも <code>0 / 0 / 0</code> であることを確認しました。画面と利用記録は停止中で、一般利用者向け限定中継も <code>RELAY_ENABLED=false</code> のままです。</p>
+        <p>端末プロフィールの実機確認では、最初の作成と日別記録に成功しましたが、成功後の再コールバックで誤ったエラーが表示されました。既知の試験用プロフィール2件は削除し、cascade後の <code>profiles</code>、<code>usage_daily</code>、<code>event_receipts</code> は <code>0 / 0 / 0</code> です。停止Version <code>7cb71965-74c3-47f9-b589-75cf6d669edb</code> とdeployment <code>25be2258-b72a-4e2c-8bf1-ab47781c48dc</code> を復旧先として残し、現在はactive Version <code>5d160aed-7b27-48e6-b0a8-783534f97b6f</code> を100%配信して、runtimeの <code>USAGE_COLLECTION_ENABLED=true</code> と画面を監督下一時確認のため有効にしています。許可Originのpreflight <code>204</code>、無効なダミーTurnstile tokenの <code>403 turnstile_failed</code>、不許可OriginとOriginなしの <code>403</code> を確認し、D1は引き続き <code>0 / 0 / 0</code> です。Gitに保存する設定は <code>false</code> のまま、一般利用者向け限定中継も <code>RELAY_ENABLED=false</code> のままです。</p>
         <ol>
-          <li>ユーザー基盤の続き：新しい停止VersionとD1の <code>0 / 0 / 0</code> を基準に、ローカル実装済みの再コールバック防止と簡素な接続画面を停止したまま再受け入れし、開始・停止・再開・削除と小さな書き出しリンクを確認</li>
+          <li>ユーザー基盤の続き：再コールバック防止と簡素な接続画面を監督下一時確認で有効にし、開始・停止・再開・削除と小さな書き出しリンクを実機で確認</li>
           <li>管理者ダッシュボード</li>
           <li>Plus 30日パスと支援導線</li>
           <li>ユーザー展開開始後の、横向きグラフ限定の常時表示モード</li>

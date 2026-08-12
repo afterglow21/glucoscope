@@ -24,7 +24,7 @@
   <title>GlucoScope</title>
   <!-- GlucoScope Limited Data Relay: the public endpoint is configured for paused acceptance testing only. -->
   <meta name="glucoscope-data-relay-endpoint" content="https://glucoscope-data-relay.afterglow21.workers.dev">
-  <meta name="glucoscope-usage-profile-enabled" content="false">
+  <meta name="glucoscope-usage-profile-enabled" content="true">
   <link rel="stylesheet" href="style.css?v=20260812-simple-connection-2">
 </head>
 <body>
@@ -157,7 +157,7 @@
         </label>
 
         <p class="data-source-usage-note">
-          <span id="dataSourceUsageNoteText" data-i18n-key="dataSourceUsageNotePaused">表示名はこの端末に保存します。利用記録は現在停止中です。</span>
+          <span id="dataSourceUsageNoteText" data-i18n-key="dataSourceUsageNote">表示名と基本的な利用回数を、GlucoScopeをよくするために記録します。血糖値や接続情報は記録しません。</span>
           <a id="dataSourceUsageDetailsLink" href="pages/trust/privacy-notes.html" data-i18n-key="dataSourceUsageDetails">記録と削除の詳しい説明</a>
         </p>
 
@@ -823,7 +823,7 @@
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js?v=20260721-user-foundation-3"></script>
-<script src="js/app.js?v=20260812-simple-connection-2"></script>
+<script src="js/app.js?v=20260812-supervised-usage-1"></script>
 <!-- Cloudflare Web Analytics: aggregate page-view and performance metrics only -->
 <script src="js/analytics-loader.js?v=20260811-usage-profile-stage-1"></script>
 <!-- End Cloudflare Web Analytics -->
