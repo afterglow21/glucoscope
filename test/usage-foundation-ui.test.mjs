@@ -7,15 +7,15 @@ const app = await readFile(new URL("../js/app.js", import.meta.url), "utf8");
 const localProfile = await readFile(new URL("../js/local-profile.js", import.meta.url), "utf8");
 const usageClient = await readFile(new URL("../js/usage-client.js", import.meta.url), "utf8");
 
-test("paused usage sharing keeps its frontend and analytics gates in lockstep", () => {
-  assert.match(index, /name="glucoscope-usage-profile-enabled" content="false"/);
+test("supervised usage recording keeps its frontend and analytics gates in lockstep", () => {
+  assert.match(index, /name="glucoscope-usage-profile-enabled" content="true"/);
   assert.match(index, /id="usageProfileCard"[^>]*hidden/);
   assert.match(index, /id="usageProfileActive"[^>]*hidden/);
   assert.match(index, /id="usageProfileStopped"[^>]*hidden/);
   assert.doesNotMatch(index, /id="usageProfilePreparing"|id="usageProfileNotice"/);
   assert.doesNotMatch(index, /id="usageProfileStartButton"|id="usageProfileSkipButton"/);
   assert.doesNotMatch(app, /usageProfile(?:Preparing|Notice|StartButton|SkipButton|SafetyCheck|Starting|Started|Skipped)/);
-  assert.match(app, /const USAGE_PROFILE_ENABLED = false;/);
+  assert.match(app, /const USAGE_PROFILE_ENABLED = true;/);
   assert.match(app, /dataSourceUsageNotePaused: "表示名はこの端末に保存します。利用記録は現在停止中です。"/);
   assert.match(app, /dataSourceUsageNotePaused: "The display name is saved on this device\. Usage recording is currently paused\."/);
   assert.match(app, /const usageNoteKey = USAGE_PROFILE_ENABLED \? "dataSourceUsageNote" : "dataSourceUsageNotePaused";/);
@@ -40,8 +40,8 @@ test("data connection asks for a required display name with one short usage note
   assert.doesNotMatch(displayName, /maxlength=/);
   assert.ok(form.indexOf('id="dataSourceDisplayName"') < form.indexOf('id="dataSourceUrl"'));
   assert.match(form, /本名でなくて大丈夫です/);
-  assert.match(form, /id="dataSourceUsageNoteText"[^>]*data-i18n-key="dataSourceUsageNotePaused"/);
-  assert.match(form, /表示名はこの端末に保存します。利用記録は現在停止中です。/);
+  assert.match(form, /id="dataSourceUsageNoteText"[^>]*data-i18n-key="dataSourceUsageNote"/);
+  assert.match(form, /表示名と基本的な利用回数を、GlucoScopeをよくするために記録します。血糖値や接続情報は記録しません。/);
   assert.match(form, /href="pages\/trust\/privacy-notes\.html"[^>]*data-i18n-key="dataSourceUsageDetails"/);
   assert.match(app, /dataSourceTestWaiting: "表示名と接続情報を入力して、つながるか確認します。"/);
   assert.doesNotMatch(form, /ランダムな番号|90日を上限|この端末の利用状況を共有する|今はしない/);
@@ -163,7 +163,7 @@ test("local display-name storage remains network-free and server sync is separat
   assert.doesNotMatch(localProfile, /\b(?:fetch|XMLHttpRequest|sendBeacon|WebSocket)\b/u);
   assert.match(index, /js\/local-profile\.js\?v=20260811-usage-profile-stage-1/);
   assert.match(index, /js\/usage-client\.js\?v=20260812-simple-connection-2/);
-  assert.match(index, /js\/app\.js\?v=20260812-simple-connection-2/);
+  assert.match(index, /js\/app\.js\?v=20260812-supervised-usage-1/);
   assert.match(app, /updateUsageProfileDisplayName\(result\.profile\.displayName\)/);
   assert.doesNotMatch(app, /handleLocalProfileDelete|localProfileDeleteButton/);
   assert.match(app, /if \(!state\.enabled \|\| !state\.registered\) return;/);

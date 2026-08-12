@@ -13,7 +13,7 @@ Gluroo support remains an interoperability proof of concept. GlucoScope does not
 
 ## User flow
 
-The following simplified flow is implemented in the local candidate. The repeated-callback guard is also implemented, but the usage Worker and frontend enrollment remain paused pending supervised re-acceptance, so this integrated flow is not yet live.
+The following simplified flow and repeated-callback guard are implemented. Usage Worker Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` and the frontend enrollment gate are active only for supervised re-acceptance. The checked-in Worker flag remains `false`, clean stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` remains the rollback target, and the general-user Limited Data Relay remains independently paused.
 
 1. Open `user.html` or `index.html?mode=user`.
 2. Choose exactly one numbered route.
@@ -144,7 +144,7 @@ Connection errors, missing data, old data, and unsupported formats should be sho
 - No third-party runtime chart script is loaded on the user-data page.
 - Analytics remains disabled while either user connection storage key exists.
 - JavaScript syntax checks and adapter tests pass.
-- The locally implemented repeated-callback guard and simplified lifecycle remain gated off until supervised re-acceptance passes.
+- The repeated-callback guard and simplified lifecycle are enabled only for supervised re-acceptance; any broader rollout waits until Create, Stop, Resume, Delete, and the secondary export path pass.
 
 ## Beginner-first onboarding rule
 

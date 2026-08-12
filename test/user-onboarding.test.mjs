@@ -19,7 +19,7 @@ const guardianGuide = await readFile(new URL("../guides/guardian-monitor/index.h
 test("public data connection remains clickable while clearly marked under construction", () => {
   assert.match(index, /データ接続（工事中）/);
   assert.match(index, /Gluroo接続はまだ限定テスト中/);
-  assert.match(index, /js\/app\.js\?v=20260812-simple-connection-2/);
+  assert.match(index, /js\/app\.js\?v=20260812-supervised-usage-1/);
   assert.match(app, /dataSourceButtonDemo: "データ接続（工事中）"/);
   assert.match(app, /dataSourceDialogTitle: "Data connection \(under construction\)"/);
   assert.doesNotMatch(index, /id="dataSourceButton"[^>]+disabled/);
@@ -38,7 +38,7 @@ test("Gluroo and Nightscout share one required display-name field in the connect
   assert.ok(form.indexOf('id="dataSourceDisplayName"') < form.indexOf('id="dataSourceUrl"'));
   assert.match(app, /queueDataSourceFocus\(document\.getElementById\("dataSourceDisplayName"\)\)/);
   assert.match(form, /本名でなくて大丈夫です/);
-  assert.match(form, /id="dataSourceUsageNoteText"[^>]*data-i18n-key="dataSourceUsageNotePaused"/);
+  assert.match(form, /id="dataSourceUsageNoteText"[^>]*data-i18n-key="dataSourceUsageNote"/);
   assert.match(form, /data-i18n-key="dataSourceUsageDetails"/);
   assert.match(index, /id="dataSourceGlurooChoice"/);
   assert.match(index, /id="dataSourceNightscoutChoice"/);

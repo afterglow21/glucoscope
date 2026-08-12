@@ -1,6 +1,6 @@
 # GlucoScope 利用者設定・利用分析基盤
 
-Status: Phase 1A local preview implemented / Phase 1B simplified connection-integrated flow implemented locally / Worker and frontend stopped pending supervised re-acceptance
+Status: Phase 1A implemented / Phase 1B simplified connection-integrated flow active for supervised re-acceptance
 
 Last reviewed: 2026-08-12
 
@@ -221,10 +221,18 @@ AI分析は、OpenAIから新しく正常に生成され、`generation.complete=
 
 修正版では、許可Originのpreflight `204`、不許可OriginとOriginなしの `403 origin_not_allowed`、許可Originからの無効ダミーtokenの `403 turnstile_failed`、`Cache-Control: no-store`、`Vary: Origin` を確認した。続く実機確認では最初のプロフィール作成と日別記録に成功したが、成功後のTurnstile resetでcallbackが再実行され、成功済みなのにエラーを表示した。この時点ではD1に試験用profile 2件と日別記録2件が残り、Usage Workerの収集とフロントの開始画面を停止へ戻した。一般利用者向け限定中継も `RELAY_ENABLED=false` のまま維持した。
 
-再callbackを防ぐガード、大きな共有パネルを廃止した新しいデータ接続フロー、表示名とプロフィール作成の統合はローカル実装済みである。Workerとフロントは停止したまま、開始・停止・再開・削除と補助リンクからの書き出しを監督下で再確認するまで収集を再開しない。
+再callbackを防ぐガード、大きな共有パネルを廃止した新しいデータ接続フロー、表示名とプロフィール作成の統合はローカル実装済みである。この時点では、開始・停止・再開・削除と補助リンクからの書き出しを監督下で再確認するまで、Workerとフロントを停止したままにする判断とした。
 
 ## 15. 試験記録削除と新しい停止Version（2026-08-12 JST）
 
 既知の試験用profile 2件を削除し、cascade削除後に `profiles`、`usage_daily`、`event_receipts` が `0 / 0 / 0` であることを確認した。続いて、新しい停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb` をdeployment `25be2258-b72a-4e2c-8bf1-ab47781c48dc` で本番通信の100%へ反映した。
 
 runtimeの `USAGE_COLLECTION_ENABLED=false`、許可Originのpreflight `204`、許可Originからのprofile `POST` が `503 usage_collection_paused`、不許可OriginとOriginなしが `403` であることを確認した。デプロイ後もD1の3テーブルは `0 / 0 / 0` のままである。一般利用者向け限定中継は独立して `RELAY_ENABLED=false` を維持している。
+
+## 16. 監督下の再受け入れ開始（2026-08-12 JST）
+
+別の明示確認後、active Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` へ本番通信の100%を向け、runtimeの `USAGE_COLLECTION_ENABLED=true` で監督下の一時受け入れを再開した。同じ公開候補でフロントの `USAGE_PROFILE_ENABLED` とusage-profile meta gateを `true` にし、公開デモを見るだけでは表示名やprofileを求めず、自分のデータを新しくつなぐ時だけ本名でなくてよい表示名を必須にする。
+
+許可Originのpreflight `204`、許可Originからの無効なダミーTurnstile tokenが `403 turnstile_failed`、不許可OriginとOriginなしが `403` であることを確認した。この境界確認後も `profiles`、`usage_daily`、`event_receipts` は `0 / 0 / 0` である。Gitに保存する `wrangler.jsonc` は `USAGE_COLLECTION_ENABLED=false` のまま維持し、停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb` とdeployment `25be2258-b72a-4e2c-8bf1-ab47781c48dc` を直前のclean stopped checkpoint兼rollback先として残す。一般利用者向け限定中継も独立して `RELAY_ENABLED=false` を維持する。
+
+この一時有効化では、再callbackによる誤エラーが起きないprofile作成、停止、再開、削除、補助リンクからのallowlist書き出しを、利用者が管理する1台の端末で確認する。Usage Workerまたは利用プロフィールだけの失敗は確認済みCGM接続を止めず、Gluroo限定中継の安全確認、接続先検証、ブラウザ保存成功は引き続きfail-closedとする。

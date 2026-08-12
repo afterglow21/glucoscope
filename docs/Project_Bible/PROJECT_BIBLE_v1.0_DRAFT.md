@@ -2786,7 +2786,7 @@ Guardian 4、FreeStyle Libre 2、Dexcom G7を、
 
 1. ユーザー基盤・最小限の利用分析の設計
    - Phase 1Aとして、任意の表示名だけを端末内へ保存する準備画面を実装した。
-   - Phase 1Bとして、収集項目と目的の説明、簡単な停止方法、90日保存、書き出し・削除、利用回数API、D1とWorkerを実装した。2026年8月12日JSTの実機確認では最初のprofile作成と日別記録に成功したが、成功後の再callbackで誤エラーを表示した。この時点でD1に試験用profile 2件と日別記録2件が残り、Workerとフロントは停止へ戻した。その後、既知の試験用profile 2件を削除し、cascade後の `profiles`、`usage_daily`、`event_receipts` が `0 / 0 / 0` であることを確認した。新しい停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb` はdeployment `25be2258-b72a-4e2c-8bf1-ab47781c48dc` で通信の100%を受け、runtimeの `USAGE_COLLECTION_ENABLED=false` と停止境界を維持する。接続開始への表示名・profile作成統合と再callback防止はローカル実装済みであり、次は停止したまま開始・停止・再開・削除、補助的な書き出しの監督下再受け入れを行う。
+   - Phase 1Bとして、収集項目と目的の説明、簡単な停止方法、90日保存、書き出し・削除、利用回数API、D1とWorkerを実装した。2026年8月12日JSTの実機確認では最初のprofile作成と日別記録に成功したが、成功後の再callbackで誤エラーを表示した。この時点でD1に試験用profile 2件と日別記録2件が残り、Workerとフロントは停止へ戻した。その後、既知の試験用profile 2件を削除し、cascade後の `profiles`、`usage_daily`、`event_receipts` が `0 / 0 / 0` であることを確認した。停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb` とdeployment `25be2258-b72a-4e2c-8bf1-ab47781c48dc` をclean stopped checkpoint兼rollback先として残し、active Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` へ通信の100%を向け、runtimeの `USAGE_COLLECTION_ENABLED=true` とフロントの開始画面を監督下一時受け入れのため有効にした。許可Originのpreflight `204`、無効ダミーTurnstileの `403 turnstile_failed`、不許可OriginとOriginなしの `403` を確認し、D1は引き続き `0 / 0 / 0` である。Gitに保存する `wrangler.jsonc` は `false` のまま維持する。接続開始への表示名・profile作成統合と再callback防止を使い、次は開始・停止・再開・削除、補助的な書き出しを監督下で確認する。
 2. その設計を前提にした管理者ダッシュボード
 3. Plus 30日パスと、任意の開発支援への分かりやすい導線
 4. ユーザー展開開始後に、横向きグラフだけへ追加する任意の常時表示モード
@@ -3295,15 +3295,20 @@ D1 contained 2 test profiles and 2 daily records. Worker collection and frontend
 were returned to stopped mode.
 
 Later on 2026-08-12 JST, the 2 known test profiles were deleted. Cascading deletion left
-`profiles`, `usage_daily`, and `event_receipts` at `0 / 0 / 0`. New stopped Version
-`7cb71965-74c3-47f9-b589-75cf6d669edb` now receives 100% of traffic through deployment
-`25be2258-b72a-4e2c-8bf1-ab47781c48dc`. Runtime `USAGE_COLLECTION_ENABLED=false` was
-verified. Allowed-origin preflight returned `204`; allowed-origin profile `POST` returned
-`503 usage_collection_paused`; wrong-origin and originless requests returned `403`. D1 was
-rechecked at `0 / 0 / 0`. Frontend enrollment remains paused, and the general-user relay
-remains independently stopped at `RELAY_ENABLED=false`. The callback guard and simplified
-connection-integrated flow are implemented in the local candidate; keep them stopped while
-completing supervised re-acceptance of Create, Stop, Resume, Delete, and the secondary export link.
+`profiles`, `usage_daily`, and `event_receipts` at `0 / 0 / 0`. Clean stopped Version
+`7cb71965-74c3-47f9-b589-75cf6d669edb`, deployed as
+`25be2258-b72a-4e2c-8bf1-ab47781c48dc`, verified runtime `USAGE_COLLECTION_ENABLED=false`,
+allowed-origin preflight `204`, allowed-origin profile `POST` `503 usage_collection_paused`,
+wrong-origin and originless `403`, and D1 `0 / 0 / 0`. It remains the rollback target.
+
+Active Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` now receives 100% of traffic with
+runtime `USAGE_COLLECTION_ENABLED=true` for supervised re-acceptance, and frontend enrollment
+is enabled in the same release candidate. Allowed-origin preflight returned `204`; an
+allowed-origin request with an invalid dummy Turnstile token returned `403 turnstile_failed`;
+wrong-origin and originless requests returned `403`. D1 remained `0 / 0 / 0`. Checked-in
+`wrangler.jsonc` remains fail-safe at `false`, and the general-user relay remains independently
+stopped at `RELAY_ENABLED=false`. Use the callback guard and simplified connection-integrated
+flow to check Create, Stop, Resume, Delete, and the secondary export link under supervision.
 
 Product analytics must remain separate from public Web Analytics, CGM transport, and
 glucose storage. Do not place glucose values, graphs, AI-letter contents, Nightscout or
@@ -3410,15 +3415,20 @@ D1 tableと管理者viewが引き続き0件でした。その後の実機確認�
 収集とフロントの開始画面を停止へ戻しました。
 
 同じ2026年8月12日JST、既知の試験用profile 2件を削除し、cascade削除後の `profiles`、
-`usage_daily`、`event_receipts` が `0 / 0 / 0` であることを確認しました。新しい停止Version
-`7cb71965-74c3-47f9-b589-75cf6d669edb` はdeployment
-`25be2258-b72a-4e2c-8bf1-ab47781c48dc` で本番通信の100%を受けています。runtimeの
-`USAGE_COLLECTION_ENABLED=false`、許可Originのpreflight `204`、許可Originからのprofile
-`POST` が `503 usage_collection_paused`、不許可OriginとOriginなしが `403` であることを確認し、
-D1も `0 / 0 / 0` のまま再確認しました。フロントの開始画面は停止中で、一般利用者向け限定中継も
-独立して `RELAY_ENABLED=false` を維持しています。callback再実行を防ぐ処理と、接続開始へ統合した
-簡素な画面はローカル実装済みです。停止したまま開始・停止・再開・削除と補助的な書き出しを
-監督下で再確認します。
+`usage_daily`、`event_receipts` が `0 / 0 / 0` であることを確認しました。停止Version
+`7cb71965-74c3-47f9-b589-75cf6d669edb` とdeployment
+`25be2258-b72a-4e2c-8bf1-ab47781c48dc` では、runtimeの `USAGE_COLLECTION_ENABLED=false`、
+許可Originのpreflight `204`、許可Originからのprofile `POST` が `503 usage_collection_paused`、
+不許可OriginとOriginなしが `403`、D1が `0 / 0 / 0` であることを確認しました。このVersionを
+clean stopped checkpoint兼rollback先として維持します。
+
+その後、active Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` へ本番通信の100%を向け、
+runtimeの `USAGE_COLLECTION_ENABLED=true` とフロントの開始画面を監督下一時受け入れのため
+有効にしました。許可Originのpreflight `204`、許可Originからの無効なダミーTurnstile tokenが
+`403 turnstile_failed`、不許可OriginとOriginなしが `403` であることを確認し、D1は引き続き
+`0 / 0 / 0` です。Gitに保存する `wrangler.jsonc` は `false` のまま維持し、一般利用者向け限定中継も
+独立して `RELAY_ENABLED=false` を維持しています。callback再実行を防ぐ処理と接続開始へ統合した
+簡素な画面を使い、開始・停止・再開・削除と補助的な書き出しを監督下で確認します。
 
 プロダクト内の利用分析は、未ログインの公開Web Analytics、CGMの通信、
 血糖データの保存とは分離します。血糖値、グラフ、AIお手紙本文、
