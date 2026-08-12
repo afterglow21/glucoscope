@@ -3,15 +3,18 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 import {
+  filterGeneratedLetterPatternHints,
+  getGlucoScoreMentionPolicy,
   getGeneratedLetterQualityIssues,
   isUnicornEligibleSummary,
+  normalizeGeneratedLetterPunctuation,
   partitionGeneratedLetterQualityIssues
 } from "../src/letter-quality.js";
 
 const workerSource = await readFile(new URL("../src/index.js", import.meta.url), "utf8");
 
-test("worker uses cache schema v12 for the warmer letter contract", () => {
-  assert.match(workerSource, /AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v12"/);
+test("worker uses cache schema v13 for score and punctuation contract", () => {
+  assert.match(workerSource, /AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v13"/);
 });
 
 test("both retry paths block only hard quality issues after one rewrite", () => {
@@ -31,6 +34,133 @@ test("Japanese and English prompts preserve the exact opening and add welcome an
   assert.match(workerSource, /include one brief everyday aside unrelated to glucose/);
   assert.match(workerSource, /最初は必ず「グルコだよ🍀」で始め、次の行に「来てくれてうれしいよ」などの短い挨拶を入れる/);
   assert.match(workerSource, /血糖とは関係のない日常の短いひと言を1文入れる/);
+});
+
+test("score policy omits unavailable, unchanged, lower, and one-point-higher scores", () => {
+  for (const [currentScore, previousScore, reason] of [
+    [78, null, "comparison_unavailable"],
+    [78, "", "comparison_unavailable"],
+    [78, "--", "comparison_unavailable"],
+    [78, 78, "same"],
+    [77, 78, "lower"],
+    [79, 78, "minor_increase"]
+  ]) {
+    assert.deepEqual(getGlucoScoreMentionPolicy({
+      metrics: { glucoScore: currentScore, previousScore }
+    }), {
+      mention: false,
+      difference: reason === "comparison_unavailable" ? null : currentScore - previousScore,
+      reason
+    });
+  }
+});
+
+test("score policy allows only an increase of at least two as an optional clue", () => {
+  assert.deepEqual(getGlucoScoreMentionPolicy({
+    metrics: { glucoScore: 80, previousScore: 78 }
+  }), {
+    mention: true,
+    difference: 2,
+    reason: "higher_by_at_least_two"
+  });
+});
+
+test("old pattern hints cannot reintroduce suppressed score or short-range GMI", () => {
+  assert.deepEqual(filterGeneratedLetterPatternHints({
+    period: "today",
+    metrics: { glucoScore: 70, previousScore: 72 },
+    patternHints: [
+      "TIRは穏やかな手がかりだよ。",
+      "GlucoScoreは前より低いよ。",
+      "グルコスコアも見てみよう。",
+      "GMIは6.8%だよ。"
+    ]
+  }), ["TIRは穏やかな手がかりだよ。"]);
+
+  assert.deepEqual(filterGeneratedLetterPatternHints({
+    period: "7d",
+    metrics: { glucoScore: 74, previousScore: 72 },
+    patternHints: ["GlucoScoreは2高いよ。", "GMIは6.8%だよ。"]
+  }), ["GlucoScoreは2高いよ。", "GMIは6.8%だよ。"]);
+});
+
+test("suppressed GlucoScore wording remains a blocking output issue", () => {
+  const issues = getGeneratedLetterQualityIssues(
+    "グルコだよ🍀\nGlucoScoreは前より控えめだったよ。",
+    "ja",
+    { suppressGlucoScore: true }
+  );
+  assert.ok(issues.includes("suppressed_gluco_score_mention"));
+  assert.ok(partitionGeneratedLetterQualityIssues(issues).blockingIssues.includes("suppressed_gluco_score_mention"));
+});
+
+test("allowed GlucoScore may appear only in one comparison sentence", () => {
+  const repeatedIssues = getGeneratedLetterQualityIssues(
+    "グルコだよ🍀\nGlucoScoreは80だったよ。\n別のまとめでもGlucoScoreを見てみたよ。",
+    "ja",
+    { suppressGlucoScore: false }
+  );
+  assert.ok(repeatedIssues.includes("repeated_gluco_score_mention"));
+  assert.ok(partitionGeneratedLetterQualityIssues(repeatedIssues).blockingIssues.includes("repeated_gluco_score_mention"));
+
+  const oneComparisonSentence = getGeneratedLetterQualityIssues(
+    "グルコだよ🍀\nGlucoScoreは80で、比較期間のGlucoScore 78より2高かったよ。",
+    "ja",
+    { suppressGlucoScore: false }
+  );
+  assert.ok(!oneComparisonSentence.includes("repeated_gluco_score_mention"));
+});
+
+test("Japanese punctuation normalizer preserves openings and labels while completing prose", () => {
+  const text = [
+    "グルコだよ🍀",
+    "📊 数字の手がかり",
+    "・平均血糖 132mg/dL",
+    "・落ち着いた時間",
+    "来てくれてうれしいよ",
+    "今日の数字を急いで答えにしなくて大丈夫",
+    "ぼくはここにいるよ🍀",
+    "そのままで大丈夫だよ！"
+  ].join("\n");
+
+  assert.equal(normalizeGeneratedLetterPunctuation(text, "ja"), [
+    "グルコだよ🍀",
+    "📊 数字の手がかり",
+    "・平均血糖 132mg/dL",
+    "・落ち着いた時間",
+    "来てくれてうれしいよ。",
+    "今日の数字を急いで答えにしなくて大丈夫。",
+    "ぼくはここにいるよ。🍀",
+    "そのままで大丈夫だよ！"
+  ].join("\n"));
+});
+
+test("punctuation normalizer does not alter English output", () => {
+  assert.equal(normalizeGeneratedLetterPunctuation("Gluco is here 🍀\nI am here with you", "en"), "Gluco is here 🍀\nI am here with you");
+});
+
+test("worker removes short-range GMI and suppressed score values from generation input", () => {
+  assert.match(workerSource, /isShortPromptPeriod\(summary\.period\) \? \[\] : \[`- GMI estimate:/);
+  assert.match(workerSource, /scorePolicy\.mention \? \[/);
+  assert.equal((workerSource.match(/filterGeneratedLetterPatternHints\(summary,/g) || []).length, 2);
+  assert.match(workerSource, /suppressGlucoScore: !scorePolicy\.mention/);
+  assert.doesNotMatch(workerSource, /GlucoScoreの比較差が1以内/);
+  assert.match(workerSource, /それ以外はしっかり分析でも完全に省略する/);
+});
+
+test("worker may use a safe soft-only first draft if its optional rewrite fails", () => {
+  assert.match(workerSource, /const canUseSafeFirstAttempt = \(/);
+  assert.ok((workerSource.match(/if \(canUseSafeFirstAttempt\)/g) || []).length >= 3);
+  assert.match(workerSource, /firstQualityAssessment\.blockingIssues\.length === 0/);
+});
+
+test("worker retries only transient OpenAI transport and HTTP errors internally", () => {
+  assert.match(workerSource, /error\?\.code === "openai_transport_error"/);
+  assert.match(workerSource, /status === 408/);
+  assert.match(workerSource, /status === 409/);
+  assert.match(workerSource, /status === 429/);
+  assert.match(workerSource, /status >= 500/);
+  assert.doesNotMatch(workerSource, /status === 401/);
 });
 
 test("classifies presentation-only issues as soft warnings", () => {

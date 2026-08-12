@@ -47,6 +47,32 @@ Production checkpoint — 2026-08-13:
 - The displayed letter must not turn TIR, TAR, TBR, CV, or GlucoScore into a next-day optimization target. Blocking phrases include `目標の時間を増やす`, `TBRを減らす`, and `これだけ意識して進めよう`.
 - Token and estimated-cost totals include both attempts when an automatic retry is needed.
 
+## Local v13 release candidate / ローカルv13反映候補
+
+The repository's next local release candidate adds the following behavior. It is not a production-deployment claim; the public Worker remains on the verified v12 checkpoint above until a v13 deployment is explicitly verified.
+
+- `today` and `yesterday` remove GMI and GMI-derived hints before prototype or OpenAI generation.
+- GlucoScore fields and score-derived hints are removed before generation when there is no comparison-period value, the score is equal or lower, or the increase is only one.
+- The Worker filters legacy-client `patternHints` after validation, so suppressed GlucoScore hints and `today`/`yesterday` GMI hints cannot re-enter the prompt.
+- Only a rise of two or more may be mentioned, optionally, in one comparison sentence or bullet. That comparison may use the literal name `GlucoScore` at most twice to label both values. Extra score sentences or a third name occurrence are blocking output issues. The score is never described as points, grading, success or failure, or proof of effort.
+- A transport error or HTTP 408, 409, 429, or 5xx may retry once inside the Worker after a short delay for each logical OpenAI step. Other 4xx responses and Turnstile, incomplete-output, or quality decisions do not use this transport retry; the browser does not resend or reuse a Turnstile token.
+- Normal Japanese prose ends naturally with `。`, `！`, or `？`. The opening `グルコだよ🍀`, short headings, and noun-only labels may omit punctuation. When a sentence ends with an emoji, punctuation comes first: `ぼくはここにいるよ。🍀`.
+- A soft-only first response still gets one rewrite attempt. If that rewrite has a provider or transport error, is incomplete, or introduces a blocking issue, the safe first response is returned instead. A first response with any blocking issue is never a fallback candidate.
+- The browser-local key becomes `glucoscope.aiLetterLocalCache.v13`; retired v12 and v11 local entries are removed during cache reading and saved-connection deletion.
+- The shared schema becomes `gluco-ai-letter-cache-v13`. The v13 candidate does not read or write v12 shared keys; retained v12 entries expire under the existing 24-hour retention policy.
+
+次のローカル反映候補では、以下を追加します。これは本番反映済みという意味ではなく、v13の反映確認が終わるまでは、公開Workerは上記の確認済みv12のままです。
+
+- `today` と `yesterday` では、GMIとGMIから作ったヒントを生成前に外します。
+- 比較期間のGlucoScoreがない、同じ、低下、または1だけ上昇した場合は、スコア項目とスコア由来のヒントを生成前に外します。
+- Workerは検証後に古いクライアントの `patternHints` も整理するため、省略対象のGlucoScoreヒントや、`today`・`yesterday` のGMIヒントが生成入力へ戻ることはありません。
+- 比較期間より2以上高い場合だけ、必要なら比較する1文または1つの箇条書きで触れてよいものとします。その1文では現在値と比較値を区別するため `GlucoScore` という語を最大2回まで使えます。スコアの文が2つ以上、または語が3回以上なら重大な出力問題です。「点」、採点、成功・失敗、努力の証明にはしません。
+- 通信失敗またはHTTP 408、409、429、5xxでは、OpenAI処理の各段階につきWorker内で短く待って1回だけ再試行できます。それ以外の4xx、Turnstile失敗、途中終了判定、品質判定には使わず、ブラウザからの再送やTurnstile tokenの再利用もしません。
+- 通常の日本語本文は自然な `。`、`！`、`？` で終えます。`グルコだよ🍀`、短い見出し、名詞だけのラベルは句点なしでも構いません。絵文字を文末に添える場合は `ぼくはここにいるよ。🍀` の順にします。
+- 軽微な警告だけの初回文は1回書き直します。書き直しが通信エラー、途中終了、または重大な問題になった場合は、安全だった初回文を返します。重大な問題がある初回文はfallbackに使いません。
+- 端末内キーを `glucoscope.aiLetterLocalCache.v13` にし、退役したv12とv11はキャッシュ読み取り時と保存済み接続の削除時に消します。
+- 共有schemaを `gluco-ai-letter-cache-v13` にします。v13候補は共有v12を読み書きせず、保持中のv12は既存の24時間以内の期限で失効します。
+
 ## Companionship around the numbers
 
 Gluco's letter should feel like a small friend checking in, not a report that ends after listing metrics.
@@ -56,6 +82,7 @@ Gluco's letter should feel like a small friend checking in, not a report that en
 - Do not invent the person's location, weather, season, time of day, symptoms, effort, or circumstances.
 - Keep any reflection invitation optional rather than turning it into homework.
 - Prefer a warm closing such as `ぼくはここにいるよ` while preserving the medical-safety boundary.
+- In Japanese prose, write the closing as a complete sentence such as `ぼくはここにいるよ。🍀`; punctuation comes before a trailing emoji.
 
 ## Positive recognition and Unicorn wording
 
@@ -74,6 +101,22 @@ Initial copy rules:
 
 These are language and experience rules, not medical grades or treatment targets.
 The prompt must praise the observed flow rather than the person's worth or presumed effort, and it must still mention important lower or higher periods gently.
+
+## GlucoScore in generated letters / 生成文でのGlucoScore
+
+- No comparison value, equal score, lower score, and a one-unit increase are all omitted from the generation input and letter.
+- Only a score at least two higher than the comparison-period value remains eligible for an optional, single mention.
+- When omitted, current, comparison, average-score, and score-derived hint fields are all removed before generation.
+- Legacy-client `patternHints` are filtered by the Worker after validation: suppressed GlucoScore hints are removed, and GMI hints are removed for `today` and `yesterday`.
+- An eligible score may appear in only one comparison sentence or bullet. The name `GlucoScore` may occur at most twice within the complete response so that the single comparison can label both values. More score sentences or a third occurrence are blocking, not soft warnings.
+- Even when eligible, the score is not points, a grade, success or failure, or evidence of the person's effort.
+
+- 比較値なし、同値、低下、1だけの上昇は、生成入力とお手紙の両方から省きます。
+- 比較期間より2以上高い場合だけ、必要なら1回まで触れてよいものとします。
+- 省く場合は、現在値、比較値、平均値、スコア由来のヒントを生成前にすべて外します。
+- 古いクライアントの `patternHints` もWorkerが検証後に整理し、省略対象のGlucoScoreヒントと、`today`・`yesterday` のGMIヒントを外します。
+- 条件を満たしても、扱えるのは比較する1文または1つの箇条書きだけです。1つの比較で両方の値に名前を付けられるよう、文章全体で `GlucoScore` という語を最大2回まで許します。文が2つ以上、または語が3回以上なら軽微ではなく重大な問題です。
+- 条件を満たしても、「点」、採点、成功・失敗、努力の証明にはしません。
 
 ## Compassion-first wording
 
@@ -250,7 +293,11 @@ The estimated AI cost shown by the Worker is an operational estimate paid by the
 
 The production generation guard allows up to 10 new generations in each time slot (morning, afternoon, and night), with a daily maximum of 30. This is designed so the five periods (today, yesterday, 7 days, 30 days, and custom) can each be tried in both analysis modes within a slot. Cached displays do not consume a new-generation slot.
 
-The first OpenAI attempt uses the normal limit for the selected mode. Within the incomplete-output path, only an API response explicitly marked incomplete due to `max_output_tokens` triggers one retry with the larger limit. A successful retry still counts as one user-requested generation, while usage and developer-cost estimates include both OpenAI attempts. If the retry is also incomplete, the partial text is discarded and is not cached. A separate wording-quality path also performs one rewrite when the complete first response has any detected issue; after that rewrite, only blocking safety, factual/data-consistency, privacy, or internal-artifact issues cause a generation failure.
+The first OpenAI attempt uses the normal limit for the selected mode. Within the incomplete-output path, only an API response explicitly marked incomplete due to `max_output_tokens` triggers one retry with the larger limit. A successful retry still counts as one user-requested generation, while usage and developer-cost estimates include both OpenAI attempts. If the retry is also incomplete, the partial text is discarded and is not cached.
+
+The wording-quality path distinguishes a blocking first response from a soft-only first response. A soft-only first response gets one clean rewrite; if that rewrite fails at the provider or transport layer, is incomplete, or introduces a blocking issue, the safe first response is returned through the normal success path instead. A first response with any blocking issue is never used as fallback. It may be rewritten once, but if no safe complete rewrite is produced, the normal generation failure or retained shared-cache fallback applies. Partial and unsafe retry text is never returned or cached.
+
+Each logical OpenAI step may internally retry its HTTP call once after a short delay only for a transport failure or HTTP 408, 409, 429, or 5xx. Other HTTP 4xx responses do not retry. Turnstile verification has already completed before this call and is neither repeated nor bypassed; the browser does not resend the request or reuse its Turnstile token. Any provider-reported token usage and estimated developer cost from the two HTTP calls is aggregated, and the ordinary final safety/cache boundary still applies.
 
 ## Response contract
 

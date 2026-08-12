@@ -3971,6 +3971,15 @@ or labeled by their blood glucose data.
 A score should never mean
 that a person has succeeded or failed.
 
+In AI-generated analysis, a GlucoScore is not a routine talking point.
+If there is no comparison score, or if the current value is equal to,
+lower than, or only one higher than the comparison value,
+the score is omitted from the generation input and the letter.
+Only when the current value is at least two higher than the comparison value
+may gluco optionally mention the change, no more than once.
+Even then, it must not be described as points, a grade,
+success or failure, or evidence of the person's effort.
+
 ---
 
 ### JP
@@ -3996,6 +4005,13 @@ GlucoScopeは、
 
 スコアは、  
 その人の成功や失敗を意味するものではありません。
+
+AI分析では、GlucoScoreを毎回の話題にはしません。
+比較する値がないとき、同じとき、下がったとき、1だけ上がったときは、
+GlucoScoreを生成入力とお手紙の両方から省きます。
+比較する値より2以上高いときだけ、必要なら変化に1回まで触れてよいものとします。
+その場合も、「点」や採点、成功・失敗、
+その人の努力の評価としては扱いません。
 
 ---
 
@@ -4627,9 +4643,38 @@ Glucoの「グルコからのお手紙」は、グルコが直接話しかける
 ### What Gluco may say
 
 * 高め・低め・落ち着いている時間帯など、データから見える流れをやさしく伝える。
-* 昨日や過去期間との違い、TIR/TAR/TBR、平均、CV、GlucoScoreなどから、小さな振り返りポイントを伝える。
+* 昨日や過去期間との違い、TIR/TAR/TBR、平均、CVなどから、小さな振り返りポイントを伝える。
 * 食事やボーラス記録の近くに見える変化は、「ヒント」や「あとで見返すところ」として扱う。
 * 気になる日が続くとき、不安やつらさがあるときは、主治医や医療機関への相談を促す。
+
+### GlucoScore in AI letters / AIお手紙でのGlucoScore
+
+GlucoScore should usually stay outside the AI letter.
+When no comparison value exists, or when the current score is equal,
+lower, or only one higher, all score fields and score-derived hints
+are removed before generation.
+Only a rise of two or more over the comparison-period score
+may be mentioned, optionally and at most once.
+It must never be framed as points, grading, success or failure,
+or proof of effort.
+When it is eligible, the final letter may contain only one
+GlucoScore comparison sentence or bullet.
+That single comparison may use the name `GlucoScore` at most twice,
+so it can identify both the current and comparison-period values.
+More than one score sentence or more than two name occurrences
+is a blocking output issue, not a soft style warning.
+
+AIお手紙では、GlucoScoreは原則として話題にしません。
+比較値がない、同じ、低下、または1だけ上昇した場合は、
+スコア項目とスコアから作ったヒントを生成前にすべて外します。
+比較期間の値より2以上高い場合だけ、必要なら1回まで触れてよいものとします。
+その場合も、「点」、採点、成功・失敗、努力の証明にはしません。
+条件を満たす場合も、最終的なお手紙で扱えるのは、
+GlucoScoreを比較する1文または1つの箇条書きだけです。
+その1文の中では、現在値と比較値を区別できるように、
+`GlucoScore` という語を最大2回まで使えます。
+スコアを扱う文が2つ以上ある、または語が3回以上ある場合は、
+軽微な文体警告ではなく、表示を止める重大な問題として扱います。
 
 ### Warm companionship beyond the metrics / 数字の外にある、あたたかい寄り添い
 
@@ -4656,6 +4701,19 @@ time of day, symptoms, effort, or circumstances.
 日常のひと言に健康効果や血糖への効果を持たせません。
 食事、運動、薬、サプリ、睡眠の助言にもしません。
 天気、季節、場所、時刻、症状、努力、生活背景を推測して作りません。
+
+### Japanese punctuation / 日本語の句読点
+
+Normal Japanese prose sentences should end naturally with `。`, `！`, or `？`.
+The opening line `グルコだよ🍀`, short headings, and noun-only labels
+may omit terminal punctuation.
+When a sentence ends with an emoji, punctuation comes before the emoji,
+for example `ぼくはここにいるよ。🍀`.
+
+通常の日本語本文は、文の終わりを自然な `。`、`！`、`？` にします。
+冒頭の `グルコだよ🍀`、短い見出し、名詞だけのラベルには句点がなくても構いません。
+文末に絵文字を添える場合は、`ぼくはここにいるよ。🍀` のように、
+句読点を絵文字の前に置きます。
 
 ### Celebrate good flows clearly / 良い流れは、ちゃんと一緒に喜ぶ
 
@@ -4728,28 +4786,85 @@ Gluco may celebrate first, then gently mention other clues that deserve attentio
 ### Current AI output retry boundary / 現在のAI出力再試行境界
 
 Every complete first AI response is checked before display or caching.
-Any detected issue causes one clean rewrite attempt.
-After the retry, only safety or medical-boundary issues,
-unsupported or contradictory data claims, privacy leaks,
-and internal implementation artifacts block the response.
-Minor stylistic warnings such as small awkwardness, repetition,
-or compassion placement may be accepted after the rewrite
-so that a harmless wording imperfection does not repeatedly become a failure.
+If it has only soft style warnings, the Worker tries one clean rewrite.
+If that rewrite has a provider or transport error, ends incomplete,
+or introduces a blocking issue, the safe first response is returned instead.
+A first response with a blocking safety, medical, factual,
+privacy, or internal-artifact issue is never used as fallback.
+It may be rewritten once, but if no safe rewrite is produced,
+the request follows the normal failure or retained-cache fallback path.
+This keeps harmless wording imperfections from becoming user-facing failures
+without ever rescuing an unsafe first response.
+
+Each logical OpenAI generation or rewrite step may retry its HTTP call
+once inside the Worker after a short delay, but only for a transport failure
+or HTTP 408, 409, 429, or 5xx response.
+Other 4xx responses, Turnstile failures, and output-quality failures
+do not use this transport retry.
+The browser does not resend the request or reuse a Turnstile token for it.
+Any available token usage and developer-cost estimate from both HTTP calls
+is aggregated; the final safety and cache checks remain unchanged.
 
 完成した最初のAI文章は、表示や保存の前に確認します。
-問題が1つでも見つかった場合は、1回だけ書き直します。
-書き直し後は、安全や医療の境界、データに裏付けのない断定、
-プライバシー上の漏れ、内部の名前や実装の痕跡など、
-実際の安全性・事実性・プライバシーに関わる問題だけを表示中止の対象にします。
-小さな言い回しの不自然さ、繰り返し、いたわりの位置など、
-安全性を損なわない文体上の軽微な警告だけなら、書き直し後の文章を表示できます。
+安全性を損なわない文体上の軽微な警告だけなら、1回だけ書き直しを試します。
+書き直しが通信エラー、途中終了、または安全・医療・事実性・
+プライバシー・内部情報に関わる重大な問題になった場合は、
+安全だった最初の文章を代わりに表示します。
+最初の文章に重大な問題があった場合、その文章はfallbackには使いません。
+1回の書き直しでも安全な文章を得られなければ、
+通常の失敗処理または保存済み文章へのfallbackに進みます。
+
+OpenAIで文章を作る各段階では、通信そのものの失敗、
+またはHTTP 408、409、429、5xxの応答だけを対象に、
+Worker内で短く待ってから同じ呼び出しを1回だけ再試行できます。
+それ以外の4xx、Turnstile失敗、出力品質の問題は、
+この通信再試行の対象にしません。
+ブラウザから再送したり、Turnstile tokenを再利用したりもしません。
+2回の通信で分かったtoken使用量と開発者負担の推定費用は合算し、
+最終的な安全確認とキャッシュ境界は変えません。
 
 途中で切れたAI出力はこれまでどおり表示・保存せず、
 出力上限が理由のときに1回だけより長い上限で再試行します。
-端末内のお手紙キャッシュは `glucoscope.aiLetterLocalCache.v12` で最大30件、
-共有お手紙キャッシュは `gluco-ai-letter-cache-v12` で最大24時間とします。
-端末内の旧v11キャッシュは読み取り時と保存済み接続の削除時に消し、
-新しい歓迎・寄り添いと判定境界を古い保存済み文章が上書きしないようにします。
+
+### Generation input and cache v13 candidate / 生成入力とcache v13候補
+
+For `today` and `yesterday`, GMI and GMI-derived hints are removed
+before the prototype or OpenAI generation step.
+GlucoScore fields and score-derived hints that do not meet the rule above
+are also removed before generation.
+This filtering is enforced by the Worker after request validation.
+Therefore, even a legacy client that still includes GlucoScore wording
+in `patternHints` cannot reintroduce it when the score is omitted,
+and a `today` or `yesterday` hint containing GMI cannot reintroduce GMI.
+This reduces avoidable contradictions and output rejection;
+it does not weaken the medical-safety or factual checks.
+
+The current local release candidate uses
+`glucoscope.aiLetterLocalCache.v13` for up to 30 browser entries and
+`gluco-ai-letter-cache-v13` for the shared cache with up to 24-hour retention.
+Browser cache v12 is retired and removed during cache reading
+and saved-connection deletion; shared v12 keys are no longer read or written
+by the v13 candidate and expire under their existing retention policy.
+Production remains on the verified v12 checkpoint below
+until a v13 deployment is explicitly verified.
+
+`today` と `yesterday` では、GMIとGMIから作ったヒントを、
+prototypeまたはOpenAIで文章を作る前に外します。
+上の条件を満たさないGlucoScore項目と、スコアから作ったヒントも生成前に外します。
+この整理は、リクエスト検証後にWorker側で必ず行います。
+そのため、古いクライアントの `patternHints` にGlucoScoreが残っていても、
+スコア省略時の生成入力へ戻ることはありません。
+`today` または `yesterday` の `patternHints` にGMIが残っていても、
+生成入力へ戻ることはありません。
+これは不要な矛盾や出力失敗を減らすためであり、
+医療安全や事実確認の境界を弱める変更ではありません。
+
+現在のローカル反映候補では、端末内のお手紙キャッシュを
+`glucoscope.aiLetterLocalCache.v13`（最大30件）、共有キャッシュを
+`gluco-ai-letter-cache-v13`（最大24時間保持）とします。
+端末内v12は退役し、キャッシュ読み取り時と保存済み接続の削除時に消します。
+共有v12はv13候補から読み書きせず、既存の保存期限で自然に失効します。
+本番はv13の反映確認が終わるまで、下記の確認済みv12のままです。
 
 ### AI Worker production checkpoint — 2026-08-13
 ### AI Worker本番反映記録 — 2026-08-13

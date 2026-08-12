@@ -60,7 +60,6 @@ Draft shape:
       "tbr": "2.3",
       "averageGlucose": "125",
       "cv": "26.1",
-      "gmi": "6.1",
       "glucoScore": 98,
       "previousScore": 88,
       "sevenDayAverageScore": 89
@@ -87,6 +86,32 @@ Special wording:
 
 - If today's latest reading is exactly 100mg/dL, the Japanese letter may say `🦄 ユニコーンをつかまえた！` once.
 - This is a playful small-luck expression, not a medical judgment or reward.
+
+### Generation-input shaping / 生成入力の整理
+
+The request validator may accept a summary that contains more display metrics than the letter is allowed to discuss. Before either prototype or OpenAI generation, the Worker builds a reduced generation input:
+
+- `today` and `yesterday` omit GMI and every GMI-derived hint.
+- GlucoScore is omitted when there is no comparison-period score, when it is equal or lower, or when it is only one higher.
+- When GlucoScore is omitted, current, comparison, average-score, and score-derived hint fields are all removed from the generation input.
+- After request validation, the Worker also filters legacy-client `patternHints`: a GlucoScore hint is removed whenever GlucoScore is omitted, and a GMI hint is removed for `today` and `yesterday`.
+- Only a GlucoScore at least two higher than its comparison-period value remains eligible. The generated letter may mention that change optionally and at most once.
+- An eligible score may occupy only one comparison sentence or bullet. Within that one comparison, the literal name `GlucoScore` may appear at most twice so the current and comparison-period values can both be identified. More than one score sentence or more than two name occurrences is a blocking output issue.
+- GlucoScore must never be presented as points, grading, success or failure, or evidence of the person's effort.
+
+These omissions apply to the generation input, even if the frontend still uses the values for its own non-AI display. They reduce avoidable contradictions and rejected generations without weakening the medical-safety or factual checks.
+
+リクエスト検証では、AIお手紙で扱う範囲より多い表示用指標を含むsummaryを受け取ることがあります。prototypeまたはOpenAIで文章を作る前に、Workerは生成用入力を次のように整理します。
+
+- `today` と `yesterday` では、GMIとGMIから作ったヒントをすべて外します。
+- 比較期間のGlucoScoreがない、同じ、低下、または1だけ上昇した場合は、GlucoScoreを外します。
+- GlucoScoreを省く場合は、現在値、比較値、平均値、スコア由来のヒントを生成入力からすべて外します。
+- リクエスト検証後、Workerは古いクライアントの `patternHints` も整理します。GlucoScore省略時はGlucoScoreを含むヒントを、`today` と `yesterday` ではGMIを含むヒントを外します。
+- 比較期間より2以上高い場合だけ候補として残し、お手紙では必要なら1回まで触れてよいものとします。
+- 条件を満たす場合も、スコアを扱えるのは比較する1文または1つの箇条書きだけです。その1文では、現在値と比較値を区別するため `GlucoScore` という語を最大2回まで使えます。スコアの文が2つ以上、または語が3回以上なら重大な出力問題です。
+- 「点」、採点、成功・失敗、その人の努力の証明として表現してはいけません。
+
+これらは生成入力に対する省略です。画面内のAI以外の表示に同じ値を使うことまでは妨げません。医療安全や事実確認の境界を弱めずに、不要な矛盾と生成失敗を減らします。
 
 Future fields may include:
 
@@ -130,7 +155,7 @@ Future fields may include:
     "status": "stored",
     "storage": "cloudflare-workers-kv",
     "bindingAvailable": true,
-    "key": "gluco-letter:gluco-ai-letter-cache-v12:<sha256>",
+    "key": "gluco-letter:gluco-ai-letter-cache-v13:<sha256>",
     "fresh": true,
     "ageSeconds": 0,
     "generatedAt": "2026-07-09T05:52:00.000Z",
@@ -540,16 +565,61 @@ If the Responses API returns `status: incomplete`, partial output is not accepte
 
 Provider errors and incomplete responses should not erase the visible letter. Partial text must never be stored in browser cache or Workers KV. Usage and estimated developer cost include any incomplete attempt and the automatic retry.
 
+### Transient OpenAI request retry / OpenAI一時通信エラーの再試行
+
+Each logical generation, incomplete-output retry, or quality rewrite step may make one internal HTTP retry after a short delay when its OpenAI call fails because of:
+
+- a transport or connection error
+- HTTP `408`
+- HTTP `409`
+- HTTP `429`
+- any HTTP `5xx`
+
+The Worker makes at most one such retry for that step. Other HTTP `4xx` responses, Turnstile failures, incomplete-output decisions, and output-quality decisions do not trigger this transport retry. The browser does not resend the request and does not reuse the Turnstile token for the internal retry.
+
+Any token usage and estimated developer cost made available by the provider across both HTTP calls is aggregated. Only the final complete response that passes the applicable blocking checks may be returned or cached.
+
+OpenAIで文章を作る各段階、途中終了後の再生成、品質上の書き直しでは、次の場合だけ、短く待ってからWorker内で同じHTTP呼び出しを1回再試行できます。
+
+- 通信または接続そのものの失敗
+- HTTP `408`
+- HTTP `409`
+- HTTP `429`
+- HTTP `5xx`
+
+その段階での通信再試行は最大1回です。それ以外のHTTP `4xx`、Turnstile失敗、途中終了の判定、出力品質の判定では、この通信再試行を行いません。ブラウザからリクエストを再送せず、内部再試行のためにTurnstile tokenを再利用することもありません。
+
+2回のHTTP通信について提供されたtoken使用量と開発者負担の推定費用は合算します。最終的に完成し、該当する重大問題の確認を通った文章だけを表示・保存できます。
+
 ### Output-quality retry boundary
 
-Every complete first response is checked before it can be returned or cached. If any quality issue is detected, the Worker makes one clean rewrite attempt.
+Every complete first response is checked before it can be returned or cached. Issues are divided into two groups:
 
-After that retry, issues are divided into two groups:
+- **Blocking issues:** safety or medical-boundary violations, unsupported or contradictory data claims, short-range GMI use, privacy leaks, implementation artifacts, and language that turns reflection metrics into treatment-like optimization targets.
+- **Soft warnings:** minor style, repetition, phrasing, compassion-placement, punctuation, or small-emphasis problems that do not create a safety, factual, privacy, or internal-data failure.
 
-- **Blocking issues:** safety or medical-boundary violations, unsupported or contradictory data claims, short-range GMI use, privacy leaks, implementation artifacts, and language that turns reflection metrics into treatment-like optimization targets. A rewritten response with any blocking issue is discarded and is not cached.
-- **Soft warnings:** minor style, repetition, phrasing, compassion-placement, or small-emphasis problems that do not create a safety, factual, privacy, or internal-data failure. A readable rewritten response with only soft warnings may be returned and cached.
+Retry and fallback behavior:
 
-This keeps the first-pass rewrite as the normal quality improvement while avoiding a generic user-facing failure for a harmless stylistic imperfection. Unknown future issue codes default to blocking unless explicitly classified as soft.
+1. A clean first response is returned normally.
+2. A first response with soft warnings only receives one clean rewrite attempt.
+3. If that rewrite is safe and complete, it is returned; soft-only warnings after the rewrite may still be accepted.
+4. If that rewrite has a provider or transport error, is incomplete, or contains a blocking issue, the safe first response is returned through the normal success path instead. Partial or unsafe retry text is never returned or cached.
+5. A first response with any blocking issue is never eligible as fallback. It may receive one clean rewrite attempt, but if no safe complete rewrite is produced, the request follows the normal failure or retained-stale-cache fallback path.
+
+Unknown future issue codes default to blocking unless explicitly classified as soft. This avoids turning a harmless wording imperfection into a user-facing failure while never rescuing an unsafe first response.
+
+GlucoScore volume is also enforced as blocking output validation. When score omission is required, any `GlucoScore` mention blocks the response. When a score is eligible, more than one sentence or bullet containing the score, or more than two occurrences of the literal name `GlucoScore` across the response, blocks it. The two-name allowance exists only so a single comparison sentence can label both values; it does not permit a second score discussion elsewhere.
+
+最初の完成した文章は、表示や保存の前に確認し、問題を次の2種類に分けます。
+
+- **重大な問題:** 安全や医療の境界、データに裏付けのない断定や矛盾、短期間のGMI、プライバシー上の漏れ、内部の実装名、振り返り指標を治療目標のように扱う表現。
+- **軽微な警告:** 安全性・事実性・プライバシーを損なわない、小さな不自然さ、繰り返し、言い回し、いたわりの位置、句読点、指標の強調しすぎ。
+
+軽微な警告だけの最初の文章には、1回だけ書き直しを試します。書き直しが安全で最後まで完成していれば、その文章を使います。書き直しが通信エラー、途中終了、または重大な問題になった場合は、安全だった最初の文章を通常の成功結果として返します。途中の文章や安全でない書き直しは、表示も保存もしません。
+
+最初の文章に重大な問題がある場合は、その文章をfallbackに使いません。1回の書き直しでも安全で完成した文章を得られなければ、通常の失敗処理または保持中の古い共有キャッシュへのfallbackに進みます。未知の判定コードは、明示的に軽微と分類されない限り重大として扱います。
+
+GlucoScoreの量も重大な出力判定として確認します。省略対象なのに `GlucoScore` が1回でも出た文章は表示しません。条件を満たす場合でも、GlucoScoreを含む文または箇条書きが2つ以上、あるいは文章全体で `GlucoScore` という語が3回以上なら表示しません。語を2回まで許すのは、1つの比較文で現在値と比較値の両方に名前を付けるためだけであり、別の場所でもう一度スコアを説明するためではありません。
 
 ### Prompt safety
 
@@ -567,6 +637,19 @@ The OpenAI prompt must preserve GlucoScope safety boundaries:
 - no claimed health benefit or glucose effect from that aside
 - no food, exercise, medication, supplement, or sleep advice in the aside
 - a closing based on companionship or reassurance; any reflection invitation remains optional
+- omit GlucoScore unless it is at least two higher than a comparison-period value; mention an eligible rise optionally and at most once
+- never frame GlucoScore as points, grading, success or failure, or proof of effort
+- normal Japanese prose ends naturally in `。`, `！`, or `？`
+- `グルコだよ🍀`, short headings, and noun-only labels may omit terminal punctuation
+- sentence-ending emoji follows punctuation, for example `ぼくはここにいるよ。🍀`
+
+日本語出力では、次の表現ルールも守ります。
+
+- 比較期間より2以上高い場合を除きGlucoScoreを省き、条件を満たしても必要なら1回までにする
+- GlucoScoreを「点」、採点、成功・失敗、努力の証明にしない
+- 通常の本文は自然な `。`、`！`、`？` で終える
+- `グルコだよ🍀`、短い見出し、名詞だけのラベルは句点なしでもよい
+- 絵文字を文末に添える場合は、`ぼくはここにいるよ。🍀` のように句読点を先に置く
 
 
 ---
@@ -842,9 +925,9 @@ Polish:
 
 Browser-local layer:
 
-- current storage key: `glucoscope.aiLetterLocalCache.v12`
+- local release-candidate storage key: `glucoscope.aiLetterLocalCache.v13`
 - maximum saved entries: 30 generated letters
-- the retired `glucoscope.aiLetterLocalCache.v11` data is removed when cache reading begins and when a saved data connection is deleted
+- retired `glucoscope.aiLetterLocalCache.v12` and v11 data is removed when cache reading begins and when a saved data connection is deleted
 - deleting a saved data connection also clears the current local letter cache
 
 Production binding:
@@ -863,7 +946,13 @@ AI_CACHE_FRESH_SECONDS=3600
 AI_CACHE_RETENTION_SECONDS=86400
 ```
 
-The current shared-cache key schema is `gluco-ai-letter-cache-v12`. The schema change prevents letters generated under the older, more report-like voice and stricter final style rejection from overriding the current warmth and retry behavior. Shared entries expire within the configured 24-hour retention period.
+The local release-candidate shared-cache key schema is `gluco-ai-letter-cache-v13`. It prevents v12 letters from overriding the GlucoScore omission, Japanese punctuation, reduced generation-input, and safe-first-response fallback rules. The v13 candidate neither reads nor writes v12 shared keys; retained v12 entries expire under the configured 24-hour retention period.
+
+Until a v13 deployment is explicitly verified, the public Worker may still serve the previously verified v12 production checkpoint. After verification, v12 is retired rather than migrated into v13.
+
+現在のローカル反映候補では、端末内キーを `glucoscope.aiLetterLocalCache.v13`、共有キーschemaを `gluco-ai-letter-cache-v13` とします。v12のお手紙が、GlucoScore省略、自然な句読点、生成入力の整理、安全な初回文へのfallbackという新しいルールを上書きしないためです。
+
+v13候補は共有v12キーを読み書きしません。保持中の共有v12は24時間以内の既存期限で失効し、端末内v12とv11はキャッシュ読み取り時と保存済み接続の削除時に消します。v13本番反映の確認が終わるまでは、公開Workerが確認済みv12のままである場合があります。確認後はv12をv13へ移行せず、そのまま退役します。
 
 Request order:
 

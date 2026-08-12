@@ -23,6 +23,12 @@ const PUBLIC_METRIC_NAMES = ["TIR", "TAR", "TBR", "CV", "GMI", "GlucoScore"];
 const METRIC_OPTIMIZATION_DIRECTIVE_PATTERN = /(?:目標(?:範囲)?(?:で過ごす|にいる|の)?時間|TIR|TAR|TBR|CV|GlucoScore|低めの時間|高めの時間)[^\r\n。！？]{0,48}(?:増やす|増やせる|伸ばす|伸ばせる|減らす|減らせる|抑える|なくす|避ける|維持する|維持できる|保つ|改善する|改善できる|良くする)[^\r\n。！？]{0,56}(?:意識|目指|心がけ|進め|取り組|続け|できるよう|ようにしよう|ようにしていこう)/giu;
 const SINGLE_FOCUS_DIRECTIVE_PATTERN = /(?:こと)?だけ(?:を)?意識して(?:進め|過ごし|やって|取り組み|続け)(?:て)?(?:みよう|いこう|よう)?(?:ね|よ)?/gu;
 const METRIC_TARGET_INVITATION_PATTERN = /(?:TIR|TAR|TBR|CV|GlucoScore|目標(?:範囲)?(?:の)?時間|低めの時間|高めの時間)[^\r\n。！？]{0,72}(?:目指そう|目指していこう|できるようにしよう|ようにしていこう|改善していこう|維持していこう)/giu;
+const GLUCO_SCORE_NAME_PATTERN = /(?:\bGlucoScore\b|グルコスコア)/iu;
+const GLUCO_SCORE_NAME_GLOBAL_PATTERN = /(?:\bGlucoScore\b|グルコスコア)/giu;
+const GMI_NAME_PATTERN = /\bGMI\b/iu;
+const JAPANESE_TERMINAL_PUNCTUATION_PATTERN = /[。！？!?…]$/u;
+const JAPANESE_LABEL_ENDING_PATTERN = /(?:全体の流れ|数字の手がかり|見えている手がかり|気になった動き|振り返りの手がかり|小さな見返し|まとめ)$/u;
+const TRAILING_FRIENDLY_EMOJI_PATTERN = /\s*((?:🍀|🦄|🌱|✨|💚|☕️?)+)$/u;
 
 // These issues are worth rewriting once, but they are not safety, medical,
 // factual-accuracy, or internal-data failures. After one quality retry, a
@@ -110,6 +116,114 @@ export function partitionGeneratedLetterQualityIssues(issues = []) {
     blockingIssues,
     softWarnings
   };
+}
+
+function toOptionalFiniteNumber(value) {
+  if (value === null || value === undefined || value === "" || value === "--") return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+export function getGlucoScoreMentionPolicy(summary = {}) {
+  const metrics = summary?.metrics || summary || {};
+  const currentScore = toOptionalFiniteNumber(metrics.glucoScore);
+  const previousScore = toOptionalFiniteNumber(metrics.previousScore);
+
+  if (currentScore === null || previousScore === null) {
+    return {
+      mention: false,
+      difference: null,
+      reason: "comparison_unavailable"
+    };
+  }
+
+  const difference = currentScore - previousScore;
+  if (difference < 0) {
+    return { mention: false, difference, reason: "lower" };
+  }
+  if (difference === 0) {
+    return { mention: false, difference, reason: "same" };
+  }
+  if (difference === 1) {
+    return { mention: false, difference, reason: "minor_increase" };
+  }
+
+  return { mention: true, difference, reason: "higher_by_at_least_two" };
+}
+
+export function filterGeneratedLetterPatternHints(summary = {}, limit = 6) {
+  const scorePolicy = getGlucoScoreMentionPolicy(summary);
+  const suppressGmi = ["today", "yesterday"].includes(summary?.period);
+  const safeLimit = Number.isFinite(Number(limit)) ? Math.max(0, Math.floor(Number(limit))) : 6;
+
+  return (Array.isArray(summary?.patternHints) ? summary.patternHints : [])
+    .filter((hint) => typeof hint === "string")
+    .map((hint) => hint.trim())
+    .filter(Boolean)
+    .filter((hint) => scorePolicy.mention || !GLUCO_SCORE_NAME_PATTERN.test(hint))
+    .filter((hint) => !suppressGmi || !GMI_NAME_PATTERN.test(hint))
+    .slice(0, safeLimit);
+}
+
+function hasRepeatedGlucoScoreMention(text = "") {
+  const segments = getJapaneseSentenceSegments(text);
+  const scoreSegments = segments.filter((segment) => GLUCO_SCORE_NAME_PATTERN.test(segment));
+  const totalMentions = String(text ?? "").match(GLUCO_SCORE_NAME_GLOBAL_PATTERN)?.length || 0;
+
+  return scoreSegments.length > 1 || totalMentions > 2;
+}
+
+function isJapaneseLetterLabel(line = "", index = 0) {
+  const normalized = String(line ?? "").trim();
+  if (!normalized) return true;
+  if (index === 0 && /^グルコだよ\s*🍀?$/u.test(normalized)) return true;
+  if (/^#{1,6}\s+\S+/u.test(normalized)) return true;
+
+  const withoutBullet = normalized.replace(/^[・*-]\s*/u, "");
+  if (JAPANESE_LABEL_ENDING_PATTERN.test(withoutBullet)) return true;
+
+  return /^(?:🍀|📊|🔎|🌱|💌|🫶)\s*[^。、！？!?]{1,24}$/u.test(normalized);
+}
+
+function shouldAddJapaneseFullStop(line = "", index = 0) {
+  if (isJapaneseLetterLabel(line, index)) return false;
+
+  const normalized = String(line ?? "").trim();
+  const emojiMatch = normalized.match(TRAILING_FRIENDLY_EMOJI_PATTERN);
+  const textWithoutEmoji = emojiMatch
+    ? normalized.slice(0, emojiMatch.index).trimEnd()
+    : normalized;
+
+  if (!textWithoutEmoji || JAPANESE_TERMINAL_PUNCTUATION_PATTERN.test(textWithoutEmoji)) return false;
+  if (/[：:]$/u.test(textWithoutEmoji)) return false;
+  if (/\d(?:%|％|mg\/dL)?$/iu.test(textWithoutEmoji)) return false;
+
+  const hasSentenceEnding = /[ぁ-んァ-ヶ一-龠](?:だ|よ|ね|た|る|う|い|ない|たい|よう|そう|かも)(?:ね|よ)?$/u.test(textWithoutEmoji)
+    || /[、，]/u.test(textWithoutEmoji);
+  if (/^[・*-]\s*/u.test(normalized)) return hasSentenceEnding;
+
+  return hasSentenceEnding || /[ぁ-んァ-ヶ一-龠]/u.test(textWithoutEmoji);
+}
+
+export function normalizeGeneratedLetterPunctuation(text = "", language = "ja") {
+  const normalizedText = String(text ?? "").trim();
+  if (language !== "ja" || !normalizedText) return normalizedText;
+
+  return normalizedText
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .map((line, index) => {
+      const trimmed = line.trimEnd();
+      if (!shouldAddJapaneseFullStop(trimmed, index)) return trimmed;
+
+      const emojiMatch = trimmed.match(TRAILING_FRIENDLY_EMOJI_PATTERN);
+      if (!emojiMatch) return `${trimmed}。`;
+
+      const body = trimmed.slice(0, emojiMatch.index).trimEnd();
+      return `${body}。${emojiMatch[1]}`;
+    })
+    .join("\n")
+    .trim();
 }
 
 export function getGeneratedLetterQualityIssues(
@@ -260,6 +374,14 @@ export function getGeneratedLetterQualityIssues(
     ) {
       issues.add("minor_score_difference_overemphasized");
     }
+  }
+
+  if (options?.suppressGlucoScore === true && GLUCO_SCORE_NAME_PATTERN.test(normalizedText)) {
+    issues.add("suppressed_gluco_score_mention");
+  }
+
+  if (options?.suppressGlucoScore !== true && hasRepeatedGlucoScoreMention(normalizedText)) {
+    issues.add("repeated_gluco_score_mention");
   }
 
   const containsUnicornWording = UNICORN_WORDING_PATTERN.test(normalizedText);

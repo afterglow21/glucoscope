@@ -629,7 +629,7 @@ test("local display-name storage remains network-free and server sync is separat
   assert.match(index, /js\/local-profile\.js\?v=20260811-usage-profile-stage-1/);
   assert.match(index, /js\/usage-client\.js\?v=20260812-stale-profile-recovery-1/);
   assert.match(index, /style\.css\?v=20260812-early-access-1/);
-  assert.match(index, /js\/app\.js\?v=20260812-warmer-gluco-1/);
+  assert.match(index, /js\/app\.js\?v=20260813-score-kindness-1/);
   assert.match(app, /updateUsageProfileDisplayName\(result\.profile\.displayName\)/);
   assert.doesNotMatch(app, /handleLocalProfileDelete|localProfileDeleteButton/);
   assert.match(app, /if \(!state\.enabled \|\| !state\.registered\) return;/);

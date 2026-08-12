@@ -1,12 +1,15 @@
 import { DurableObject } from "cloudflare:workers";
 import {
+  filterGeneratedLetterPatternHints,
+  getGlucoScoreMentionPolicy,
   getGeneratedLetterQualityIssues,
   isUnicornEligibleSummary,
+  normalizeGeneratedLetterPunctuation,
   partitionGeneratedLetterQualityIssues
 } from "./letter-quality.js";
 
 const CONTRACT_VERSION = "gluco-ai-letter-worker-response-v0.2";
-const AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v12";
+const AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v13";
 const LETTER_SLOT_KEYS = ["morning", "afternoon", "night"];
 const ANALYSIS_MODE_KEYS = ["letter", "deep"];
 
@@ -909,9 +912,14 @@ function buildPrototypeLetter(summary = {}, mode = "letter") {
   const tbr = metrics.tbr ?? "--";
   const avg = metrics.averageGlucose ?? "--";
   const cv = metrics.cv ?? "--";
+  const scorePolicy = getGlucoScoreMentionPolicy(summary);
   const score = metrics.glucoScore ?? "--";
+  const scoreOverviewEn = scorePolicy.mention ? `, GlucoScore ${score}` : "";
+  const scoreOverviewJa = scorePolicy.mention ? ` / GlucoScore ${score}` : "";
+  const scoreSentenceEn = scorePolicy.mention ? `, and GlucoScore is ${score}` : "";
+  const scoreSentenceJa = scorePolicy.mention ? `、GlucoScoreは${score}` : "";
   const celebrationClues = buildCelebrationClues(summary);
-  const hints = Array.isArray(summary.patternHints) ? summary.patternHints.slice(0, analysisMode === "deep" ? 4 : 2) : [];
+  const hints = filterGeneratedLetterPatternHints(summary, analysisMode === "deep" ? 4 : 2);
 
   if (analysisMode === "deep") {
     if (language === "en") {
@@ -926,7 +934,7 @@ I looked at the selected range gently.${celebrationSection}
 Overview
 - Range: ${rangeLabel}
 - TIR ${tir}%, TAR ${tar}%, TBR ${tbr}%
-- Average glucose ${avg}mg/dL, CV ${cv}%, GlucoScore ${score}
+- Average glucose ${avg}mg/dL, CV ${cv}%${scoreOverviewEn}
 
 Clues visible in the summary
 ${hintLines}
@@ -946,7 +954,7 @@ You are always more than these numbers. I'm right here with you 🍀`;
 全体の流れ
 ・表示範囲: ${rangeLabel}
 ・TIR ${tir}% / TAR ${tar}% / TBR ${tbr}%
-・平均血糖 ${avg}mg/dL / CV ${cv}% / GlucoScore ${score}
+・平均血糖 ${avg}mg/dL / CV ${cv}%${scoreOverviewJa}
 
 見えている手がかり
 ${hintLines}
@@ -961,7 +969,7 @@ ${hintLines}
     return `Gluco is here 🍀
 I'm glad you came by. Let's take a tiny pause before the numbers.
 I looked at the selected range gently: ${rangeLabel}.${celebrationLine}
-TIR is ${tir}%, average glucose is ${avg}mg/dL, and GlucoScore is ${score}.${hintLine}
+TIR is ${tir}%, and average glucose is ${avg}mg/dL${scoreSentenceEn}.${hintLine}
 The numbers are not here to judge you; they are small clues for understanding today and improving tomorrow.
 Showing up to look is already a small step. I'm right here with you 🍀`;
   }
@@ -971,13 +979,14 @@ Showing up to look is already a small step. I'm right here with you 🍀`;
   return `グルコだよ🍀
 来てくれてうれしいよ。まずは、ちょっとひと息つこうね。
 表示範囲は ${rangeLabel} だね。${celebrationLine}
-TIRは${tir}%、平均血糖は${avg}mg/dL、GlucoScoreは${score}だったよ。${hintLine}
+TIRは${tir}%、平均血糖は${avg}mg/dL${scoreSentenceJa}だったよ。${hintLine}
 血糖はあなたを責める数字じゃなくて、今日を理解して明日を少し楽にするための手がかりだよ。
 ここを見に来てくれたことも、小さな一歩だよ。ぼくはここにいるよ🍀`;
 }
 
-function buildOpenAiInstructions(language = "ja", mode = "letter") {
+function buildOpenAiInstructions(language = "ja", mode = "letter", summary = {}) {
   const analysisMode = normalizeAnalysisMode(mode);
+  const scorePolicy = getGlucoScoreMentionPolicy(summary);
 
   if (language === "en") {
     const modeInstruction = analysisMode === "deep"
@@ -996,7 +1005,10 @@ function buildOpenAiInstructions(language = "ja", mode = "letter") {
       "The aside may offer rest or a change of pace, but must not claim a health benefit, imply it changes glucose, or become advice about food, exercise, medication, supplements, or sleep.",
       "Because the response may be shown later from cache, avoid real-time wording such as 'right now' or 'current glucose'.",
       "When mentioning the latest glucose value, say 'the latest reading' or include the provided measurement time.",
-      "Treat TIR, TAR, TBR, average glucose, CV, GMI, and GlucoScore as reflection clues, not grades.",
+      "Treat the supplied metrics as reflection clues, not grades.",
+      scorePolicy.mention
+        ? "GlucoScore may appear once as an optional reflection clue, never as a grade, achievement, or judgment of effort."
+        : "Omit GlucoScore completely in this response, including its value and comparisons.",
       "When the summary contains positive clues, celebrate them clearly and early instead of minimizing them with phrases like 'not bad', 'not perfect', or 'not too wavy'.",
       "TIR of 100% deserves enthusiastic celebration as a TIR result. TIR 100% never creates or implies a unicorn.",
       "Unicorn wording is allowed only when the latest reading in today's view is exactly 100mg/dL. TIR 100%, average glucose 100mg/dL, and GlucoScore 100 never qualify.",
@@ -1024,13 +1036,17 @@ function buildOpenAiInstructions(language = "ja", mode = "letter") {
     "日常のひと言は健康効果や血糖への効果を断定せず、食事、運動、薬、サプリ、睡眠の助言にはしません。季節、天気、居場所、時刻も作りません。",
     "話し方は、そばにいる小さなともだちのような自然な常体に統一します。文末に『です』『ます』『でした』『ました』『あります』『ありません』『ください』『ましょう』『でしょう』を使いません。",
     "文末は『だよ』『だね』『見えているよ』『一緒に見ていこうね』など、グルコらしいやわらかい言葉にします。",
+    "『グルコだよ🍀』と短い見出し以外の普通の文は、自然な『。』『！』『？』で終えます。文末に🍀を添えるときは『ぼくはここにいるよ。🍀』の順にします。",
     "『一緒に』は連続する2文で繰り返しません。直前の文で『一緒に』を使った場合、最後の文は『明日もやさしく振り返ってみよう🍀』など別の言い方にします。",
     "『かも』は、データから見えることが確かではないときだけ使い、呼びかけや提案の文末には使いません。",
     "『〜しようかも』『〜していこうかも』『〜見てみようかも』のような表現は使わず、呼びかけは『〜しようね』『〜してみよう』『〜見ていこうね』のように自然に書きます。",
     "入力欄の名前、英語の変数名、JSONキー、camelCase、内部処理の言葉を本文へ出しません。",
     "キャッシュ表示される可能性があるため、『今の血糖』『現在の血糖』『たった今』などのリアルタイム断定は避けます。",
     "最新測定に触れる場合は、『最新の測定では』『○○ごろの測定では』のように時刻やサマリー上の測定であることが伝わる言い方にします。",
-    "TIR、TAR、TBR、平均血糖、CV、GMI、GlucoScoreは採点ではなく、振り返りの手がかりとして扱います。",
+    "サマリーに渡された数値は採点ではなく、振り返りの手がかりとして扱います。",
+    scorePolicy.mention
+      ? "GlucoScoreは採点、達成、成功、努力の評価にせず、任意の振り返りの手がかりとして1回だけ触れてよいです。"
+      : "この文章ではGlucoScoreを完全に省略し、現在値、比較値、過去7日平均のどれにも触れません。",
     "TBR、TAR、CV、低めのTIR、GlucoScoreの変化に『も』『しか』『まだ』『残念ながら』『高すぎる』『低すぎる』『悪い』『問題』を結びつけません。数値は『TBRは5.9％だったよ』のように事実として伝えます。",
     "サマリーの『いたわり優先』が対象なら、振り返りや明日への提案より先に、大変な時間があったかもしれないことへやさしいいたわりを1文添えます。",
     "『今日はがんばったね』のような励ましは、数値だけから努力を断定する形では使いません。『大変な時間もあったかもしれないね』『今日はここまで、おつかれさま』のように、体験を断定しない言葉を優先します。",
@@ -1045,7 +1061,7 @@ function buildOpenAiInstructions(language = "ja", mode = "letter") {
     "前回との差分は1回の測定差としてだけ伝え、そこから『急に大きく動いていない流れ』『落ち着いた動き』など、時間的な傾向を推測しません。",
     "同じ指標を複数の見出しや段落で繰り返しません。うれしい点は、その指標を最初に説明する文の中で一緒に伝えます。",
     "『一定ぶん』『参考値として押さえられる』『比較期間より1だけ高い』『低め寄りにまとまっている』のような不自然な言い回しを使いません。",
-    "今日・昨日の短い期間ではGMIを本文へ出しません。GlucoScoreが比較期間と1以内の差なら、短いお手紙では省略し、しっかり分析で触れる場合も『ほぼ同じ』と簡潔に伝えます。",
+    "今日・昨日の短い期間ではGMIを本文へ出しません。GlucoScoreは非公開の書き方指示が許可した場合だけ1回触れ、それ以外はしっかり分析を含めて完全に省略します。",
     "振り返りの提案や締めの呼びかけは最後に1つだけ置き、似た意味の『見返してみようね』『一緒に見ていこうね』を続けません。",
     "TIR、TAR、TBR、CV、GlucoScoreを、明日の達成目標・改善課題・維持課題へ変換しません。数値は理解と振り返りの手がかりとして扱います。",
     "『目標の時間を増やす』『TBRを減らす』『数値を維持する』『改善する』『これだけ意識して進めよう』『目指そう』『できるようにしよう』のような、数値改善を求める指導表現を使いません。",
@@ -1113,14 +1129,8 @@ function getCompassionGuidance(summary = {}, language = "ja") {
   return "追加のいたわり条件はない。この指示や判定名は本文へ書かない。";
 }
 function getConciseMetricGuidance(summary = {}, mode = "letter", language = "ja") {
-  const metrics = summary.metrics || {};
-  const currentScore = Number(metrics.glucoScore);
-  const previousScore = Number(metrics.previousScore);
-  const scoreDifference = Number.isFinite(currentScore) && Number.isFinite(previousScore)
-    ? currentScore - previousScore
-    : null;
+  const scorePolicy = getGlucoScoreMentionPolicy(summary);
   const isShortRange = summary.period === "today" || summary.period === "yesterday";
-  const hasMinorScoreDifference = Number.isFinite(scoreDifference) && Math.abs(scoreDifference) <= 1;
 
   if (language === "en") {
     const guidance = [
@@ -1129,11 +1139,9 @@ function getConciseMetricGuidance(summary = {}, mode = "letter", language = "ja"
       "Use only one closing reflection invitation."
     ];
     if (isShortRange) guidance.push("Omit GMI from today and yesterday reflections.");
-    if (hasMinorScoreDifference) {
-      guidance.push(mode === "letter"
-        ? "Omit the GlucoScore comparison because the difference is only one point or less."
-        : "If mentioning the GlucoScore comparison, describe it simply as nearly the same and do not emphasize the one-point difference.");
-    }
+    guidance.push(scorePolicy.mention
+      ? "GlucoScore is at least two higher than the comparison period. It may be mentioned once as an optional reflection clue, never as a grade, achievement, or judgment of effort."
+      : "Omit GlucoScore completely. Do not mention its value, comparison, or 7-day average.");
     return guidance.join(" ");
   }
 
@@ -1145,29 +1153,30 @@ function getConciseMetricGuidance(summary = {}, mode = "letter", language = "ja"
     "『目標の時間を増やす』『TBRを減らす』『これだけ意識して進めよう』『目指そう』『できるようにしよう』を使わず、理解のための振り返りで締める。"
   ];
   if (isShortRange) guidance.push("今日・昨日ではGMIを本文へ出さない。");
-  if (hasMinorScoreDifference) {
-    guidance.push(mode === "letter"
-      ? "GlucoScoreの比較差は1以内なので、短いお手紙では触れない。"
-      : "GlucoScoreの比較差は1以内。触れる場合は『ほぼ同じ』とだけ伝え、1点差を強調しない。");
-  }
+  guidance.push(scorePolicy.mention
+    ? "GlucoScoreは比較期間より2以上高い。採点、達成、成功、努力の評価にはせず、任意の振り返りの手がかりとして1回だけ触れてよい。"
+    : "GlucoScoreは完全に省略し、現在値、比較値、過去7日平均のどれにも触れない。");
   return guidance.join(" ");
+}
+
+function isShortPromptPeriod(period = "today") {
+  return period === "today" || period === "yesterday";
 }
 
 function buildOpenAiSummaryText(summary = {}, mode = "letter", language = "ja") {
   const analysisMode = normalizeAnalysisMode(mode);
   const metrics = summary.metrics || {};
+  const scorePolicy = getGlucoScoreMentionPolicy(summary);
   const celebrationClues = buildCelebrationClues(summary);
   const privateWritingGuidance = [
     getCompassionGuidance(summary, language),
     getConciseMetricGuidance(summary, analysisMode, language)
   ].filter(Boolean).join(" ");
-  const patternHints = Array.isArray(summary.patternHints)
-    ? summary.patternHints.slice(0, analysisMode === "deep" ? 6 : 4)
-    : [];
+  const patternHints = filterGeneratedLetterPatternHints(summary, analysisMode === "deep" ? 6 : 4);
   const valueOrDash = (value) => value === null || value === undefined || value === "" ? "--" : value;
 
   if (language === "en") {
-    return [
+    const metricLines = [
       `- Period: ${getPromptPeriodLabel(summary.period, language)}`,
       `- Letter time: ${getSlotLabel(summary, language)}`,
       `- Displayed range: ${valueOrDash(summary.rangeLabel)}`,
@@ -1181,19 +1190,21 @@ function buildOpenAiSummaryText(summary = {}, mode = "letter", language = "ja") 
       `- TBR: ${valueOrDash(metrics.tbr)}%`,
       `- Average glucose: ${valueOrDash(metrics.averageGlucose)} mg/dL`,
       `- CV: ${valueOrDash(metrics.cv)}%`,
-      `- GMI estimate: ${valueOrDash(metrics.gmi)}%`,
-      `- GlucoScore: ${valueOrDash(metrics.glucoScore)}`,
-      `- Previous comparison GlucoScore: ${valueOrDash(metrics.previousScore)}`,
-      `- 7-day average GlucoScore: ${valueOrDash(metrics.sevenDayAverageScore)}`,
+      ...(isShortPromptPeriod(summary.period) ? [] : [`- GMI estimate: ${valueOrDash(metrics.gmi)}%`]),
+      ...(scorePolicy.mention ? [
+        `- GlucoScore: ${valueOrDash(metrics.glucoScore)}`,
+        `- Previous comparison GlucoScore: ${valueOrDash(metrics.previousScore)}`
+      ] : []),
       `- Private writing guidance (never quote this label or instruction): ${privateWritingGuidance}`,
       "- Positive clues:",
       ...(celebrationClues.length ? celebrationClues.map((clue) => `  - ${clue}`) : ["  - none"]),
       "- Reflection clues:",
       ...(patternHints.length ? patternHints.map((hint) => `  - ${hint}`) : ["  - none"])
-    ].join("\n");
+    ];
+    return metricLines.join("\n");
   }
 
-  return [
+  const metricLines = [
     `・期間: ${getPromptPeriodLabel(summary.period, language)}`,
     `・お手紙の時間: ${getSlotLabel(summary, language)}`,
     `・表示範囲: ${valueOrDash(summary.rangeLabel)}`,
@@ -1207,21 +1218,24 @@ function buildOpenAiSummaryText(summary = {}, mode = "letter", language = "ja") 
     `・TBR: ${valueOrDash(metrics.tbr)}%`,
     `・平均血糖: ${valueOrDash(metrics.averageGlucose)} mg/dL`,
     `・CV: ${valueOrDash(metrics.cv)}%`,
-    `・GMI目安: ${valueOrDash(metrics.gmi)}%`,
-    `・GlucoScore: ${valueOrDash(metrics.glucoScore)}`,
-    `・比較期間のGlucoScore: ${valueOrDash(metrics.previousScore)}`,
-    `・過去7日平均GlucoScore: ${valueOrDash(metrics.sevenDayAverageScore)}`,
+    ...(isShortPromptPeriod(summary.period) ? [] : [`・GMI目安: ${valueOrDash(metrics.gmi)}%`]),
+    ...(scorePolicy.mention ? [
+      `・GlucoScore: ${valueOrDash(metrics.glucoScore)}`,
+      `・比較期間のGlucoScore: ${valueOrDash(metrics.previousScore)}`
+    ] : []),
     `・非公開の書き方指示（見出しや判定語を本文へ書かない）: ${privateWritingGuidance}`,
     "・うれしい手がかり:",
     ...(celebrationClues.length ? celebrationClues.map((clue) => `  ・${clue}`) : ["  ・なし"]),
     "・振り返りの手がかり:",
     ...(patternHints.length ? patternHints.map((hint) => `  ・${hint}`) : ["  ・なし"])
-  ].join("\n");
+  ];
+  return metricLines.join("\n");
 }
 
 function buildOpenAiPrompt(summary = {}, mode = "letter") {
   const language = summary.language === "en" ? "en" : "ja";
   const analysisMode = normalizeAnalysisMode(mode);
+  const scorePolicy = getGlucoScoreMentionPolicy(summary);
   const modeLabel = getAnalysisModeLabel(analysisMode, language);
   const slotLabel = getSlotLabel(summary, language);
   const summaryText = buildOpenAiSummaryText(summary, analysisMode, language);
@@ -1238,7 +1252,7 @@ Requirements:
 - Do not use Markdown heading marks such as #, ##, or ###
 - Do not write meta labels such as "This is a prototype", "This is the detailed analysis", or "This is the ${slotLabel}"
 - Mention the active time only if it reads naturally; do not force it
-- Include TIR, TAR, TBR, average glucose, CV, and GlucoScore when available
+- Include TIR, TAR, TBR, average glucose, and CV when available${scorePolicy.mention ? "; GlucoScore may appear once as an optional clue" : "; omit GlucoScore completely"}
 - If positive clues are listed, mention one or more near the beginning and celebrate them clearly
 - Celebrate TIR 100% enthusiastically as a TIR result only; it never means unicorn
 - Follow the "Unicorn eligibility" line exactly and never infer unicorn from TIR, average glucose, or GlucoScore
@@ -1285,6 +1299,7 @@ ${summaryText}`;
 
 条件:
 - 最初は必ず「グルコだよ🍀」で始め、次の行に「来てくれてうれしいよ」などの短い挨拶を入れる。挨拶は同じ一文に固定しない
+- 「グルコだよ🍀」と短い見出し以外の普通の文は、自然な「。」「！」「？」で終える。文末に🍀を添える場合は「ぼくはここにいるよ。🍀」の順にする
 - 冒頭か最後に、血糖とは関係のない日常の短いひと言を1文入れる。「ちょっとひと息つこうね」「好きな音をひとつ思い出すのもいいね」など、休息や気分転換のやさしい言葉にする
 - 日常のひと言では健康効果や血糖への効果を断定せず、食事、運動、薬、サプリ、睡眠の助言をしない。季節、天気、居場所、時刻も作らない
 - 丁寧語の「です」「ます」「でした」「ました」「あります」「ありません」「ください」「ましょう」「でしょう」は使わない
@@ -1297,7 +1312,7 @@ ${summaryText}`;
   例: 🍀 全体の流れ / 📊 数字の手がかり / 🔎 気になった動き / 🌱 明日の小さな見返し
 - 「これは${slotLabel}のテスト版だよ」「これは${slotLabel}の『${modeLabel}』だよ」のような説明文は書かない
 - 時間帯ラベル「${slotLabel}」は、必要な時だけ自然に触れる。無理に入れない
-- TIR、TAR、TBR、平均血糖、CV、GlucoScoreを、分かる範囲で具体的に扱う
+- TIR、TAR、TBR、平均血糖、CVを、分かる範囲で具体的に扱う。GlucoScoreは非公開の書き方指示に従い、省略対象なら一切書かない
 - 「うれしい手がかり」があるときは、早い段階で1つ以上を取り上げ、遠慮せず具体的に一緒に喜ぶ
 - TIR 100％はTIRのきれいな流れとしてしっかり祝うが、ユニコーンの理由にはしない
 - 「ユニコーン判定」を必ず守り、対象外ならユニコーンの言葉や🦄を使わない
@@ -1317,7 +1332,7 @@ ${summaryText}`;
 - 前回との差分1点だけから「流れ」「動き」「傾向」を推測しない
 - 同じ指標を別の見出しで繰り返さず、良い点も最初の説明文の中で一緒に伝える
 - 「一定ぶん」「押さえられる」「1だけ高く見えている」「低め寄りにまとまっている」のような不自然な言い方を使わない
-- 今日・昨日ではGMIを本文へ出さない。GlucoScoreの比較差が1以内なら、短いお手紙では省略し、しっかり分析でも「ほぼ同じ」とだけ伝える
+- 今日・昨日ではGMIを本文へ出さない。GlucoScoreは非公開の書き方指示が許可した場合だけ1回触れ、それ以外はしっかり分析でも完全に省略する
 - 振り返りの提案と最後の呼びかけを二重にせず、似た意味の締めを1つだけにする
 - TIR、TAR、TBR、CV、GlucoScoreを、明日の数値目標・改善課題・維持課題にしない
 - 「目標の時間を増やす」「TBRを減らす」「数値を維持する」「改善する」「これだけ意識して進めよう」「目指そう」「できるようにしよう」のような指導表現を使わない
@@ -1338,6 +1353,7 @@ ${summaryText}`;
 
 条件:
 - 最初は必ず「グルコだよ🍀」で始め、次の行に「来てくれてうれしいよ」などの短い挨拶を入れる。挨拶は同じ一文に固定しない
+- 「グルコだよ🍀」と短い見出し以外の普通の文は、自然な「。」「！」「？」で終える。文末に🍀を添える場合は「ぼくはここにいるよ。🍀」の順にする
 - 6〜9行くらいの短いお手紙にする
 - 冒頭か最後に、血糖とは関係のない日常の短いひと言を1文入れる。「ちょっとひと息つこうね」「好きな音をひとつ思い出すのもいいね」など、休息や気分転換のやさしい言葉にする
 - 日常のひと言では健康効果や血糖への効果を断定せず、食事、運動、薬、サプリ、睡眠の助言をしない。季節、天気、居場所、時刻も作らない
@@ -1368,7 +1384,7 @@ ${summaryText}`;
 - 前回との差分1点だけから「流れ」「動き」「傾向」を推測しない
 - 同じ指標を別の見出しで繰り返さず、良い点も最初の説明文の中で一緒に伝える
 - 「一定ぶん」「押さえられる」「1だけ高く見えている」「低め寄りにまとまっている」のような不自然な言い方を使わない
-- 今日・昨日ではGMIを本文へ出さない。GlucoScoreの比較差が1以内なら、短いお手紙では省略し、しっかり分析でも「ほぼ同じ」とだけ伝える
+- 今日・昨日ではGMIを本文へ出さない。GlucoScoreは非公開の書き方指示が許可した場合だけ1回触れ、それ以外はしっかり分析でも完全に省略する
 - 振り返りの提案と最後の呼びかけを二重にせず、似た意味の締めを1つだけにする
 - TIR、TAR、TBR、CV、GlucoScoreを、明日の数値目標・改善課題・維持課題にしない
 - 「目標の時間を増やす」「TBRを減らす」「数値を維持する」「改善する」「これだけ意識して進めよう」「目指そう」「できるようにしよう」のような指導表現を使わない
@@ -1457,7 +1473,7 @@ Important: Write a fresh final response only. Do not include variable names, JSO
 
     return `${basePrompt}
 
-重要: 前の文章は表示用として整っていなかったため使わない。最初から書き直し、完成した分析本文だけを返す。内部処理や判定名を出さず、気になる指標を責める言葉や曖昧な比喩を使わない。TBRを提案へ直結させず、いたわりが必要なら提案より先に自然な労いを置く。差分1点から傾向を推測せず、同じ指標を複数の見出しで繰り返さない。今日・昨日ではGMIを省き、GlucoScoreの比較差が1以内なら短いお手紙では省略する。TIR、TAR、TBR、CV、GlucoScoreを明日の数値目標・改善課題・維持課題へ変えない。「目標の時間を増やす」「TBRを減らす」「数値を維持する」「改善する」「これだけ意識して進めよう」「目指そう」「できるようにしよう」を使わない。締めは行動課題ではなく、今日の流れを理解するためのやさしい振り返りを1つだけ添える。ユニコーン判定を守り、自然な本文だけを返す。`;
+重要: 前の文章は表示用として整っていなかったため使わない。最初から書き直し、完成した分析本文だけを返す。内部処理や判定名を出さず、気になる指標を責める言葉や曖昧な比喩を使わない。TBRを提案へ直結させず、いたわりが必要なら提案より先に自然な労いを置く。差分1点から傾向を推測せず、同じ指標を複数の見出しで繰り返さない。今日・昨日ではGMIを省く。GlucoScoreはサマリーの非公開指示が省略を求めている場合は一切書かない。TIR、TAR、TBR、CV、GlucoScoreを明日の数値目標・改善課題・維持課題へ変えない。「目標の時間を増やす」「TBRを減らす」「数値を維持する」「改善する」「これだけ意識して進めよう」「目指そう」「できるようにしよう」を使わない。普通の文は自然な句読点で終え、🍀は句点の後へ置く。締めは行動課題ではなく、今日の流れを理解するためのやさしい振り返りを1つだけ添える。ユニコーン判定を守り、自然な本文だけを返す。`;
   }
 
   if (language === "en") {
@@ -1471,28 +1487,44 @@ Important: Complete the full reflection within the available output limit. End w
 重要: 出力上限の中で必ず最後まで書き切り、文の途中で終わらせない。最後は完結した一文で締める。`;
 }
 
-async function callOpenAiAttempt({ summary, env, config, mode, maxOutputTokens, retryKind = "" }) {
+function isRetryableOpenAiAttemptError(error) {
+  const status = Number(error?.status);
+  return error?.code === "openai_transport_error"
+    || status === 408
+    || status === 409
+    || status === 429
+    || status >= 500;
+}
+
+async function callOpenAiAttemptOnce({ summary, env, config, mode, maxOutputTokens, retryKind = "" }) {
   const model = config.openAiModel;
   const language = summary.language === "en" ? "en" : "ja";
   const input = retryKind
     ? buildOpenAiRetryPrompt(summary, mode, retryKind)
     : buildOpenAiPrompt(summary, mode);
 
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model,
-      instructions: buildOpenAiInstructions(language, mode),
-      input,
-      max_output_tokens: maxOutputTokens,
-      tool_choice: "none",
-      store: false
-    })
-  });
+  let response;
+  try {
+    response = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model,
+        instructions: buildOpenAiInstructions(language, mode, summary),
+        input,
+        max_output_tokens: maxOutputTokens,
+        tool_choice: "none",
+        store: false
+      })
+    });
+  } catch (cause) {
+    const error = new Error("OpenAI request could not be completed.", { cause });
+    error.code = "openai_transport_error";
+    throw error;
+  }
 
   const data = await response.json().catch(() => ({}));
 
@@ -1503,7 +1535,7 @@ async function callOpenAiAttempt({ summary, env, config, mode, maxOutputTokens, 
     throw error;
   }
 
-  const text = extractOpenAiText(data);
+  const text = normalizeGeneratedLetterPunctuation(extractOpenAiText(data), language);
   const openAiUsage = getOpenAiUsage(data);
   const inputTokens = openAiUsage.inputTokens ?? estimateInputTokens(summary);
   const outputTokens = openAiUsage.outputTokens ?? estimateOutputTokens(text);
@@ -1522,6 +1554,32 @@ async function callOpenAiAttempt({ summary, env, config, mode, maxOutputTokens, 
       })
     }
   };
+}
+
+async function callOpenAiAttempt(input) {
+  const attemptUsage = [];
+
+  try {
+    const result = await callOpenAiAttemptOnce(input);
+    attemptUsage.push(result.usage);
+    return result;
+  } catch (error) {
+    attemptUsage.push(error.usage);
+    if (!isRetryableOpenAiAttemptError(error)) {
+      error.usage = addRequestUsage(...attemptUsage);
+      throw error;
+    }
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  try {
+    const result = await callOpenAiAttemptOnce(input);
+    result.usage = addRequestUsage(...attemptUsage, result.usage);
+    return result;
+  } catch (error) {
+    error.usage = addRequestUsage(...attemptUsage, error.usage);
+    throw error;
+  }
 }
 
 function createIncompleteOutputError({ mode, incompleteReason, attempts, maxOutputTokens, usage }) {
@@ -1581,18 +1639,13 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
   const metrics = summary.metrics || {};
   const tir = Number(metrics.tir);
   const tbr = Number(metrics.tbr);
-  const currentScore = Number(metrics.glucoScore);
-  const previousScore = Number(metrics.previousScore);
+  const scorePolicy = getGlucoScoreMentionPolicy(summary);
   const qualityOptions = {
     allowUnicorn: isUnicornEligibleSummary(summary),
     analysisMode,
     period: summary.period,
     compassionRequired: (Number.isFinite(tbr) && tbr >= 1) || (Number.isFinite(tir) && tir <= 70),
-    minorScoreDifference: (
-      Number.isFinite(currentScore)
-      && Number.isFinite(previousScore)
-      && Math.abs(currentScore - previousScore) <= 1
-    )
+    suppressGlucoScore: !scorePolicy.mention
   };
   const firstAttempt = await callOpenAiAttempt({
     summary,
@@ -1668,10 +1721,57 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
   }
 
   if (!firstAttempt.text) {
-    const error = new Error("OpenAI response did not include output text.");
-    error.code = "openai_empty_output";
-    error.usage = firstAttempt.usage;
-    throw error;
+    let emptyRetry;
+    try {
+      emptyRetry = await callOpenAiAttempt({
+        summary,
+        env,
+        config,
+        mode: analysisMode,
+        maxOutputTokens: limits.retry,
+        retryKind: "incomplete"
+      });
+    } catch (error) {
+      error.usage = addRequestUsage(firstAttempt.usage, error.usage);
+      error.retryAttempted = true;
+      error.analysisMode = analysisMode;
+      error.attempts = 2;
+      error.maxOutputTokens = limits.retry;
+      throw error;
+    }
+
+    const combinedUsage = addRequestUsage(firstAttempt.usage, emptyRetry.usage);
+    if (emptyRetry.incompleteReason || !emptyRetry.text) {
+      throw createIncompleteOutputError({
+        mode: analysisMode,
+        incompleteReason: emptyRetry.incompleteReason || "empty_output",
+        attempts: 2,
+        maxOutputTokens: limits.retry,
+        usage: combinedUsage
+      });
+    }
+
+    const emptyRetryQualityIssues = getGeneratedLetterQualityIssues(emptyRetry.text, language, qualityOptions);
+    const emptyRetryQualityAssessment = partitionGeneratedLetterQualityIssues(emptyRetryQualityIssues);
+    if (emptyRetryQualityAssessment.blockingIssues.length) {
+      throw createOutputQualityError({
+        mode: analysisMode,
+        issues: emptyRetryQualityIssues,
+        attempts: 2,
+        maxOutputTokens: limits.retry,
+        usage: combinedUsage
+      });
+    }
+
+    return buildAcceptedOpenAiResult({
+      text: emptyRetry.text,
+      model,
+      attempts: 2,
+      retriedAfterIncomplete: false,
+      initialIncompleteReason: null,
+      maxOutputTokens: limits.retry,
+      usage: combinedUsage
+    });
   }
 
   const firstQualityIssues = getGeneratedLetterQualityIssues(firstAttempt.text, language, qualityOptions);
@@ -1687,6 +1787,12 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
     });
   }
 
+  const firstQualityAssessment = partitionGeneratedLetterQualityIssues(firstQualityIssues);
+  const canUseSafeFirstAttempt = (
+    firstQualityAssessment.blockingIssues.length === 0
+    && firstQualityAssessment.softWarnings.length > 0
+  );
+
   let qualityRetry;
   try {
     qualityRetry = await callOpenAiAttempt({
@@ -1698,7 +1804,20 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
       retryKind: "quality"
     });
   } catch (error) {
-    error.usage = addRequestUsage(firstAttempt.usage, error.usage);
+    const combinedUsage = addRequestUsage(firstAttempt.usage, error.usage);
+    if (canUseSafeFirstAttempt) {
+      return buildAcceptedOpenAiResult({
+        text: firstAttempt.text,
+        model,
+        attempts: 2,
+        retriedAfterIncomplete: false,
+        initialIncompleteReason: null,
+        maxOutputTokens: limits.retry,
+        usage: combinedUsage
+      });
+    }
+
+    error.usage = combinedUsage;
     error.retryAttempted = true;
     error.analysisMode = analysisMode;
     error.attempts = 2;
@@ -1708,6 +1827,18 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
 
   const combinedUsage = addRequestUsage(firstAttempt.usage, qualityRetry.usage);
   if (qualityRetry.incompleteReason || !qualityRetry.text) {
+    if (canUseSafeFirstAttempt) {
+      return buildAcceptedOpenAiResult({
+        text: firstAttempt.text,
+        model,
+        attempts: 2,
+        retriedAfterIncomplete: false,
+        initialIncompleteReason: null,
+        maxOutputTokens: limits.retry,
+        usage: combinedUsage
+      });
+    }
+
     throw createIncompleteOutputError({
       mode: analysisMode,
       incompleteReason: qualityRetry.incompleteReason || "empty_output",
@@ -1720,6 +1851,18 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
   const retryQualityIssues = getGeneratedLetterQualityIssues(qualityRetry.text, language, qualityOptions);
   const retryQualityAssessment = partitionGeneratedLetterQualityIssues(retryQualityIssues);
   if (retryQualityAssessment.blockingIssues.length) {
+    if (canUseSafeFirstAttempt) {
+      return buildAcceptedOpenAiResult({
+        text: firstAttempt.text,
+        model,
+        attempts: 2,
+        retriedAfterIncomplete: false,
+        initialIncompleteReason: null,
+        maxOutputTokens: limits.retry,
+        usage: combinedUsage
+      });
+    }
+
     throw createOutputQualityError({
       mode: analysisMode,
       issues: retryQualityIssues,

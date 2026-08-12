@@ -33,8 +33,11 @@ const LIVE_PERIOD_STORAGE_KEY = "glucoscope.livePeriod.v1";
 const CUSTOM_RANGE_STORAGE_KEY = "glucoscope.customRange.v1";
 const AI_LETTER_WORKER_ENDPOINT_STORAGE_KEY = "glucoscope.aiLetterWorkerEndpoint.v1";
 const AI_LETTER_WORKER_ENABLED_STORAGE_KEY = "glucoscope.aiLetterWorkerEnabled.v1";
-const AI_LETTER_LOCAL_CACHE_STORAGE_KEY = "glucoscope.aiLetterLocalCache.v12";
-const AI_LETTER_LEGACY_LOCAL_CACHE_STORAGE_KEYS = ["glucoscope.aiLetterLocalCache.v11"];
+const AI_LETTER_LOCAL_CACHE_STORAGE_KEY = "glucoscope.aiLetterLocalCache.v13";
+const AI_LETTER_LEGACY_LOCAL_CACHE_STORAGE_KEYS = [
+  "glucoscope.aiLetterLocalCache.v12",
+  "glucoscope.aiLetterLocalCache.v11"
+];
 const AI_LETTER_MODE_STORAGE_KEY = "glucoscope.aiLetterMode.v1";
 const AI_LETTER_LOCAL_CACHE_MAX_ITEMS = 30;
 const AI_LETTER_LOCAL_CACHE_FRESH_MS = 60 * 60 * 1000;
@@ -4993,10 +4996,9 @@ function buildPatternHints({ tir, tar, tbr, cv, avg, glucoScore, previousScore }
     if (numericTar >= 20) hints.push(`TAR is ${tar}%, so higher periods may offer gentle clues when reviewed later.`);
     if (numericTbr >= 4) hints.push(`TBR is ${tbr}%, so lower periods may be gentle clues to look back on later.`);
     if (numericCv >= 36) hints.push(`CV is ${cv}%, so the day looks a little more wavy.`);
-    if (previousScore !== null && Number.isFinite(Number(previousScore))) {
+    if (previousScore !== null && previousScore !== "" && previousScore !== "--" && Number.isFinite(Number(previousScore))) {
       const diff = Number(glucoScore) - Number(previousScore);
-      if (diff > 0) hints.push(`GlucoScore looks ${diff} points higher than the previous comparison period.`);
-      if (diff < 0) hints.push(`GlucoScore looks ${Math.abs(diff)} points softer than the previous comparison period.`);
+      if (diff >= 2) hints.push(`GlucoScore is ${diff} higher than the previous comparison period; it may be one optional reflection clue.`);
     }
     if (!hints.length) hints.push(`Average glucose is ${avg}mg/dL, and the selected range has clues we can review gently.`);
     return hints.slice(0, 4);
@@ -5006,10 +5008,9 @@ function buildPatternHints({ tir, tar, tbr, cv, avg, glucoScore, previousScore }
   if (numericTar >= 20) hints.push(`TARは${tar}%で、高めの時間もあとでやさしく振り返るヒントになりそうだよ。`);
   if (numericTbr >= 4) hints.push(`TBRは${tbr}%で、低めの時間もあとでそっと見返す手がかりになりそうだよ。`);
   if (numericCv >= 36) hints.push(`CVは${cv}%で、血糖の動きが少し大きめに見えているよ。`);
-  if (previousScore !== null && Number.isFinite(Number(previousScore))) {
+  if (previousScore !== null && previousScore !== "" && previousScore !== "--" && Number.isFinite(Number(previousScore))) {
     const diff = Number(glucoScore) - Number(previousScore);
-    if (diff > 0) hints.push(`GlucoScoreは比較期間より${diff}高く見えているよ。`);
-    if (diff < 0) hints.push(`GlucoScoreは比較期間より${Math.abs(diff)}控えめに見えているよ。`);
+    if (diff >= 2) hints.push(`GlucoScoreは比較期間より${diff}高く、任意の振り返りの手がかりとして見られるよ。`);
   }
   if (!hints.length) hints.push(`平均血糖は${avg}mg/dLで、表示中の期間にも振り返りの手がかりがあるよ。`);
   return hints.slice(0, 4);
@@ -5058,11 +5059,72 @@ function buildAiLetterSummary({ periodKey, rangeStart, rangeEnd, latest, entries
   };
 }
 
+function shouldMentionAiGlucoScore(summary = {}) {
+  const currentScore = summary?.metrics?.glucoScore;
+  const previousScore = summary?.metrics?.previousScore;
+  if (
+    currentScore === null || currentScore === undefined || currentScore === "" || currentScore === "--"
+    || previousScore === null || previousScore === undefined || previousScore === "" || previousScore === "--"
+  ) {
+    return false;
+  }
+
+  const difference = Number(currentScore) - Number(previousScore);
+  return Number.isFinite(difference) && difference >= 2;
+}
+
+function getSafeAiPatternHints(summary = {}) {
+  const includeScore = shouldMentionAiGlucoScore(summary);
+  const shortRange = summary?.period === "today" || summary?.period === "yesterday";
+
+  return (Array.isArray(summary?.patternHints) ? summary.patternHints : [])
+    .filter((hint) => typeof hint === "string")
+    .map((hint) => hint.trim())
+    .filter(Boolean)
+    .filter((hint) => includeScore || !/(?:\bGlucoScore\b|グルコスコア)/iu.test(hint))
+    .filter((hint) => !shortRange || !/\bGMI\b/iu.test(hint));
+}
+
+function buildChatGptMetricLines(summary = {}, language = "ja") {
+  const metrics = summary.metrics || {};
+  const shortRange = summary.period === "today" || summary.period === "yesterday";
+  const includeScore = shouldMentionAiGlucoScore(summary);
+
+  if (language === "en") {
+    return [
+      `- TIR: ${metrics.tir}%`,
+      `- TAR: ${metrics.tar}%`,
+      `- TBR: ${metrics.tbr}%`,
+      `- Average glucose: ${metrics.averageGlucose} mg/dL`,
+      `- CV: ${metrics.cv}%`,
+      ...(shortRange ? [] : [`- GMI estimate: ${metrics.gmi}%`]),
+      ...(includeScore ? [
+        `- GlucoScore: ${metrics.glucoScore}`,
+        `- Previous comparison score: ${metrics.previousScore}`
+      ] : [])
+    ].join("\n");
+  }
+
+  return [
+    `- TIR: ${metrics.tir}%`,
+    `- TAR: ${metrics.tar}%`,
+    `- TBR: ${metrics.tbr}%`,
+    `- 平均血糖: ${metrics.averageGlucose} mg/dL`,
+    `- CV: ${metrics.cv}%`,
+    ...(shortRange ? [] : [`- GMI目安: ${metrics.gmi}%`]),
+    ...(includeScore ? [
+      `- GlucoScore: ${metrics.glucoScore}`,
+      `- 比較期間のGlucoScore: ${metrics.previousScore}`
+    ] : [])
+  ].join("\n");
+}
+
 function buildChatGptPrompt(summary, mode = currentAiLetterMode) {
   if (!summary) return "";
 
   const analysisMode = normalizeAiLetterMode(mode);
   const modeLabel = getAiLetterModeLabel(analysisMode);
+  const safePatternHints = getSafeAiPatternHints(summary);
 
   if (currentLanguage === "en") {
     const task = analysisMode === "deep"
@@ -5071,6 +5133,11 @@ function buildChatGptPrompt(summary, mode = currentAiLetterMode) {
     const outputRule = analysisMode === "deep"
       ? "- Use short sections and bullet points. Include overview, metric clues, pattern hints, and gentle things to look back on."
       : "- Keep it to 3-6 short sentences.";
+
+    const metricLines = buildChatGptMetricLines(summary, "en");
+    const scoreRule = shouldMentionAiGlucoScore(summary)
+      ? "- GlucoScore may be mentioned once as an optional clue, never as a grade or achievement."
+      : "- Do not mention GlucoScore in this reflection.";
 
     return `You are gluco, the official AI companion of GlucoScope.
 
@@ -5083,6 +5150,7 @@ Rules:
 - Do not suggest insulin doses, medication changes, or device setting changes.
 - Do not shame, blame, or frighten the person.
 - Treat glucose data as clues for reflection, not as a grade.
+${scoreRule}
 - When celebration clues are present, mention them early and celebrate them clearly instead of minimizing them.
 - If the unicorn clue is present, use "🦄 You caught a unicorn!" once.
 - Praise the observed flow, not the person's worth or assumed effort.
@@ -5099,19 +5167,11 @@ Glucose summary:
 - Latest glucose reading: ${summary.currentGlucose ?? "--"} mg/dL
 - Direction: ${summary.direction}
 - Delta from previous reading: ${summary.delta} mg/dL
-- TIR: ${summary.metrics.tir}%
-- TAR: ${summary.metrics.tar}%
-- TBR: ${summary.metrics.tbr}%
-- Average glucose: ${summary.metrics.averageGlucose} mg/dL
-- CV: ${summary.metrics.cv}%
-- GMI estimate: ${summary.metrics.gmi}%
-- GlucoScore: ${summary.metrics.glucoScore}
-- Previous comparison score: ${summary.metrics.previousScore ?? "--"}
-- 7-day average score: ${summary.metrics.sevenDayAverageScore ?? "--"}
+${metricLines}
 - Celebration clues:
 ${(summary.celebrationHints || []).map((hint) => `  - ${hint}`).join("\n") || "  - none"}
 - Reflection hints:
-${summary.patternHints.map((hint) => `  - ${hint}`).join("\n")}
+${safePatternHints.map((hint) => `  - ${hint}`).join("\n") || "  - none"}
 
 Please write as gluco, a small kind companion nearby.`;
   }
@@ -5122,6 +5182,11 @@ Please write as gluco, a small kind companion nearby.`;
   const outputRule = analysisMode === "deep"
     ? "- 短い見出しと箇条書きを使う。全体感、指標の手がかり、見返すとよさそうな観点を分けて書く。"
     : "- 3〜6文くらいの短いお手紙にする。";
+
+  const metricLines = buildChatGptMetricLines(summary, "ja");
+  const scoreRule = shouldMentionAiGlucoScore(summary)
+    ? "- GlucoScoreは採点や達成にせず、任意の振り返りの手がかりとして1回だけ触れてよい。"
+    : "- この振り返りではGlucoScoreに触れない。";
 
   return `あなたはGlucoScope公式AIパートナー「グルコ」です。
 
@@ -5134,6 +5199,7 @@ ${task}
 - インスリン量、薬、医療機器設定の変更を指示しない。
 - 責めない。怖がらせない。急かさない。
 - 血糖データを採点ではなく、振り返りの手がかりとして扱う。
+${scoreRule}
 - うれしい手がかりがあるときは、早い段階で具体的に一緒に喜び、褒め言葉を弱めない。
 - ユニコーンの手がかりがあるときは「🦄 ユニコーンをつかまえた！」を1回だけ使う。
 - 努力や人の価値を推測せず、データから見えた良い流れを褒める。
@@ -5150,19 +5216,11 @@ ${outputRule}
 - 最新の血糖測定: ${summary.currentGlucose ?? "--"} mg/dL
 - 矢印: ${summary.direction}
 - 前回との差分: ${summary.delta} mg/dL
-- TIR: ${summary.metrics.tir}%
-- TAR: ${summary.metrics.tar}%
-- TBR: ${summary.metrics.tbr}%
-- 平均血糖: ${summary.metrics.averageGlucose} mg/dL
-- CV: ${summary.metrics.cv}%
-- GMI目安: ${summary.metrics.gmi}%
-- GlucoScore: ${summary.metrics.glucoScore}
-- 比較期間のGlucoScore: ${summary.metrics.previousScore ?? "--"}
-- 過去7日平均GlucoScore: ${summary.metrics.sevenDayAverageScore ?? "--"}
+${metricLines}
 - うれしい手がかり:
 ${(summary.celebrationHints || []).map((hint) => `  - ${hint}`).join("\n") || "  - なし"}
 - 振り返りヒント:
-${summary.patternHints.map((hint) => `  - ${hint}`).join("\n")}
+${safePatternHints.map((hint) => `  - ${hint}`).join("\n") || "  - なし"}
 
 グルコとして、そばにいる小さなともだちのように書いてください。`;
 }
@@ -5504,16 +5562,19 @@ function makeDeepComment(metrics = {}) {
     currentGlucose: metrics.currentGlucose,
     periodKey
   });
-  const scoreDiff = Number.isFinite(Number(previousScore))
-    ? Number(glucoScore) - Number(previousScore)
-    : null;
-  const scoreLine = scoreDiff === null
-    ? (currentLanguage === "en" ? "Comparison score is not available yet." : "比較スコアはまだ見えていないよ。")
-    : scoreDiff > 0
-      ? (currentLanguage === "en" ? `GlucoScore is ${scoreDiff} higher than the comparison period.` : `GlucoScoreは比較期間より${scoreDiff}高く見えているよ。`)
-      : scoreDiff < 0
-        ? (currentLanguage === "en" ? `GlucoScore is ${Math.abs(scoreDiff)} softer than the comparison period.` : `GlucoScoreは比較期間より${Math.abs(scoreDiff)}控えめに見えているよ。`)
-        : (currentLanguage === "en" ? "GlucoScore is about the same as the comparison period." : "GlucoScoreは比較期間と同じくらいに見えているよ。");
+  const hasScoreComparison = previousScore !== null
+    && previousScore !== undefined
+    && previousScore !== ""
+    && previousScore !== "--"
+    && Number.isFinite(Number(glucoScore))
+    && Number.isFinite(Number(previousScore));
+  const scoreDiff = hasScoreComparison ? Number(glucoScore) - Number(previousScore) : null;
+  const includeScore = Number.isFinite(scoreDiff) && scoreDiff >= 2;
+  const scoreLine = includeScore
+    ? (currentLanguage === "en"
+        ? `\nGlucoScore is ${glucoScore}, ${scoreDiff} higher than the comparison period; it is one optional reflection clue.`
+        : `\nGlucoScoreは${glucoScore}で、比較期間より${scoreDiff}高く、任意の振り返りの手がかりとして見られるよ。`)
+    : "";
   const companionLine = getRuleCommentCompanionLine("deep");
 
   if (currentLanguage === "en") {
@@ -5523,8 +5584,7 @@ function makeDeepComment(metrics = {}) {
     return `Detailed Gluco reflection 🍀
 ${companionLine}${celebrationBlock}
 ${periodText}, TIR is ${tir}%, TAR is ${tar}%, and TBR is ${tbr}%.
-Average glucose is ${avg}mg/dL, CV is ${cv}%, and GMI estimate is ${gmi}%.
-GlucoScore is ${glucoScore}. ${scoreLine}
+Average glucose is ${avg}mg/dL, CV is ${cv}%, and GMI estimate is ${gmi}%.${scoreLine}
 Higher, lower, or wavier periods can be gentle clues to look back on later.
 This is not medical advice; it is a small note to help you organize what you notice.`;
   }
@@ -5535,8 +5595,7 @@ This is not medical advice; it is a small note to help you organize what you not
   return `グルコだよ🍀
 ${companionLine}${celebrationBlock}
 ${periodText}TIRは${tir}%、TARは${tar}%、TBRは${tbr}%だったよ。
-平均血糖は${avg}mg/dL、CVは${cv}%、GMI目安は${gmi}%だね。
-GlucoScoreは${glucoScore}。${scoreLine}
+平均血糖は${avg}mg/dL、CVは${cv}%、GMI目安は${gmi}%だね。${scoreLine}
 高め・低め・ゆらぎが見えた時間は、あとでそっと見返す手がかりになりそう。
 これは医療判断ではなく、気づいたことを整理するための小さなメモとして見てね。`;
 }
