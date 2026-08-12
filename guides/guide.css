@@ -130,7 +130,6 @@ p{margin:0 0 12px}
 .guide-app-now span:not(.guide-app-icon),.guide-app-card span:not(.guide-app-icon){color:var(--guide-muted);font-size:.8rem}
 .guide-app-icon{flex:0 0 auto;display:grid;place-items:center;width:58px;height:58px;border-radius:15px;color:#fff;font-weight:900;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
 .guide-app-icon-gluroo{background:linear-gradient(145deg,#7156a8,#3e2f78)}
-.guide-app-icon-dexcom{background:linear-gradient(145deg,#35a853,#13823b)}
 .guide-app-icon-mail{background:linear-gradient(145deg,#59a9ee,#246fb6)}
 .guide-app-compare{display:grid;gap:10px;margin-top:14px}
 .guide-app-card{padding:12px}

@@ -1793,7 +1793,7 @@ Gluroo is an external service. GlucoScope must state that its availability, pric
 
 The beginner route must state its device boundary honestly. Guardian (MiniMed 780G) may use the verified iPhone route from Guardian Monitor to Gluroo Global Connect. Guardian Monitor remains an external uploader and its one-destination limitation is shown only as a conditional note. Dexcom Share, LibreLinkUp, and Guardian Monitor receive separate preparation guides, and CGM manufacturer passwords are never entered into GlucoScope.
 
-The beginner guides incorporate every supplied device-preparation capture as one screen per step: 27 LibreLink / LibreLinkUp screens and 10 Dexcom Share screens. Personal fields in the supplied captures are masked. Both branches continue to the shared Gluroo flow at screen 30 after device preparation, and both warn that app updates may change screens, wording, and order.
+The beginner guides incorporate every supplied device-preparation capture as one screen per step: 27 LibreLink / LibreLinkUp screens and 10 Dexcom Share screens. Personal fields in the supplied captures are masked. Both their return and completion actions resume the shared Gluroo flow at screen 22 after device preparation, where the prepared CGM is selected and connected; they do not skip ahead to Global Connect at screen 30. Both guides warn that app updates may change screens, wording, and order.
 
 The screenshots explain connection setup only. Glucose values, graphs, notification selections, and other settings visible in an example are not targets, medical advice, or instructions to change treatment or device settings. Treatment decisions, alerts, and current sensor state remain with the original CGM app and the person's medical guidance.
 
@@ -1855,7 +1855,8 @@ CGMメーカーのパスワードをGlucoScopeへ入力させません。
 初心者向けガイドでは、提供された機器準備画面をすべて1画面ずつの手順として使います。
 LibreLink / LibreLinkUpは27画面、Dexcom Shareは10画面です。
 提供画像内のメールアドレス、生年月日など、公開に不要な情報は隠します。
-どちらの機器別ガイドも、準備完了後は共通GlurooガイドのSTEP 30へ続け、
+どちらの機器別ガイドも、上部の戻る操作と準備完了後の操作は共通GlurooガイドのSTEP 22へ続け、
+準備したCGMを選んで接続します。Global ConnectのSTEP 30へ飛ばしません。
 アプリ更新によって画面、言葉、順番が変わる可能性を伝えます。
 
 画像は接続準備の案内だけに使います。

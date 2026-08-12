@@ -199,7 +199,15 @@ test("field-test revision gives every optional screen an explicit SKIP rule", ()
 
 test("Gluroo guide maps the reviewed 34-screen source set and warns about version changes", () => {
   const stepImages = glurooGuide.match(/images\/steps\/\d{2}-[a-z0-9-]+\.webp/g) || [];
+  const stepImageTags = glurooGuide.match(/<img src="images\/steps\/[^>]+>/g) || [];
   assert.equal(new Set(stepImages).size, 34);
+  assert.equal(stepImageTags.length, 34);
+  stepImageTags.forEach((tag) => {
+    assert.match(tag, /\swidth="\d+"/);
+    assert.match(tag, /\sheight="\d+"/);
+  });
+  assert.match(glurooGuide, /window\.addEventListener\("hashchange", correctAnchor\)/);
+  assert.match(glurooGuide, /window\.setTimeout\(\(\) => target\.scrollIntoView\(\{ block: "start" \}\), 700\)/);
   assert.match(glurooGuide, /Gluroo 2\.0\.5/);
   assert.match(glurooGuide, /バージョンや仕様/);
   assert.match(glurooGuide, /画面の見た目、文言、順番、表示される画面が変わる可能性/);
@@ -249,7 +257,13 @@ test("Dexcom Share guide uses every supplied screen in one-screen steps", async 
   assert.match(dexcomGuide, /招待メールを送信しました/);
   assert.match(dexcomGuide, /本人側（Sharer）のユーザーIDとパスワード/);
   assert.match(dexcomGuide, /画像例とご自身の画面でオン・オフが違っても問題ありません/);
-  assert.match(dexcomGuide, /\.\.\/gluroo-setup\/#screen-30/);
+  assert.match(dexcomGuide, /guide\.css\?v=20260812-step22-real-icons-1/);
+  assert.equal((dexcomGuide.match(/\.\.\/gluroo-setup\/#screen-22/g) || []).length, 2);
+  assert.doesNotMatch(dexcomGuide, /\.\.\/gluroo-setup\/#(?:step-cgm|screen-30)/);
+  assert.match(dexcomGuide, /images\/app-icons\/dexcom-g7-app\.png/);
+  assert.match(dexcomGuide, /Dexcom G7の白地に緑のマークのアプリアイコン/);
+  assert.doesNotMatch(dexcomGuide, /guide-app-icon-dexcom|>G7<\/span>/);
+  await access(new URL("../guides/dexcom-share/images/app-icons/dexcom-g7-app.png", import.meta.url));
   for (const relativePath of stepImages) {
     await access(new URL(`../guides/dexcom-share/${relativePath}`, import.meta.url));
   }
@@ -266,7 +280,7 @@ test("Libre guide identifies each app before switching", async () => {
   assert.match(libreGuide, /アプリアイコンは更新で変わる/);
   assert.match(libreGuide, /id1449296861/);
   assert.match(libreGuide, /id1234323923/);
-  assert.match(libreGuide, /guide\.css\?v=20260812-libre-app-icons-1/);
+  assert.match(libreGuide, /guide\.css\?v=20260812-step22-real-icons-1/);
   assert.match(guideCss, /\.guide-app-now/);
   assert.match(libreGuide, /guide-app-store-icon-link/);
   assert.equal((libreGuide.match(/images\/app-icons\/librelink-app\.png/g) || []).length, 2);
@@ -300,7 +314,8 @@ test("LibreLinkUp guide uses every supplied screen and separates both phones", a
   assert.match(libreGuide, /「必須です」と出ても大丈夫です/);
   assert.match(libreGuide, /「最近のデータなし」と表示されることがあります/);
   assert.match(libreGuide, /「許可」または「許可しない」/);
-  assert.match(libreGuide, /\.\.\/gluroo-setup\/#screen-30/);
+  assert.equal((libreGuide.match(/\.\.\/gluroo-setup\/#screen-22/g) || []).length, 2);
+  assert.doesNotMatch(libreGuide, /\.\.\/gluroo-setup\/#(?:step-cgm|screen-30)/);
   for (const relativePath of stepImages) {
     await access(new URL(`../guides/librelinkup/${relativePath}`, import.meta.url));
   }

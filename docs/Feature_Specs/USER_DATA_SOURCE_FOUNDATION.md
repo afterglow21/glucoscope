@@ -233,7 +233,7 @@ The Libre guide explains:
 - switch back to Gluroo and use the LibreLinkUp email and password there;
 - reset the password when it is unknown rather than attempting to display it.
 
-On 2026-08-12, the beginner preparation guides were expanded from summary steps into one-screen-per-step walkthroughs using every supplied capture: 27 LibreLink / LibreLinkUp screens and 10 Dexcom Share screens. Personal fields in the supplied assets are masked. Each guide warns that app updates may change wording, layout, or screen order, and its completion action continues to the shared Gluroo flow at `#screen-30` rather than returning to the device branch.
+On 2026-08-12, the beginner preparation guides were expanded from summary steps into one-screen-per-step walkthroughs using every supplied capture: 27 LibreLink / LibreLinkUp screens and 10 Dexcom Share screens. Personal fields in the supplied assets are masked. Each guide warns that app updates may change wording, layout, or screen order. Both the top return action and the completion action resume the shared Gluroo flow at STEP 22 (`#screen-22`), where the person selects and connects the prepared CGM, rather than skipping ahead to Global Connect at STEP 30.
 
 These captures explain connection setup only. Example glucose values, graphs, and notification selections are not targets, medical advice, or instructions to change treatment, alerts, or device settings. The original CGM app and the person's medical guidance remain the source for treatment decisions, alerts, and current sensor state.
 
@@ -243,7 +243,7 @@ Guide screenshots remain separate, replaceable assets. Fixed-position focus boxe
 
 Every source screenshot that represents a distinct screen or user decision should have a corresponding step or screen checkpoint. Optional screens must not disappear into a broad summary. The reviewed iPhone Gluroo 2.0.5 source set contains 34 screens from App Store search through Global Connect URL/token confirmation. The device branches additionally use the complete supplied sets of 27 LibreLink / LibreLinkUp captures and 10 Dexcom Share captures. CGM-specific screens remain alternative branches rather than actions every person must complete. Each guide must display or explain its reviewed environment and clearly warn that app updates, CGM choice, answers, language, and region may change the screen, wording, order, or whether a screen appears. When an exact app-icon image is not available as a reviewed local asset, the guide must not draw a look-alike and present it as official. It should instead show a clearly labeled app-identification card, exact app name, developer name, and official App Store link until the reviewed icon or screenshot is added.
 
-The reviewed LibreLink and LibreLinkUp icon pair supplied on 2026-08-12 is maintained as replaceable, metadata-free app-identification assets. The guide uses faithful crops of those icons together with the exact app and developer names and official App Store links; it does not redraw or recolor either third-party mark.
+The reviewed LibreLink, LibreLinkUp, and Dexcom G7 icons supplied on 2026-08-12 are maintained as replaceable, metadata-free app-identification assets. The guides use faithful crops of those icons with their exact app identities; they do not redraw or recolor the third-party marks.
 
 ## Real-device test gate
 
