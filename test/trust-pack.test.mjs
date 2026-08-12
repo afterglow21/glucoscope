@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { access, readFile, readdir } from "node:fs/promises";
 
-const rootUrl = new URL("../", import.meta.url);
+const indexUrl = new URL("../index.html", import.meta.url);
 const trustPackUrl = new URL("../pages/about/trust-pack.html", import.meta.url);
+const usageDashboardUrl = new URL("../pages/about/usage-dashboard.html", import.meta.url);
 const trustDirUrl = new URL("../pages/trust/", import.meta.url);
 
 async function read(url) {
@@ -21,6 +22,14 @@ function decodeHtmlText(value) {
     .replaceAll("&quot;", '"')
     .replaceAll("&#39;", "'");
 }
+
+test("Usage Dashboard describes its AI-only scope without claiming page-view or user-profile counts", async () => {
+  const [index, dashboard] = await Promise.all([read(indexUrl), read(usageDashboardUrl)]);
+  assert.match(index, /AIお手紙が作られた回数と、開発者が負担するAI利用料の目安/);
+  assert.doesNotMatch(index, /ページ閲覧の傾向/);
+  assert.match(dashboard, /この画面は、AIお手紙全体の利用状況です/);
+  assert.match(dashboard, /ユーザー版を開いた日数、血糖データの取得回数、利用記録に保存された日数やグルコの想い出数は含みません/);
+});
 
 test("Trust Pack internal links and local assets resolve", async () => {
   const pages = [trustPackUrl, ...await trustPageUrls()];
@@ -119,58 +128,27 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(data, /Scheduled aggregate checks observed Libre\/G7 counts of 528\/290 and then 526\/290/);
   assert.match(data, /Natural expiry is a separate, non-blocking stopped\/failure-path check/);
   assert.match(data, /次の3段落は、一時確認後に停止へ戻した過去のチェックポイントです/);
-  assert.match(privacy, /限定中継は現在、1〜3人の先行体験に限って有効です/);
-  assert.match(privacy, /明示的な同意がない限り、限定中継への通信を始めません/);
-  assert.match(privacy, /Kazuma自身の公開比較データ/);
-  assert.match(privacy, /公開URLから閲覧できる公開・非匿名データ/);
-  assert.match(privacy, /一般利用者の接続情報や血糖データをデモ用WorkerやKVへ保存・公開しません/);
-  assert.match(privacy, /KVは最長36時間で期限切れ/);
-  assert.match(privacy, /残ったキーは停止中の経路から配信せず、既存の最長36時間TTLで失効します/);
-  assert.match(privacy, /KVの生データは直接読み出していません/);
-  assert.match(privacy, /停止中のG7接続先は`dexcomRouteVerified=false`のままGitHub Pagesへ反映し、合成データへの切替を確認済みです/);
-  assert.match(privacy, /G7ライブ表示、3機種同時ライブ比較、ページ全体のライブ経路/);
-  assert.match(privacy, /Libreだけを一時有効にしたVersion `2e72847d-5011-47c5-80e6-8cb931a1b141`/);
-  assert.match(privacy, /19:25 JSTのCronで公開`\/v1\/libre`応答が合計523件/);
-  assert.match(privacy, /次の停止中Cron後もLibreキーの有効期限は延長されませんでした/);
-  assert.match(privacy, /このG7単独確認時点では[^。]*複数回の定期更新と一般利用者向け限定中継のG7経路は未確認でした/);
-  assert.match(privacy, /Version `4069bca4-e8cf-474a-9e9d-d7ffa42b7567`をdeployment `9738343a-fc1d-4f02-aff1-1bae3d7cbe57`として20:58:02 JST/);
-  assert.match(privacy, /公開応答はLibre 527件、G7 276件/);
-  assert.match(privacy, /GitHub PagesではGuardian・Libre・G7の3つのライブカードを確認し、利用者自身も3本のグラフを目視しました/);
-  assert.match(privacy, /deployment `e45b6547-33a4-4196-9efe-1fffd412bcd4`で停止Version `9994a142-a4ca-4885-9077-952ec8e7e8d2`へ100%戻し/);
-  assert.match(privacy, /21:25 JSTの停止中Cron後も両KVキーの期限は停止後の基準から変わらず、想定した2キーだけでmetadataもありませんでした/);
-  assert.match(privacy, /KVの値そのものは直接読み出していません/);
-  assert.match(privacy, /今回確認できたのは1回の公開ページ受け入れです。継続運用、複数回のブラウザ表示更新、古いデータ表示・自然失効は未確認/);
-  assert.match(privacy, /live Version `4069bca4-e8cf-474a-9e9d-d7ffa42b7567` enabled Libre and G7 together in deployment `9738343a-fc1d-4f02-aff1-1bae3d7cbe57` at 20:58:02 JST/);
-  assert.match(privacy, /a newly opened page returned to the clearly labelled synthetic dataset/);
-  assert.match(privacy, /After the 21:25 JST stopped Cron, both KV expirations were unchanged from the post-stop baseline/);
-  assert.match(privacy, /The raw KV values were not read directly/);
-  assert.match(privacy, /Two aggregate checks observed Libre\/G7 counts of 528\/290 and then 526\/290/);
-  assert.match(privacy, /Natural expiry remains a separate, non-blocking stopped\/failure-path check/);
-  assert.match(privacy, /The next three paragraphs are historical checkpoints/);
-  assert.match(privacy, /ユーザー版は、前の項目のとおり現在送信しません/);
-  assert.match(privacy, /表示名と基本的な利用回数を、GlucoScopeをよくするために記録します。血糖値や接続情報は記録しません。/);
-  assert.match(privacy, /ランダムなprofile ID、利用記録の状態、説明版、作成・更新・最終利用日時/);
-  assert.match(privacy, /Freeプランでは最長7日、Paidプランでは最長30日/);
-  assert.match(privacy, /停止または削除を押した端末では先に新しい送信を止め/);
+  assert.match(privacy, /公開デモには、Kazuma本人が公開に同意した血糖値、更新時刻、矢印だけを使います/);
+  assert.match(privacy, /ここに一般利用者のデータは混ざりません/);
+  assert.match(privacy, /更新が止まったデータは、最長36時間で消えます/);
+  assert.match(privacy, /Nightscoutは、この端末から直接読みます/);
+  assert.match(privacy, /GlucoScopeは接続情報や血糖データを保存、記録、AI送信、共有しません/);
+  assert.match(privacy, /ログインパスワードを、GlucoScopeへ入力することはありません/);
+  assert.match(privacy, /公開デモを見るだけなら、名前は必要ありません/);
+  assert.match(privacy, /表示名、使った日、AI分析を使った回数、通常のグルコの想い出の数を記録します/);
+  assert.match(privacy, /血糖値、接続情報、AIお手紙の本文は記録しません/);
+  assert.match(privacy, /この端末を見分けるランダムな番号、記録のオン・オフ、記録を始めた日と最後に使った日/);
+  assert.match(privacy, /この端末に最大30件まで保存します。共有用の一時保存は最大24時間で消えます/);
+  assert.match(privacy, /利用状況の記録は、設定からいつでも停止・再開・削除できます/);
+  assert.match(privacy, /使った日の記録は90日分まで保存し、90日使われていない端末の記録は削除します/);
+  assert.match(privacy, /無料プランでは最大7日、有料プランでは最大30日/);
   assert.match(privacy, /up to 7 days on the Free plan or up to 30 days on a Paid plan/);
-  assert.match(privacy, /The 2 known test profiles were later deleted/);
-  assert.match(privacy, /event_receipts<\/code> at <code>0 \/ 0 \/ 0<\/code>/);
-  assert.match(privacy, /7cb71965-74c3-47f9-b589-75cf6d669edb/);
-  assert.match(privacy, /5d160aed-7b27-48e6-b0a8-783534f97b6f/);
-  assert.match(privacy, /4fbf0e2c-5f5c-4f4f-98a9-ae57d73b4824/);
-  assert.match(privacy, /5f8d00d9-9d68-4b2a-99cd-c58c26123684/);
-  assert.match(privacy, /2回の監督下確認ではどちらも接続確認まで成功しましたが/);
-  assert.match(privacy, /利用プロフィールは作成されていません/);
-  assert.match(privacy, /a398d59e-54c1-4b8d-a9a4-b779af360a54/);
-  assert.match(privacy, /635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a/);
-  assert.match(privacy, /The checked-in Worker flag remains <code>false<\/code>/);
-  assert.match(privacy, /SafariでsessionStorageの短期リレーチケットを使えない場合/);
-  assert.match(privacy, /このリリースには、その場でconfigとadapterを有効にするローカルテスト合格済みの修正を含めています/);
-  assert.match(privacy, /3回目のiPhone監督下確認ではGluroo（Libre）の接続に成功/);
-  assert.match(privacy, /このCGM表示の成功によって利用状況を記録したとは扱いません/);
-  assert.match(privacy, /a1962cbf-9f77-48c1-b33a-05bd39323a8c/);
-  assert.match(privacy, /17de293b-2d38-4b07-aa5f-604c2cc65d43/);
-  assert.match(privacy, /公開デモを見るだけなら、名前の入力も利用プロフィールの作成もありません/);
+  assert.match(privacy, /現在、自分のデータをつないだユーザー版からは、GlucoScopeのAIへ血糖のまとめを送りません/);
+  assert.match(privacy, /血糖値、接続情報、GlucoScore、AIお手紙の本文はアクセス分析へ送りません/);
+  assert.match(privacy, /GlucoScopeは医療機器ではなく、診断や治療、インスリン量の判断はしません/);
+  assert.match(privacy, /GlucoScope does not currently send glucose summaries from the personal user experience to its AI/);
+  assert.doesNotMatch(privacy, /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+  assert.doesNotMatch(privacy, /<code>|\b(?:D1|deployment|Version|CORS|Cron|sessionStorage|adapter|RELAY_ENABLED)\b|\b(?:200|204|401|403|503)\b/i);
   assert.match(safety, /接続失敗は、CGMやポンプが止まったことを意味しません/);
   assert.match(support, /Gluroo、Nightscout、Azure、Cloudflare、OpenAI/);
   assert.match(support, /GlucoScopeや限定中継についての質問・不具合報告は、GlurooではなくGlucoScopeが受けます/);
@@ -185,13 +163,14 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(roadmap, /利用プロフィールの作成・停止・再開・書き出し・削除、一般利用者向け限定中継のG7基本経路、小さなUX修正は完了し、1〜3人の先行体験を開始しました/);
   assert.match(roadmap, /Gluroo（Libre）の接続に成功し、「GlucoScopeを始める」の後も同じ画面にとどまってライブ血糖を表示できました/);
   assert.match(roadmap, /D1は <code>profiles \/ usage_daily \/ event_receipts = 0 \/ 0 \/ 0<\/code> のまま/);
-  assert.match(developerStatus, /sessionStorageの短期リレーチケットを使えない場合/);
-  assert.match(developerStatus, /このリリースには、その場でconfigとadapterを有効にするローカルテスト合格済みの修正を含めています/);
-  assert.match(developerStatus, /CGM表示の引き継ぎ修正は実機合格です/);
-  assert.match(developerStatus, /利用プロフィールは作成されていません/);
-  assert.match(developerStatus, /D1が空のままだった理由は、以前の試験用プロフィールをサーバー側で削除した後も/);
-  assert.match(developerStatus, /401 authentication_required/);
-  assert.match(developerStatus, /この修正は、その後の監督下実機確認で合格しました/);
+  assert.match(developerStatus, /今使えることと、これから直していくことだけを簡単にお知らせします/);
+  assert.match(developerStatus, /公開デモは、登録せずに見ることができます/);
+  assert.match(developerStatus, /グルコは、あなたを責めたり、数字で評価したりしません/);
+  assert.match(developerStatus, /GlucoScopeは医療機器ではなく、診断や治療、インスリン量の判断はしません/);
+  assert.match(developerStatus, /AI分析の失敗を減らし、むずかしい言葉を見直し/);
+  assert.doesNotMatch(developerStatus, /href="\.\.\/trust\/roadmap\.html"/);
+  assert.doesNotMatch(developerStatus, /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+  assert.doesNotMatch(developerStatus, /<code>|\b(?:D1|deployment|Version|CORS|Cron|sessionStorage|adapter|RELAY_ENABLED)\b|\b(?:200|204|401|403|503)\b/i);
   assert.match(roadmap, /管理者ダッシュボードをつくります/);
   assert.match(roadmap, /Plus 30日パスと、任意の開発支援への分かりやすい導線/);
   assert.match(roadmap, /ユーザー展開を始めた後、横向きグラフだけで本人が選べる常時表示モード/);

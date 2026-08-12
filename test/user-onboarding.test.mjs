@@ -16,11 +16,42 @@ const libreGuide = await readFile(new URL("../guides/librelinkup/index.html", im
 const nightscoutGuide = await readFile(new URL("../guides/nightscout-about/index.html", import.meta.url), "utf8");
 const guardianGuide = await readFile(new URL("../guides/guardian-monitor/index.html", import.meta.url), "utf8");
 
+test("rule-based Gluco messages always add one warm companion sentence in Japanese and English", () => {
+  const companionStart = app.indexOf("function getRuleCommentCompanionLine");
+  const commentStart = app.indexOf("function makeComment");
+  const deepCommentStart = app.indexOf("function makeDeepComment");
+  const commentEnd = deepCommentStart;
+  const deepCommentEnd = app.indexOf("function updateRuleCommentDisplay", deepCommentStart);
+  const companionSource = app.slice(companionStart, commentStart);
+  const commentSource = app.slice(commentStart, commentEnd);
+  const deepCommentSource = app.slice(deepCommentStart, deepCommentEnd);
+
+  assert.ok(companionStart >= 0 && commentStart > companionStart && deepCommentStart > commentStart);
+  assert.match(companionSource, /会いに来てくれてうれしいよ。/);
+  assert.match(companionSource, /どんな数字の日も、グルコはここにいるよ。/);
+  assert.match(companionSource, /I’m glad you came to see me\./);
+  assert.match(companionSource, /Whatever the numbers look like, Gluco is here with you\./);
+  assert.equal((commentSource.match(/\$\{companionLine\}/g) || []).length, 10);
+  assert.equal((deepCommentSource.match(/\$\{companionLine\}/g) || []).length, 2);
+
+  assert.match(commentSource, /夜間や食前の流れを、あとでそっと振り返る手がかり/);
+  assert.match(commentSource, /blood glucose|glucose flow|TBR is|TAR is|TIR is/i);
+  assert.match(deepCommentSource, /これは医療判断ではなく/);
+  assert.match(deepCommentSource, /This is not medical advice/);
+  assert.doesNotMatch(companionSource, /薬|投薬|インスリン|食事|運動|治療|改善|medication|insulin|meal|exercise|treatment|improve/i);
+});
+
+test("warmer AI-letter cache replaces and clears the previous local wording cache", () => {
+  assert.match(app, /AI_LETTER_LOCAL_CACHE_STORAGE_KEY = "glucoscope\.aiLetterLocalCache\.v12"/);
+  assert.match(app, /AI_LETTER_LEGACY_LOCAL_CACHE_STORAGE_KEYS = \["glucoscope\.aiLetterLocalCache\.v11"\]/);
+  assert.match(app, /for \(const legacyKey of AI_LETTER_LEGACY_LOCAL_CACHE_STORAGE_KEYS\) \{\s*localStorage\.removeItem\(legacyKey\);/);
+});
+
 // Existing user-foundation coverage.
 test("public data connection remains clickable and clearly marked as early access", () => {
   assert.match(index, /データ接続（先行体験）/);
   assert.match(index, /Gluroo接続は少人数で確認しながら提供しています/);
-  assert.match(index, /js\/app\.js\?v=20260812-early-access-1/);
+  assert.match(index, /js\/app\.js\?v=20260812-warmer-gluco-1/);
   assert.match(app, /dataSourceButtonDemo: "データ接続（先行体験）"/);
   assert.match(app, /dataSourceDialogTitle: "Data connection \(early access\)"/);
   assert.doesNotMatch(index, /id="dataSourceButton"[^>]+disabled/);

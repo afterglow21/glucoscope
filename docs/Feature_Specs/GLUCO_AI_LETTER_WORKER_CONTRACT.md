@@ -130,7 +130,7 @@ Future fields may include:
     "status": "stored",
     "storage": "cloudflare-workers-kv",
     "bindingAvailable": true,
-    "key": "gluco-letter:gluco-ai-letter-cache-v3:<sha256>",
+    "key": "gluco-letter:gluco-ai-letter-cache-v12:<sha256>",
     "fresh": true,
     "ageSeconds": 0,
     "generatedAt": "2026-07-09T05:52:00.000Z",
@@ -540,6 +540,17 @@ If the Responses API returns `status: incomplete`, partial output is not accepte
 
 Provider errors and incomplete responses should not erase the visible letter. Partial text must never be stored in browser cache or Workers KV. Usage and estimated developer cost include any incomplete attempt and the automatic retry.
 
+### Output-quality retry boundary
+
+Every complete first response is checked before it can be returned or cached. If any quality issue is detected, the Worker makes one clean rewrite attempt.
+
+After that retry, issues are divided into two groups:
+
+- **Blocking issues:** safety or medical-boundary violations, unsupported or contradictory data claims, short-range GMI use, privacy leaks, implementation artifacts, and language that turns reflection metrics into treatment-like optimization targets. A rewritten response with any blocking issue is discarded and is not cached.
+- **Soft warnings:** minor style, repetition, phrasing, compassion-placement, or small-emphasis problems that do not create a safety, factual, privacy, or internal-data failure. A readable rewritten response with only soft warnings may be returned and cached.
+
+This keeps the first-pass rewrite as the normal quality improvement while avoiding a generic user-facing failure for a harmless stylistic imperfection. Unknown future issue codes default to blocking unless explicitly classified as soft.
+
 ### Prompt safety
 
 The OpenAI prompt must preserve GlucoScope safety boundaries:
@@ -551,6 +562,11 @@ The OpenAI prompt must preserve GlucoScope safety boundaries:
 - no pump or device setting advice
 - no blame, fear, pressure, scoring, or judgment
 - summarized data only
+- one short welcome or companionship line near the beginning
+- one short everyday pause or friendly aside near the beginning or end
+- no claimed health benefit or glucose effect from that aside
+- no food, exercise, medication, supplement, or sleep advice in the aside
+- a closing based on companionship or reassurance; any reflection invitation remains optional
 
 
 ---
@@ -824,6 +840,13 @@ Polish:
 
 ## 35. Shared Workers KV Cache
 
+Browser-local layer:
+
+- current storage key: `glucoscope.aiLetterLocalCache.v12`
+- maximum saved entries: 30 generated letters
+- the retired `glucoscope.aiLetterLocalCache.v11` data is removed when cache reading begins and when a saved data connection is deleted
+- deleting a saved data connection also clears the current local letter cache
+
 Production binding:
 
 ```toml
@@ -839,6 +862,8 @@ AI_CACHE_ENABLED=true
 AI_CACHE_FRESH_SECONDS=3600
 AI_CACHE_RETENTION_SECONDS=86400
 ```
+
+The current shared-cache key schema is `gluco-ai-letter-cache-v12`. The schema change prevents letters generated under the older, more report-like voice and stricter final style rejection from overriding the current warmth and retry behavior. Shared entries expire within the configured 24-hour retention period.
 
 Request order:
 

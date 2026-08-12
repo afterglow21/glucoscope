@@ -17,165 +17,119 @@
       <div class="about-detail-hero-copy">
         <p class="about-section-kicker">Trust Pack · Public Summary</p>
         <h1><span class="about-detail-title-en">Privacy Notes</span><span class="about-detail-title-jp">プライバシーノート</span></h1>
-        <p>公開プレビューで扱うデータと、扱わないデータをできるだけ分かりやすく示します。</p>
+        <p>GlucoScopeが使う情報、使わない情報、消す方法を、できるだけやさしく説明します。</p>
       </div>
       <img class="about-detail-hero-art" src="../../assets/gluco/about/gluco-small-notice.png" alt="プライバシーノートを案内するGluco">
     </section>
 
-    <div class="trust-source-note">このページは、開発用の正本であるPROJECT_BIBLEと安全方針をもとに、公開向けにテーマ別で整理しています。</div>
-
     <section class="trust-language-panel card" lang="ja">
       <div class="trust-language-heading"><span>JP</span><h2>日本語</h2></div>
-<section class="trust-section">
-  <h2>現在の公開プレビュー</h2>
-  <p>現在のページはKazuma自身のNightscoutデータを表示する公開サンプルです。公開URLを知る人は表示内容を閲覧できます。</p>
-</section>
-<section class="trust-section">
-  <h2>Kazuma自身の公開比較データ</h2>
-  <p>3CGM比較ラボでは、GuardianをKazumaの公開Nightscoutからブラウザで直接読み、LibreとG7は公開デモ専用のCloudflare Workerと期限付きKVを使います。Kazumaは、自分自身のLibreとG7の血糖値・測定更新時刻の公開へ別々に明示同意しました。公開URLから閲覧できる公開・非匿名データであり、この選択はKazuma自身のデモデータだけに適用します。安全対応と別の継続公開判断後、現在は3機種を継続公開中です。`dexcomRouteVerified=true`はG7表示経路の確認記録で、Workerの有効化ではありません。一般利用者向け限定中継は`RELAY_ENABLED=false`のままです。</p>
-  <p>デモ専用Workerは各Gluroo送信先URLとAPI Secretをソース別のCloudflare Secretsだけに置き、直近24時間以内の血糖値、測定時刻、許可した方向情報だけをソース別KVキーへ保存します。KVは最長36時間で期限切れになり、一般利用者向け限定中継とは分けて、アプリケーションログとWorker observabilityを無効にします。公開ページを見てもGlurooへの新しい取得は発生せず、定期実行で更新したKVだけを読みます。</p>
-  <p>次の3段落は、一時確認後に停止へ戻した過去のチェックポイントです。現在の継続ライブ状態は、その後の段落に記録しています。</p>
-  <p>この公開の選択はKazuma自身が明示同意したデモデータだけに適用します。一般利用者の接続情報や血糖データをデモ用WorkerやKVへ保存・公開しません。一時G7 Version `3b796eb5-11be-466f-83ea-7710279f49c1`ではLibreを停止したまま、1回のCronで`public:dexcom-g7:v1`を作成しました。公開応答190件は、許可した項目、型、範囲、時系列順、更新の新しさ、非公開情報を示す項目がないことを、血糖値や測定時刻を表示せず確認しました。直後にdeployment `8de64190-7558-43c6-83c1-1e29a2cf80de`で停止Version `9994a142-a4ca-4885-9077-952ec8e7e8d2`へ100%戻し、両経路は再び`503`です。次の停止中Cron後もG7キーの有効期限は延長されませんでした。KVの生データは直接読み出していません。残ったキーは停止中の経路から配信せず、既存の最長36時間TTLで失効します。Secret値、Gluroo URL、実血糖値、測定時刻は画面出力やGitへ入れていません。停止中のG7接続先は`dexcomRouteVerified=false`のままGitHub Pagesへ反映し、合成データへの切替を確認済みです。このG7単独確認時点では、G7ライブ表示、3機種同時ライブ比較、ページ全体のライブ経路、複数回の定期更新と一般利用者向け限定中継のG7経路は未確認でした。</p>
-  <p>同じく2026年8月7日、別の明示確認後、Libreだけを一時有効にしたVersion `2e72847d-5011-47c5-80e6-8cb931a1b141`を1回の定期更新に限って本番通信へ反映しました。19:25 JSTのCronで公開`/v1/libre`応答が合計523件になったことを確認しました。件数と構造結果だけを使い、上位スキーマ、許可した項目、型、範囲、時系列順、更新の新しさ、確認対象の非公開項目がないこと、CORS境界を確認しました。実際の血糖値、測定時刻、Gluroo URL、Secret、tokenは検査出力やGitへ入れていません。G7は`503`のままでした。確認後すぐ停止Version `9994a142-a4ca-4885-9077-952ec8e7e8d2`へ戻し、両経路が`503`であることを確認しました。次の停止中Cron後もLibreキーの有効期限は延長されませんでした。確認できたのはLibreの1回の定期取得と安全な公開Worker応答までです。</p>
-  <p>その後、別の明示確認を得て、LibreとG7を同時に有効にしたVersion `4069bca4-e8cf-474a-9e9d-d7ffa42b7567`をdeployment `9738343a-fc1d-4f02-aff1-1bae3d7cbe57`として20:58:02 JSTに本番通信へ反映しました。公開応答はLibre 527件、G7 276件で、許可した項目、型、範囲、時系列順、更新の新しさ、CORS境界を満たしました。実際の血糖値、測定時刻、接続先、Secret値は検査出力やGitへ入れていません。GitHub PagesではGuardian・Libre・G7の3つのライブカードを確認し、利用者自身も3本のグラフを目視しました。目視確認を待つ間に複数の定期実行が行われ、両KVキーの期限は21:15頃まで進みました。21:16:31 JST、deployment `e45b6547-33a4-4196-9efe-1fffd412bcd4`で停止Version `9994a142-a4ca-4885-9077-952ec8e7e8d2`へ100%戻し、両経路の`503`と、新しく開いた公開ページが「準備中・合成データ」へ戻ることを確認しました。21:25 JSTの停止中Cron後も両KVキーの期限は停止後の基準から変わらず、想定した2キーだけでmetadataもありませんでした。KVの値そのものは直接読み出していません。残ったキーは停止中の経路から配信せず、既存の最長36時間TTLで失効します。今回確認できたのは1回の公開ページ受け入れです。継続運用、複数回のブラウザ表示更新、古いデータ表示・自然失効は未確認で、一般利用者向け限定中継も停止中です。</p>
-  <p>その後、フロント安全commit `6f13ed8c9c4b4b5cda1bdaddc7b90a02bbff1265`のPages公開後、deployment `e96fb11c-a2e0-4097-b54c-a1d638bbffc8`で確認済みライブVersionを22:10:05 JSTから100%へ反映しました。2回の定期集計確認はLibre/G7が528/290件、次に526/290件で、値や正確な測定時刻、接続情報、Secretを表示せず、両経路の`200`、`stale=false`、新しさ、安全な構造とCORS等を確認しました。その後、開始から約3時間の継続稼働を確認しました。開いたままの既存ブラウザタブでも、約5分後の自動更新を別の機会にもう1回確認し、これまでの確認は合計2回になりました。3機種のライブ状態を保ち、表示エラーはありませんでした。各ソースは15分境界で新しさを判定し、前回ライブの保持も15分までです。正常な5分更新中は、成功するたびにKVの最長36時間の期限が更新されるため、自然失効は起きません。自然失効は、更新が止まった場合の別の安全確認として扱い、公開継続の妨げにはしません。停止Version `9994a142-a4ca-4885-9077-952ec8e7e8d2`を復旧先として維持します。</p>
-</section>
-<section class="trust-section">
-  <h2>ユーザー版の接続情報</h2>
-  <p>接続先URLと接続用の合言葉は、利用する人が選んだスマートフォンやパソコンのブラウザへ保存します。端末内の保存は特別な暗号化金庫ではないため、共用端末では「この端末に保存する」をオフにするか、利用後に削除してください。</p>
-  <p>自分のNightscoutへつなぐ場合は、ブラウザから直接読み取り、接続情報と血糖データはGlucoScopeの限定中継機能を通りません。</p>
-  <p>Glurooのかんたん接続では、GlurooのURL、接続用の合言葉、指定期間、表示に必要な血糖データがCloudflare基盤とGlucoScopeの限定中継機能を一時的に通ります。GlucoScopeのアプリケーションでは、それらを保存、共有キャッシュ、ログ記録、AI送信、他の利用者との共有に使いません。</p>
-  <p>限定中継は現在、1〜3人の先行体験に限って有効です。接続画面では、説明を読んだことへの明示的な同意がない限り、限定中継への通信を始めません。異常な通信、提供条件の重要な変更、プライバシー上の懸念が見つかった場合は、確認済みの停止Versionへすぐ戻します。</p>
-  <p>限定中継機能のDurable Objectsへ保存するのは、UTCの日付と利用回数だけです。Gluroo URL、合言葉、血糖値、測定時刻、レスポンス本文、IPアドレスは保存しません。</p>
-  <p>Apple、Google、Gluroo、CareLink、Dexcom、Libreなどのログインパスワードを、GlucoScopeへ入力してもらうことはありません。</p>
-</section>
-<section class="trust-section">
-  <h2>表示名と利用状況</h2>
-  <p>利用状況の記録も現在、1〜3人の先行体験に限って有効です。公開デモを見るだけなら、名前の入力も利用プロフィールの作成もありません。自分のデータを新しくつなぐ人だけが表示名を入力し、利用記録は設定からいつでも停止・再開・削除できます。</p>
-  <p><strong>表示名と基本的な利用回数を、GlucoScopeをよくするために記録します。血糖値や接続情報は記録しません。</strong></p>
-  <p>管理者が確認する利用状況は、表示名、過去90日間の利用日、新しく成功したAI分析、通常のグルコの想い出No.1〜50の数です。運営に必要な内部情報として、この端末用のランダムなprofile ID、利用記録の状態、説明版、作成・更新・最終利用日時も保存します。profile tokenはこのブラウザだけに保存し、D1にはtokenのSHA-256 hashだけを保存します。</p>
-  <p>血糖値、測定時刻、グラフ、TIR/TAR/TBR、CGMの種類、接続情報、AIお手紙本文、Lucky Gluco No.51〜70、Unicorn Gluco、IPアドレス、raw User-Agent、referrer、queryを利用状況のrequest bodyへ入れません。Usage WorkerはIPアドレス、raw User-Agent、referrerを読み取り・アプリログ記録・D1保存しません。Cloudflareは通信・安全対策に必要なネットワーク情報を、Cloudflare自身の方針に基づいて処理する場合があります。利用記録は設定から停止でき、停止しても基本機能は変わりません。</p>
-  <p>日別の利用記録と、90日利用のない端末プロフィールは、通常のD1データから90日を上限に削除します。機能の公開中は、本人が利用記録を停止し、allowlist形式で書き出し、稼働中のD1から端末プロフィールと関連記録を削除できます。通信に失敗しても、停止または削除を押した端末では先に新しい送信を止め、認証情報を残して書き出し・削除を再試行できるようにします。</p>
-  <p>利用プロフィール用の安全確認またはUsage Workerだけが一時的に使えない場合も、確認済みの血糖データ接続は止めません。表示名と接続情報をブラウザへ保存して開始し、利用プロフィールは未登録・利用記録停止のままとします。Gluroo限定中継そのものの安全確認と接続先検証は、この例外へ含めません。</p>
-  <p>Cloudflare D1のTime Travel復旧履歴は常時有効です。稼働中のD1から削除した後も、CloudflareのFreeプランでは最長7日、Paidプランでは最長30日、復旧可能な履歴に残る場合があります。この履歴は通常の画面や管理者集計からは見えません。復旧操作が必要になった場合は収集を停止し、削除済みデータを通常運用へ戻さないことを確認してから再開します。</p>
-  <p>これはアカウントではなくブラウザごとの端末プロフィールです。同じ人が別端末で使うと別々になり、ブラウザ保存を消すと復旧・統合できません。通常画面には停止・再開・削除の小さな管理導線を置き、書き出しは補助リンクにします。</p>
-  <p>表示名を保存したかどうかだけで、Cloudflare Web Analyticsを停止・再開しません。利用記録を始められる画面では開始前から読み込まず、端末プロフィールの認証情報がこのブラウザに保存されている間も、その情報を第三者スクリプトと同じページに置かないため読み込みません。</p>
-  <p>Gluroo限定中継では、接続情報をCloudflareで一時処理することを別に確認します。この確認は利用プロフィールの案内と分けて維持します。血糖・健康データを保存する場合や、本人データを公開共有する場合も、別に明示的な確認を行います。</p>
-  <p>2026年8月12日の最初の実機確認ではプロフィール作成に成功しましたが、成功後の再コールバックで誤ったエラーが表示されました。既知の試験用プロフィール2件はその後削除し、cascade後の <code>profiles</code>、<code>usage_daily</code>、<code>event_receipts</code> は <code>0 / 0 / 0</code> です。続く2回の監督下確認ではどちらも接続確認まで成功しましたが、「GlucoScopeを始める」と短いTurnstile表示の後に必須のデータ接続画面が再表示されました。2回目はUsage Version <code>5d160aed-7b27-48e6-b0a8-783534f97b6f</code> と限定中継Version <code>a398d59e-54c1-4b8d-a9a4-b779af360a54</code> を一時有効にし、D1は <code>0 / 0 / 0</code> のままで利用プロフィールは作成されていません。直後にUsageを停止Version <code>7cb71965-74c3-47f9-b589-75cf6d669edb</code>、限定中継を停止Version <code>635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a</code> へ戻しました。原因は、ユーザーモードで不要な再読み込みを行い、SafariでsessionStorageの短期リレーチケットを使えない場合に、保存済み接続へ有効なadapterを設定できないことでした。このリリースには、その場でconfigとadapterを有効にするローカルテスト合格済みの修正を含めています。この時点では、監督下実機確認は未完了でした。Gitに保存するWorker設定は <code>false</code>、一般利用者向け限定中継も <code>RELAY_ENABLED=false</code> のままです。</p>
-  <p>修正版の公開後、3回目のiPhone監督下確認ではGluroo（Libre）の接続に成功し、「GlucoScopeを始める」の後も同じ画面にとどまってライブ血糖を表示できました。一方、D1は <code>profiles / usage_daily / event_receipts = 0 / 0 / 0</code> のままで、利用プロフィールは作成されていません。このCGM表示の成功によって利用状況を記録したとは扱いません。確認直後、deployment <code>a1962cbf-9f77-48c1-b33a-05bd39323a8c</code> と <code>17de293b-2d38-4b07-aa5f-604c2cc65d43</code> で限定中継とUsageを停止Versionへ戻しました。両Workerとも許可Originの事前確認は <code>204</code>、停止中の送信は <code>503</code> です。Gitに保存するWorker設定は <code>false</code>、公開フロントの監督下候補gateは <code>true</code> のままで、一般利用者向け限定中継は停止中です。</p>
-  <p><strong>その後の監督下iPhone確認では、古い端末認証情報の安全な整理、新しい利用プロフィールの作成、再読み込み後の重複防止と日別記録、停止、再開、allowlist書き出し、削除まで確認できました。</strong> 最後の削除でプロフィールと関連記録は稼働中D1からcascade削除され、3テーブルは <code>0 / 0 / 0</code> に戻りました。確認後はUsage Workerを停止Versionへ戻し、一般利用者向け限定中継も停止したままです。表示名やprofile IDなどの個別内容は、この公開記録へ残していません。このリリースでは削除完了を画面へ明示し、書き出しを目立たない「詳しい管理」へ整理しました。</p>
-  <p><strong>一般利用者向け限定中継のDexcom G7経路も、通常Safariで接続確認、期間切替、再読み込み、接続削除まで実機確認しました。</strong> URL、接続用の合言葉、Turnstile token、relay ticket、血糖値はこの記録へ残していません。公開3CGMデモとUsage Workerには触れず、確認後すぐ限定中継を停止へ戻しました。その時点では継続有効化と少人数展開を別の判断として残しました。</p>
-  <p><strong>別の明示承認後、Usageと限定中継を1〜3人の先行体験として継続有効にしました。</strong> Usage deployment <code>4fbf0e2c-5f5c-4f4f-98a9-ae57d73b4824</code> と限定中継deployment <code>5f8d00d9-9d68-4b2a-99cd-c58c26123684</code> は、それぞれ受け入れ済みVersionへ通信の100%を向けています。有効化直後のD1は <code>0 / 0 / 0</code> のままです。許可Originの事前確認は <code>204</code>、不正なTurnstileと不許可Originは <code>403</code>、応答は <code>no-store</code> 境界を維持しています。Gitに保存する両Workerの安全スイッチは <code>false</code> のまま、停止Versionも即時復帰先として保持しています。これは広い一般公開ではありません。</p>
-</section>
-<section class="trust-section">
-  <h2>ユーザー版のAI</h2>
-  <p>現在の共有AIキャッシュは公開デモ向けのため、利用者ごとの分離が完成するまで、ユーザー版からGlucoScopeのAI Workerへ血糖サマリーを送りません。ブラウザ内のいつものお話と、利用者自身がChatGPTへ渡すためのコピー機能は利用できます。</p>
-</section>
-<section class="trust-section">
-  <h2>APIキーをブラウザへ置かない</h2>
-  <p>OpenAI APIキー、Turnstileの秘密鍵、限定中継チケットの署名鍵はCloudflare WorkerのSecretとして管理し、GitHub PagesのHTMLやJavaScriptには置きません。</p>
-</section>
-<section class="trust-section">
-  <h2>AIへ送る内容</h2>
-  <p>公開デモのAIお手紙では、表示中の期間、TIR、TAR、TBR、平均、CV、GMI、GlucoScore、傾向の要約など、振り返りに必要なサマリーをWorker経由で送ります。個人名や自由記述を必要以上に含めない設計を優先します。ユーザー版は、前の項目のとおり現在送信しません。</p>
-</section>
-<section class="trust-section">
-  <h2>利用カウンター</h2>
-  <p>AIの生成回数、トークン数、推定利用額、Turnstile成功・失敗などの運用情報を保存します。血糖値やAIお手紙本文そのものを利用カウンターには保存しません。</p>
-</section>
-<section class="trust-section">
-  <h2>AIお手紙のキャッシュ</h2>
-  <p>保存済みAIお手紙は、閲覧したブラウザのlocalStorageと、Cloudflare Workers KVの共有キャッシュを使います。共有KVには生成済みのお手紙本文と必要最小限のメタ情報だけを保存し、送信された血糖サマリーそのものは保存しません。</p>
-  <p>同じ条件のお手紙は1時間以内なら再利用し、新しいAI生成を行いません。古いお手紙は生成失敗時などのフォールバックとして最大24時間だけ残し、その後は自動削除します。</p>
-</section>
-<section class="trust-section">
-  <h2>公開ページのアクセス分析</h2>
-  <p>公開デモなどの公開ページには、プライバシーを重視したCloudflare Web Analyticsを導入し、ページ閲覧や表示性能の全体傾向を確認しています。ただし、ユーザーモード中、個人データ接続や利用プロフィールを扱うメイン画面、接続情報または端末プロフィールがこのブラウザに保存されている間、または保存状態を安全に確認できない場合は、AboutやTrustを含むGlucoScope内のページでWeb Analyticsのビーコンを読み込みません。個々の人をGlucoScope内で識別するための独自IDや、独自の行動追跡イベントも追加していません。</p>
-  <p>ユーザー版で使うChart.jsはGlucoScope内に同梱し、接続情報や血糖データを扱うページで外部CDNのグラフ用JavaScriptを実行しない構成にしています。</p>
-  <p>血糖値、GlucoScore、AIお手紙本文、Nightscout URL、API情報をアクセス分析のイベント名や追加データとして送る実装は行いません。スマホの各タブ操作も、健康情報を含む個別イベントとして追跡しません。</p>
-</section>
+
+      <section class="trust-section">
+        <h2>まず知ってほしいこと</h2>
+        <ul>
+          <li>公開デモに出ているのは、あなたの血糖データではありません。</li>
+          <li>自分のデータをつなぐときも、血糖値や接続情報を利用状況の記録には入れません。</li>
+          <li>利用状況の記録は、設定からいつでも止めたり、再開したり、削除したりできます。</li>
+          <li>GlucoScopeは医療機器ではなく、診断や治療、インスリン量の判断はしません。</li>
+        </ul>
+      </section>
+
+      <section class="trust-section">
+        <h2>公開デモ</h2>
+        <p>公開デモには、Kazuma本人が公開に同意した血糖値、更新時刻、矢印だけを使います。公開ページは誰でも見ることができますが、ここに一般利用者のデータは混ざりません。</p>
+        <p>公開デモ用のデータは、表示に必要な範囲だけ一時保存します。更新が止まったデータは、最長36時間で消えます。</p>
+      </section>
+
+      <section class="trust-section">
+        <h2>自分のデータをつなぐとき</h2>
+        <p>接続先URLと合言葉は、保存を選んだ場合だけ、このスマートフォンやパソコンに保存します。共用の端末では保存しないか、使い終わったら削除してください。</p>
+        <p>Nightscoutは、この端末から直接読みます。Glurooのかんたん接続では、表示に必要な情報がGlucoScopeの中継を一時的に通りますが、GlucoScopeは接続情報や血糖データを保存、記録、AI送信、共有しません。通信を始める前に、画面でお知らせします。</p>
+        <p>Apple、Google、Gluroo、Dexcom、Libreなどのログインパスワードを、GlucoScopeへ入力することはありません。</p>
+      </section>
+
+      <section class="trust-section">
+        <h2>表示名と利用状況</h2>
+        <p>公開デモを見るだけなら、名前は必要ありません。自分のデータをつなぐときは、本名でなくてよい表示名を使います。</p>
+        <p>GlucoScopeをよくするため、表示名、使った日、AI分析を使った回数、通常のグルコの想い出の数を記録します。血糖値、接続情報、AIお手紙の本文は記録しません。</p>
+        <p>運営のため、この端末を見分けるランダムな番号、記録のオン・オフ、記録を始めた日と最後に使った日も保存します。IPアドレスを利用状況の記録として保存しません。通信や安全確認に必要な情報は、Cloudflareが同社の方針に沿って扱う場合があります。</p>
+        <p>利用状況の記録は、設定からいつでも停止・再開・削除できます。使った日の記録は90日分まで保存し、90日使われていない端末の記録は削除します。</p>
+        <p>削除した後も、Cloudflareの復旧用バックアップには、無料プランでは最大7日、有料プランでは最大30日残る場合があります。通常の画面や集計には表示されません。</p>
+        <p>これはアカウントではありません。別の端末とのまとめ直しや、ブラウザの保存を消した後の復旧はできません。</p>
+      </section>
+
+      <section class="trust-section">
+        <h2>AIお手紙</h2>
+        <p>公開デモのAIお手紙では、表示中の血糖のまとめをOpenAIへ送ります。氏名や接続情報は送りません。</p>
+        <p>生成したお手紙は、すぐに読み返せるよう、この端末に最大30件まで保存します。共有用の一時保存は最大24時間で消えます。血糖のまとめそのものは保存しません。</p>
+        <p>現在、自分のデータをつないだユーザー版からは、GlucoScopeのAIへ血糖のまとめを送りません。</p>
+      </section>
+
+      <section class="trust-section">
+        <h2>アクセス分析</h2>
+        <p>個人データを扱わない公開ページでは、サイト全体の閲覧数や表示の速さだけを確認します。自分のデータを使っているときや、この端末に接続情報が残っているときは行いません。</p>
+        <p>血糖値、接続情報、GlucoScore、AIお手紙の本文はアクセス分析へ送りません。一人ひとりを見分けるためのGlucoScope独自の番号も使いません。</p>
+      </section>
     </section>
 
     <section class="trust-language-panel card trust-language-panel-en" lang="en">
       <div class="trust-language-heading"><span>EN</span><h2>English summary</h2></div>
-<section class="trust-section">
-  <h2>Public preview</h2>
-  <p>The current public sample displays Kazuma’s own Nightscout data to anyone who has the URL.</p>
-</section>
-<section class="trust-section">
-  <h2>Kazuma's public comparison data</h2>
-  <p>The 3CGM Comparison Lab reads Guardian directly in the browser from Kazuma's public Nightscout and uses a dedicated Cloudflare Worker with expiring KV for Libre and G7. Kazuma separately consented to publishing his own Libre and G7 glucose values and measurement/update timing. Anyone with the public URL can view these public, non-anonymous values. The choice applies only to Kazuma's demo data. After the frontend safety release and a separate continuing-publication decision, all three sources are now published continuously. `dexcomRouteVerified=true` records G7 display-path verification and does not enable the Worker. The separate general-user Limited Data Relay is currently enabled only for a 1–3 person early-access group.</p>
-  <p>The next three paragraphs are historical checkpoints that were returned to the stopped state after temporary checks. The later paragraph records the current continuous-live state.</p>
-  <p>The demo-only Worker keeps each Gluroo source URL and API Secret in source-specific Cloudflare Secrets and stores only glucose values from the latest 24 hours, measurement times, and an allowlisted direction under source-specific KV keys. KV expires within 36 hours. The Worker is separate from the general-user Limited Data Relay, with application logging and Worker observability disabled. Public page views read only scheduled KV snapshots and do not trigger a Gluroo request.</p>
-  <p>These publication choices apply only to Kazuma's explicitly consented demo data. General-user connection details and glucose data never enter the demo Worker or KV. Temporary G7-only Version `3b796eb5-11be-466f-83ea-7710279f49c1` kept Libre paused while one Cron created `public:dexcom-g7:v1`. The 190-entry public response passed the reviewed field, type, bound, ordering, recency, and private-marker checks without printing glucose values or measurement timestamps. Deployment `8de64190-7558-43c6-83c1-1e29a2cf80de` then restored stopped Version `9994a142-a4ca-4885-9077-952ec8e7e8d2` at 100%; at that historical checkpoint both routes returned `503`, and the next stopped Cron did not extend the G7 key expiry. The raw KV value was not directly read. At that checkpoint the retained key was not served, its expiration was unchanged, and the stopped G7 endpoint was published with `dexcomRouteVerified=false`; the GitHub Pages synthetic fallback check passed. At that G7-only checkpoint, G7 live rendering, simultaneous live three-source comparison, and the full live page path were unverified. Repeated scheduled refreshes and the general-user Limited Data Relay G7 path were also unverified at that checkpoint.</p>
-  <p>Also on 2026-08-07, after another separate explicit approval, Libre-only Version `2e72847d-5011-47c5-80e6-8cb931a1b141` received production traffic for one scheduled refresh. The 19:25 JST Cron produced a public `/v1/libre` response with 523 entries. Aggregate-only validation passed the reviewed top-level schema, entry-field allowlist, type, range, chronological-order, recency, private-marker, and CORS checks. No actual glucose value, measurement timestamp, Gluroo URL, Secret, or token entered validation output or Git. G7 remained at `503`. Stopped Version `9994a142-a4ca-4885-9077-952ec8e7e8d2` was then restored; both routes returned `503`, and the next stopped Cron did not extend the Libre key expiration. This verifies one Libre scheduled retrieval and sanitized public Worker response only.</p>
-  <p>Later, after separate explicit approval, live Version `4069bca4-e8cf-474a-9e9d-d7ffa42b7567` enabled Libre and G7 together in deployment `9738343a-fc1d-4f02-aff1-1bae3d7cbe57` at 20:58:02 JST. The public responses contained 527 Libre entries and 276 G7 entries and passed the reviewed field allowlist, type, range, chronological-order, recency, and CORS checks. No actual glucose value, measurement timestamp, source URL, or Secret value entered validation output or Git. GitHub Pages showed live Guardian, Libre, and G7 cards, and the user visually confirmed three graph lines. Several scheduled runs occurred while visual confirmation was pending, advancing both KV expirations to about 21:15. At 21:16:31 JST, deployment `e45b6547-33a4-4196-9efe-1fffd412bcd4` restored stopped Version `9994a142-a4ca-4885-9077-952ec8e7e8d2` to 100%. Both routes returned `503`, and a newly opened page returned to the clearly labelled synthetic dataset. After the 21:25 JST stopped Cron, both KV expirations were unchanged from the post-stop baseline; only the two expected keys remained and neither had metadata. The raw KV values were not read directly. The retained keys were not served while paused and expired under their existing maximum 36-hour TTL. This completed one public-page acceptance; at that historical checkpoint continuing operation, repeated browser-display refreshes, stale display, and natural expiry were unverified, and the general-user Limited Data Relay remained paused.</p>
-  <p>After frontend safety commit `6f13ed8c9c4b4b5cda1bdaddc7b90a02bbff1265` was published by Pages run `31181233497`, deployment `e96fb11c-a2e0-4097-b54c-a1d638bbffc8` assigned 100% of demo traffic to the reviewed live Version at 22:10:05 JST. Two aggregate checks observed Libre/G7 counts of 528/290 and then 526/290. Both routes returned `200` with `stale=false` and passed freshness, schema, type, range, order, CORS, cache, and response-size boundaries without printing values, exact measurement times, connection details, or Secrets. About three hours of continuous operation passed. At a later checkpoint, an existing browser tab completed one further five-minute auto-refresh, bringing the total confirmed browser refreshes to two. All three live sources remained available, with no display errors. Each source uses a 15-minute freshness boundary and preserves a previous live view for at most 15 minutes. During healthy five-minute refreshes, each successful write renews the KV's maximum 36-hour lifetime, so natural expiry does not occur. Natural expiry remains a separate, non-blocking stopped/failure-path check. Stopped Version `9994a142-a4ca-4885-9077-952ec8e7e8d2` remains the rollback target.</p>
-</section>
-<section class="trust-section">
-  <h2>User connection details</h2>
-  <p>The connection URL and passphrase are saved in the selected browser when the person chooses to save them. Browser storage is not a dedicated encrypted vault, so a shared device should use session-only storage or remove the connection afterward.</p>
-  <p>An existing Nightscout environment is read directly by the browser. Its connection information and glucose data do not pass through the GlucoScope limited relay.</p>
-  <p>For the Gluroo easy connection, the Gluroo URL, passphrase, requested range, and glucose entries needed for display pass transiently through Cloudflare infrastructure and the GlucoScope limited relay. The GlucoScope application does not store, cache, log, send to AI, or share those values.</p>
-  <p>The limited relay is currently enabled only for a 1–3 person early-access group. The connection screen starts no relay request without explicit consent to the explanation. Abnormal traffic, a material provider-policy change, or a privacy concern triggers an immediate return to the reviewed stopped Version.</p>
-  <p>The relay Durable Object stores only a UTC date bucket and request count. It does not store the Gluroo URL, passphrase, glucose values, measurement timestamps, response bodies, or IP addresses.</p>
-  <p>GlucoScope does not ask for Apple, Google, Gluroo, CareLink, Dexcom, Libre, or other manufacturer login passwords.</p>
-</section>
-<section class="trust-section">
-  <h2>Display name and usage</h2>
-  <p>Usage recording passed its supervised lifecycle check and is currently enabled only for a 1–3 person early-access group. Viewing the public demo creates no usage profile and does not require a name. Only a person connecting their own data enters a display name, and usage recording can be stopped, resumed, or deleted from settings.</p>
-  <p><strong>We record your display name and basic usage counts to improve GlucoScope. We do not record glucose values or connection details.</strong></p>
-  <p>The administrator-visible usage fields are the display name, visit days from the past 90 days, newly completed AI analyses, and the number of ordinary Gluco memories No. 1–50. Operational fields also include a random profile ID for this browser, usage-recording state, notice version, and created, updated, and last-used times. The profile token stays only in this browser; D1 stores only its SHA-256 hash.</p>
-  <p>Glucose values, reading times, graphs, TIR/TAR/TBR, CGM type, connection details, AI letter contents, Lucky Gluco No. 51–70, Unicorn Gluco, IP address, raw User-Agent, referrer, and query are not placed in the usage request body. The Usage Worker does not read, application-log, or D1-store IP addresses, raw User-Agent, or referrer. Cloudflare may process network information needed for transport and security under its own policies. Usage recording can be stopped in settings, and stopping it does not change the core features.</p>
-  <p>Daily usage records and browser profiles inactive for 90 days are removed from the live D1 data within a maximum of 90 days. While the feature is available, the person can stop usage recording, export the allowlisted record, or delete the browser profile and related records from the live D1 database. A failed Stop or Delete request first blocks new sending on that browser and retains the credential so export or deletion can be retried.</p>
-  <p>If only the usage-profile safety check or Usage Worker is temporarily unavailable, an otherwise verified glucose-data connection is not blocked. The display name and connection are saved in the browser, while the usage profile remains unregistered with recording off. This exception does not apply to the Gluroo relay safety check or destination validation.</p>
-  <p>Cloudflare D1 Time Travel recovery history is always on. After deletion from the live D1 database, recoverable history may remain for up to 7 days on the Free plan or up to 30 days on a Paid plan. It is not shown in the normal UI or administrator aggregates. If a recovery is ever required, collection will be paused and previously deleted records will be kept out of normal operation before collection resumes.</p>
-  <p>This is a per-browser profile, not an account. The same person appears separately on another device, and erasing browser storage prevents recovery or merging. The regular UI will keep compact Stop, Resume, and Delete controls, with export as a small secondary link.</p>
-  <p>Saving the display name alone does not stop or start Cloudflare Web Analytics. The main page does not load it when usage recording can be started, and it also remains off while a browser-profile credential exists, so that credential does not coexist with a third-party script on the page.</p>
-  <p>The Gluroo Limited Relay keeps a separate confirmation because connection details are processed transiently through Cloudflare. That boundary is not merged into the usage-profile notice. Separate explicit confirmation will also be used for storing health or glucose data or publicly sharing a person's data.</p>
-  <p>During the first 2026-08-12 device check, profile creation succeeded, but a repeated callback after success showed a false error. The 2 known test profiles were later deleted, and cascading deletion left <code>profiles</code>, <code>usage_daily</code>, and <code>event_receipts</code> at <code>0 / 0 / 0</code>. Two later supervised attempts both passed connection testing but reopened required setup after “Start GlucoScope” and a brief Turnstile display. The second temporarily enabled Usage Version <code>5d160aed-7b27-48e6-b0a8-783534f97b6f</code> and relay Version <code>a398d59e-54c1-4b8d-a9a4-b779af360a54</code>. D1 remained <code>0 / 0 / 0</code>, so no usage profile was created at that checkpoint. Usage and relay were immediately returned to stopped Versions <code>7cb71965-74c3-47f9-b589-75cf6d669edb</code> and <code>635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a</code>. Reproduction found that an unnecessary user-mode reload could leave saved config without an active adapter when Safari could not access the sessionStorage relay ticket. This release included the locally tested in-place activation fix; a later supervised check confirmed it. The checked-in Worker flag remains <code>false</code>, and the general-user relay remains <code>RELAY_ENABLED=false</code>.</p>
-  <p>After the fix was published, the third supervised iPhone check connected Gluroo (Libre), kept “Start GlucoScope” on the existing page, and displayed live glucose. D1 nevertheless remained <code>profiles / usage_daily / event_receipts = 0 / 0 / 0</code>, so no usage profile was created and the CGM result is not treated as recorded usage. Relay deployment <code>a1962cbf-9f77-48c1-b33a-05bd39323a8c</code> and Usage deployment <code>17de293b-2d38-4b07-aa5f-604c2cc65d43</code> immediately restored their stopped Versions. Both Workers returned <code>204</code> for approved-origin preflight and <code>503</code> for stopped sending. Checked-in Worker flags remain <code>false</code>, the public supervised-candidate gate remains <code>true</code>, and the general-user relay is paused.</p>
-  <p><strong>A later supervised iPhone check accepted stale-credential cleanup, new profile creation, reload deduplication and daily recording, Stop, Resume, allowlisted export, and Delete.</strong> After Delete, all three related D1 tables returned to <code>0 / 0 / 0</code>, and deployment <code>20216b73-27a9-41e0-a3be-25595babe185</code> restored stopped Usage Version <code>7cb71965-74c3-47f9-b589-75cf6d669edb</code>.</p>
-  <p><strong>The general-user Limited Data Relay Dexcom G7 route also passed supervised normal-Safari acceptance.</strong> Connection, current glucose, today/yesterday/7-day/30-day graph periods, reload and redisplay, and connection deletion returning to setup passed. Deployment <code>5c390d07-13ce-4547-b53c-9a7ea9936696</code> then restored stopped relay Version <code>635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a</code>. Continuing enablement remains a separate decision.</p>
-  <p><strong>After separate explicit approval, Usage and the Limited Data Relay were continuously enabled for a 1–3 person early-access group.</strong> Usage deployment <code>4fbf0e2c-5f5c-4f4f-98a9-ae57d73b4824</code> and relay deployment <code>5f8d00d9-9d68-4b2a-99cd-c58c26123684</code> each route 100% to their accepted active Version. Initial D1 counts remained <code>0 / 0 / 0</code>. Approved-origin preflight returned <code>204</code>; invalid Turnstile and unapproved-origin requests returned <code>403</code>; no-store boundaries remained intact. Checked-in kill switches remain <code>false</code>, and the reviewed stopped Versions remain immediate rollback targets. This is not a broad public rollout.</p>
-</section>
-<section class="trust-section">
-  <h2>User-mode AI</h2>
-  <p>The current shared AI cache is for the public demo. Until per-user isolation is complete, user-mode summaries are not sent to the GlucoScope AI Worker. The local Gluco reflection and copy-to-ChatGPT path remain available.</p>
-</section>
-<section class="trust-section">
-  <h2>Secrets stay server-side</h2>
-  <p>OpenAI and Turnstile secret keys and the relay-ticket signing key are stored as Worker secrets, not in browser code.</p>
-</section>
-<section class="trust-section">
-  <h2>AI summaries</h2>
-  <p>For public-demo AI letters, only the summary needed for reflection is sent through the Worker. Personal identifiers should be minimized. User-mode summaries are not currently sent, as described above.</p>
-</section>
-<section class="trust-section">
-  <h2>Operational counters</h2>
-  <p>Usage counts and estimated developer cost may be stored, but glucose values and letter text are not stored in the usage counter.</p>
-</section>
-<section class="trust-section">
-  <h2>AI letter cache</h2>
-  <p>Saved AI letters use browser localStorage and a shared Cloudflare Workers KV cache. KV stores only the generated letter and minimal metadata, not the submitted glucose summary.</p>
-  <p>The same letter is reused for one hour without a new AI generation. A stale fallback may remain for up to 24 hours and is then deleted automatically.</p>
-</section>
-<section class="trust-section">
-  <h2>Public web analytics</h2>
-  <p>Public-demo pages use privacy-first Cloudflare Web Analytics to review aggregate page visits and performance. The analytics beacon is not loaded in user mode, on the main page while a personal-data connection or usage profile can be handled, while a GlucoScope user connection or usage browser profile remains in browser storage, or when that storage state cannot be checked. This applies across same-origin About and Trust pages. GlucoScope does not add a custom visitor ID or custom behavioral events.</p>
-  <p>Chart.js is served from a reviewed local copy on the user-data page instead of running the chart library from a third-party CDN.</p>
-  <p>Glucose values, GlucoScore, AI letter text, Nightscout URLs, and API information are not intentionally sent as analytics event names or additional analytics data. Mobile tab actions are not tracked as health-data events.</p>
-</section>
+
+      <section class="trust-section">
+        <h2>At a glance</h2>
+        <ul>
+          <li>The glucose data in the public demo is not your data.</li>
+          <li>When you connect your own data, glucose values and connection details are not included in basic usage records.</li>
+          <li>You can stop, resume, or delete basic usage recording at any time in Settings.</li>
+          <li>GlucoScope is not a medical device and does not diagnose, make treatment decisions, or suggest insulin doses.</li>
+        </ul>
+      </section>
+
+      <section class="trust-section">
+        <h2>Public demo</h2>
+        <p>The public demo uses only glucose values, update times, and arrows that Kazuma has agreed to publish. Anyone can view the public page, but data from other users is never mixed into it.</p>
+        <p>Only the data needed for the public demo is kept temporarily. If updates stop, the data disappears within 36 hours.</p>
+      </section>
+
+      <section class="trust-section">
+        <h2>Connecting your own data</h2>
+        <p>Your connection URL and passphrase are saved on this phone or computer only if you choose to save them. On a shared device, do not save them, or remove them when you finish.</p>
+        <p>Nightscout is read directly by this device. With Gluroo easy connection, the information needed for display passes briefly through the GlucoScope relay. GlucoScope does not save, log, send to AI, or share your connection details or glucose data. The screen tells you before this connection begins.</p>
+        <p>GlucoScope never asks you to enter your Apple, Google, Gluroo, Dexcom, Libre, or other service login password.</p>
+      </section>
+
+      <section class="trust-section">
+        <h2>Display name and basic usage</h2>
+        <p>You do not need a name to view the public demo. When you connect your own data, you use a display name that does not need to be your real name.</p>
+        <p>To improve GlucoScope, we record your display name, days used, completed AI analyses, and the number of regular Gluco memories. We do not record glucose values, connection details, or AI letter text.</p>
+        <p>We also keep a random number for this device, whether recording is on or off, and when recording began and was last used. We do not store your IP address as part of the usage record. Cloudflare may handle information needed for communication and security under its own policies.</p>
+        <p>You can stop, resume, or delete basic usage recording at any time in Settings. Days used are kept for up to 90 days, and records for a device that has not been used for 90 days are deleted.</p>
+        <p>After deletion, recovery backups may still keep the data for up to 7 days on the Free plan or up to 30 days on a Paid plan. It does not appear in the normal screen or usage totals.</p>
+        <p>This is not an account. Records cannot be combined across devices or recovered after browser storage is erased.</p>
+      </section>
+
+      <section class="trust-section">
+        <h2>AI letters</h2>
+        <p>For AI letters in the public demo, the glucose summary shown on the screen is sent to OpenAI. Names and connection details are not sent.</p>
+        <p>Up to 30 generated letters are kept on this device so you can read them again. The shared temporary copy disappears within 24 hours. The submitted glucose summary is not stored.</p>
+        <p>GlucoScope does not currently send glucose summaries from the personal user experience to its AI.</p>
+      </section>
+
+      <section class="trust-section">
+        <h2>Site analytics</h2>
+        <p>On public pages that do not handle personal data, we review only overall visits and display speed. Analytics is not used while you are using your own data or while connection details remain on this device.</p>
+        <p>Glucose values, connection details, GlucoScore, and AI letter text are not sent to site analytics. GlucoScope also does not add its own number to identify individual visitors.</p>
+      </section>
     </section>
 
     <section class="trust-related card">
-  <h2>Related documents / 関連ドキュメント</h2>
-  <div class="trust-related-links">
-    <a href="../about/trust-pack.html">Trust Pack一覧</a>
-    <a href="project-bible-overview.html">Project Bibleについて</a>
-    <a href="data-integration-principles.html">Data Integration Principles</a>
-  </div>
-</section>
+      <h2>Related documents / 関連ドキュメント</h2>
+      <div class="trust-related-links">
+        <a href="../about/trust-pack.html">Trust Pack一覧</a>
+        <a href="safety-policy.html">Safety Policy</a>
+        <a href="data-integration-principles.html">Data Integration Principles</a>
+      </div>
+    </section>
   </main>
 <!-- Cloudflare Web Analytics -->
 <script src="../../js/analytics-loader.js?v=20260811-usage-profile-stage-1"></script>

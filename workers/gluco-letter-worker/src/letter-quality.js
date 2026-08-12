@@ -24,6 +24,23 @@ const METRIC_OPTIMIZATION_DIRECTIVE_PATTERN = /(?:目標(?:範囲)?(?:で過ご�
 const SINGLE_FOCUS_DIRECTIVE_PATTERN = /(?:こと)?だけ(?:を)?意識して(?:進め|過ごし|やって|取り組み|続け)(?:て)?(?:みよう|いこう|よう)?(?:ね|よ)?/gu;
 const METRIC_TARGET_INVITATION_PATTERN = /(?:TIR|TAR|TBR|CV|GlucoScore|目標(?:範囲)?(?:の)?時間|低めの時間|高めの時間)[^\r\n。！？]{0,72}(?:目指そう|目指していこう|できるようにしよう|ようにしていこう|改善していこう|維持していこう)/giu;
 
+// These issues are worth rewriting once, but they are not safety, medical,
+// factual-accuracy, or internal-data failures. After one quality retry, a
+// readable answer with only these issues is safer and kinder to show than a
+// generic generation error.
+const SOFT_QUALITY_ISSUE_CODES = new Set([
+  "unnatural_japanese_suggestion",
+  "repeated_together_closing",
+  "isolated_metric_exclamation",
+  "vague_metric_metaphor",
+  "awkward_metric_phrasing",
+  "repeated_closing_invitation",
+  "repeated_metric_across_sections",
+  "missing_compassion_acknowledgment",
+  "compassion_after_reflection_invitation",
+  "minor_score_difference_overemphasized"
+]);
+
 function getJapaneseSentenceSegments(text = "") {
   return String(text ?? "")
     .replace(/\r\n?/g, "\n")
@@ -82,6 +99,17 @@ export function isUnicornEligibleSummary(summary = {}) {
     && Number.isFinite(latestGlucose)
     && latestGlucose === 100
   );
+}
+
+export function partitionGeneratedLetterQualityIssues(issues = []) {
+  const uniqueIssues = [...new Set(Array.isArray(issues) ? issues : [])];
+  const softWarnings = uniqueIssues.filter((issue) => SOFT_QUALITY_ISSUE_CODES.has(issue));
+  const blockingIssues = uniqueIssues.filter((issue) => !SOFT_QUALITY_ISSUE_CODES.has(issue));
+
+  return {
+    blockingIssues,
+    softWarnings
+  };
 }
 
 export function getGeneratedLetterQualityIssues(

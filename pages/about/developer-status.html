@@ -17,82 +17,37 @@
       <div class="about-detail-hero-copy">
         <p class="about-section-kicker">Development · Updated 2026-08-12</p>
         <h1><span class="about-detail-title-en">Developer Status</span><span class="about-detail-title-jp">開発ステータス</span></h1>
-        <p>Friends &amp; Family Previewとして公開を始めたGlucoScopeの、いまの動作状況と次の課題です。</p>
+        <p lang="ja">GlucoScopeは、少人数で使ってもらいながら育てている途中です。ここでは、今使えることと、これから直していくことだけを簡単にお知らせします。</p>
+        <p lang="en">GlucoScope is growing through a small early-access group. This page shares only what people can use now and what we are improving next.</p>
       </div>
       <img class="about-detail-hero-art" src="../../assets/gluco/about/gluco-growing.png" alt="育っていくGluco">
     </section>
 
-    <section class="about-detail-grid about-detail-language-stack">
-      <div class="card about-detail-card about-copy-jp" lang="ja">
-        <p>GlucoScopeは、糖尿病とともに生きる人が、血糖データを責められることなく振り返るための血糖みまもりパートナーです。</p>
-        <p>現在はGitHub PagesでFriends &amp; Family Previewを公開し、Nightscoutの血糖データ、Cloudflare Worker経由のAIお手紙、スマホ向け5タブ画面が動いています。</p>
-        <p>医療判断、診断、治療判断、インスリン量や機器設定の提案は行いません。AIは判断を置き換えず、日々の血糖マネジメントを理解するための手がかりを届けます。</p>
-      </div>
-      <div class="card about-detail-card about-copy-en">
-        <p>GlucoScope is a gentle blood glucose companion for people living with diabetes.</p>
-        <p>The Friends &amp; Family Preview is now published on GitHub Pages, with Nightscout data, AI letters through a Cloudflare Worker, and a five-tab mobile experience.</p>
-        <p>GlucoScope does not diagnose, make treatment decisions, suggest insulin doses, or replace healthcare professionals. AI supports reflection and understanding rather than replacing human judgment.</p>
-      </div>
-    </section>
-
     <section class="about-detail-status-grid" aria-label="Development status list">
       <div class="about-detail-mini-card">
-        <div class="about-detail-mini-head"><span class="about-detail-mini-icon">🌐</span><h3><span class="about-detail-mini-title-en">Public Preview</span><span class="about-detail-mini-title-jp">公開プレビュー</span></h3></div>
-        <p>GitHub Pagesで公開済み。まずは友人・家族など身近な人に見てもらいながら、安心して見せられる形を整えています。</p>
-        <p><a href="https://afterglow21.github.io/glucoscope/" target="_blank" rel="noopener">公開ページを見る →</a></p>
+        <div class="about-detail-mini-head"><span class="about-detail-mini-icon">🍀</span><h3><span class="about-detail-mini-title-en">Available Now</span><span class="about-detail-mini-title-jp">今使えること</span></h3></div>
+        <p lang="ja">公開デモは、登録せずに見ることができます。自分のデータをつなぐ機能は、まず少人数で試しています。GlurooまたはNightscoutからつなげます。</p>
+        <p lang="en">You can explore the public demo without signing up. A small early-access group can also connect personal glucose data with Gluroo or Nightscout.</p>
+        <p><a href="../../index.html">GlucoScopeを見る →</a></p>
       </div>
 
       <div class="about-detail-mini-card">
-        <div class="about-detail-mini-head"><span class="about-detail-mini-icon">📡</span><h3><span class="about-detail-mini-title-en">Nightscout Data</span><span class="about-detail-mini-title-jp">血糖データ連携</span></h3></div>
-        <p>Nightscoutから血糖値、期間集計、グラフ表示に必要なデータを取得しています。異なるデータ元が混ざった時の検知は今後の安全課題です。</p>
+        <div class="about-detail-mini-head"><span class="about-detail-mini-icon">✉️</span><h3><span class="about-detail-mini-title-en">Gluco's Letters</span><span class="about-detail-mini-title-jp">グルコのお手紙</span></h3></div>
+        <p lang="ja">公開デモでは、グルコと一緒に血糖の流れをやさしく振り返れます。グルコは、あなたを責めたり、数字で評価したりしません。</p>
+        <p lang="en">In the public demo, Gluco helps you look back gently. Gluco does not blame you or use numbers to judge you.</p>
       </div>
 
       <div class="about-detail-mini-card">
-        <div class="about-detail-mini-head"><span class="about-detail-mini-icon">✉️</span><h3><span class="about-detail-mini-title-en">AI Letters</span><span class="about-detail-mini-title-jp">グルコのAIお手紙</span></h3></div>
-        <p>Cloudflare WorkerとOpenAIを使った「やさしい分析 / しっかり分析」が稼働中です。Turnstileによる安全確認を必須にし、APIキーはブラウザへ置いていません。</p>
-      </div>
-
-      <div class="about-detail-mini-card">
-        <div class="about-detail-mini-head"><span class="about-detail-mini-icon">📱</span><h3><span class="about-detail-mini-title-en">Mobile Experience</span><span class="about-detail-mini-title-jp">スマホ5タブ画面</span></h3></div>
-        <p>血糖値、グラフ、ふりかえり、お手紙、その他の5画面が利用できます。グラフの横向きレイアウトは対応済みです。画面を消さずに使う常時表示モードは、ユーザー展開を始めた後に追加します。</p>
-      </div>
-
-      <div class="about-detail-mini-card">
-        <div class="about-detail-mini-head"><span class="about-detail-mini-icon">🛡️</span><h3><span class="about-detail-mini-title-en">Trust &amp; Safety</span><span class="about-detail-mini-title-jp">安全方針</span></h3></div>
-        <p>Medical &amp; AI PrinciplesとSafety Policyを公開向けに整理済みです。医療判断をしない境界、AIコメントの限界、緊急時の扱いを明記しています。</p>
+        <div class="about-detail-mini-head"><span class="about-detail-mini-icon">🛡️</span><h3><span class="about-detail-mini-title-en">For Safety</span><span class="about-detail-mini-title-jp">安心のために</span></h3></div>
+        <p lang="ja">GlucoScopeは医療機器ではなく、診断や治療、インスリン量の判断はしません。緊急時は、いつものCGMアプリの警告と医療機関からの案内を優先してください。</p>
+        <p lang="en">GlucoScope is not a medical device and does not diagnose, make treatment decisions, or suggest insulin doses. In an urgent situation, follow alerts from your usual CGM app and guidance from your healthcare team.</p>
         <p><a href="../trust/safety-policy.html">Safety Policyを読む →</a></p>
       </div>
 
-
       <div class="about-detail-mini-card">
-        <div class="about-detail-mini-head"><span class="about-detail-mini-icon">📊</span><h3><span class="about-detail-mini-title-en">Persistent Usage Counter</span><span class="about-detail-mini-title-jp">利用カウンターの永続化</span></h3></div>
-        <p>AI生成回数、Turnstile確認、トークン数、推定利用額をCloudflare Durable Objectへ保存します。血糖値やAIお手紙本文は利用カウンターへ保存しません。</p>
-        <p><a href="usage-dashboard.html">Usage Dashboardを見る →</a></p>
-      </div>
-
-      <div class="about-detail-mini-card">
-        <div class="about-detail-mini-head"><span class="about-detail-mini-icon">📈</span><h3><span class="about-detail-mini-title-en">Web Analytics</span><span class="about-detail-mini-title-jp">公開アクセス分析</span></h3></div>
-        <p>Cloudflare Web Analyticsを公開HTMLへ導入しました。ページ閲覧と表示性能の全体傾向を確認し、血糖値やAIお手紙本文を独自イベントとして送らない方針です。</p>
-        <p><a href="../trust/privacy-notes.html">Privacy Notesを読む →</a></p>
-      </div>
-
-      <div class="about-detail-mini-card">
-        <div class="about-detail-mini-head"><span class="about-detail-mini-icon">🧭</span><h3><span class="about-detail-mini-title-en">Next Steps</span><span class="about-detail-mini-title-jp">次の課題</span></h3></div>
-        <p>端末プロフィールの第1段階では最初の作成と日別記録に成功しましたが、成功後の再コールバックで誤ったエラーが表示されました。試験用プロフィール2件を削除した後、2回の監督下確認ではどちらも接続確認まで成功したものの、「GlucoScopeを始める」と短いTurnstile表示の後に必須のデータ接続画面が再表示されました。2回目はUsage Version <code>5d160aed-7b27-48e6-b0a8-783534f97b6f</code> と限定中継Version <code>a398d59e-54c1-4b8d-a9a4-b779af360a54</code> を一時有効にし、D1の <code>profiles</code>、<code>usage_daily</code>、<code>event_receipts</code> は <code>0 / 0 / 0</code> のままでした。確認直後にUsageを停止Version <code>7cb71965-74c3-47f9-b589-75cf6d669edb</code>、限定中継を停止Version <code>635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a</code> へ戻しました。原因は、すでにユーザーモードの画面を不要に再読み込みし、SafariでsessionStorageの短期リレーチケットを使えない場合に、有効な接続adapterを復元できず必須画面を開くことでした。このリリースには、その場でconfigとadapterを有効にするローカルテスト合格済みの修正を含めています。この時点では監督下実機確認は未完了でした。Gitに保存する設定は <code>false</code>、一般利用者向け限定中継も <code>RELAY_ENABLED=false</code> のままです。</p>
-        <p><strong>修正版を公開した後の3回目のiPhone確認では、Gluroo（Libre）の接続に成功し、「GlucoScopeを始める」の後も同じユーザーモード画面にとどまってライブ血糖を表示できました。</strong> CGM表示の引き継ぎ修正は実機合格です。ただしD1は <code>profiles / usage_daily / event_receipts = 0 / 0 / 0</code> のままで、利用プロフィールは作成されていません。確認直後、deployment <code>a1962cbf-9f77-48c1-b33a-05bd39323a8c</code> と <code>17de293b-2d38-4b07-aa5f-604c2cc65d43</code> で限定中継とUsageを停止Versionへ戻しました。両Workerの許可Originの事前確認は <code>204</code>、停止中の送信は <code>503</code> です。Gitに保存する設定は <code>false</code>、公開フロントの監督下候補gateは <code>true</code> のままで、一般利用者向け限定中継は停止中です。</p>
-        <p>D1が空のままだった理由は、以前の試験用プロフィールをサーバー側で削除した後も、Safari内に古い <code>glucoscope.usageProfile.v1</code> 認証情報が残っていたことでした。登録済みとして行った更新は正確に <code>401 authentication_required</code> となりましたが、CGM表示は設計どおり続きました。端末内だけの修正は、この正確な応答の時だけ同じ古い認証情報を忘れ、新しい・別のプロフィールと401以外の失敗は保持します。削除後は利用イベントを送らず、次に本人が明示的に保存して新しいTurnstileを完了するまで新規作成しません。この修正は、その後の監督下実機確認で合格しました。</p>
-        <p><strong>最新の監督下iPhone確認で、利用プロフィールの作成、再読み込み後の重複防止と日別記録、停止、再開、書き出し、削除まで合格しました。</strong> 古いSafari認証情報は最初の保存で安全に整理され、次の明示的な保存で新しいプロフィールが作成されました。最後の削除後、関連するD1の3テーブルは <code>0 / 0 / 0</code> へ戻りました。確認後はUsage Workerを停止Versionへ戻し、一般利用者向け限定中継も停止したままです。このリリースでは削除完了を画面へ明示し、書き出しを目立たない「詳しい管理」へ整理しました。</p>
-        <p><strong>一般利用者向け限定中継のDexcom G7経路も、通常Safariで正式な実機確認に合格しました。</strong> 接続確認、現在血糖、グラフ、今日・昨日・7日・30日、再読み込み、接続削除を確認し、その後すぐ停止へ戻しました。その時点では継続有効化と少人数展開を別の判断として残し、Safari完全終了後の復元、約1時間後の自然失効、上限到達時の挙動を運用確認としました。</p>
-        <p><strong>別の明示承認後、Usageと限定中継を1〜3人の先行体験として継続有効にしました。</strong> Usage deployment <code>4fbf0e2c-5f5c-4f4f-98a9-ae57d73b4824</code> と限定中継deployment <code>5f8d00d9-9d68-4b2a-99cd-c58c26123684</code> は受け入れ済みVersionへ100%の通信を向け、初期D1は <code>0 / 0 / 0</code>、CORS・Turnstile拒否・no-store境界も正常でした。Gitに保存する安全スイッチは <code>false</code> のまま、停止Versionを即時復帰先として保持しています。これは広い一般公開ではありません。</p>
-        <p>先行体験の準備として、提供されたLibreLink / LibreLinkUpの27画面とDexcom Shareの10画面を、初心者向けの1画面ずつのガイドへ反映しました。メールアドレスや生年月日など、公開に不要な情報は隠し、戻る操作と完了後の操作は、準備したCGMを選んで接続する共通GlurooガイドSTEP 22へ続きます。画像は接続準備の説明であり、血糖値や設定の例は医療上の目標や助言ではありません。</p>
-        <ol>
-          <li>1〜3人の先行体験を観察し、安全境界と利用状況を確認</li>
-          <li>管理者ダッシュボード</li>
-          <li>Plus 30日パスと支援導線</li>
-          <li>ユーザー展開開始後の、横向きグラフ限定の常時表示モード</li>
-        </ol>
-        <p>公開デモを見るだけなら名前は不要です。自分のデータをつなぐ時だけ、本名でなくてよい表示名を使います。端末プロフィールはアカウントではなく、別端末との統合やブラウザ保存削除後の復旧はできません。血糖値、グラフ、接続情報、AIお手紙本文、Lucky / Unicorn Glucoを利用分析へ入れず、既存のAI Worker用Usage Dashboardとも分けます。Clinic構想は現在の計画から外しています。</p>
-        <p><a href="../trust/roadmap.html">Roadmapを見る →</a></p>
+        <div class="about-detail-mini-head"><span class="about-detail-mini-icon">🌱</span><h3><span class="about-detail-mini-title-en">Next</span><span class="about-detail-mini-title-jp">これから</span></h3></div>
+        <p lang="ja">つながりにくい場面やAI分析の失敗を減らし、むずかしい言葉を見直し、グルコの言葉をもっとやさしく、あたたかくしていきます。使ってくれた人の声をもとに、少しずつ直します。</p>
+        <p lang="en">We are reducing setup confusion and failed AI analyses, replacing difficult words, and making Gluco's messages warmer and more encouraging. We will improve it little by little from real feedback.</p>
       </div>
     </section>
   </main>

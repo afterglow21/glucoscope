@@ -3139,6 +3139,51 @@ GlucoScopeはGlurooと提携しておらず、医療判断には使いません�
 
 ---
 
+## Public Developer and Privacy Summaries
+## 公開向けの開発・プライバシー要約
+
+### EN
+
+The public Developer Status and Privacy Notes are user summaries,
+not engineering logs.
+They must be understandable to children, older adults,
+and people who are unfamiliar with IT.
+
+These pages should explain only what a person can use,
+what happens to their information, what is not collected,
+which choices remain under their control, and what is improving next.
+They must omit deployment and Version identifiers, database and table names,
+HTTP and CORS probe results, browser-storage key names, incident timelines,
+rollback targets, and internal configuration details.
+
+The omitted technical history is not discarded.
+It remains in this PROJECT_BIBLE, feature contracts, Worker READMEs,
+and other internal operational records.
+When product behavior or a privacy boundary changes,
+both the internal record and the short public summary must be updated.
+
+### JP
+
+公開向けのDeveloper StatusとPrivacy Notesは、
+技術者向けの運用ログではなく、利用者向けの短い要約です。
+ITに慣れていない子どもや高齢者にも伝わる言葉を使います。
+
+これらのページには、
+今使えること、情報の扱い、記録しないもの、
+利用者が自分で選べること、これから良くすることだけを、
+やさしく簡潔に載せます。
+deploymentやVersionのID、データベースやテーブル名、
+HTTP・CORSの確認結果、ブラウザ保存キー、障害確認の時系列、
+復帰先や内部設定は載せません。
+
+公開要約から外した技術記録は削除せず、
+このPROJECT_BIBLE、機能仕様書、Worker README、
+その他の内部運用記録に残します。
+機能やプライバシー境界が変わったときは、
+内部記録と公開向けの短い説明の両方を更新します。
+
+---
+
 ## Public Web Analytics Boundary
 ## 公開アクセス分析の境界
 
@@ -4586,6 +4631,32 @@ Glucoの「グルコからのお手紙」は、グルコが直接話しかける
 * 食事やボーラス記録の近くに見える変化は、「ヒント」や「あとで見返すところ」として扱う。
 * 気になる日が続くとき、不安やつらさがあるときは、主治医や医療機関への相談を促す。
 
+### Warm companionship beyond the metrics / 数字の外にある、あたたかい寄り添い
+
+Every Gluco letter should include a brief welcome or companionship line
+near the beginning, and one short everyday pause or friendly aside
+near the beginning or end.
+It can say that Gluco is glad the person came,
+invite a small pause, or mention enjoying a favorite sound.
+The letter should end with companionship or reassurance;
+any invitation to reflect must feel optional, not like homework.
+
+This everyday line must not claim a health benefit or a glucose effect.
+It must not become advice about food, exercise, medication, supplements,
+or sleep, and it must not invent the person's weather, season, location,
+time of day, symptoms, effort, or circumstances.
+
+グルコのお手紙は、数値の報告だけで終わらせません。
+冒頭近くに「来てくれてうれしいよ」のような短い歓迎や寄り添いを1文入れ、
+冒頭か最後に「ちょっとひと息つこうね」のような、
+血糖とは関係のない日常の短いひと言を1文添えます。
+最後は安心や寄り添いを感じる言葉にし、
+振り返りへ誘う場合も宿題のようにしません。
+
+日常のひと言に健康効果や血糖への効果を持たせません。
+食事、運動、薬、サプリ、睡眠の助言にもしません。
+天気、季節、場所、時刻、症状、努力、生活背景を推測して作りません。
+
 ### Celebrate good flows clearly / 良い流れは、ちゃんと一緒に喜ぶ
 
 Gluco's kindness is not only about avoiding blame.
@@ -4653,6 +4724,32 @@ Gluco may celebrate first, then gently mention other clues that deserve attentio
 
 血糖は、あなたを責めるための数字じゃないよ。
 明日を少し楽にするための、ちいさな手がかりだよ。
+
+### Current AI output retry boundary / 現在のAI出力再試行境界
+
+Every complete first AI response is checked before display or caching.
+Any detected issue causes one clean rewrite attempt.
+After the retry, only safety or medical-boundary issues,
+unsupported or contradictory data claims, privacy leaks,
+and internal implementation artifacts block the response.
+Minor stylistic warnings such as small awkwardness, repetition,
+or compassion placement may be accepted after the rewrite
+so that a harmless wording imperfection does not repeatedly become a failure.
+
+完成した最初のAI文章は、表示や保存の前に確認します。
+問題が1つでも見つかった場合は、1回だけ書き直します。
+書き直し後は、安全や医療の境界、データに裏付けのない断定、
+プライバシー上の漏れ、内部の名前や実装の痕跡など、
+実際の安全性・事実性・プライバシーに関わる問題だけを表示中止の対象にします。
+小さな言い回しの不自然さ、繰り返し、いたわりの位置など、
+安全性を損なわない文体上の軽微な警告だけなら、書き直し後の文章を表示できます。
+
+途中で切れたAI出力はこれまでどおり表示・保存せず、
+出力上限が理由のときに1回だけより長い上限で再試行します。
+端末内のお手紙キャッシュは `glucoscope.aiLetterLocalCache.v12` で最大30件、
+共有お手紙キャッシュは `gluco-ai-letter-cache-v12` で最大24時間とします。
+端末内の旧v11キャッシュは読み取り時と保存済み接続の削除時に消し、
+新しい歓迎・寄り添いと判定境界を古い保存済み文章が上書きしないようにします。
 
 ---
 

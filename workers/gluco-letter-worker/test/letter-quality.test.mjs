@@ -1,10 +1,83 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 
 import {
   getGeneratedLetterQualityIssues,
-  isUnicornEligibleSummary
+  isUnicornEligibleSummary,
+  partitionGeneratedLetterQualityIssues
 } from "../src/letter-quality.js";
+
+const workerSource = await readFile(new URL("../src/index.js", import.meta.url), "utf8");
+
+test("worker uses cache schema v12 for the warmer letter contract", () => {
+  assert.match(workerSource, /AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v12"/);
+});
+
+test("both retry paths block only hard quality issues after one rewrite", () => {
+  assert.equal(
+    (workerSource.match(/partitionGeneratedLetterQualityIssues\(retryQualityIssues\)/g) || []).length,
+    2
+  );
+  assert.equal(
+    (workerSource.match(/retryQualityAssessment\.blockingIssues\.length/g) || []).length,
+    2
+  );
+  assert.doesNotMatch(workerSource, /if \(retryQualityIssues\.length\)/);
+});
+
+test("Japanese and English prompts preserve the exact opening and add welcome and everyday asides", () => {
+  assert.match(workerSource, /Start with exactly \"Gluco is here 🍀\", then add a short, varied welcome on the next line/);
+  assert.match(workerSource, /include one brief everyday aside unrelated to glucose/);
+  assert.match(workerSource, /最初は必ず「グルコだよ🍀」で始め、次の行に「来てくれてうれしいよ」などの短い挨拶を入れる/);
+  assert.match(workerSource, /血糖とは関係のない日常の短いひと言を1文入れる/);
+});
+
+test("classifies presentation-only issues as soft warnings", () => {
+  assert.deepEqual(partitionGeneratedLetterQualityIssues([
+    "repeated_metric_across_sections",
+    "missing_compassion_acknowledgment",
+    "minor_score_difference_overemphasized"
+  ]), {
+    blockingIssues: [],
+    softWarnings: [
+      "repeated_metric_across_sections",
+      "missing_compassion_acknowledgment",
+      "minor_score_difference_overemphasized"
+    ]
+  });
+});
+
+test("keeps safety, accuracy, and internal-leak issues blocking", () => {
+  assert.deepEqual(partitionGeneratedLetterQualityIssues([
+    "internal_identifier",
+    "blame_weighted_metric",
+    "unsupported_metric_change",
+    "metric_optimization_directive",
+    "short_range_gmi_mention",
+    "unqualified_unicorn"
+  ]), {
+    blockingIssues: [
+      "internal_identifier",
+      "blame_weighted_metric",
+      "unsupported_metric_change",
+      "metric_optimization_directive",
+      "short_range_gmi_mention",
+      "unqualified_unicorn"
+    ],
+    softWarnings: []
+  });
+});
+
+test("treats unknown quality issue codes as blocking by default", () => {
+  assert.deepEqual(partitionGeneratedLetterQualityIssues([
+    "future_unclassified_issue",
+    "future_unclassified_issue"
+  ]), {
+    blockingIssues: ["future_unclassified_issue"],
+    softWarnings: []
+  });
+});
 
 test("accepts Gluco-style Japanese wording", () => {
   const text = "グルコだよ🍀\nTIRは82％で、落ち着いた時間がしっかり見えているよ。\n明日も流れをやさしく見てみよう。";

@@ -33,7 +33,8 @@ const LIVE_PERIOD_STORAGE_KEY = "glucoscope.livePeriod.v1";
 const CUSTOM_RANGE_STORAGE_KEY = "glucoscope.customRange.v1";
 const AI_LETTER_WORKER_ENDPOINT_STORAGE_KEY = "glucoscope.aiLetterWorkerEndpoint.v1";
 const AI_LETTER_WORKER_ENABLED_STORAGE_KEY = "glucoscope.aiLetterWorkerEnabled.v1";
-const AI_LETTER_LOCAL_CACHE_STORAGE_KEY = "glucoscope.aiLetterLocalCache.v11";
+const AI_LETTER_LOCAL_CACHE_STORAGE_KEY = "glucoscope.aiLetterLocalCache.v12";
+const AI_LETTER_LEGACY_LOCAL_CACHE_STORAGE_KEYS = ["glucoscope.aiLetterLocalCache.v11"];
 const AI_LETTER_MODE_STORAGE_KEY = "glucoscope.aiLetterMode.v1";
 const AI_LETTER_LOCAL_CACHE_MAX_ITEMS = 30;
 const AI_LETTER_LOCAL_CACHE_FRESH_MS = 60 * 60 * 1000;
@@ -1268,6 +1269,9 @@ async function handleDataSourceTest() {
 function clearDataSourceSpecificBrowserState() {
   try {
     localStorage.removeItem(AI_LETTER_LOCAL_CACHE_STORAGE_KEY);
+    for (const legacyKey of AI_LETTER_LEGACY_LOCAL_CACHE_STORAGE_KEYS) {
+      localStorage.removeItem(legacyKey);
+    }
   } catch (error) {
     console.warn("Could not clear local AI cache", error);
   }
@@ -4142,6 +4146,9 @@ function getAiLetterLocalCacheKey(summary = {}, mode = currentAiLetterMode) {
 
 function readAiLetterLocalCache() {
   try {
+    for (const legacyKey of AI_LETTER_LEGACY_LOCAL_CACHE_STORAGE_KEYS) {
+      localStorage.removeItem(legacyKey);
+    }
     const raw = localStorage.getItem(AI_LETTER_LOCAL_CACHE_STORAGE_KEY);
     if (!raw) return {};
     const cache = JSON.parse(raw);
@@ -5366,9 +5373,22 @@ function getRuleCommentPeriodText(periodKey = currentLivePeriod) {
   return "この期間は";
 }
 
+function getRuleCommentCompanionLine(analysisMode = "letter") {
+  if (currentLanguage === "en") {
+    return analysisMode === "deep"
+      ? "Whatever the numbers look like, Gluco is here with you."
+      : "I’m glad you came to see me.";
+  }
+
+  return analysisMode === "deep"
+    ? "どんな数字の日も、グルコはここにいるよ。"
+    : "会いに来てくれてうれしいよ。";
+}
+
 function makeComment(tir, tar, tbr, avg, cv, periodKey = currentLivePeriod, currentGlucose = null) {
   const periodText = getRuleCommentPeriodText(periodKey);
   const celebrationHints = buildCelebrationHints({ tir, cv, currentGlucose, periodKey });
+  const companionLine = getRuleCommentCompanionLine("letter");
 
   if (currentLanguage === "en") {
     const concernLine = Number(tbr) >= 4
@@ -5381,12 +5401,14 @@ function makeComment(tir, tar, tbr, avg, cv, periodKey = currentLivePeriod, curr
 
     if (celebrationHints.length) {
       return `Gluco is here 🍀
+${companionLine}
 ${celebrationHints.slice(0, 3).join("\n")}
 ${concernLine}`;
     }
 
     if (Number(tbr) >= 4) {
       return `Gluco is here 🍀
+${companionLine}
 Some lower moments are visible ${periodText}.
 TBR is ${tbr}%.
 When you have time, looking back at overnight or pre-meal flow may give you a gentle clue.`;
@@ -5394,6 +5416,7 @@ When you have time, looking back at overnight or pre-meal flow may give you a ge
 
     if (Number(tar) >= 20) {
       return `Gluco is here 🍀
+${companionLine}
 Some higher moments are visible ${periodText}.
 TAR is ${tar}%.
 Post-meal or afternoon flow may hold a small clue, without blaming the numbers.`;
@@ -5401,12 +5424,14 @@ Post-meal or afternoon flow may hold a small clue, without blaming the numbers.`
 
     if (Number(cv) >= 36) {
       return `Gluco is here 🍀
+${companionLine}
 The glucose flow looks a little wavy ${periodText}.
 CV is ${cv}%.
 You do not have to force anything; we can simply notice when the ups and downs appeared.`;
     }
 
     return `Gluco is here 🍀
+${companionLine}
 There are steady moments ${periodText}.
 TIR is ${tir}%.
 Let’s keep using these numbers as small clues, not as a judgment.`;
@@ -5422,12 +5447,14 @@ Let’s keep using these numbers as small clues, not as a judgment.`;
 
   if (celebrationHints.length) {
     return `グルコだよ🍀
+${companionLine}
 ${celebrationHints.slice(0, 3).join("\n")}
 ${concernLine}`;
   }
 
   if (Number(tbr) >= 4) {
     return `グルコだよ🍀
+${companionLine}
 ${periodText}低めの時間も少し見えているよ。
 TBRは${tbr}%だったね。
 夜間や食前の流れを、あとでそっと振り返る手がかりにできそうだよ。`;
@@ -5435,6 +5462,7 @@ TBRは${tbr}%だったね。
 
   if (Number(tar) >= 20) {
     return `グルコだよ🍀
+${companionLine}
 ${periodText}高めの時間も少し見えているよ。
 TARは${tar}%だったね。
 食後や午後の流れをやさしく見返すと、小さなヒントが見つかるかもしれないね。`;
@@ -5442,12 +5470,14 @@ TARは${tar}%だったね。
 
   if (Number(cv) >= 36) {
     return `グルコだよ🍀
+${companionLine}
 ${periodText}血糖の動きが少し大きめに見えているよ。
 CVは${cv}%だったね。
 無理に整えようとしなくて大丈夫。どの時間帯に動きがあったか、一緒にそっと見てみよう。`;
   }
 
   return `グルコだよ🍀
+${companionLine}
 ${periodText}落ち着いている時間もちゃんと見えているよ。
 TIRは${tir}%だったね。
 血糖はあなたを責める数字じゃなくて、明日を少し楽にするための手がかりだよ。`;
@@ -5484,12 +5514,14 @@ function makeDeepComment(metrics = {}) {
       : scoreDiff < 0
         ? (currentLanguage === "en" ? `GlucoScore is ${Math.abs(scoreDiff)} softer than the comparison period.` : `GlucoScoreは比較期間より${Math.abs(scoreDiff)}控えめに見えているよ。`)
         : (currentLanguage === "en" ? "GlucoScore is about the same as the comparison period." : "GlucoScoreは比較期間と同じくらいに見えているよ。");
+  const companionLine = getRuleCommentCompanionLine("deep");
 
   if (currentLanguage === "en") {
     const celebrationBlock = celebrationHints.length
       ? `\n${celebrationHints.slice(0, 3).join("\n")}`
       : "";
-    return `Detailed Gluco reflection 🍀${celebrationBlock}
+    return `Detailed Gluco reflection 🍀
+${companionLine}${celebrationBlock}
 ${periodText}, TIR is ${tir}%, TAR is ${tar}%, and TBR is ${tbr}%.
 Average glucose is ${avg}mg/dL, CV is ${cv}%, and GMI estimate is ${gmi}%.
 GlucoScore is ${glucoScore}. ${scoreLine}
@@ -5500,7 +5532,8 @@ This is not medical advice; it is a small note to help you organize what you not
   const celebrationBlock = celebrationHints.length
     ? `\n${celebrationHints.slice(0, 3).join("\n")}`
     : "";
-  return `グルコだよ🍀${celebrationBlock}
+  return `グルコだよ🍀
+${companionLine}${celebrationBlock}
 ${periodText}TIRは${tir}%、TARは${tar}%、TBRは${tbr}%だったよ。
 平均血糖は${avg}mg/dL、CVは${cv}%、GMI目安は${gmi}%だね。
 GlucoScoreは${glucoScore}。${scoreLine}

@@ -21,6 +21,7 @@ GitHub Pages
 - Usage counters are persisted in a singleton SQLite-backed Durable Object.
 - The usage counter stores operational totals only. It does not store glucose values or AI letter text.
 - AI letters use a two-layer cache: browser-local cache plus a shared Cloudflare Workers KV cache.
+- The browser-local cache uses `glucoscope.aiLetterLocalCache.v12` and keeps at most 30 generated letters. The frontend removes the retired v11 local cache when reading the cache and when a saved connection is deleted.
 - The shared key is an opaque SHA-256 hash of page mode, language, period, time slot, analysis mode, and displayed range. Raw glucose values are not part of the key.
 - A shared letter younger than one hour is returned without a new OpenAI call or generation-count consumption.
 - The KV value contains only the generated letter text and minimal metadata. The glucose summary is not stored in KV.
@@ -30,15 +31,24 @@ GitHub Pages
 - Gentle and detailed modes use separate OpenAI output limits.
 - If OpenAI reports `status: incomplete` because `max_output_tokens` was reached, the Worker retries once with a larger mode-specific limit.
 - Partial output is never returned or written to browser/KV cache.
-- Japanese output is checked for Gluco-style plain wording, and all output is checked for leaked variable names, JSON keys, or camelCase implementation terms.
-- Adjacent closing sentences are also checked so the Japanese invitation word `一緒に` is not repeated back-to-back.
-- Japanese output is checked for blame-weighted metric phrasing such as `TBRは5.9%もある`, deficit wording such as `TIRは66%しかない`, and metric-only exclamation lines.
-- Internal writing labels such as `いたわり優先` are never allowed in the displayed letter.
-- The quality guard rejects observed vague metric metaphors, minimizing TBR wording, unsupported increase/decrease claims, GMI over-interpretation, and descriptions that turn lower periods into an `安心材料`.
-- The quality guard also rejects causal `TBR ... だから` phrasing, trend claims derived from a single delta, repeated metrics across sections, missing or late compassion acknowledgments, duplicate closing invitations, GMI in today/yesterday reflections, and overemphasis of a one-point GlucoScore comparison in a short letter.
-- The displayed letter must not turn TIR, TAR, TBR, CV, or GlucoScore into a next-day optimization target. The guard rejects phrases such as `目標の時間を増やす`, `TBRを減らす`, and `これだけ意識して進めよう`.
-- If a complete first response fails those wording checks, the Worker retries once with a clean rewrite instruction. Text that still fails is not returned or cached.
+- The prompt asks Gluco to welcome the person before focusing on metrics, add one short everyday pause or friendly aside, and close with companionship or reassurance.
+- Everyday asides must not claim a health benefit or glucose effect and must not become advice about food, exercise, medication, supplements, or sleep.
+- Japanese output is checked for Gluco-style plain wording, and all output is checked for leaked variable names, JSON keys, camelCase implementation terms, and internal writing labels such as `いたわり優先`.
+- Every complete first response is checked. Any detected issue triggers one clean rewrite attempt.
+- After that retry, safety, medical, factual/data-consistency, privacy, and internal-artifact issues still block the response and prevent caching. Examples include blame-weighted metric phrasing, minimizing TBR, unsupported trend claims, short-range GMI, treatment-like metric targets, and leaked implementation terms.
+- Minor stylistic warnings do not turn an otherwise safe rewritten letter into a user-facing failure. Examples include small wording awkwardness, repetition, compassion placement, and overemphasis of a one-point GlucoScore comparison.
+- The displayed letter must not turn TIR, TAR, TBR, CV, or GlucoScore into a next-day optimization target. Blocking phrases include `目標の時間を増やす`, `TBRを減らす`, and `これだけ意識して進めよう`.
 - Token and estimated-cost totals include both attempts when an automatic retry is needed.
+
+## Companionship around the numbers
+
+Gluco's letter should feel like a small friend checking in, not a report that ends after listing metrics.
+
+- Open with a brief, varied welcome such as `来てくれてうれしいよ`.
+- Add at most one simple everyday pause or friendly aside near the beginning or end.
+- Do not invent the person's location, weather, season, time of day, symptoms, effort, or circumstances.
+- Keep any reflection invitation optional rather than turning it into homework.
+- Prefer a warm closing such as `ぼくはここにいるよ` while preserving the medical-safety boundary.
 
 ## Positive recognition and Unicorn wording
 
@@ -66,7 +76,7 @@ The prompt must praise the observed flow rather than the person's worth or presu
 - Concerning metrics are stated as facts. The letter avoids blame-weighted words such as `も`, `しか`, `まだ`, `残念ながら`, `高すぎる`, `低すぎる`, `悪い`, and `問題` around those values.
 - A metric is not left as a standalone exclamation line; the same sentence explains the gentle reflection clue.
 
-The shared-cache schema is `gluco-ai-letter-cache-v11`, which prevents older cached wording from overriding the current compassion, non-directive, concise-metric, language-precision, unicorn, and natural-closing rules.
+The shared-cache schema is `gluco-ai-letter-cache-v12`, which prevents older cached wording from overriding the current warm-welcome, companionship, non-directive, safety, language-precision, and quality-retry rules. Shared entries expire within 24 hours.
 
 ## Production CORS policy
 
@@ -233,7 +243,7 @@ The estimated AI cost shown by the Worker is an operational estimate paid by the
 
 The production generation guard allows up to 10 new generations in each time slot (morning, afternoon, and night), with a daily maximum of 30. This is designed so the five periods (today, yesterday, 7 days, 30 days, and custom) can each be tried in both analysis modes within a slot. Cached displays do not consume a new-generation slot.
 
-The first OpenAI attempt uses the normal limit for the selected mode. Only an API response explicitly marked incomplete due to `max_output_tokens` triggers one retry. A successful retry still counts as one user-requested generation, while usage and developer-cost estimates include both OpenAI attempts. If the retry is also incomplete, the partial text is discarded and is not cached.
+The first OpenAI attempt uses the normal limit for the selected mode. Within the incomplete-output path, only an API response explicitly marked incomplete due to `max_output_tokens` triggers one retry with the larger limit. A successful retry still counts as one user-requested generation, while usage and developer-cost estimates include both OpenAI attempts. If the retry is also incomplete, the partial text is discarded and is not cached. A separate wording-quality path also performs one rewrite when the complete first response has any detected issue; after that rewrite, only blocking safety, factual/data-consistency, privacy, or internal-artifact issues cause a generation failure.
 
 ## Response contract
 

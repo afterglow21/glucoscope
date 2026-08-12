@@ -1,8 +1,12 @@
 import { DurableObject } from "cloudflare:workers";
-import { getGeneratedLetterQualityIssues, isUnicornEligibleSummary } from "./letter-quality.js";
+import {
+  getGeneratedLetterQualityIssues,
+  isUnicornEligibleSummary,
+  partitionGeneratedLetterQualityIssues
+} from "./letter-quality.js";
 
 const CONTRACT_VERSION = "gluco-ai-letter-worker-response-v0.2";
-const AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v11";
+const AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v12";
 const LETTER_SLOT_KEYS = ["morning", "afternoon", "night"];
 const ANALYSIS_MODE_KEYS = ["letter", "deep"];
 
@@ -916,6 +920,7 @@ function buildPrototypeLetter(summary = {}, mode = "letter") {
         : "";
       const hintLines = hints.length ? hints.map((hint) => `- ${hint}`).join("\n") : "- The selected range has clues we can look back on gently.";
       return `Gluco is here 🍀
+I'm glad you came by. Before the numbers, here is a small pause just for you.
 I looked at the selected range gently.${celebrationSection}
 
 Overview
@@ -926,7 +931,8 @@ Overview
 Clues visible in the summary
 ${hintLines}
 
-This is not a diagnosis or a treatment instruction. It is a gentle map for noticing patterns and discussing anything concerning with your healthcare team.`;
+This is not a diagnosis or a treatment instruction. It is a gentle map for noticing patterns and discussing anything concerning with your healthcare team.
+You are always more than these numbers. I'm right here with you 🍀`;
     }
 
     const celebrationSection = celebrationClues.length
@@ -934,6 +940,7 @@ This is not a diagnosis or a treatment instruction. It is a gentle map for notic
       : "";
     const hintLines = hints.length ? hints.map((hint) => `・${hint}`).join("\n") : "・表示中の期間には、あとでやさしく見返せる手がかりがありそうだよ。";
     return `グルコだよ🍀
+来てくれてうれしいよ。数字を見る前に、ここでちょっとひと息つこうね。
 表示中のデータを、少し詳しく一緒に見ていくね。${celebrationSection}
 
 全体の流れ
@@ -944,24 +951,29 @@ This is not a diagnosis or a treatment instruction. It is a gentle map for notic
 見えている手がかり
 ${hintLines}
 
-これは診断や治療の指示ではなく、あとで主治医さんとも話しやすくするための、やさしい振り返りだよ。`;
+これは診断や治療の指示ではなく、あとで主治医さんとも話しやすくするための、やさしい振り返りだよ。
+どんな数字の日も、あなたはあなたのままで大切だよ。ぼくはここにいるよ🍀`;
   }
 
   if (language === "en") {
     const celebrationLine = celebrationClues.length ? `\n${celebrationClues.slice(0, 2).join("\n")}` : "";
     const hintLine = hints.length ? `\nI also noticed: ${hints.join(" / ")}` : "";
     return `Gluco is here 🍀
+I'm glad you came by. Let's take a tiny pause before the numbers.
 I looked at the selected range gently: ${rangeLabel}.${celebrationLine}
 TIR is ${tir}%, average glucose is ${avg}mg/dL, and GlucoScore is ${score}.${hintLine}
-The numbers are not here to judge you; they are small clues for understanding today and improving tomorrow.`;
+The numbers are not here to judge you; they are small clues for understanding today and improving tomorrow.
+Showing up to look is already a small step. I'm right here with you 🍀`;
   }
 
   const celebrationLine = celebrationClues.length ? `\n${celebrationClues.slice(0, 2).join("\n")}` : "";
   const hintLine = hints.length ? `\n見えている手がかり: ${hints.join(" / ")}` : "";
   return `グルコだよ🍀
+来てくれてうれしいよ。まずは、ちょっとひと息つこうね。
 表示範囲は ${rangeLabel} だね。${celebrationLine}
 TIRは${tir}%、平均血糖は${avg}mg/dL、GlucoScoreは${score}だったよ。${hintLine}
-血糖はあなたを責める数字じゃなくて、今日を理解して明日を少し楽にするための手がかりだよ。`;
+血糖はあなたを責める数字じゃなくて、今日を理解して明日を少し楽にするための手がかりだよ。
+ここを見に来てくれたことも、小さな一歩だよ。ぼくはここにいるよ🍀`;
 }
 
 function buildOpenAiInstructions(language = "ja", mode = "letter") {
@@ -979,6 +991,9 @@ function buildOpenAiInstructions(language = "ja", mode = "letter") {
       "Do not recommend insulin doses, medication changes, pump settings, or device-setting changes.",
       "Use the provided summarized data only. Do not invent measurements.",
       modeInstruction,
+      "Welcome the person as a whole person, not as a set of readings. Include one brief greeting or encouraging companionship line near the beginning.",
+      "Include one short everyday aside unrelated to glucose near the beginning or end, such as taking a small pause or enjoying a favorite sound.",
+      "The aside may offer rest or a change of pace, but must not claim a health benefit, imply it changes glucose, or become advice about food, exercise, medication, supplements, or sleep.",
       "Because the response may be shown later from cache, avoid real-time wording such as 'right now' or 'current glucose'.",
       "When mentioning the latest glucose value, say 'the latest reading' or include the provided measurement time.",
       "Treat TIR, TAR, TBR, average glucose, CV, GMI, and GlucoScore as reflection clues, not grades.",
@@ -989,7 +1004,7 @@ function buildOpenAiInstructions(language = "ja", mode = "letter") {
       "Do not assume how hard the person worked or make praise about their worth. Praise the observed flow, not the person as a grade.",
       "Positive recognition must not hide notable lower or higher periods; celebrate first, then mention important clues gently.",
       "Do not expose variable names, JSON keys, camelCase labels, or other implementation details in the response.",
-      "Keep it concrete, gentle, and clear. End with a small reflection clue for tomorrow."
+      "Keep it concrete, gentle, and clear. End with companionship, reassurance, or one optional reflection clue rather than an assignment."
     ].join(" ");
   }
 
@@ -1004,6 +1019,9 @@ function buildOpenAiInstructions(language = "ja", mode = "letter") {
     "血糖値の良し悪しを決めつけず、評価・採点・反省を迫る言い方を避けます。",
     "与えられた集計済みサマリーだけを使い、測定値や出来事を作りません。",
     modeInstruction,
+    "数字の持ち主である一人の人を歓迎し、冒頭近くに短い挨拶や『来てくれてうれしいよ』『ぼくはここにいるよ』のような寄り添いを1文入れます。",
+    "冒頭か最後に、血糖とは関係のない日常の短いひと言を1文入れてよいです。『ちょっとひと息つこうね』『好きな音をひとつ思い出すのもいいね』など、休息や気分転換のやさしい言葉にします。",
+    "日常のひと言は健康効果や血糖への効果を断定せず、食事、運動、薬、サプリ、睡眠の助言にはしません。季節、天気、居場所、時刻も作りません。",
     "話し方は、そばにいる小さなともだちのような自然な常体に統一します。文末に『です』『ます』『でした』『ました』『あります』『ありません』『ください』『ましょう』『でしょう』を使いません。",
     "文末は『だよ』『だね』『見えているよ』『一緒に見ていこうね』など、グルコらしいやわらかい言葉にします。",
     "『一緒に』は連続する2文で繰り返しません。直前の文で『一緒に』を使った場合、最後の文は『明日もやさしく振り返ってみよう🍀』など別の言い方にします。",
@@ -1031,7 +1049,7 @@ function buildOpenAiInstructions(language = "ja", mode = "letter") {
     "振り返りの提案や締めの呼びかけは最後に1つだけ置き、似た意味の『見返してみようね』『一緒に見ていこうね』を続けません。",
     "TIR、TAR、TBR、CV、GlucoScoreを、明日の達成目標・改善課題・維持課題へ変換しません。数値は理解と振り返りの手がかりとして扱います。",
     "『目標の時間を増やす』『TBRを減らす』『数値を維持する』『改善する』『これだけ意識して進めよう』『目指そう』『できるようにしよう』のような、数値改善を求める指導表現を使いません。",
-    "最後は行動目標を課さず、『今日の数字を急いで答えにしなくて大丈夫だよ』『余裕があるときに、今日の流れをそっと振り返ってみようね』のように、理解を支える言葉で締めます。",
+    "最後は行動目標を課さず、『今日の数字を急いで答えにしなくて大丈夫だよ』『ぼくはここにいるよ』のように、理解や安心を支える言葉で締めます。振り返りを勧める場合も任意の誘いにします。",
     "TBRが1％以上、またはTIRが70％以下のときは、TIRを増やす・TBRを減らすといった最適化提案をせず、いたわりを先に置いたうえで、必要なら余裕のあるときの振り返りだけを提案します。",
     "良い手がかりがあるときは、文章の早い段階で、遠慮せず具体的に一緒に喜びます。『悪くない』『完璧ではないけど』『ばらつきはゼロではないけど』『大きく乱れていない』のように、褒め言葉を弱める言い方はしません。",
     "TIR 100％はTIRのきれいな流れとしてしっかり祝います。ただし、TIR 100％をユニコーンの理由にはしません。",
@@ -1213,7 +1231,9 @@ function buildOpenAiPrompt(summary = {}, mode = "letter") {
       return `Create one detailed Gluco reflection for this summarized glucose view.
 
 Requirements:
-- Start with "Gluco is here 🍀"
+- Start with exactly "Gluco is here 🍀", then add a short, varied welcome on the next line
+- Near the beginning or end, include one brief everyday aside unrelated to glucose, such as taking a small pause or enjoying a favorite sound
+- Keep that aside free of health claims and do not turn it into food, exercise, medication, supplement, or sleep advice
 - Use short emoji section labels, such as 🍀 Flow / 📊 Metric clues / 🔎 Pattern clues / 🌱 A small next reflection
 - Do not use Markdown heading marks such as #, ##, or ###
 - Do not write meta labels such as "This is a prototype", "This is the detailed analysis", or "This is the ${slotLabel}"
@@ -1228,7 +1248,8 @@ Requirements:
 - Do not output field names, variable names, JSON keys, camelCase, or implementation details
 - Avoid real-time wording such as "right now" because this may be shown later from cache
 - Avoid medical advice, dosing advice, diagnosis, blame, fear, or strict instructions
-- Keep it readable: about 10 to 16 short lines
+- Keep it readable: about 11 to 17 short lines
+- End with companionship or reassurance; a reflection invitation must feel optional, never like homework
 
 Summarized data:
 ${summaryText}`;
@@ -1237,8 +1258,10 @@ ${summaryText}`;
     return `Write one Gluco letter for this summarized glucose view.
 
 Requirements:
-- Start with "Gluco is here 🍀"
-- 5 to 8 short lines
+- Start with exactly "Gluco is here 🍀", then add a short, varied welcome on the next line
+- 6 to 9 short lines
+- Near the beginning or end, include one brief everyday aside unrelated to glucose, such as taking a small pause or enjoying a favorite sound
+- Keep that aside free of health claims and do not turn it into food, exercise, medication, supplement, or sleep advice
 - Do not write meta labels such as "This is a prototype" or "This is today’s ${slotLabel}"
 - Mention the active letter time only if it reads naturally; do not force it
 - Mention 1 to 3 concrete clues from the summary
@@ -1251,6 +1274,7 @@ Requirements:
 - Avoid real-time wording such as "right now" because the letter may be shown later from cache
 - Avoid medical advice, dosing advice, diagnosis, blame, fear, or strict instructions
 - Use gentle, plain language
+- End with companionship or reassurance; a reflection invitation must feel optional, never like homework
 
 Summarized data:
 ${summaryText}`;
@@ -1260,7 +1284,9 @@ ${summaryText}`;
     return `この集計済み血糖サマリーをもとに、グルコからの「${modeLabel}」を1つ書いて。
 
 条件:
-- 最初は必ず「グルコだよ🍀」で始める
+- 最初は必ず「グルコだよ🍀」で始め、次の行に「来てくれてうれしいよ」などの短い挨拶を入れる。挨拶は同じ一文に固定しない
+- 冒頭か最後に、血糖とは関係のない日常の短いひと言を1文入れる。「ちょっとひと息つこうね」「好きな音をひとつ思い出すのもいいね」など、休息や気分転換のやさしい言葉にする
+- 日常のひと言では健康効果や血糖への効果を断定せず、食事、運動、薬、サプリ、睡眠の助言をしない。季節、天気、居場所、時刻も作らない
 - 丁寧語の「です」「ます」「でした」「ました」「あります」「ありません」「ください」「ましょう」「でしょう」は使わない
 - 文末は「だよ」「だね」「見えているよ」「一緒に見ていこうね」など、グルコらしいやわらかい口調にする
 - 連続する2文で「一緒に」を繰り返さない。直前の文で「一緒に」を使った場合、最後の文は別の言い方にする
@@ -1301,8 +1327,8 @@ ${summaryText}`;
 - キャッシュ表示される可能性があるため、「今」「現在」「たった今」などのリアルタイム断定を避ける
 - 医療判断、診断、インスリン量、薬、ポンプ設定、デバイス設定の助言はしない
 - 責めない、怖がらせない、急かさない
-- 10〜16行くらい。短い見出しと箇条書きを中心に、やさしく自然に書く
-- 最後の一文は「一緒に見ていこうね🍀」「明日もやさしく振り返ってみよう🍀」のような、自然で迷いのない一文で締める
+- 11〜17行くらい。短い見出しと箇条書きを中心に、やさしく自然に書く
+- 最後の一文は「ぼくはここにいるよ🍀」「今日もあなたのそばにいるよ🍀」のような寄り添いを基本にする。振り返りを誘う場合も宿題のようにしない
 
 集計済みサマリー:
 ${summaryText}`;
@@ -1311,8 +1337,10 @@ ${summaryText}`;
   return `この集計済み血糖サマリーをもとに、グルコからの短くやさしい分析を1つ書いて。
 
 条件:
-- 最初は必ず「グルコだよ🍀」で始める
-- 5〜8行くらいの短いお手紙にする
+- 最初は必ず「グルコだよ🍀」で始め、次の行に「来てくれてうれしいよ」などの短い挨拶を入れる。挨拶は同じ一文に固定しない
+- 6〜9行くらいの短いお手紙にする
+- 冒頭か最後に、血糖とは関係のない日常の短いひと言を1文入れる。「ちょっとひと息つこうね」「好きな音をひとつ思い出すのもいいね」など、休息や気分転換のやさしい言葉にする
+- 日常のひと言では健康効果や血糖への効果を断定せず、食事、運動、薬、サプリ、睡眠の助言をしない。季節、天気、居場所、時刻も作らない
 - 丁寧語の「です」「ます」「でした」「ました」「あります」「ありません」「ください」「ましょう」「でしょう」は使わない
 - 文末は「だよ」「だね」「見えているよ」「一緒に見ていこうね」など、グルコらしいやわらかい口調にする
 - 連続する2文で「一緒に」を繰り返さない。直前の文で「一緒に」を使った場合、最後の文は別の言い方にする
@@ -1351,7 +1379,7 @@ ${summaryText}`;
 - 医療判断、診断、インスリン量、薬、ポンプ設定、デバイス設定の助言はしない
 - 責めない、怖がらせない、急かさない
 - やさしく、自然な日本語で書く
-- 最後の一文は「一緒に見ていこうね🍀」「明日もやさしく振り返ってみよう🍀」のような、自然で迷いのない一文で締める
+- 最後の一文は「ぼくはここにいるよ🍀」「今日もあなたのそばにいるよ🍀」のような寄り添いを基本にする。振り返りを誘う場合も宿題のようにしない
 
 集計済みサマリー:
 ${summaryText}`;
@@ -1617,7 +1645,8 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
     }
 
     const retryQualityIssues = getGeneratedLetterQualityIssues(retryAttempt.text, language, qualityOptions);
-    if (retryQualityIssues.length) {
+    const retryQualityAssessment = partitionGeneratedLetterQualityIssues(retryQualityIssues);
+    if (retryQualityAssessment.blockingIssues.length) {
       throw createOutputQualityError({
         mode: analysisMode,
         issues: retryQualityIssues,
@@ -1689,7 +1718,8 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
   }
 
   const retryQualityIssues = getGeneratedLetterQualityIssues(qualityRetry.text, language, qualityOptions);
-  if (retryQualityIssues.length) {
+  const retryQualityAssessment = partitionGeneratedLetterQualityIssues(retryQualityIssues);
+  if (retryQualityAssessment.blockingIssues.length) {
     throw createOutputQualityError({
       mode: analysisMode,
       issues: retryQualityIssues,
