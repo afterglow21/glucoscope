@@ -925,7 +925,7 @@ Polish:
 
 Browser-local layer:
 
-- local release-candidate storage key: `glucoscope.aiLetterLocalCache.v13`
+- current production storage key: `glucoscope.aiLetterLocalCache.v13`
 - maximum saved entries: 30 generated letters
 - retired `glucoscope.aiLetterLocalCache.v12` and v11 data is removed when cache reading begins and when a saved data connection is deleted
 - deleting a saved data connection also clears the current local letter cache
@@ -946,13 +946,21 @@ AI_CACHE_FRESH_SECONDS=3600
 AI_CACHE_RETENTION_SECONDS=86400
 ```
 
-The local release-candidate shared-cache key schema is `gluco-ai-letter-cache-v13`. It prevents v12 letters from overriding the GlucoScore omission, Japanese punctuation, reduced generation-input, and safe-first-response fallback rules. The v13 candidate neither reads nor writes v12 shared keys; retained v12 entries expire under the configured 24-hour retention period.
+The current production shared-cache key schema is `gluco-ai-letter-cache-v13`. It prevents v12 letters from overriding the GlucoScore omission, Japanese punctuation, reduced generation-input, and safe-first-response fallback rules. Production v13 neither reads nor writes v12 shared keys; retained v12 entries expire naturally under the configured 24-hour retention period. Browser-local v12 and v11 entries are removed when cache reading begins and when a saved data connection is deleted.
 
-Until a v13 deployment is explicitly verified, the public Worker may still serve the previously verified v12 production checkpoint. After verification, v12 is retired rather than migrated into v13.
+現在の本番では、端末内キーを `glucoscope.aiLetterLocalCache.v13`、共有キーschemaを `gluco-ai-letter-cache-v13` として稼働しています。v12のお手紙が、GlucoScore省略、自然な句読点、生成入力の整理、安全な初回文へのfallbackという新しいルールを上書きしないためです。
 
-現在のローカル反映候補では、端末内キーを `glucoscope.aiLetterLocalCache.v13`、共有キーschemaを `gluco-ai-letter-cache-v13` とします。v12のお手紙が、GlucoScore省略、自然な句読点、生成入力の整理、安全な初回文へのfallbackという新しいルールを上書きしないためです。
+本番v13は共有v12キーを読み書きしません。保持中の共有v12は24時間以内の既存期限で自然に失効し、端末内v12とv11はキャッシュ読み取り時と保存済み接続の削除時に消します。
 
-v13候補は共有v12キーを読み書きしません。保持中の共有v12は24時間以内の既存期限で失効し、端末内v12とv11はキャッシュ読み取り時と保存済み接続の削除時に消します。v13本番反映の確認が終わるまでは、公開Workerが確認済みv12のままである場合があります。確認後はv12をv13へ移行せず、そのまま退役します。
+### v13 production verification — 2026-08-13 / v13本番確認 — 2026-08-13
+
+Git commit `5ce79dc16f122def5bfd8ce40a15c0870a072b4c` was deployed as deployment `f2fbfb68-c87f-4f74-9ebf-231c8da029ee`. It routes 100% of traffic to Version 27 (`9f93a9df-f423-48c9-adbf-9de80e643712`). Version 26 (`1f4d0c91-808c-4600-8d63-e9207d06b7e0`) remains the immediate rollback target.
+
+Cache v13 is active and shared v12 is not read. Binding and Secret names, the OpenAI model, generation limits, budget settings, CORS policy, and Durable Object migration are unchanged. The approved-origin Content-Type preflight returned `204`; an unapproved-origin Usage `GET` returned `403`; an approved-origin Usage `GET` returned `200`.
+
+Git commit `5ce79dc16f122def5bfd8ce40a15c0870a072b4c` を、deployment `f2fbfb68-c87f-4f74-9ebf-231c8da029ee` で本番へ反映しました。通信の100%はVersion 27（`9f93a9df-f423-48c9-adbf-9de80e643712`）へ向いています。Version 26（`1f4d0c91-808c-4600-8d63-e9207d06b7e0`）を即時復帰先として保持しています。
+
+cache v13は本番で有効で、共有v12は読み込みません。bindingとSecretの名前、OpenAI model、生成上限、budget設定、CORS policy、Durable Object migrationは変更していません。許可OriginのContent-Type preflightは `204`、不許可OriginのUsage `GET` は `403`、許可OriginのUsage `GET` は `200` を返しました。
 
 Request order:
 

@@ -4826,7 +4826,7 @@ Worker内で短く待ってから同じ呼び出しを1回だけ再試行でき�
 途中で切れたAI出力はこれまでどおり表示・保存せず、
 出力上限が理由のときに1回だけより長い上限で再試行します。
 
-### Generation input and cache v13 candidate / 生成入力とcache v13候補
+### Generation input and cache v13 production / 生成入力とcache v13本番
 
 For `today` and `yesterday`, GMI and GMI-derived hints are removed
 before the prototype or OpenAI generation step.
@@ -4839,14 +4839,13 @@ and a `today` or `yesterday` hint containing GMI cannot reintroduce GMI.
 This reduces avoidable contradictions and output rejection;
 it does not weaken the medical-safety or factual checks.
 
-The current local release candidate uses
+The current production release uses
 `glucoscope.aiLetterLocalCache.v13` for up to 30 browser entries and
 `gluco-ai-letter-cache-v13` for the shared cache with up to 24-hour retention.
 Browser cache v12 is retired and removed during cache reading
 and saved-connection deletion; shared v12 keys are no longer read or written
-by the v13 candidate and expire under their existing retention policy.
-Production remains on the verified v12 checkpoint below
-until a v13 deployment is explicitly verified.
+by v13 production and expire naturally under their existing 24-hour
+retention policy. Cache v13 is active in production.
 
 `today` と `yesterday` では、GMIとGMIから作ったヒントを、
 prototypeまたはOpenAIで文章を作る前に外します。
@@ -4859,36 +4858,45 @@ prototypeまたはOpenAIで文章を作る前に外します。
 これは不要な矛盾や出力失敗を減らすためであり、
 医療安全や事実確認の境界を弱める変更ではありません。
 
-現在のローカル反映候補では、端末内のお手紙キャッシュを
+現在の本番では、端末内のお手紙キャッシュを
 `glucoscope.aiLetterLocalCache.v13`（最大30件）、共有キャッシュを
-`gluco-ai-letter-cache-v13`（最大24時間保持）とします。
+`gluco-ai-letter-cache-v13`（最大24時間保持）として稼働しています。
 端末内v12は退役し、キャッシュ読み取り時と保存済み接続の削除時に消します。
-共有v12はv13候補から読み書きせず、既存の保存期限で自然に失効します。
-本番はv13の反映確認が終わるまで、下記の確認済みv12のままです。
+本番v13は共有v12を読み書きせず、共有v12は既存の24時間以内の期限で自然に失効します。
+cache v13は本番で有効です。
 
 ### AI Worker production checkpoint — 2026-08-13
 ### AI Worker本番反映記録 — 2026-08-13
 
-Deployment `aebf4032-1d00-4946-9d3c-773a2e0bf7d3` routes 100% of
-`gluco-letter-worker` traffic to Version
-`1f4d0c91-808c-4600-8d63-e9207d06b7e0`.
-Version `1b8a67ca-dc1b-4655-9f09-83e24a249f7b` remains the immediate
-rollback target. The release changes only the letter voice,
-the output-quality boundary, and cache schema v12.
-Secrets, bindings, migrations, CORS, generation limits,
-and retention settings are unchanged.
-After deployment, the public usage endpoint returned `200`
-and the approved-origin AI preflight returned `204`.
+Git commit `5ce79dc16f122def5bfd8ce40a15c0870a072b4c` is deployed through
+deployment `f2fbfb68-c87f-4f74-9ebf-231c8da029ee`.
+It routes 100% of `gluco-letter-worker` traffic to Version 27
+(`9f93a9df-f423-48c9-adbf-9de80e643712`).
+Version 26 (`1f4d0c91-808c-4600-8d63-e9207d06b7e0`) is the immediate
+rollback target.
 
-AI Worker deployment `aebf4032-1d00-4946-9d3c-773a2e0bf7d3` は、
-Version `1f4d0c91-808c-4600-8d63-e9207d06b7e0` へ
-通信の100%を向けています。
-Version `1b8a67ca-dc1b-4655-9f09-83e24a249f7b` を
-即時復帰先として残しました。
-この反映で変えたのは、お手紙の話し方、出力品質の境界、
-cache schema v12だけです。
-Secret、binding、migration、CORS、生成上限、保存期間は変更していません。
-反映後、公開Usage endpointは `200`、許可OriginのAI事前確認は `204` でした。
+Cache schema v13 is active. Production does not read shared v12 keys;
+retained v12 entries expire naturally within their existing 24-hour lifetime.
+Binding and Secret names, the OpenAI model, generation limits, budget settings,
+CORS policy, and Durable Object migration are unchanged.
+After deployment, an approved-origin Content-Type preflight returned `204`,
+an unapproved-origin Usage `GET` returned `403`,
+and an approved-origin Usage `GET` returned `200`.
+
+Git commit `5ce79dc16f122def5bfd8ce40a15c0870a072b4c` を、
+deployment `f2fbfb68-c87f-4f74-9ebf-231c8da029ee` で本番へ反映しました。
+`gluco-letter-worker` の通信100%は、Version 27
+（`9f93a9df-f423-48c9-adbf-9de80e643712`）へ向いています。
+Version 26（`1f4d0c91-808c-4600-8d63-e9207d06b7e0`）を
+即時復帰先として保持しています。
+
+cache schema v13は本番で有効です。本番は共有v12を読み込まず、
+保持中のv12は既存の24時間以内の期限で自然に失効します。
+bindingとSecretの名前、OpenAI model、生成上限、budget設定、
+CORS policy、Durable Object migrationは変更していません。
+反映後、許可OriginのContent-Type preflightは `204`、
+不許可OriginのUsage `GET` は `403`、
+許可OriginのUsage `GET` は `200` を返しました。
 
 ---
 
