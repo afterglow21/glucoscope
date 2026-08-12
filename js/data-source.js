@@ -134,29 +134,51 @@
   function readUserConfig() {
     const sessionStorage = getStorage("sessionStorage");
     const localStorage = getStorage("localStorage");
+    const sessionConfig = parseStoredConfig(sessionStorage?.getItem(SESSION_STORAGE_KEY));
+    const localConfig = parseStoredConfig(localStorage?.getItem(STORAGE_KEY));
 
-    return parseStoredConfig(sessionStorage?.getItem(SESSION_STORAGE_KEY))
-      || parseStoredConfig(localStorage?.getItem(STORAGE_KEY));
+    if (!sessionConfig) return localConfig;
+    if (!localConfig) return sessionConfig;
+
+    // Normally only one copy exists. If Safari allowed the selected write but
+    // rejected cleanup of the former copy, prefer the most recently saved one.
+    const sessionSavedAt = Date.parse(sessionConfig.savedAt || "") || 0;
+    const localSavedAt = Date.parse(localConfig.savedAt || "") || 0;
+    return localSavedAt > sessionSavedAt ? localConfig : sessionConfig;
+  }
+
+  function removeStoredConfigBestEffort(storage, key) {
+    if (!storage) return;
+    try {
+      storage.removeItem(key);
+    } catch (error) {
+      // The selected copy has already been committed. A failure while removing
+      // the former copy must not turn that successful save into a failure.
+    }
   }
 
   function saveUserConfig(input, options = {}) {
     const config = sanitizeConfig({
       ...input,
-      persist: options.persist ?? input.persist
+      persist: options.persist ?? input.persist,
+      savedAt: new Date().toISOString()
     });
     const localStorage = getStorage("localStorage");
     const sessionStorage = getStorage("sessionStorage");
     const payload = JSON.stringify(config);
 
-    localStorage?.removeItem(STORAGE_KEY);
-    sessionStorage?.removeItem(SESSION_STORAGE_KEY);
-
     if (config.persist) {
       if (!localStorage) throw new Error("Browser local storage is unavailable.");
+      // Commit the selected destination before removing the other copy. If
+      // this write fails, a previously working session connection survives.
       localStorage.setItem(STORAGE_KEY, payload);
+      removeStoredConfigBestEffort(sessionStorage, SESSION_STORAGE_KEY);
     } else {
       if (!sessionStorage) throw new Error("Browser session storage is unavailable.");
+      // Keep a previously working persistent connection until this write has
+      // succeeded, then leave only the newly selected session copy.
       sessionStorage.setItem(SESSION_STORAGE_KEY, payload);
+      removeStoredConfigBestEffort(localStorage, STORAGE_KEY);
     }
 
     return config;

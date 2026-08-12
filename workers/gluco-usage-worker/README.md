@@ -1,8 +1,8 @@
-# GlucoScope Usage Worker – supervised re-acceptance active
+# GlucoScope Usage Worker – paused after supervised re-acceptance checkpoint
 
 This directory contains a dedicated, dependency-light Cloudflare Worker and D1 schema for minimal device-profile usage counts.
 
-The stopped production foundation was created and verified on 2026-08-11. On 2026-08-12 JST, corrected Version `858cf438-b3d2-4a8c-801c-344503e0c58e` was used for a supervised device check. Profile creation succeeded, but a repeated callback after Turnstile reset produced a false error display after that success. The 2 known test profiles were later deleted, and the cascading deletion left `profiles`, `usage_daily`, and `event_receipts` at `0 / 0 / 0`. Clean stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb`, deployed as `25be2258-b72a-4e2c-8bf1-ab47781c48dc`, remains the rollback target. Active Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` now receives 100% of traffic with runtime `USAGE_COLLECTION_ENABLED=true` for supervised re-acceptance. The frontend enrollment gate is enabled in the same release candidate, while the checked-in configuration remains fail-safe at `false` and the separate general-user relay remains `RELAY_ENABLED=false`.
+The stopped production foundation was created and verified on 2026-08-11. On 2026-08-12 JST, corrected Version `858cf438-b3d2-4a8c-801c-344503e0c58e` was used for a supervised device check. Profile creation succeeded, but a repeated callback after Turnstile reset produced a false error display after that success. The 2 known test profiles were later deleted, and the cascading deletion left `profiles`, `usage_daily`, and `event_receipts` at `0 / 0 / 0`. Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` and frontend enrollment were then enabled for supervised re-acceptance. The connection test succeeded, but pressing `GlucoScopeを始める` returned to the data-connection screen after a brief Turnstile display, and D1 remained `0 / 0 / 0`. Clean stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` was immediately restored to 100% through deployment `06aa2dbe-454b-45b8-859a-d8e5b9741a82`. Runtime and checked-in collection are now `false`; the public frontend still has the supervised-candidate gate enabled at this checkpoint, and the separate general-user relay remains `RELAY_ENABLED=false`.
 
 ## Stopped production checkpoint (2026-08-11)
 
@@ -33,13 +33,14 @@ This checkpoint verifies a reachable but stopped production shell. It does not a
 - D1 was rechecked after deployment and remained `0 / 0 / 0` for `profiles`, `usage_daily`, and `event_receipts`.
 - The general-user relay remains independently stopped at `RELAY_ENABLED=false`.
 
-## Current supervised re-acceptance (2026-08-12 JST)
+## Latest supervised re-acceptance checkpoint (2026-08-12 JST)
 
-- Active Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` receives 100% of production traffic with runtime `USAGE_COLLECTION_ENABLED=true`.
+- Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` received 100% of production traffic with runtime `USAGE_COLLECTION_ENABLED=true` during the supervised attempt.
 - Allowed-origin preflight returned `204`; an allowed-origin profile request with an invalid dummy Turnstile token returned `403 turnstile_failed`; wrong-origin and originless requests returned `403`.
 - D1 remained `0 / 0 / 0` after these boundary checks. No real profile was created by the dummy request.
-- The frontend gate is enabled only for supervised re-acceptance. Public-demo viewing remains name-free; a required, non-real-name display name is requested only when a person starts a new own-data connection.
-- Checked-in `wrangler.jsonc` remains `USAGE_COLLECTION_ENABLED=false`. Clean stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` remains the rollback target, and the general-user relay remains independently stopped at `RELAY_ENABLED=false`.
+- The real-device connection test succeeded. After `GlucoScopeを始める` and a brief Turnstile display, the data-connection screen returned. D1 still contained `0 / 0 / 0`, confirming that no usage profile or daily record was created.
+- Stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` now receives 100% of production traffic through deployment `06aa2dbe-454b-45b8-859a-d8e5b9741a82`, with runtime `USAGE_COLLECTION_ENABLED=false`.
+- The checked-in `wrangler.jsonc` remains `USAGE_COLLECTION_ENABLED=false`. The public frontend still has the supervised-candidate gate enabled at this checkpoint, while the general-user relay remains independently stopped at `RELAY_ENABLED=false`.
 
 ## Boundary
 
@@ -188,8 +189,8 @@ There is intentionally no real `deploy` npm script.
 
 ## Current supervised acceptance steps
 
-1. Keep the repeated-callback guard and simplified data-connection-integrated flow active only for supervised re-acceptance. Keep Gluroo relay confirmation as a separate boundary.
-2. Starting from the clean `0 / 0 / 0` D1 baseline, recheck profile creation without a false callback error, then stop, resume, deletion, and the secondary allowlisted-export link on one user-controlled device.
+1. Keep the Worker stopped while the updated public frontend is verified. It makes core connection storage robust, treats display-name-only storage as best effort, and applies a bounded timeout to profile creation. Keep Gluroo relay confirmation as a separate boundary.
+2. Starting from the clean `0 / 0 / 0` D1 baseline, first recheck that `GlucoScopeを始める` reaches user mode when usage enrollment does not complete. Then check profile creation without a false callback error, followed by stop, resume, deletion, and the secondary allowlisted-export link on one user-controlled device.
 3. Only after those checks, decide separately whether to resume a small rollout. Keep the general-user relay independent at `RELAY_ENABLED=false`.
 
 Secret values, profile tokens, display names, and production database content must never be copied into Git, command arguments, screenshots, logs, fixtures, or support messages.

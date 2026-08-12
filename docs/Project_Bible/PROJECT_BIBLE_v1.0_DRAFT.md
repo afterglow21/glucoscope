@@ -3301,14 +3301,26 @@ Later on 2026-08-12 JST, the 2 known test profiles were deleted. Cascading delet
 allowed-origin preflight `204`, allowed-origin profile `POST` `503 usage_collection_paused`,
 wrong-origin and originless `403`, and D1 `0 / 0 / 0`. It remains the rollback target.
 
-Active Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` now receives 100% of traffic with
-runtime `USAGE_COLLECTION_ENABLED=true` for supervised re-acceptance, and frontend enrollment
-is enabled in the same release candidate. Allowed-origin preflight returned `204`; an
+Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` received 100% of traffic with runtime
+`USAGE_COLLECTION_ENABLED=true` for supervised re-acceptance, and frontend enrollment was
+enabled in the same release candidate. Allowed-origin preflight returned `204`; an
 allowed-origin request with an invalid dummy Turnstile token returned `403 turnstile_failed`;
 wrong-origin and originless requests returned `403`. D1 remained `0 / 0 / 0`. Checked-in
 `wrangler.jsonc` remains fail-safe at `false`, and the general-user relay remains independently
-stopped at `RELAY_ENABLED=false`. Use the callback guard and simplified connection-integrated
-flow to check Create, Stop, Resume, Delete, and the secondary export link under supervision.
+stopped at `RELAY_ENABLED=false`.
+
+The real-device connection test succeeded, but after `GlucoScopeを始める` and a brief Turnstile
+display, the data-connection screen returned. D1 still held `0 / 0 / 0`, so no usage profile
+was created. Stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` was immediately restored
+to 100% through deployment `06aa2dbe-454b-45b8-859a-d8e5b9741a82`, with runtime
+`USAGE_COLLECTION_ENABLED=false`. The public frontend still has the supervised-candidate gate
+enabled at this checkpoint, while the checked-in Worker flag remains `false` and the general-user
+relay remains `RELAY_ENABLED=false`.
+
+The updated public frontend makes core connection storage robust, treats display-name-only storage
+as best effort, and gives usage-profile creation a bounded timeout. It was published while the Usage
+Worker remained stopped. Supervised re-testing must first confirm that Start reaches user mode when enrollment
+does not complete; Create, Stop, Resume, Delete, and the secondary export check remain pending.
 
 Product analytics must remain separate from public Web Analytics, CGM transport, and
 glucose storage. Do not place glucose values, graphs, AI-letter contents, Nightscout or
@@ -3422,13 +3434,25 @@ D1 tableと管理者viewが引き続き0件でした。その後の実機確認�
 不許可OriginとOriginなしが `403`、D1が `0 / 0 / 0` であることを確認しました。このVersionを
 clean stopped checkpoint兼rollback先として維持します。
 
-その後、active Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` へ本番通信の100%を向け、
+その後、Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` へ本番通信の100%を向け、
 runtimeの `USAGE_COLLECTION_ENABLED=true` とフロントの開始画面を監督下一時受け入れのため
 有効にしました。許可Originのpreflight `204`、許可Originからの無効なダミーTurnstile tokenが
 `403 turnstile_failed`、不許可OriginとOriginなしが `403` であることを確認し、D1は引き続き
 `0 / 0 / 0` です。Gitに保存する `wrangler.jsonc` は `false` のまま維持し、一般利用者向け限定中継も
-独立して `RELAY_ENABLED=false` を維持しています。callback再実行を防ぐ処理と接続開始へ統合した
-簡素な画面を使い、開始・停止・再開・削除と補助的な書き出しを監督下で確認します。
+独立して `RELAY_ENABLED=false` を維持しています。
+
+実機では接続確認まで成功しましたが、「GlucoScopeを始める」を押すとTurnstileが短く表示された後、
+データ接続画面へ戻りました。直後のD1は `0 / 0 / 0` のままで、利用プロフィールは作成されていません。
+停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb` をdeployment
+`06aa2dbe-454b-45b8-859a-d8e5b9741a82` で本番通信の100%へ直ちに戻し、runtimeを
+`USAGE_COLLECTION_ENABLED=false` としました。公開フロントはこの確認時点で一時受け入れ版のgateが
+`true` のままですが、Gitに保存するWorker設定は `false`、一般利用者向け限定中継は
+`RELAY_ENABLED=false` のままです。
+
+接続設定のブラウザ保存を中核処理として堅牢にし、表示名だけの保存失敗をbest-effortとして扱う修正と、
+利用プロフィール作成へ上限時間を設ける修正を、Usage Worker停止のまま公開フロントへ反映しました。
+修正版で開始後にユーザーモードへ進むことを監督下で再確認するまで、開始・停止・再開・削除・書き出しの
+受け入れは未完了です。
 
 プロダクト内の利用分析は、未ログインの公開Web Analytics、CGMの通信、
 血糖データの保存とは分離します。血糖値、グラフ、AIお手紙本文、

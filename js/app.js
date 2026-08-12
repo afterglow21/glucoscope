@@ -339,6 +339,7 @@ const translations = {
     dataSourceTestCorsError: "このブラウザからデータを受け取れませんでした。通信方法の確認が必要です。表示された内容を開発者へお知らせください。",
     dataSourceTestFormatError: "届いたデータを、GlucoScopeではまだ読み取れませんでした。対応状況を確認します。",
     dataSourceTestGenericError: "つながるか確認できませんでした。少し時間をおいて、もう一度試してみてね。",
+    dataSourceSaveStorageError: "この端末に接続を保存できませんでした。プライベートブラウズを使っている場合は、通常のタブで開き直してみてね。",
     dataSourceSaveButton: "GlucoScopeを始める",
     dataSourceDeleteButton: "この端末に保存した接続を削除",
     dataSourceDemoLink: "まず公開デモを見る",
@@ -660,6 +661,7 @@ const translations = {
     dataSourceTestCorsError: "This browser could not receive the data. The connection method needs review. Please share the displayed result with the developer.",
     dataSourceTestFormatError: "GlucoScope received data that it cannot read yet. Compatibility needs review.",
     dataSourceTestGenericError: "The connection could not be confirmed. Please try again later.",
+    dataSourceSaveStorageError: "The connection could not be saved on this device. If you are using private browsing, reopen it in a regular tab and try again.",
     dataSourceSaveButton: "Start GlucoScope",
     dataSourceDeleteButton: "Delete the connection saved on this device",
     dataSourceDemoLink: "View the public demo first",
@@ -1317,15 +1319,21 @@ function setDataSourceSaveControlsDisabled(disabled) {
 }
 
 function persistDataSourceBrowserState(snapshot) {
-  const localResult = localProfileManager?.save?.({ displayName: snapshot.displayName });
-  if (!localResult?.ok || !localResult.stored) {
-    const error = new Error("The display name could not be saved.");
-    error.code = localResult?.error || "display_name_save_failed";
-    throw error;
-  }
-
+  // The verified glucose connection is required. Save it first so a failure
+  // limited to the separate local display-name helper cannot discard it.
   dataSourceManager.saveUserConfig(snapshot.config, { persist: snapshot.persist });
   clearDataSourceSpecificBrowserState();
+
+  const localResult = localProfileManager?.save?.({ displayName: snapshot.displayName });
+  if (!localResult?.ok || !localResult.stored) {
+    console.warn(
+      "Continuing without a locally saved display name",
+      localResult?.error || "display_name_save_failed"
+    );
+    return { displayNameStored: false };
+  }
+
+  return { displayNameStored: true };
 }
 
 function navigateToSavedDataSource() {
@@ -1364,10 +1372,10 @@ async function completePendingDataSourceSave(
     // Required browser state is committed before any optional usage-profile
     // request. A storage failure therefore cannot leave a remote profile
     // without the glucose connection the person just verified.
-    persistDataSourceBrowserState(snapshot);
+    const { displayNameStored } = persistDataSourceBrowserState(snapshot);
 
     const state = getUsageProfileState();
-    if (USAGE_PROFILE_ENABLED && !skipUsageProfile) {
+    if (USAGE_PROFILE_ENABLED && displayNameStored && !skipUsageProfile) {
       try {
         if (!state.registered) {
           setDataSourceTestStatus(t("dataSourceUsageSafetyCheck"), "pending");
@@ -1395,7 +1403,7 @@ async function completePendingDataSourceSave(
     console.warn("Could not save required data source setup", error?.code || error?.message);
     if (isCurrentPendingDataSourceSave(generation)) {
       pendingDataSourceSave = null;
-      setDataSourceTestStatus(t("dataSourceTestGenericError"), "error");
+      setDataSourceTestStatus(t("dataSourceSaveStorageError"), "error");
     }
   } finally {
     const ownsInFlightSave = dataSourceSaveInFlightGeneration === generation;

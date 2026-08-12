@@ -1,6 +1,6 @@
 # GlucoScope 利用者設定・利用分析基盤
 
-Status: Phase 1A implemented / Phase 1B simplified connection-integrated flow active for supervised re-acceptance
+Status: Phase 1A implemented / Phase 1B paused after supervised re-acceptance checkpoint
 
 Last reviewed: 2026-08-12
 
@@ -229,10 +229,16 @@ AI分析は、OpenAIから新しく正常に生成され、`generation.complete=
 
 runtimeの `USAGE_COLLECTION_ENABLED=false`、許可Originのpreflight `204`、許可Originからのprofile `POST` が `503 usage_collection_paused`、不許可OriginとOriginなしが `403` であることを確認した。デプロイ後もD1の3テーブルは `0 / 0 / 0` のままである。一般利用者向け限定中継は独立して `RELAY_ENABLED=false` を維持している。
 
-## 16. 監督下の再受け入れ開始（2026-08-12 JST）
+## 16. 監督下の再受け入れと停止（2026-08-12 JST）
 
 別の明示確認後、active Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` へ本番通信の100%を向け、runtimeの `USAGE_COLLECTION_ENABLED=true` で監督下の一時受け入れを再開した。同じ公開候補でフロントの `USAGE_PROFILE_ENABLED` とusage-profile meta gateを `true` にし、公開デモを見るだけでは表示名やprofileを求めず、自分のデータを新しくつなぐ時だけ本名でなくてよい表示名を必須にする。
 
 許可Originのpreflight `204`、許可Originからの無効なダミーTurnstile tokenが `403 turnstile_failed`、不許可OriginとOriginなしが `403` であることを確認した。この境界確認後も `profiles`、`usage_daily`、`event_receipts` は `0 / 0 / 0` である。Gitに保存する `wrangler.jsonc` は `USAGE_COLLECTION_ENABLED=false` のまま維持し、停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb` とdeployment `25be2258-b72a-4e2c-8bf1-ab47781c48dc` を直前のclean stopped checkpoint兼rollback先として残す。一般利用者向け限定中継も独立して `RELAY_ENABLED=false` を維持する。
 
 この一時有効化では、再callbackによる誤エラーが起きないprofile作成、停止、再開、削除、補助リンクからのallowlist書き出しを、利用者が管理する1台の端末で確認する。Usage Workerまたは利用プロフィールだけの失敗は確認済みCGM接続を止めず、Gluroo限定中継の安全確認、接続先検証、ブラウザ保存成功は引き続きfail-closedとする。
+
+実機では接続確認まで成功した。しかし「GlucoScopeを始める」を押すとTurnstileが短く表示された後、データ接続画面へ戻った。直後のD1確認では `profiles`、`usage_daily`、`event_receipts` は `0 / 0 / 0` のままで、利用プロフィールは作成されていなかった。
+
+異常時の停止手順に従い、停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb` をdeployment `06aa2dbe-454b-45b8-859a-d8e5b9741a82` で本番通信の100%へ戻した。Usage Workerは再び `USAGE_COLLECTION_ENABLED=false` である。公開フロントはこの確認時点で一時受け入れ版のgateが `true` のままだが、停止Workerは新しいprofile作成を受け付けない。Gitに保存するWorker設定の `false` と、一般利用者向け限定中継の `RELAY_ENABLED=false` は変更していない。
+
+接続設定のブラウザ保存を中核処理として堅牢にし、表示名だけの保存失敗をbest-effortとして扱う修正と、利用プロフィール作成に上限時間を設ける修正を、Usage Worker停止のまま公開フロントへ反映した。修正版の監督下実機再確認を待つ。開始後にユーザーモードへ進むことを確認するまで、停止・再開・削除・書き出しの後続受け入れも未完了とする。

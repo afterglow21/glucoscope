@@ -87,6 +87,7 @@ test("connection save makes the dedicated usage check best-effort and generation
   assert.match(app, /usageProfileManager\?\.start\?\.\(\{\s*displayName: snapshot\.displayName,\s*turnstileToken\s*\}\)/s);
   assert.match(app, /document\.getElementById\("dataSourceDisplayName"\)/);
   assert.match(app, /localProfileManager\?\.save\?\.\(\{ displayName: snapshot\.displayName \}\)/);
+  assert.match(app, /dataSourceSaveStorageError: "この端末に接続を保存できませんでした/);
   assert.match(app, /window\.turnstile\.remove\(widgetId\)/);
   assert.match(app, /pendingDataSourceSave\.generation === generation[\s\S]*dataSourceSaveGeneration === generation/);
   assert.match(app, /container\.dataset\.generation = String\(generation\)/);
@@ -101,6 +102,9 @@ test("connection save makes the dedicated usage check best-effort and generation
   const completeHandler = app.slice(completeStart, completeEnd);
   assert.equal((completeHandler.match(/usageProfileManager\?\.(?:start|updateProfile)\?\.\(/g) || []).length, 2);
   assert.match(completeHandler, /catch \(usageError\) \{[\s\S]*Continuing without a usage profile/);
+  assert.match(completeHandler, /const \{ displayNameStored \} = persistDataSourceBrowserState\(snapshot\)/);
+  assert.match(completeHandler, /USAGE_PROFILE_ENABLED && displayNameStored && !skipUsageProfile/);
+  assert.match(completeHandler, /setDataSourceTestStatus\(t\("dataSourceSaveStorageError"\), "error"\)/);
   assert.ok(
     completeHandler.indexOf("persistDataSourceBrowserState(snapshot)")
       < completeHandler.indexOf("usageProfileManager?.start?.(")
@@ -110,6 +114,17 @@ test("connection save makes the dedicated usage check best-effort and generation
       < completeHandler.indexOf("navigateToSavedDataSource()")
   );
   assert.doesNotMatch(completeHandler, /dataSourceUsageStartError/);
+
+  const persistStart = app.indexOf("function persistDataSourceBrowserState");
+  const persistEnd = app.indexOf("async function completePendingDataSourceSave", persistStart);
+  const persistHandler = app.slice(persistStart, persistEnd);
+  assert.ok(
+    persistHandler.indexOf("dataSourceManager.saveUserConfig(snapshot.config")
+      < persistHandler.indexOf("localProfileManager?.save?.({ displayName: snapshot.displayName })")
+  );
+  assert.match(persistHandler, /return \{ displayNameStored: false \}/);
+  assert.match(persistHandler, /return \{ displayNameStored: true \}/);
+  assert.doesNotMatch(persistHandler, /throw error/);
 });
 
 test("busy connection saves block destructive controls and stale callbacks", () => {
@@ -162,8 +177,8 @@ test("AI usage is recorded only for a completed new OpenAI generation", () => {
 test("local display-name storage remains network-free and server sync is separate", () => {
   assert.doesNotMatch(localProfile, /\b(?:fetch|XMLHttpRequest|sendBeacon|WebSocket)\b/u);
   assert.match(index, /js\/local-profile\.js\?v=20260811-usage-profile-stage-1/);
-  assert.match(index, /js\/usage-client\.js\?v=20260812-simple-connection-2/);
-  assert.match(index, /js\/app\.js\?v=20260812-supervised-usage-1/);
+  assert.match(index, /js\/usage-client\.js\?v=20260812-safari-save-1/);
+  assert.match(index, /js\/app\.js\?v=20260812-safari-save-1/);
   assert.match(app, /updateUsageProfileDisplayName\(result\.profile\.displayName\)/);
   assert.doesNotMatch(app, /handleLocalProfileDelete|localProfileDeleteButton/);
   assert.match(app, /if \(!state\.enabled \|\| !state\.registered\) return;/);

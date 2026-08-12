@@ -13,7 +13,7 @@ Gluroo support remains an interoperability proof of concept. GlucoScope does not
 
 ## User flow
 
-The following simplified flow and repeated-callback guard are implemented. Usage Worker Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` and the frontend enrollment gate are active only for supervised re-acceptance. The checked-in Worker flag remains `false`, clean stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` remains the rollback target, and the general-user Limited Data Relay remains independently paused.
+The following simplified flow and repeated-callback guard are implemented. Usage Worker Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` and the frontend enrollment gate were enabled for supervised re-acceptance. The connection test succeeded, but after `GlucoScopeを始める` and a brief Turnstile display, the data-connection screen returned. D1 remained `0 / 0 / 0`, so no usage profile was created. Stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` was immediately restored to 100% through deployment `06aa2dbe-454b-45b8-859a-d8e5b9741a82`. The checked-in Worker flag and runtime collection are `false`; the public frontend still has the supervised-candidate gate enabled at this checkpoint, and the general-user Limited Data Relay remains independently paused.
 
 1. Open `user.html` or `index.html?mode=user`.
 2. Choose exactly one numbered route.
@@ -145,6 +145,8 @@ Connection errors, missing data, old data, and unsupported formats should be sho
 - Analytics remains disabled while either user connection storage key exists.
 - JavaScript syntax checks and adapter tests pass.
 - The repeated-callback guard and simplified lifecycle are enabled only for supervised re-acceptance; any broader rollout waits until Create, Stop, Resume, Delete, and the secondary export path pass.
+
+The updated public frontend keeps the verified connection as the core browser-storage operation, treats display-name-only storage as best effort, and gives usage-profile creation a bounded timeout. It was published while the Usage Worker remained stopped. Re-testing must first confirm that `GlucoScopeを始める` reaches user mode when usage-profile enrollment does not complete; the later lifecycle checks remain pending.
 
 ## Beginner-first onboarding rule
 

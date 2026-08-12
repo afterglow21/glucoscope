@@ -78,9 +78,9 @@
 
       <div class="about-detail-mini-card">
         <div class="about-detail-mini-head"><span class="about-detail-mini-icon">🧭</span><h3><span class="about-detail-mini-title-en">Next Steps</span><span class="about-detail-mini-title-jp">次の課題</span></h3></div>
-        <p>端末プロフィールの実機確認では、最初の作成と日別記録に成功しましたが、成功後の再コールバックで誤ったエラーが表示されました。既知の試験用プロフィール2件は削除し、cascade後の <code>profiles</code>、<code>usage_daily</code>、<code>event_receipts</code> は <code>0 / 0 / 0</code> です。停止Version <code>7cb71965-74c3-47f9-b589-75cf6d669edb</code> とdeployment <code>25be2258-b72a-4e2c-8bf1-ab47781c48dc</code> を復旧先として残し、現在はactive Version <code>5d160aed-7b27-48e6-b0a8-783534f97b6f</code> を100%配信して、runtimeの <code>USAGE_COLLECTION_ENABLED=true</code> と画面を監督下一時確認のため有効にしています。許可Originのpreflight <code>204</code>、無効なダミーTurnstile tokenの <code>403 turnstile_failed</code>、不許可OriginとOriginなしの <code>403</code> を確認し、D1は引き続き <code>0 / 0 / 0</code> です。Gitに保存する設定は <code>false</code> のまま、一般利用者向け限定中継も <code>RELAY_ENABLED=false</code> のままです。</p>
+        <p>端末プロフィールの第1段階では、最初の作成と日別記録に成功しましたが、成功後の再コールバックで誤ったエラーが表示されました。試験用プロフィール2件を削除した後の再確認では、接続確認は成功しましたが、「GlucoScopeを始める」の後にTurnstileが短く表示され、データ接続画面へ戻りました。D1の <code>profiles</code>、<code>usage_daily</code>、<code>event_receipts</code> は <code>0 / 0 / 0</code> のままで、利用プロフィールは作成されていません。停止Version <code>7cb71965-74c3-47f9-b589-75cf6d669edb</code> をdeployment <code>06aa2dbe-454b-45b8-859a-d8e5b9741a82</code> で直ちに100%へ戻し、runtimeを <code>USAGE_COLLECTION_ENABLED=false</code> としました。公開フロントの一時確認用gateはこの時点で <code>true</code> のままですが、Workerは停止中です。Gitに保存する設定は <code>false</code>、一般利用者向け限定中継も <code>RELAY_ENABLED=false</code> のままです。</p>
         <ol>
-          <li>ユーザー基盤の続き：再コールバック防止と簡素な接続画面を監督下一時確認で有効にし、開始・停止・再開・削除と小さな書き出しリンクを実機で確認</li>
+          <li>ユーザー基盤の続き：接続保存・待ち時間修正をWorker停止のまま公開版へ反映済み。まず開始後にユーザーモードへ進むことを監督下で再確認し、その後に作成・停止・再開・削除と小さな書き出しリンクを実機確認</li>
           <li>管理者ダッシュボード</li>
           <li>Plus 30日パスと支援導線</li>
           <li>ユーザー展開開始後の、横向きグラフ限定の常時表示モード</li>
