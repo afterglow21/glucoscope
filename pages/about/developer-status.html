@@ -78,9 +78,9 @@
 
       <div class="about-detail-mini-card">
         <div class="about-detail-mini-head"><span class="about-detail-mini-icon">🧭</span><h3><span class="about-detail-mini-title-en">Next Steps</span><span class="about-detail-mini-title-jp">次の課題</span></h3></div>
-        <p>端末プロフィールの第1段階では、最初の作成と日別記録に成功しましたが、成功後の再コールバックで誤ったエラーが表示されました。試験用プロフィール2件を削除した後の再確認では、接続確認は成功しましたが、「GlucoScopeを始める」の後にTurnstileが短く表示され、データ接続画面へ戻りました。D1の <code>profiles</code>、<code>usage_daily</code>、<code>event_receipts</code> は <code>0 / 0 / 0</code> のままで、利用プロフィールは作成されていません。停止Version <code>7cb71965-74c3-47f9-b589-75cf6d669edb</code> をdeployment <code>06aa2dbe-454b-45b8-859a-d8e5b9741a82</code> で直ちに100%へ戻し、runtimeを <code>USAGE_COLLECTION_ENABLED=false</code> としました。公開フロントの一時確認用gateはこの時点で <code>true</code> のままですが、Workerは停止中です。Gitに保存する設定は <code>false</code>、一般利用者向け限定中継も <code>RELAY_ENABLED=false</code> のままです。</p>
+        <p>端末プロフィールの第1段階では最初の作成と日別記録に成功しましたが、成功後の再コールバックで誤ったエラーが表示されました。試験用プロフィール2件を削除した後、2回の監督下確認ではどちらも接続確認まで成功したものの、「GlucoScopeを始める」と短いTurnstile表示の後に必須のデータ接続画面が再表示されました。2回目はUsage Version <code>5d160aed-7b27-48e6-b0a8-783534f97b6f</code> と限定中継Version <code>a398d59e-54c1-4b8d-a9a4-b779af360a54</code> を一時有効にし、D1の <code>profiles</code>、<code>usage_daily</code>、<code>event_receipts</code> は <code>0 / 0 / 0</code> のままでした。確認直後にUsageを停止Version <code>7cb71965-74c3-47f9-b589-75cf6d669edb</code>、限定中継を停止Version <code>635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a</code> へ戻しました。原因は、すでにユーザーモードの画面を不要に再読み込みし、SafariでsessionStorageの短期リレーチケットを使えない場合に、有効な接続adapterを復元できず必須画面を開くことでした。このリリースには、その場でconfigとadapterを有効にするローカルテスト合格済みの修正を含めています。監督下実機確認は未完了です。Gitに保存する設定は <code>false</code>、一般利用者向け限定中継も <code>RELAY_ENABLED=false</code> のままです。</p>
         <ol>
-          <li>ユーザー基盤の続き：接続保存・待ち時間修正をWorker停止のまま公開版へ反映済み。まず開始後にユーザーモードへ進むことを監督下で再確認し、その後に作成・停止・再開・削除と小さな書き出しリンクを実機確認</li>
+          <li>ユーザー基盤の続き：開始後に接続画面へ戻らないことを監督下で実機再確認。その後に作成・停止・再開・削除と小さな書き出しリンクを確認</li>
           <li>管理者ダッシュボード</li>
           <li>Plus 30日パスと支援導線</li>
           <li>ユーザー展開開始後の、横向きグラフ限定の常時表示モード</li>

@@ -59,10 +59,10 @@ function loadModule({
   search = "",
   endpoint = "https://relay.example",
   fetchImpl = globalThis.fetch,
-  turnstile = null
+  turnstile = null,
+  localStorage = createStorage(),
+  sessionStorage = createStorage()
 } = {}) {
-  const localStorage = createStorage();
-  const sessionStorage = createStorage();
   const { manager, directCalls } = createBaseManager();
   const meta = endpoint === null ? null : { content: endpoint };
   const elements = new Map();
@@ -193,6 +193,22 @@ test("relay tickets are saved only in sessionStorage and expire early by a safet
   });
   sessionStorage.setItem(context.GlucoScopeDataRelay.SESSION_KEY, raw);
   assert.equal(context.GlucoScopeDataRelay.readRelaySession(), null);
+});
+
+test("a relay ticket survives a fresh module load only while the same tab session is kept", () => {
+  const localStorage = createStorage();
+  const sessionStorage = createStorage();
+  const firstPage = loadModule({ localStorage, sessionStorage });
+  firstPage.context.GlucoScopeDataRelay._testing.saveRelaySession({
+    ticket: "r".repeat(40),
+    expiresAt: futureIso(60)
+  });
+
+  const sameTabReload = loadModule({ localStorage, sessionStorage });
+  assert.equal(sameTabReload.context.GlucoScopeDataRelay.readRelaySession()?.ticket, "r".repeat(40));
+
+  const lostTabSession = loadModule({ localStorage, sessionStorage: createStorage() });
+  assert.equal(lostTabSession.context.GlucoScopeDataRelay.readRelaySession(), null);
 });
 
 test("session creation sends only the Turnstile token and stores the returned relay ticket", async () => {

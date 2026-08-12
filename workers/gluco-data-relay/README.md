@@ -155,6 +155,15 @@ This completes the first basic end-to-end acceptance. Today/yesterday/7-day/30-d
 
 This completes the first basic Libre 2 end-to-end acceptance only. Historical comparison capture, extended periods, deletion, ticket expiry, limit behavior, and any continuing enablement remain separate gates.
 
+## Supervised user-flow retry — 2026-08-12
+
+- Usage Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` and relay Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` were temporarily enabled for a second supervised iPhone retry.
+- Relay connection testing succeeded. After `GlucoScopeを始める`, Usage Turnstile appeared briefly and the required data-connection screen reopened. Usage D1 remained `0 / 0 / 0`; no usage profile was created.
+- Usage was immediately returned to stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb`, and this relay was returned to stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` with `RELAY_ENABLED=false`.
+- Reproduction traced the screen return to an unnecessary already-user-mode reload. If Safari lost or could not access the sessionStorage relay ticket during that reload, the saved config had no active adapter and required setup reopened. This was a browser handoff failure after successful connection testing, not a new relay acceptance result.
+- This release activates the saved config and adapter in place for an already-user-mode page and retains full navigation from the public demo. Local tests pass; supervised device confirmation is pending.
+- No Secret value, Turnstile token, Gluroo URL, credential, glucose payload, relay ticket, display name, or profile identifier is recorded here.
+
 ## Safe activation sequence
 
 Each numbered boundary is independently reviewable. Steps 1 through 7 and the current/reload portion of step 8 are complete for the approved `workers.dev` target. Do not combine continuing live enablement with any remaining check in one unreviewed operation.
