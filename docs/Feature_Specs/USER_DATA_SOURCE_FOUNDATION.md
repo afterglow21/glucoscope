@@ -13,7 +13,9 @@ Gluroo support remains an interoperability proof of concept. GlucoScope does not
 
 ## User flow
 
-The following simplified flow and repeated-callback guard are implemented. Usage Worker Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` and the frontend enrollment gate were enabled for supervised re-acceptance. The connection test succeeded, but after `GlucoScopeを始める` and a brief Turnstile display, the data-connection screen returned. D1 remained `0 / 0 / 0`, so no usage profile was created. Stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` was immediately restored to 100% through deployment `06aa2dbe-454b-45b8-859a-d8e5b9741a82`. The checked-in Worker flag and runtime collection are `false`; the public frontend still has the supervised-candidate gate enabled at this checkpoint, and the general-user Limited Data Relay remains independently paused.
+The simplified flow, repeated-callback guard, robust connection storage, best-effort display-name storage, and bounded profile-create wait were published for supervised re-acceptance. A second iPhone attempt temporarily enabled Usage Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` and relay Version `a398d59e-54c1-4b8d-a9a4-b779af360a54`. The connection test succeeded, but after `GlucoScopeを始める` and a brief Turnstile display, the required data-connection screen returned. D1 remained `0 / 0 / 0`, so no usage profile was created. Usage and relay were immediately returned to stopped Versions `7cb71965-74c3-47f9-b589-75cf6d669edb` and `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a`. The checked-in kill switches remain false.
+
+Reproduction identified a browser handoff issue: an already-user-mode save unnecessarily reloaded the page. If Safari lost or could not access the sessionStorage relay ticket across that reload, initialization had saved connection configuration but no active relay adapter and reopened the required setup screen. This release activates the saved configuration and adapter in place when already in user mode; entry from the public demo keeps full navigation. Local tests pass; supervised device confirmation is pending.
 
 1. Open `user.html` or `index.html?mode=user`.
 2. Choose exactly one numbered route.
@@ -21,7 +23,7 @@ The following simplified flow and repeated-callback guard are implemented. Usage
 4. Enter a required display name. The display name does not need to be a real name. Directly below it, the form shows the short notice `表示名と基本的な利用回数を、GlucoScopeをよくするために記録します。血糖値や接続情報は記録しません。` with a `詳しく` link.
 5. Enter the Nightscout-compatible URL and an API Secret or read token when required, then run the connection test.
 6. After a successful test, pressing `GlucoScopeを始める` attempts to create the browser usage profile and saves the connection in browser local storage, or keeps it only for the current browser session. Failure of the usage-only Turnstile or Usage Worker must not block an otherwise verified CGM connection; in that case the connection starts with no usage profile and collection off. Gluroo relay consent, its separate Turnstile and signed ticket, destination validation, and browser-storage success remain fail-closed.
-7. GlucoScope reloads in user mode. Nightscout is read directly by the browser; Gluroo entries are read through Limited Data Relay using a short-lived session ticket.
+7. When setup already runs in user mode, GlucoScope activates the saved configuration and adapter in place without an unnecessary reload. Entry from the public demo uses full navigation into user mode. Nightscout is read directly by the browser; Gluroo entries are read through Limited Data Relay using a short-lived session ticket.
 
 The existing root `index.html` without `mode=user` remains Kazuma's public demo. Viewing that demo never requires a display name or usage profile. The Gluroo relay notice and confirmation remain a separate boundary because they explain transient processing of connection details; they must not be merged into or replaced by the usage-profile notice.
 
@@ -145,8 +147,10 @@ Connection errors, missing data, old data, and unsupported formats should be sho
 - Analytics remains disabled while either user connection storage key exists.
 - JavaScript syntax checks and adapter tests pass.
 - The repeated-callback guard and simplified lifecycle are enabled only for supervised re-acceptance; any broader rollout waits until Create, Stop, Resume, Delete, and the secondary export path pass.
+- Saving from an already-user-mode setup activates the saved config and adapter in place. It must not reopen required setup solely because a reload lost an otherwise valid in-memory relay ticket.
+- Entry from the public demo still performs full navigation into user mode.
 
-The updated public frontend keeps the verified connection as the core browser-storage operation, treats display-name-only storage as best effort, and gives usage-profile creation a bounded timeout. It was published while the Usage Worker remained stopped. Re-testing must first confirm that `GlucoScopeを始める` reaches user mode when usage-profile enrollment does not complete; the later lifecycle checks remain pending.
+The frontend keeps the verified connection as the core browser-storage operation, treats display-name-only storage as best effort, and gives usage-profile creation and updates bounded timeouts. This release includes the locally tested in-place activation fix. Supervised re-testing must first confirm that `GlucoScopeを始める` stays in user mode with an active adapter; the later lifecycle checks remain pending.
 
 ## Beginner-first onboarding rule
 

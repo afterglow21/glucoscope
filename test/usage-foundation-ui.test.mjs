@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import vm from "node:vm";
 import { readFile } from "node:fs/promises";
 
 const index = await readFile(new URL("../index.html", import.meta.url), "utf8");
@@ -102,29 +103,453 @@ test("connection save makes the dedicated usage check best-effort and generation
   const completeHandler = app.slice(completeStart, completeEnd);
   assert.equal((completeHandler.match(/usageProfileManager\?\.(?:start|updateProfile)\?\.\(/g) || []).length, 2);
   assert.match(completeHandler, /catch \(usageError\) \{[\s\S]*Continuing without a usage profile/);
-  assert.match(completeHandler, /const \{ displayNameStored \} = persistDataSourceBrowserState\(snapshot\)/);
+  assert.match(completeHandler, /const \{ displayNameStored, savedConfig \} = persistDataSourceBrowserState\(snapshot\)/);
   assert.match(completeHandler, /USAGE_PROFILE_ENABLED && displayNameStored && !skipUsageProfile/);
   assert.match(completeHandler, /setDataSourceTestStatus\(t\("dataSourceSaveStorageError"\), "error"\)/);
+  assert.match(completeHandler, /navigationStarted = navigateToSavedDataSource\(savedConfig\)/);
+  assert.match(completeHandler, /if \(ownsInFlightSave && !navigationStarted\) \{\s*setDataSourceSaveControlsDisabled\(false\)/s);
   assert.ok(
     completeHandler.indexOf("persistDataSourceBrowserState(snapshot)")
       < completeHandler.indexOf("usageProfileManager?.start?.(")
   );
   assert.ok(
     completeHandler.indexOf("usageProfileManager?.updateProfile?.(")
-      < completeHandler.indexOf("navigateToSavedDataSource()")
+      < completeHandler.indexOf("navigateToSavedDataSource(savedConfig)")
   );
   assert.doesNotMatch(completeHandler, /dataSourceUsageStartError/);
 
   const persistStart = app.indexOf("function persistDataSourceBrowserState");
-  const persistEnd = app.indexOf("async function completePendingDataSourceSave", persistStart);
+  const persistEnd = app.indexOf("function activateSavedDataSourceInPlace", persistStart);
   const persistHandler = app.slice(persistStart, persistEnd);
   assert.ok(
-    persistHandler.indexOf("dataSourceManager.saveUserConfig(snapshot.config")
+    persistHandler.indexOf("dataSourceManager.saveUserConfig(")
       < persistHandler.indexOf("localProfileManager?.save?.({ displayName: snapshot.displayName })")
   );
-  assert.match(persistHandler, /return \{ displayNameStored: false \}/);
-  assert.match(persistHandler, /return \{ displayNameStored: true \}/);
+  assert.match(persistHandler, /return \{ displayNameStored: false, savedConfig \}/);
+  assert.match(persistHandler, /return \{ displayNameStored: true, savedConfig \}/);
   assert.doesNotMatch(persistHandler, /throw error/);
+});
+
+test("an already-user-mode connection starts in place without losing its relay session", () => {
+  const activateStart = app.indexOf("function activateSavedDataSourceInPlace");
+  const activateEnd = app.indexOf("function navigateToSavedDataSource", activateStart);
+  const activateHandler = app.slice(activateStart, activateEnd);
+  const navigateStart = activateEnd;
+  const navigateEnd = app.indexOf("async function completePendingDataSourceSave", navigateStart);
+  const navigateHandler = app.slice(navigateStart, navigateEnd);
+
+  assert.match(activateHandler, /savedConfig\.provider === "gluroo"[\s\S]*readRelaySession\?\.\(\)/);
+  assert.match(activateHandler, /activeDataSourceConfig = savedConfig/);
+  assert.match(activateHandler, /activeDataSourceAdapter = savedAdapter/);
+  assert.match(activateHandler, /dialog\.dataset\.required = "false"[\s\S]*dialog\.hidden = true/);
+  assert.match(activateHandler, /updateDataSourceUiLabels\(\)/);
+  assert.match(activateHandler, /startDataRefresh\(\)/);
+
+  assert.match(
+    navigateHandler,
+    /if \(isUserDataSourceMode\(\)\) \{\s*activateSavedDataSourceInPlace\(savedConfig\);\s*return false;\s*\}/s
+  );
+  assert.doesNotMatch(navigateHandler, /location\.reload\(/);
+  assert.match(navigateHandler, /window\.location\.href = buildUserModeUrl\("glucose"\);\s*return true;/s);
+});
+
+test("in-place user activation keeps the relay session and starts data refresh at runtime", () => {
+  const activateStart = app.indexOf("function activateSavedDataSourceInPlace");
+  const navigateEnd = app.indexOf("async function completePendingDataSourceSave", activateStart);
+  const lifecycleFunctions = app.slice(activateStart, navigateEnd);
+  const dialog = { dataset: { required: "true" }, hidden: false };
+  const closeButton = { hidden: true };
+  const liveIndicatorAttributes = new Map();
+  const liveIndicator = {
+    title: "Gluroo checking",
+    focused: false,
+    setAttribute: (name, value) => liveIndicatorAttributes.set(name, value),
+    removeAttribute: (name) => liveIndicatorAttributes.delete(name),
+    addEventListener: () => {},
+    focus() { this.focused = true; }
+  };
+  const classNames = new Set(["data-source-dialog-open"]);
+  const calls = { reset: 0, refresh: 0, labels: 0, live: 0 };
+  const savedConfig = { mode: "user", provider: "gluroo", baseUrl: "https://example.test" };
+  const savedAdapter = { kind: "relay-adapter" };
+  const context = {
+    currentLanguage: "ja",
+    dataSourceManager: { createAdapter: (config) => config === savedConfig ? savedAdapter : null },
+    dataSourceDialogOpener: {},
+    activeDataSourceConfig: null,
+    activeDataSourceAdapter: null,
+    document: {
+      body: {
+        classList: {
+          add: (name) => classNames.add(name),
+          remove: (name) => classNames.delete(name)
+        }
+      },
+      getElementById(id) {
+        if (id === "dataSourceDialog") return dialog;
+        if (id === "dataSourceDialogClose") return closeButton;
+        if (id === "liveIndicator") return liveIndicator;
+        return null;
+      }
+    },
+    window: {
+      GlucoScopeDataRelay: { readRelaySession: () => ({ ticket: "kept-in-this-tab" }) },
+      location: { href: "https://example.test/?mode=user#glucose" },
+      requestAnimationFrame: (callback) => callback()
+    },
+    isUserDataSourceMode: () => true,
+    resetDataSourceDerivedUi: () => { calls.reset += 1; },
+    updateDataSourceUiLabels: () => { calls.labels += 1; },
+    getActiveDataSourceLabel: () => "Gluroo",
+    setLiveStatus: () => { calls.live += 1; },
+    updateHealthBar: () => {},
+    updateAiLetterControls: () => {},
+    startDataRefresh: () => { calls.refresh += 1; },
+    buildUserModeUrl: () => "https://example.test/?mode=user#glucose",
+    Error
+  };
+  vm.runInNewContext(`${lifecycleFunctions}\nthis.runNavigation = navigateToSavedDataSource;`, context);
+
+  assert.equal(context.runNavigation(savedConfig), false);
+  assert.equal(context.activeDataSourceConfig, savedConfig);
+  assert.equal(context.activeDataSourceAdapter, savedAdapter);
+  assert.equal(dialog.hidden, true);
+  assert.equal(dialog.dataset.required, "false");
+  assert.equal(closeButton.hidden, false);
+  assert.equal(classNames.has("data-source-dialog-open"), false);
+  assert.equal(calls.reset, 1);
+  assert.equal(calls.labels, 1);
+  assert.equal(calls.live, 1);
+  assert.equal(calls.refresh, 1);
+  assert.equal(liveIndicator.focused, true);
+  assert.equal(liveIndicatorAttributes.get("tabindex"), "-1");
+  assert.equal(liveIndicatorAttributes.has("aria-label"), false);
+  assert.equal(context.window.location.href, "https://example.test/?mode=user#glucose");
+
+  context.isUserDataSourceMode = () => false;
+  assert.equal(context.runNavigation(savedConfig), true);
+  assert.equal(context.window.location.href, "https://example.test/?mode=user#glucose");
+  assert.equal(calls.refresh, 1);
+});
+
+test("in-place activation clears the former source before a pending or failed refresh", async () => {
+  const resetStart = app.indexOf("function resetDataSourceDerivedUi");
+  const lifecycleEnd = app.indexOf("function navigateToSavedDataSource", resetStart);
+  const lifecycleFunctions = app.slice(resetStart, lifecycleEnd);
+
+  const makeClassList = (...initial) => {
+    const values = new Set(initial);
+    return {
+      values,
+      add: (...names) => names.forEach((name) => values.add(name)),
+      remove: (...names) => names.forEach((name) => values.delete(name)),
+      toggle(name, force) {
+        if (force === undefined ? !values.has(name) : force) values.add(name);
+        else values.delete(name);
+      }
+    };
+  };
+
+  const runScenario = (refreshResult) => {
+    const elements = new Map();
+    const makeElement = (id, textContent = "old") => {
+      const attributes = new Map();
+      const element = {
+        id,
+        textContent,
+        src: "old-source.png",
+        alt: "old source",
+        hidden: false,
+        title: "old source",
+        dataset: {},
+        classList: makeClassList("old-source"),
+        setAttribute(name, value) {
+          attributes.set(name, value);
+          if (name === "src") this.src = value;
+        },
+        getAttribute(name) {
+          if (name === "src") return this.src;
+          return attributes.get(name) ?? null;
+        },
+        removeAttribute: (name) => attributes.delete(name),
+        addEventListener: () => {},
+        focus: () => {},
+        closest: () => null
+      };
+      elements.set(id, element);
+      return element;
+    };
+
+    for (const [id, value] of [
+      ["glucoseValue", "188"], ["glucoseArrow", "↑"], ["glucoseDelta", "+8"], ["status", "OLD LIVE"],
+      ["lastUpdate", "old"], ["currentLastUpdate", "10:10"], ["graphLastUpdateValue", "old"],
+      ["headerUpdated", "1 min ago"], ["rangeStatus", "High"], ["unicornMomentBadge", "old"],
+      ["batteryStatus", "99%"], ["cloudStatus", "online"], ["scoreValue", "92"],
+      ["scoreReason", "Great"], ["scoreYesterdayDelta", "+4"], ["scoreSevenDayAverage", "88"],
+      ["tirValue", "80%"], ["tarValue", "15%"], ["tbrValue", "5%"], ["avgValue", "151"],
+      ["cvValue", "31%"], ["gmiValue", "6.9%"], ["chartRange", "old range"],
+      ["comparisonLegendItem", "old"], ["manualBolusLegendItem", "old"], ["autoBolusLegendItem", "old"],
+      ["comment", "old reflection"], ["commentGlucoNumber", "No. 50"],
+      ["commentGlucoLuckyBadge", "Lucky"], ["aiLetterResult", "old AI letter"],
+      ["liveIndicator", "old live"]
+    ]) makeElement(id, value);
+
+    const peek = makeElement("glucoPeekImage", "");
+    peek.dataset.defaultSrc = "default-peek.png";
+    peek.classList.add("is-unicorn");
+    const scoreImage = makeElement("scoreGlucoImage", "");
+    const commentImage = makeElement("commentGlucoImage", "");
+    const dialog = makeElement("dataSourceDialog", "");
+    dialog.dataset.required = "true";
+    dialog.hidden = false;
+    makeElement("dataSourceDialogClose", "").hidden = true;
+
+    const scoreMessage = makeElement("scoreMessage", "old score message");
+    const commentAvatar = makeElement("commentAvatar", "");
+    commentAvatar.classList.add("lucky-gluco", "unicorn-gluco");
+    const chart = { destroyed: false, destroy() { this.destroyed = true; } };
+    const newAdapter = { source: "new" };
+    const savedConfig = { provider: "gluroo", baseUrl: "https://example.test" };
+    const bodyClasses = makeClassList("data-source-dialog-open");
+
+    const context = {
+      currentLanguage: "ja",
+      currentLivePeriod: "today",
+      liveStatsRequestSequence: 10,
+      glucoseChart: chart,
+      latestRuleCommentMetrics: { source: "old" },
+      latestAiLetterSummary: { source: "old" },
+      aiLetterSummaryState: "ready",
+      aiLetterSummaryRangeIdentity: "old-range",
+      lastUnicornEvaluatedMeasurementKey: "old-reading",
+      activeUnicornGlucoDecision: { source: "old" },
+      activeDataSourceConfig: { provider: "old" },
+      activeDataSourceAdapter: { source: "old" },
+      dataSourceDialogOpener: {},
+      scoreGlucoImageByRank: { gentle: "gentle-score.png" },
+      dataSourceManager: { createAdapter: () => newAdapter },
+      document: {
+        body: { classList: bodyClasses },
+        getElementById: (id) => elements.get(id) || null,
+        querySelector(selector) {
+          if (selector === ".score-message") return scoreMessage;
+          if (selector === ".gluco-comment-avatar") return commentAvatar;
+          return null;
+        }
+      },
+      window: {
+        GlucoScopeDataRelay: { readRelaySession: () => ({ ticket: "valid" }) },
+        requestAnimationFrame: (callback) => callback()
+      },
+      t: (key) => key,
+      updateCurrentGlucoseColor: () => elements.get("glucoseValue").classList.remove("glucose-high", "glucose-low", "glucose-in-range"),
+      updateGlucoseDelta: () => { elements.get("glucoseDelta").textContent = "--"; },
+      updateHealthBar: () => {
+        elements.get("batteryStatus").textContent = "--";
+        elements.get("cloudStatus").textContent = "--";
+      },
+      updateScoreMetaDisplay: () => {
+        elements.get("scoreYesterdayDelta").textContent = "--";
+        elements.get("scoreSevenDayAverage").textContent = "--";
+      },
+      syncMobileRangeSummary: () => {},
+      showAiLetterResult: (value) => { elements.get("aiLetterResult").textContent = value; },
+      updateAiLetterControls: () => {},
+      updateDataSourceUiLabels: () => {},
+      getActiveDataSourceLabel: () => "Gluroo",
+      setLiveStatus: () => {},
+      startDataRefresh: () => refreshResult,
+      Error
+    };
+    vm.runInNewContext(`${lifecycleFunctions}\nthis.activate = activateSavedDataSourceInPlace;`, context);
+    context.activate(savedConfig);
+
+    assert.equal(chart.destroyed, true);
+    assert.equal(context.glucoseChart, null);
+    assert.equal(elements.get("glucoseValue").textContent, "--");
+    assert.equal(elements.get("graphLastUpdateValue").textContent, "--");
+    assert.equal(elements.get("scoreValue").textContent, "--");
+    assert.equal(elements.get("tirValue").textContent, "--%");
+    assert.equal(elements.get("chartRange").textContent, "--");
+    assert.equal(elements.get("comment").textContent, "dataSourceTesting");
+    assert.equal(elements.get("aiLetterResult").textContent, "");
+    assert.equal(elements.get("commentGlucoNumber").textContent, "No. --");
+    assert.equal(commentImage.src, "assets/gluco/live/gluco-live-01.png");
+    assert.equal(scoreImage.src, "gentle-score.png");
+    assert.equal(context.latestRuleCommentMetrics, null);
+    assert.equal(context.latestAiLetterSummary, null);
+    assert.equal(context.aiLetterSummaryRangeIdentity, "");
+    assert.equal(context.activeDataSourceAdapter, newAdapter);
+  };
+
+  const pendingRefresh = new Promise(() => {});
+  runScenario(pendingRefresh);
+
+  const failedRefresh = Promise.reject(new Error("new source unavailable"));
+  failedRefresh.catch(() => {});
+  runScenario(failedRefresh);
+});
+
+test("a cleared source never fabricates a zero glucose delta", () => {
+  const formatStart = app.indexOf("function formatGlucoseDelta");
+  const formatEnd = app.indexOf("function updateGlucoseDelta", formatStart);
+  const context = {};
+  vm.runInNewContext(`${app.slice(formatStart, formatEnd)}\nthis.formatDelta = formatGlucoseDelta;`, context);
+
+  assert.equal(context.formatDelta(null, null), "--");
+  assert.equal(context.formatDelta(undefined, 120), "--");
+  assert.equal(context.formatDelta("", 120), "--");
+  assert.equal(context.formatDelta(120, 120), "±0");
+});
+
+test("unavailable range metrics are not announced as zero", () => {
+  const parseStart = app.indexOf("function parseMetricPercentage");
+  const syncEnd = app.indexOf("const MOBILE_DISPLAY_MODE_KEY", parseStart);
+  const values = new Map([
+    ["#tirValue", { textContent: "--%" }],
+    ["#tarValue", { textContent: "--%" }],
+    ["#tbrValue", { textContent: "--%" }]
+  ]);
+  const styles = new Map();
+  const attributes = new Map();
+  const donut = {
+    style: { setProperty: (name, value) => styles.set(name, value) },
+    setAttribute: (name, value) => attributes.set(name, value)
+  };
+  const context = {
+    currentLanguage: "ja",
+    document: {
+      querySelector: (selector) => values.get(selector) || null,
+      getElementById: (id) => id === "mobileRangeDonut" ? donut : null
+    },
+    copyTextContent: () => {}
+  };
+  vm.runInNewContext(`${app.slice(parseStart, syncEnd)}\nthis.sync = syncMobileRangeSummary;`, context);
+
+  context.sync();
+  assert.equal(styles.get("--tir-angle"), "0deg");
+  assert.equal(styles.get("--tar-angle"), "0deg");
+  assert.equal(attributes.get("aria-label"), "血糖範囲データを確認中");
+
+  values.get("#tirValue").textContent = "80%";
+  values.get("#tarValue").textContent = "15%";
+  values.get("#tbrValue").textContent = "5%";
+  context.sync();
+  assert.equal(attributes.get("aria-label"), "TIR 80.0%, TAR 15.0%, TBR 5.0%");
+});
+
+test("public-demo data connection leaves analytics before accepting private connection fields", () => {
+  const entryStart = app.indexOf("function handleDataSourceEntry");
+  const entryEnd = app.indexOf("function setupDataSourceFoundation", entryStart);
+  const entryHandler = app.slice(entryStart, entryEnd);
+  const opened = [];
+  const opener = { id: "dataSourceButton" };
+  const context = {
+    window: { location: { href: "https://example.test/" } },
+    document: { activeElement: null },
+    isUserDataSourceMode: () => false,
+    buildUserModeUrl: () => "https://example.test/?mode=user#glucose",
+    hasActiveDataSource: () => false,
+    openDataSourceDialog: (options) => opened.push(options)
+  };
+  vm.runInNewContext(`${entryHandler}\nthis.runEntry = handleDataSourceEntry;`, context);
+
+  context.runEntry({ currentTarget: opener });
+  assert.equal(context.window.location.href, "https://example.test/?mode=user#glucose");
+  assert.deepEqual(opened, []);
+
+  context.isUserDataSourceMode = () => true;
+  context.runEntry({ currentTarget: opener });
+  assert.equal(opened.length, 1);
+  assert.equal(opened[0].required, true);
+  assert.equal(opened[0].opener, opener);
+});
+
+test("a late result from a replaced data-source adapter cannot update the new connection", async () => {
+  const latestStart = app.indexOf("async function loadLatestGlucose");
+  const latestEnd = app.indexOf("async function loadTreatmentEvents", latestStart);
+  const latestHandler = app.slice(latestStart, latestEnd);
+  const dailyStart = app.indexOf("async function loadDailyStats");
+  const dailyEnd = app.indexOf("function updateClock", dailyStart);
+  const dailyHandler = app.slice(dailyStart, dailyEnd);
+
+  assert.match(dailyHandler, /const requestedAdapter = activeDataSourceAdapter/);
+  assert.match(dailyHandler, /requestedAdapter !== activeDataSourceAdapter/);
+  assert.match(dailyHandler, /loadLatestGlucose\(requestedAdapter, isStaleRequest\)/);
+  assert.match(dailyHandler, /loadDeviceStatus\(requestedAdapter\)/);
+  assert.match(
+    dailyHandler,
+    /fetchEntriesInRange\(rangeStart, rangeEnd, periodRange\.count, requestedAdapter\)/
+  );
+  assert.match(dailyHandler, /loadTreatmentEvents\(rangeStart, rangeEnd, requestedAdapter\)/);
+  assert.ok(
+    latestHandler.indexOf("if (isStaleRequest()) return null;")
+      < latestHandler.indexOf("evaluateLatestUnicornEncounter")
+  );
+
+  const firstGuard = dailyHandler.indexOf("if (isStaleRequest()) return;");
+  const deviceRequest = dailyHandler.indexOf("loadDeviceStatus(requestedAdapter)");
+  const secondGuard = dailyHandler.indexOf("if (isStaleRequest()) return;", firstGuard + 1);
+  const firstUiMutation = dailyHandler.indexOf("updateHealthBar(latest, deviceStatus");
+  const rangeRequests = dailyHandler.indexOf("await Promise.all([");
+  const thirdGuard = dailyHandler.indexOf("if (isStaleRequest()) return;", secondGuard + 1);
+  const chartMutation = dailyHandler.indexOf("drawGlucoseChart(entries");
+  assert.ok(firstGuard < deviceRequest);
+  assert.ok(deviceRequest < secondGuard && secondGuard < firstUiMutation);
+  assert.ok(rangeRequests < thirdGuard && thirdGuard < chartMutation);
+
+  let resolveOldRequest;
+  let fetchCount = 0;
+  let activeAdapter;
+  const oldAdapter = {
+    fetchLatest() {
+      fetchCount += 1;
+      return new Promise((resolve) => {
+        resolveOldRequest = resolve;
+      });
+    }
+  };
+  const replacementAdapter = { kind: "replacement-adapter" };
+  activeAdapter = oldAdapter;
+
+  const effects = [];
+  const guardedElement = new Proxy({}, {
+    set(_target, property, value) {
+      effects.push({ type: "dom", property: String(property), value });
+      return true;
+    }
+  });
+  const recordEffect = (type) => () => { effects.push({ type }); };
+  const context = {
+    currentLanguage: "ja",
+    directionMap: { Flat: "→" },
+    document: { getElementById: () => guardedElement },
+    requireActiveDataSourceAdapter: () => activeAdapter,
+    updateCurrentGlucoseColor: recordEffect("glucose-color"),
+    updateGlucoseDelta: recordEffect("glucose-delta"),
+    updateCurrentGlucosePeek: recordEffect("glucose-peek"),
+    updateRangeStatus: recordEffect("range-status"),
+    updateHeaderUpdated: recordEffect("header-updated"),
+    updateHealthBar: recordEffect("health-bar"),
+    setLiveStatus: recordEffect("live-status"),
+    evaluateLatestUnicornEncounter: recordEffect("memory-evaluation"),
+    renderUnicornGlucoDecision: recordEffect("memory-storage"),
+    getLocalDateKey: () => "2026-08-12",
+    getActiveDataSourceLabel: () => "Gluroo",
+    formatDateTime: () => "formatted",
+    t: (key) => key
+  };
+  vm.runInNewContext(`${latestHandler}\nthis.runLatest = loadLatestGlucose;`, context);
+
+  const pending = context.runLatest(oldAdapter, () => activeAdapter !== oldAdapter);
+  activeAdapter = replacementAdapter;
+  resolveOldRequest({
+    data: [{ sgv: 123, date: Date.now(), direction: "Flat" }]
+  });
+
+  assert.equal(await pending, null);
+  assert.equal(fetchCount, 1);
+  assert.deepEqual(effects, []);
 });
 
 test("busy connection saves block destructive controls and stale callbacks", () => {
@@ -177,8 +602,8 @@ test("AI usage is recorded only for a completed new OpenAI generation", () => {
 test("local display-name storage remains network-free and server sync is separate", () => {
   assert.doesNotMatch(localProfile, /\b(?:fetch|XMLHttpRequest|sendBeacon|WebSocket)\b/u);
   assert.match(index, /js\/local-profile\.js\?v=20260811-usage-profile-stage-1/);
-  assert.match(index, /js\/usage-client\.js\?v=20260812-safari-save-1/);
-  assert.match(index, /js\/app\.js\?v=20260812-safari-save-1/);
+  assert.match(index, /js\/usage-client\.js\?v=20260812-in-place-start-1/);
+  assert.match(index, /js\/app\.js\?v=20260812-in-place-start-1/);
   assert.match(app, /updateUsageProfileDisplayName\(result\.profile\.displayName\)/);
   assert.doesNotMatch(app, /handleLocalProfileDelete|localProfileDeleteButton/);
   assert.match(app, /if \(!state\.enabled \|\| !state\.registered\) return;/);

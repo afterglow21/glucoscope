@@ -2,7 +2,7 @@
 
 This directory contains a dedicated, dependency-light Cloudflare Worker and D1 schema for minimal device-profile usage counts.
 
-The stopped production foundation was created and verified on 2026-08-11. On 2026-08-12 JST, corrected Version `858cf438-b3d2-4a8c-801c-344503e0c58e` was used for a supervised device check. Profile creation succeeded, but a repeated callback after Turnstile reset produced a false error display after that success. The 2 known test profiles were later deleted, and the cascading deletion left `profiles`, `usage_daily`, and `event_receipts` at `0 / 0 / 0`. Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` and frontend enrollment were then enabled for supervised re-acceptance. The connection test succeeded, but pressing `GlucoScopeを始める` returned to the data-connection screen after a brief Turnstile display, and D1 remained `0 / 0 / 0`. Clean stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` was immediately restored to 100% through deployment `06aa2dbe-454b-45b8-859a-d8e5b9741a82`. Runtime and checked-in collection are now `false`; the public frontend still has the supervised-candidate gate enabled at this checkpoint, and the separate general-user relay remains `RELAY_ENABLED=false`.
+The stopped production foundation was created and verified on 2026-08-11. On 2026-08-12 JST, corrected Version `858cf438-b3d2-4a8c-801c-344503e0c58e` was used for a supervised device check. Profile creation succeeded, but a repeated callback after Turnstile reset produced a false error display after that success. The 2 known test profiles were later deleted, and the cascading deletion left `profiles`, `usage_daily`, and `event_receipts` at `0 / 0 / 0`. Two later supervised iPhone attempts reached a successful glucose connection test but returned to required setup after `GlucoScopeを始める`; both left D1 at `0 / 0 / 0`. After the second attempt, Usage and relay were immediately returned to stopped Versions `7cb71965-74c3-47f9-b589-75cf6d669edb` and `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a`. Runtime and checked-in collection are now `false`, and the general-user relay is `RELAY_ENABLED=false`.
 
 ## Stopped production checkpoint (2026-08-11)
 
@@ -39,8 +39,11 @@ This checkpoint verifies a reachable but stopped production shell. It does not a
 - Allowed-origin preflight returned `204`; an allowed-origin profile request with an invalid dummy Turnstile token returned `403 turnstile_failed`; wrong-origin and originless requests returned `403`.
 - D1 remained `0 / 0 / 0` after these boundary checks. No real profile was created by the dummy request.
 - The real-device connection test succeeded. After `GlucoScopeを始める` and a brief Turnstile display, the data-connection screen returned. D1 still contained `0 / 0 / 0`, confirming that no usage profile or daily record was created.
-- Stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` now receives 100% of production traffic through deployment `06aa2dbe-454b-45b8-859a-d8e5b9741a82`, with runtime `USAGE_COLLECTION_ENABLED=false`.
+- After the first attempt, stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` was restored to 100% of production traffic through deployment `06aa2dbe-454b-45b8-859a-d8e5b9741a82`, with runtime `USAGE_COLLECTION_ENABLED=false`.
 - The checked-in `wrangler.jsonc` remains `USAGE_COLLECTION_ENABLED=false`. The public frontend still has the supervised-candidate gate enabled at this checkpoint, while the general-user relay remains independently stopped at `RELAY_ENABLED=false`.
+- A second iPhone retry temporarily enabled this same Usage Version and relay Version `a398d59e-54c1-4b8d-a9a4-b779af360a54`. The connection test again succeeded, but a brief Turnstile display was followed by the required data-connection screen. D1 remained `0 / 0 / 0`.
+- Usage was immediately returned to stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb`, and the relay to stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a`.
+- Reproduction identified an unnecessary reload in the already-user-mode save path. When Safari lost or could not access the sessionStorage relay ticket across that reload, initialization had saved config but no active adapter and reopened required setup. This release activates config and adapter in place for user mode while retaining full navigation from the public demo. Local tests pass; supervised device confirmation is pending.
 
 ## Boundary
 
@@ -189,8 +192,8 @@ There is intentionally no real `deploy` npm script.
 
 ## Current supervised acceptance steps
 
-1. Keep the Worker stopped while the updated public frontend is verified. It makes core connection storage robust, treats display-name-only storage as best effort, and applies a bounded timeout to profile creation. Keep Gluroo relay confirmation as a separate boundary.
-2. Starting from the clean `0 / 0 / 0` D1 baseline, first recheck that `GlucoScopeを始める` reaches user mode when usage enrollment does not complete. Then check profile creation without a false callback error, followed by stop, resume, deletion, and the secondary allowlisted-export link on one user-controlled device.
+1. Keep both Workers stopped while the tested in-place activation fix is published. Keep Gluroo relay confirmation as a separate boundary.
+2. Starting from the clean `0 / 0 / 0` D1 baseline, first recheck that `GlucoScopeを始める` keeps the existing user-mode page and active adapter without a reload. Then check profile creation without a false callback error, followed by stop, resume, deletion, and the secondary allowlisted-export link on one user-controlled device.
 3. Only after those checks, decide separately whether to resume a small rollout. Keep the general-user relay independent at `RELAY_ENABLED=false`.
 
 Secret values, profile tokens, display names, and production database content must never be copied into Git, command arguments, screenshots, logs, fixtures, or support messages.

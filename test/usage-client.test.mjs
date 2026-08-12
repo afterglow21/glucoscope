@@ -430,6 +430,48 @@ test("an in-flight visit cannot restore collection after a failed stop", async (
   assert.equal(api.getState().collectionEnabled, false);
 });
 
+test("a profile PATCH times out without accepting a late resume response", async () => {
+  const storage = createStorage({
+    [STORAGE_KEY]: stored({ collectionEnabled: false })
+  });
+  let requestSignal;
+  let sawTimeoutDelay = false;
+  const { api } = loadModule({
+    storage,
+    setTimeoutImpl(callback, delay) {
+      assert.equal(delay, 10_000);
+      sawTimeoutDelay = true;
+      queueMicrotask(callback);
+      return 29;
+    },
+    clearTimeoutImpl(id) {
+      assert.equal(id, 29);
+    },
+    fetchImpl: async (_url, init) => {
+      requestSignal = init.signal;
+      return new Promise((resolve) => {
+        init.signal.addEventListener("abort", () => {
+          // Model a response that becomes available after cancellation. The
+          // request layer must still report the timeout and ignore its state.
+          resolve(Response.json({
+            ok: true,
+            profile: { collectionEnabled: true }
+          }));
+        }, { once: true });
+      });
+    }
+  });
+  configure(api);
+
+  const result = await api.updateProfile({ collectionEnabled: true });
+  assert.equal(sawTimeoutDelay, true);
+  assert.equal(requestSignal.aborted, true);
+  assert.equal(result.ok, false);
+  assert.equal(result.error, "request_timeout");
+  assert.equal(JSON.parse(storage.getItem(STORAGE_KEY)).collectionEnabled, false);
+  assert.equal(api.getState().collectionEnabled, false);
+});
+
 test("an in-flight AI failure cannot recreate a profile after deletion", async () => {
   const storage = createStorage({ [STORAGE_KEY]: stored() });
   let rejectAi;

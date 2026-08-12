@@ -1321,7 +1321,10 @@ function setDataSourceSaveControlsDisabled(disabled) {
 function persistDataSourceBrowserState(snapshot) {
   // The verified glucose connection is required. Save it first so a failure
   // limited to the separate local display-name helper cannot discard it.
-  dataSourceManager.saveUserConfig(snapshot.config, { persist: snapshot.persist });
+  const savedConfig = dataSourceManager.saveUserConfig(
+    snapshot.config,
+    { persist: snapshot.persist }
+  );
   clearDataSourceSpecificBrowserState();
 
   const localResult = localProfileManager?.save?.({ displayName: snapshot.displayName });
@@ -1330,22 +1333,187 @@ function persistDataSourceBrowserState(snapshot) {
       "Continuing without a locally saved display name",
       localResult?.error || "display_name_save_failed"
     );
-    return { displayNameStored: false };
+    return { displayNameStored: false, savedConfig };
   }
 
-  return { displayNameStored: true };
+  return { displayNameStored: true, savedConfig };
 }
 
-function navigateToSavedDataSource() {
-  // user.html already opens this exact user-mode URL. Assigning the same URL
-  // may be treated as a same-document navigation, so reload explicitly after
-  // saving. This lets the newly stored connection become the active source.
-  if (isUserDataSourceMode()) {
-    window.location.reload();
-    return;
+function resetDataSourceDerivedUi() {
+  // Invalidate the old source immediately. The next adapter may be slow or
+  // unavailable, so none of its provider label may sit beside the former
+  // source's glucose, graph, reflection, Gluco, or AI result while we wait.
+  liveStatsRequestSequence += 1;
+
+  const chartToDestroy = glucoseChart;
+  glucoseChart = null;
+  try {
+    chartToDestroy?.destroy?.();
+  } catch (error) {
+    console.warn("Could not clear the previous glucose chart", error);
   }
 
+  const setText = (id, text) => {
+    const element = document.getElementById(id);
+    if (element) element.textContent = text;
+  };
+
+  setText("glucoseValue", "--");
+  setText("glucoseArrow", "--");
+  setText("status", t("dataSourceTesting"));
+  setText("lastUpdate", "--");
+  setText("currentLastUpdate", "--");
+  setText("graphLastUpdateValue", "--");
+  setText("headerUpdated", "--");
+  updateCurrentGlucoseColor(null);
+  updateGlucoseDelta(null, null);
+
+  const rangeStatus = document.getElementById("rangeStatus");
+  if (rangeStatus) {
+    rangeStatus.classList.remove("in-range", "above-range", "below-range");
+    rangeStatus.textContent = "--";
+  }
+
+  const peekImage = document.getElementById("glucoPeekImage");
+  if (peekImage) {
+    const defaultSrc = peekImage.dataset.defaultSrc;
+    if (defaultSrc) peekImage.setAttribute("src", defaultSrc);
+    peekImage.classList.remove("is-unicorn");
+    peekImage.closest(".gluco-peek-decor")?.classList.remove("is-unicorn-moment");
+    peekImage.closest(".hero-current-card")?.classList.remove("is-unicorn-moment");
+  }
+  const unicornMomentBadge = document.getElementById("unicornMomentBadge");
+  if (unicornMomentBadge) unicornMomentBadge.hidden = true;
+  updateHealthBar(null, null, "waiting");
+
+  setText("scoreValue", "--");
+  setText("scoreReason", "--");
+  updateScoreMetaDisplay(null, null, null, currentLivePeriod);
+  const scoreMessage = document.querySelector(".score-message");
+  if (scoreMessage) scoreMessage.textContent = "";
+  const scoreImage = document.getElementById("scoreGlucoImage");
+  if (scoreImage) scoreImage.src = scoreGlucoImageByRank.gentle;
+
+  setText("tirValue", "--%");
+  setText("tarValue", "--%");
+  setText("tbrValue", "--%");
+  setText("avgValue", "--");
+  setText("cvValue", "--%");
+  setText("gmiValue", "--%");
+  syncMobileRangeSummary();
+
+  setText("chartRange", "--");
+  ["comparisonLegendItem", "manualBolusLegendItem", "autoBolusLegendItem"].forEach((id) => {
+    const legendItem = document.getElementById(id);
+    if (legendItem) legendItem.hidden = true;
+  });
+
+  latestRuleCommentMetrics = null;
+  setText("comment", t("dataSourceTesting"));
+  const commentImage = document.getElementById("commentGlucoImage");
+  if (commentImage) {
+    commentImage.src = "assets/gluco/live/gluco-live-01.png";
+    commentImage.alt = "";
+  }
+  const commentNumber = document.getElementById("commentGlucoNumber");
+  if (commentNumber) {
+    commentNumber.textContent = "No. --";
+    commentNumber.classList.remove("lucky-gluco", "unicorn-gluco");
+  }
+  document.querySelector(".gluco-comment-avatar")?.classList.remove("lucky-gluco", "unicorn-gluco");
+  const commentBadge = document.getElementById("commentGlucoLuckyBadge");
+  if (commentBadge) {
+    commentBadge.hidden = true;
+    commentBadge.classList.remove("unicorn-gluco");
+  }
+  lastUnicornEvaluatedMeasurementKey = null;
+  activeUnicornGlucoDecision = null;
+
+  latestAiLetterSummary = null;
+  aiLetterSummaryState = "loading";
+  aiLetterSummaryRangeIdentity = "";
+  showAiLetterResult("");
+  updateAiLetterControls();
+}
+
+function activateSavedDataSourceInPlace(savedConfig) {
+  if (!savedConfig) {
+    const error = new Error("The saved data source could not be read.");
+    error.code = "data_source_storage_failed";
+    throw error;
+  }
+
+  if (
+    savedConfig.provider === "gluroo"
+    && !window.GlucoScopeDataRelay?.readRelaySession?.()
+  ) {
+    const error = new Error("The Gluroo relay session is no longer available.");
+    error.code = "relay_ticket_required";
+    throw error;
+  }
+
+  const savedAdapter = dataSourceManager.createAdapter(savedConfig);
+  resetDataSourceDerivedUi();
+  activeDataSourceConfig = savedConfig;
+  activeDataSourceAdapter = savedAdapter;
+  document.body.classList.add("user-data-source-mode");
+
+  const dialog = document.getElementById("dataSourceDialog");
+  if (dialog) {
+    dialog.dataset.required = "false";
+    dialog.hidden = true;
+  }
+  document.body.classList.remove("data-source-dialog-open");
+  const closeButton = document.getElementById("dataSourceDialogClose");
+  if (closeButton) closeButton.hidden = false;
+  dataSourceDialogOpener = null;
+
+  updateDataSourceUiLabels();
+  const providerLabel = getActiveDataSourceLabel();
+  setLiveStatus(
+    "pending",
+    "CHECKING",
+    currentLanguage === "en"
+      ? `Checking the latest data from ${providerLabel}`
+      : `${providerLabel}の最新データを確認中`
+  );
+  updateHealthBar(null, null, "waiting");
+  updateAiLetterControls();
+  startDataRefresh();
+
+  // Move keyboard and VoiceOver focus out of the now-hidden setup dialog.
+  // The live indicator describes the next visible state without adding a
+  // permanent stop to the normal tab order.
+  const focusTarget = document.getElementById("liveIndicator");
+  if (focusTarget) {
+    focusTarget.setAttribute("tabindex", "-1");
+    focusTarget.setAttribute("aria-label", focusTarget.title || providerLabel);
+    focusTarget.addEventListener("blur", () => {
+      focusTarget.removeAttribute("tabindex");
+      focusTarget.removeAttribute("aria-label");
+    }, { once: true });
+    window.requestAnimationFrame(() => {
+      focusTarget.focus({ preventScroll: true });
+      focusTarget.removeAttribute("aria-label");
+    });
+  } else {
+    window.requestAnimationFrame(() => document.getElementById("dataSourceButton")?.focus());
+  }
+}
+
+function navigateToSavedDataSource(savedConfig) {
+  // The normal guide flow is already in user mode. Starting in place keeps
+  // the short-lived Gluroo ticket in the same Safari page lifecycle instead
+  // of depending on sessionStorage surviving an otherwise unnecessary reload.
+  if (isUserDataSourceMode()) {
+    activateSavedDataSourceInPlace(savedConfig);
+    return false;
+  }
+
+  // A public-demo page must still reload into user mode so its public Web
+  // Analytics loader cannot remain active beside a personal data connection.
   window.location.href = buildUserModeUrl("glucose");
+  return true;
 }
 
 async function completePendingDataSourceSave(
@@ -1372,7 +1540,7 @@ async function completePendingDataSourceSave(
     // Required browser state is committed before any optional usage-profile
     // request. A storage failure therefore cannot leave a remote profile
     // without the glucose connection the person just verified.
-    const { displayNameStored } = persistDataSourceBrowserState(snapshot);
+    const { displayNameStored, savedConfig } = persistDataSourceBrowserState(snapshot);
 
     const state = getUsageProfileState();
     if (USAGE_PROFILE_ENABLED && displayNameStored && !skipUsageProfile) {
@@ -1396,8 +1564,7 @@ async function completePendingDataSourceSave(
     }
 
     if (!isCurrentPendingDataSourceSave(generation) || dataSourceSaveInFlightGeneration !== generation) return;
-    navigateToSavedDataSource();
-    navigationStarted = true;
+    navigationStarted = navigateToSavedDataSource(savedConfig);
     pendingDataSourceSave = null;
   } catch (error) {
     console.warn("Could not save required data source setup", error?.code || error?.message);
@@ -1495,6 +1662,21 @@ function showDataSourceSetupRequiredState() {
   updateAiLetterControls();
 }
 
+function handleDataSourceEntry(event) {
+  // Public-demo pages may load aggregate Web Analytics. Leave that document
+  // before a person can type a private connection URL or credential. The
+  // user-mode page opens the required setup dialog automatically.
+  if (!isUserDataSourceMode()) {
+    window.location.href = buildUserModeUrl("glucose");
+    return;
+  }
+
+  openDataSourceDialog({
+    required: !hasActiveDataSource(),
+    opener: event?.currentTarget || document.activeElement
+  });
+}
+
 function setupDataSourceFoundation() {
   const dialog = document.getElementById("dataSourceDialog");
   const form = document.getElementById("dataSourceForm");
@@ -1504,12 +1686,8 @@ function setupDataSourceFoundation() {
     document.getElementById("dataSourceSecret")
   ].filter(Boolean);
 
-  document.getElementById("dataSourceButton")?.addEventListener("click", () => {
-    openDataSourceDialog({ required: isUserDataSourceMode() && !hasActiveDataSource() });
-  });
-  document.getElementById("mobileDataSourceButton")?.addEventListener("click", () => {
-    openDataSourceDialog({ required: isUserDataSourceMode() && !hasActiveDataSource() });
-  });
+  document.getElementById("dataSourceButton")?.addEventListener("click", handleDataSourceEntry);
+  document.getElementById("mobileDataSourceButton")?.addEventListener("click", handleDataSourceEntry);
   document.getElementById("dataSourceDialogClose")?.addEventListener("click", closeDataSourceDialog);
   document.getElementById("dataSourceGlurooChoice")?.addEventListener("click", () => selectDataSourceProvider("gluroo"));
   document.getElementById("dataSourceNightscoutChoice")?.addEventListener("click", () => selectDataSourceProvider("nightscout"));
@@ -3699,8 +3877,11 @@ function updateCurrentGlucoseColor(glucose) {
   const glucoseValue = document.getElementById("glucoseValue");
   if (!glucoseValue) return;
 
-  const value = Number(glucose);
   glucoseValue.classList.remove("glucose-high", "glucose-low", "glucose-in-range");
+
+  if (glucose === null || glucose === undefined || glucose === "") return;
+
+  const value = Number(glucose);
 
   if (!Number.isFinite(value)) return;
 
@@ -3742,6 +3923,11 @@ function updateRangeStatus(glucose) {
 }
 
 function formatGlucoseDelta(latestValue, previousValue) {
+  if (
+    latestValue === null || latestValue === undefined || latestValue === ""
+    || previousValue === null || previousValue === undefined || previousValue === ""
+  ) return "--";
+
   const latest = Number(latestValue);
   const previous = Number(previousValue);
 
@@ -5974,22 +6160,34 @@ function updateHealthBar(latestEntry = null, deviceStatus = null, connectionStat
   }
 }
 
-async function loadDeviceStatus() {
-  const result = await requireActiveDataSourceAdapter().fetchDeviceStatus();
+async function loadDeviceStatus(adapter = requireActiveDataSourceAdapter()) {
+  const result = await adapter.fetchDeviceStatus();
   return Array.isArray(result?.data) ? result.data : [];
 }
 
-async function fetchEntriesInRange(rangeStart, rangeEnd, count = 1000) {
-  const result = await requireActiveDataSourceAdapter().fetchEntries(rangeStart, rangeEnd, count);
+async function fetchEntriesInRange(
+  rangeStart,
+  rangeEnd,
+  count = 1000,
+  adapter = requireActiveDataSourceAdapter()
+) {
+  const result = await adapter.fetchEntries(rangeStart, rangeEnd, count);
   return Array.isArray(result?.data) ? result.data : [];
 }
 
-async function loadLatestGlucose() {
+async function loadLatestGlucose(
+  adapter = requireActiveDataSourceAdapter(),
+  isStaleRequest = () => false
+) {
   const glucoseValue = document.getElementById("glucoseValue");
   const glucoseArrow = document.getElementById("glucoseArrow");
   const status = document.getElementById("status");
   const lastUpdate = document.getElementById("lastUpdate");
-  const result = await requireActiveDataSourceAdapter().fetchLatest(2);
+  const result = await adapter.fetchLatest(2);
+  // A connection can be replaced in place while an older request is still
+  // awaiting its source. Never let that result update the new connection's
+  // display or collect a Gluco memory.
+  if (isStaleRequest()) return null;
   const data = Array.isArray(result?.data) ? result.data : [];
 
   if (!data.length) {
@@ -6069,8 +6267,12 @@ async function loadLatestGlucose() {
   return latest;
 }
 
-async function loadTreatmentEvents(rangeStart, rangeEnd) {
-  const result = await requireActiveDataSourceAdapter().fetchTreatments(rangeStart, rangeEnd, 1000);
+async function loadTreatmentEvents(
+  rangeStart,
+  rangeEnd,
+  adapter = requireActiveDataSourceAdapter()
+) {
+  const result = await adapter.fetchTreatments(rangeStart, rangeEnd, 1000);
   const treatments = Array.isArray(result?.data) ? result.data : [];
 
   return treatments.filter((treatment) => {
@@ -6100,6 +6302,7 @@ async function loadDailyStats() {
     return;
   }
 
+  const requestedAdapter = activeDataSourceAdapter;
   const requestSequence = ++liveStatsRequestSequence;
   const requestedPeriod = currentLivePeriod;
   const now = Date.now();
@@ -6110,6 +6313,7 @@ async function loadDailyStats() {
   const isStaleRequest = () => (
     requestSequence !== liveStatsRequestSequence
     || requestedPeriod !== currentLivePeriod
+    || requestedAdapter !== activeDataSourceAdapter
   );
 
   if (aiLetterSummaryRangeIdentity !== requestedSummaryIdentity) {
@@ -6119,8 +6323,9 @@ async function loadDailyStats() {
   }
 
   try {
-    const latest = await loadLatestGlucose();
-    const deviceStatus = await loadDeviceStatus().catch(() => []);
+    const latest = await loadLatestGlucose(requestedAdapter, isStaleRequest);
+    if (isStaleRequest()) return;
+    const deviceStatus = await loadDeviceStatus(requestedAdapter).catch(() => []);
 
     if (isStaleRequest()) return;
 
@@ -6135,10 +6340,17 @@ async function loadDailyStats() {
     updateChartRangeLabel(rangeStart, rangeEnd);
 
     const [entriesRaw, previousEntriesRaw, sevenDayEntriesRaw, treatmentsRaw] = await Promise.all([
-      fetchEntriesInRange(rangeStart, rangeEnd, periodRange.count),
-      fetchEntriesInRange(previousRangeStart, previousRangeEnd, Math.min(periodRange.count, 3000)),
-      fetchEntriesInRange(sevenDaysAgo, now, 3000),
-      showTreatmentsForRange ? loadTreatmentEvents(rangeStart, rangeEnd) : Promise.resolve([])
+      fetchEntriesInRange(rangeStart, rangeEnd, periodRange.count, requestedAdapter),
+      fetchEntriesInRange(
+        previousRangeStart,
+        previousRangeEnd,
+        Math.min(periodRange.count, 3000),
+        requestedAdapter
+      ),
+      fetchEntriesInRange(sevenDaysAgo, now, 3000, requestedAdapter),
+      showTreatmentsForRange
+        ? loadTreatmentEvents(rangeStart, rangeEnd, requestedAdapter)
+        : Promise.resolve([])
     ]);
 
     if (isStaleRequest()) return;
@@ -6519,7 +6731,7 @@ function copyHtmlContent(targetId, sourceSelector, fallback = "--") {
 
 function parseMetricPercentage(selector) {
   const value = Number.parseFloat(document.querySelector(selector)?.textContent || "");
-  return Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0;
+  return Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : null;
 }
 
 function syncMobileRangeSummary() {
@@ -6529,9 +6741,18 @@ function syncMobileRangeSummary() {
   const donut = document.getElementById("mobileRangeDonut");
 
   if (donut) {
-    donut.style.setProperty("--tir-angle", `${tir * 3.6}deg`);
-    donut.style.setProperty("--tar-angle", `${Math.min(100, tir + tar) * 3.6}deg`);
-    donut.setAttribute("aria-label", `TIR ${tir.toFixed(1)}%, TAR ${tar.toFixed(1)}%, TBR ${tbr.toFixed(1)}%`);
+    if ([tir, tar, tbr].every(Number.isFinite)) {
+      donut.style.setProperty("--tir-angle", `${tir * 3.6}deg`);
+      donut.style.setProperty("--tar-angle", `${Math.min(100, tir + tar) * 3.6}deg`);
+      donut.setAttribute("aria-label", `TIR ${tir.toFixed(1)}%, TAR ${tar.toFixed(1)}%, TBR ${tbr.toFixed(1)}%`);
+    } else {
+      donut.style.setProperty("--tir-angle", "0deg");
+      donut.style.setProperty("--tar-angle", "0deg");
+      donut.setAttribute(
+        "aria-label",
+        currentLanguage === "en" ? "Glucose range data unavailable" : "血糖範囲データを確認中"
+      );
+    }
   }
 
   copyTextContent("mobileRangeTirValue", "#tirValue");

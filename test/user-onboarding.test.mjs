@@ -19,7 +19,7 @@ const guardianGuide = await readFile(new URL("../guides/guardian-monitor/index.h
 test("public data connection remains clickable while clearly marked under construction", () => {
   assert.match(index, /データ接続（工事中）/);
   assert.match(index, /Gluroo接続はまだ限定テスト中/);
-  assert.match(index, /js\/app\.js\?v=20260812-safari-save-1/);
+  assert.match(index, /js\/app\.js\?v=20260812-in-place-start-1/);
   assert.match(app, /dataSourceButtonDemo: "データ接続（工事中）"/);
   assert.match(app, /dataSourceDialogTitle: "Data connection \(under construction\)"/);
   assert.doesNotMatch(index, /id="dataSourceButton"[^>]+disabled/);
@@ -321,14 +321,16 @@ test("verified connection can start user mode from the onboarding button", () =>
   const persistEnd = app.indexOf("async function completePendingDataSourceSave", persistStart);
   const persistHandler = app.slice(persistStart, persistEnd);
   assert.match(persistHandler, /localProfileManager\?\.save\?\.\(\{ displayName: snapshot\.displayName \}\)/);
-  assert.match(persistHandler, /dataSourceManager\.saveUserConfig\(snapshot\.config/);
+  assert.match(persistHandler, /dataSourceManager\.saveUserConfig\(\s*snapshot\.config/);
   assert.ok(
-    persistHandler.indexOf("dataSourceManager.saveUserConfig(snapshot.config")
+    persistHandler.indexOf("dataSourceManager.saveUserConfig(")
       < persistHandler.indexOf("localProfileManager?.save?.({ displayName: snapshot.displayName })")
   );
-  assert.match(persistHandler, /return \{ displayNameStored: false \}/);
-  assert.match(persistHandler, /if \(isUserDataSourceMode\(\)\) \{[\s\S]*window\.location\.reload\(\)/);
-  assert.match(persistHandler, /window\.location\.href = buildUserModeUrl\("glucose"\)/);
+  assert.match(persistHandler, /return \{ displayNameStored: false, savedConfig \}/);
+  assert.match(persistHandler, /function activateSavedDataSourceInPlace\(savedConfig\)/);
+  assert.match(persistHandler, /if \(isUserDataSourceMode\(\)\) \{\s*activateSavedDataSourceInPlace\(savedConfig\);\s*return false;/s);
+  assert.doesNotMatch(persistHandler, /window\.location\.reload\(\)/);
+  assert.match(persistHandler, /window\.location\.href = buildUserModeUrl\("glucose"\);\s*return true;/s);
 });
 
 test("data connection dialog traps focus and restores its opener", () => {
@@ -487,7 +489,7 @@ test("Guardian Monitor top navigation returns to the route chooser", () => {
   assert.doesNotMatch(topbar, /source=gluroo/);
 });
 
-test("a successful save preserves the current relay ticket for the reload", () => {
+test("a successful save does not clear the current relay ticket before in-place start", () => {
   const clearStart = app.indexOf("function clearDataSourceSpecificBrowserState");
   const clearEnd = app.indexOf("function buildUserModeUrl", clearStart);
   const clearHandler = app.slice(clearStart, clearEnd);

@@ -1715,6 +1715,8 @@ The consent UI, local paused-state frontend acceptance, final Trust Pack review,
 
 Later on 2026-08-06, FreeStyle LibreLink, LibreLinkUp, and live Libre 2 readings in Gluroo were confirmed before a separately approved temporary enablement. Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` then received 100% of traffic with `RELAY_ENABLED=true`. A dummy invalid Turnstile token returned the expected `403` and safe diagnostic `710202`. iPhone Safari Private Browsing completed consent, ticket issuance, Libre glucose-entry retrieval, current glucose, graph display, reload, and return from the iOS Home Screen. Closing Private Browsing removed its browser-stored configuration as expected; normal-tab persistence after fully quitting Safari was not retested by user choice. Traffic was returned immediately to stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` at 100%, and the paused `503` response was rechecked. No Secret value, Turnstile token, Gluroo URL, credential, glucose payload, or relay ticket was printed, logged, or committed. This completes the first basic Libre 2 end-to-end acceptance only; historical comparison capture and the extended acceptance matrix remain unverified.
 
+On 2026-08-12, relay Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` was temporarily enabled with Usage Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` for a second supervised iPhone user-flow retry. Connection testing succeeded, but after `GlucoScopeを始める` and a brief Usage Turnstile display, required setup reopened. Usage D1 remained `0 / 0 / 0`. Usage and relay were immediately returned to stopped Versions `7cb71965-74c3-47f9-b589-75cf6d669edb` and `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a`. Reproduction identified a frontend handoff issue rather than a new relay result: an unnecessary already-user-mode reload can lose access to the sessionStorage relay ticket, leaving saved config without an active adapter and reopening setup. This release includes the locally tested in-place activation fix; supervised device confirmation is pending.
+
 ---
 
 ### JP
@@ -1753,6 +1755,8 @@ Phase 3Bでは、停止状態の本番Worker、SQLite Durable Object、必要な
 同意表示、停止状態でのローカル画面受け入れ確認、Trust Packの最終確認、ローカルとCloudflare上の設定・安全性の最終確認は完了しました。必要なSecret名は`wrangler.jsonc`へ宣言し、値はCloudflare Secretだけに保持します。別途明示的な承認を得て、commit `98def2e96065f1a801728e060673ea22d4ff9e44`を停止状態のVersion `1a51631d-1e53-4f88-ac27-2125b43f1ab2`としてデプロイし、実データを使わずに停止応答、CORS、Secret名、Durable Objectを確認しました。その後のGuardian候補ルート確認ではVersion `84139213-8521-4772-b3f3-47ee0018c5d3`へ一時的に通信を向けましたが、公開中のPagesに確認用ガイドがまだ反映されていなかったため、接続情報を送信する前に中止し、直後にVersion `89d8166d-a50e-4e94-b3d3-a06f7a0b6fb1`を`RELAY_ENABLED=false`でデプロイしました。2026-08-06には、安全な不透明6桁コードだけを返すサーバー側Turnstile診断を追加したマージcommit `06dba2dc1321562e494a572e0da0c2cfbeb206a8`を、停止Version `86149056-cba7-41b8-80c1-15f0e2c26cf0`としてデプロイしました。最初の有効化確認では、WorkerからSiteverifyへの通信境界で安全コード`710001`となり、時間だけを延ばしても解消しませんでした。そこでPR #12でCloudflareのWorker向け例に合わせてSiteverify要求を整え、`d3051852b6a3b698de67d163cd290bd2b4ad2c3a`としてmainへマージしました。まず停止Version `2ea372de-a7c5-44c8-8852-0c21f5382633`でコードとバインドを確認し、別の明示的な承認を得て一時有効Version `f1c02561-e92a-4a9b-8b70-b9bab2a89fb2`へ通信を100%向けました。無効なダミーtokenは期待どおり安全コード`710202`となり、Siteverifyへ到達できることを確認しました。その後、iPhoneのSafariでGuardianルートの同意、Turnstile、署名付きチケット、Gluroo血糖エントリー取得、現在血糖とグラフ表示、再読み込み後の再表示まで成功しました。確認直後に停止Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a`へ戻し、現在はこのVersionが通信の100%を受け、`RELAY_ENABLED=false`、正確なCORS設定、必要なSecret名、Durable Objectのバインドを維持しています。Secret値、Turnstile token、GlurooのURL、接続用の合言葉、血糖データは、印字、ログ記録、Gitへの保存をしていません。これでGuardianの最初の全経路確認は完了しました。期間別、期限切れ、削除、上限の追加確認と、継続的な有効化についての別の承認を終えてから、Friends & Familyの小規模利用として始めます。実際に確認できた範囲を超えて機器ルートを確認済みとは案内しません。Glurooから停止要請があった場合、利用条件に重要な変更があった場合、異常な通信、プライバシーまたは安全性の懸念が見つかった場合は、すぐにリレーを停止します。Nightscoutの直接接続と公開デモは、限定リレーから独立して使える状態を維持します。
 
 同じ2026年8月6日、FreeStyle LibreLink、LibreLinkUp、GlurooでLibre 2の実データが見えていることを確認してから、別の明示的な承認を得て一時有効Version `a398d59e-54c1-4b8d-a9a4-b779af360a54`へ通信を100%向けました。無効なダミーTurnstile tokenは期待どおり`403`と安全コード`710202`を返しました。iPhoneのSafariプライベートブラウズで、同意、チケット発行、Libre血糖エントリー取得、現在血糖、グラフ表示、再読み込み、iOSホーム画面からの復帰まで成功しました。プライベートブラウズ終了時にブラウザ保存情報が消えたのは仕様どおりです。通常タブでSafariを完全終了した後の保存は、利用者の判断で再テストを省略したため未確認です。確認直後に停止Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a`へ通信を100%戻し、停止中の`503`応答を再確認しました。Secret値、Turnstile token、GlurooのURL、接続用の合言葉、血糖データ、リレーチケットは、印字、ログ記録、Gitへの保存をしていません。これでLibre 2の最初の基本経路確認だけが完了しました。比較用の期間取得と追加の受け入れ確認は未確認のままです。
+
+2026年8月12日、iPhoneのユーザー導線を2回目に監督下確認するため、限定中継Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` とUsage Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` を一時有効にしました。接続確認は成功しましたが、「GlucoScopeを始める」でUsage用Turnstileが短く表示された後、必須の接続画面が再表示されました。Usage D1は `0 / 0 / 0` のままです。確認直後にUsageを停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb`、限定中継を停止Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` へ戻しました。再現確認では、すでにユーザーモードの画面を不要に再読み込みするとsessionStorageの短期リレーチケットを参照できなくなる場合があり、保存済みconfigに有効なadapterを設定できず必須画面を開くことを特定しました。これは新しい限定中継の受け入れ結果ではなく、フロントの引き継ぎ問題です。このリリースにはローカルテストに合格した、その場でconfigとadapterを有効にする修正を含めています。監督下実機確認は未完了です。
 
 ---
 
@@ -3322,6 +3326,20 @@ as best effort, and gives usage-profile creation a bounded timeout. It was publi
 Worker remained stopped. Supervised re-testing must first confirm that Start reaches user mode when enrollment
 does not complete; Create, Stop, Resume, Delete, and the secondary export check remain pending.
 
+During a second supervised iPhone retry on 2026-08-12, Usage Version
+`5d160aed-7b27-48e6-b0a8-783534f97b6f` and relay Version
+`a398d59e-54c1-4b8d-a9a4-b779af360a54` were temporarily active. The connection test succeeded,
+but after Start and a brief Turnstile display, the required connection modal reopened. D1 stayed
+`0 / 0 / 0`. Usage and relay were immediately returned to stopped Versions
+`7cb71965-74c3-47f9-b589-75cf6d669edb` and `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a`.
+
+Reproduction identified the root cause: the already-user-mode save path reloaded unnecessarily.
+If Safari lost or could not access the sessionStorage relay ticket across that reload, initialization
+still found saved config but could not restore an active relay adapter, so required setup reopened.
+This release activates saved config and the adapter in place for user mode while keeping full
+navigation for entry from the public demo. The fix has passed local tests; supervised device
+confirmation is pending.
+
 Product analytics must remain separate from public Web Analytics, CGM transport, and
 glucose storage. Do not place glucose values, graphs, AI-letter contents, Nightscout or
 Gluroo URLs and credentials, treatment information, or device settings in product
@@ -3453,6 +3471,19 @@ runtimeの `USAGE_COLLECTION_ENABLED=true` とフロントの開始画面を監�
 利用プロフィール作成へ上限時間を設ける修正を、Usage Worker停止のまま公開フロントへ反映しました。
 修正版で開始後にユーザーモードへ進むことを監督下で再確認するまで、開始・停止・再開・削除・書き出しの
 受け入れは未完了です。
+
+同じ2026年8月12日、iPhoneで2回目の監督下確認を行い、Usage Version
+`5d160aed-7b27-48e6-b0a8-783534f97b6f` と限定中継Version
+`a398d59e-54c1-4b8d-a9a4-b779af360a54` を一時有効にしました。接続確認は成功しましたが、
+開始操作と短いTurnstile表示の後、必須の接続画面が再表示されました。D1は `0 / 0 / 0` のままです。
+確認直後にUsageを停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb`、限定中継を停止Version
+`635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` へ戻しました。
+
+再現確認で、すでにユーザーモードにいる保存経路が不要な再読み込みを行うことを原因として特定しました。
+Safariで再読み込みをまたいだsessionStorageの短期リレーチケットが失われる、または参照できない場合、
+保存済みconfigはあっても有効なリレーadapterを復元できず、必須の接続画面を開きます。このリリースでは、
+ユーザーモードでは保存済みconfigとadapterをその場で有効化し、公開デモから入る場合だけ完全なページ遷移を
+維持します。このリリースにはローカルテストに合格した修正を含めています。監督下実機確認は未完了です。
 
 プロダクト内の利用分析は、未ログインの公開Web Analytics、CGMの通信、
 血糖データの保存とは分離します。血糖値、グラフ、AIお手紙本文、

@@ -8,6 +8,7 @@
   const MAX_PENDING_AI_EVENTS = 20;
   const MAX_LIFECYCLE_GENERATION = 1_000_000_000;
   const PROFILE_CREATE_TIMEOUT_MS = 10_000;
+  const PROFILE_UPDATE_TIMEOUT_MS = 10_000;
   const PROFILE_CLEANUP_TIMEOUT_MS = 2_000;
   const CONTROL_AND_BIDI_PATTERN = /[\u0000-\u001f\u007f-\u009f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/gu;
   const PROFILE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
@@ -700,7 +701,9 @@
     const result = await requestJson("/v1/me", {
       method: "PATCH",
       token: readResult.state.profileToken,
-      body
+      body,
+      signal: input.signal,
+      timeoutMs: PROFILE_UPDATE_TIMEOUT_MS
     });
     if (!result.ok) {
       return {
