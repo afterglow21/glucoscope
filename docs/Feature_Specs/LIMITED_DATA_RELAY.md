@@ -2,10 +2,11 @@
 
 ## Status
 
-- Guardian, FreeStyle Libre 2, and the general-user Dexcom G7 relay path have completed their recorded real-device acceptances; the relay is paused while remaining operational gates are considered.
+- Guardian, FreeStyle Libre 2, and the general-user Dexcom G7 relay path have completed their recorded real-device acceptances; the accepted relay Version is now enabled for a 1–3 person early-access group.
 - The Worker shell, SQLite Durable Object, required Secrets, and one permanent `workers.dev` target have been created in Cloudflare.
-- The checked-in frontend points only to the approved stopped `workers.dev` target and requires explicit consent before a relay request.
-- `RELAY_ENABLED=false`; the Worker stops before Turnstile verification, ticket issuance, counter use, or upstream access, so the relay is not available for live use.
+- The checked-in frontend points only to the approved `workers.dev` target and requires explicit consent before a relay request.
+- Production deployment `5f8d00d9-9d68-4b2a-99cd-c58c26123684` routes active Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` at 100% for early access. The checked-in `RELAY_ENABLED=false` remains unchanged, and stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` is the immediate rollback target.
+- Post-enable checks returned `204` for approved-origin preflight, `403` for invalid Turnstile and unapproved origins, and retained `Cache-Control: no-store` and `Vary: Origin`. Safari full-quit restoration, natural one-hour ticket expiry, and live limit exhaustion remain operational observations, not completed acceptance evidence.
 - The final Trust Pack link, title, privacy, safety, verification-status, desktop, and mobile review is complete.
 - The final local and read-only Cloudflare configuration and security review is complete; required Secret names are declared in `wrangler.jsonc` without storing their values.
 - After separate explicit approval, commit `98def2e96065f1a801728e060673ea22d4ff9e44` was deployed as stopped Version `1a51631d-1e53-4f88-ac27-2125b43f1ab2`; all post-deployment stop, CORS, Secret-name, and Durable Object checks passed.

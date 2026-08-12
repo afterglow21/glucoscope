@@ -67,7 +67,7 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(data, /現在血糖、グラフ、再読み込み、iOSホーム画面からの復帰/);
   assert.match(data, /一般利用者向け限定中継のDexcom G7経路をiPhoneのSafariで確認し、接続、現在血糖、グラフの今日・昨日・7日・30日切替、再読み込み、接続削除後に設定画面へ戻ることまで合格しました/);
   assert.match(data, /Dexcom G7の一般利用者向け限定中継の受け入れは完了しました/);
-  assert.match(data, /チケットの自然失効、通常タブでSafariを完全終了した後の保存、実通信での上限到達は未確認です/);
+  assert.match(data, /チケットの自然失効、通常タブでSafariを完全終了した後の保存、実通信での上限到達は運用確認として残します/);
   assert.match(data, /2026年8月6日、Glurooから/);
   assert.match(data, /医療相談や医療判断には使えません/);
   assert.match(data, /CGMデータ再共有が適法かどうかをGlucoScopeが判断するものではなく/);
@@ -119,7 +119,7 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(data, /Scheduled aggregate checks observed Libre\/G7 counts of 528\/290 and then 526\/290/);
   assert.match(data, /Natural expiry is a separate, non-blocking stopped\/failure-path check/);
   assert.match(data, /次の3段落は、一時確認後に停止へ戻した過去のチェックポイントです/);
-  assert.match(privacy, /限定中継は現在停止中です/);
+  assert.match(privacy, /限定中継は現在、1〜3人の先行体験に限って有効です/);
   assert.match(privacy, /明示的な同意がない限り、限定中継への通信を始めません/);
   assert.match(privacy, /Kazuma自身の公開比較データ/);
   assert.match(privacy, /公開URLから閲覧できる公開・非匿名データ/);
@@ -157,6 +157,8 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(privacy, /event_receipts<\/code> at <code>0 \/ 0 \/ 0<\/code>/);
   assert.match(privacy, /7cb71965-74c3-47f9-b589-75cf6d669edb/);
   assert.match(privacy, /5d160aed-7b27-48e6-b0a8-783534f97b6f/);
+  assert.match(privacy, /4fbf0e2c-5f5c-4f4f-98a9-ae57d73b4824/);
+  assert.match(privacy, /5f8d00d9-9d68-4b2a-99cd-c58c26123684/);
   assert.match(privacy, /2回の監督下確認ではどちらも接続確認まで成功しましたが/);
   assert.match(privacy, /利用プロフィールは作成されていません/);
   assert.match(privacy, /a398d59e-54c1-4b8d-a9a4-b779af360a54/);
@@ -180,7 +182,7 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(roadmap, /5d160aed-7b27-48e6-b0a8-783534f97b6f/);
   assert.match(roadmap, /a398d59e-54c1-4b8d-a9a4-b779af360a54/);
   assert.match(roadmap, /635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a/);
-  assert.match(roadmap, /利用プロフィールの作成・停止・再開・書き出し・削除、一般利用者向け限定中継のG7基本経路、小さなUX修正は完了しました/);
+  assert.match(roadmap, /利用プロフィールの作成・停止・再開・書き出し・削除、一般利用者向け限定中継のG7基本経路、小さなUX修正は完了し、1〜3人の先行体験を開始しました/);
   assert.match(roadmap, /Gluroo（Libre）の接続に成功し、「GlucoScopeを始める」の後も同じ画面にとどまってライブ血糖を表示できました/);
   assert.match(roadmap, /D1は <code>profiles \/ usage_daily \/ event_receipts = 0 \/ 0 \/ 0<\/code> のまま/);
   assert.match(developerStatus, /sessionStorageの短期リレーチケットを使えない場合/);
@@ -196,7 +198,8 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(roadmap, /現時点の3CGM比較ページは継続公開ライブデモです/);
   assert.match(roadmap, /約3時間の継続稼働を確認/);
   assert.match(roadmap, /これまでの確認は合計2回/);
-  assert.match(roadmap, /一般利用者向け限定中継は、別の展開判断まで停止状態を保ちます/);
+  assert.match(roadmap, /一般利用者向け限定中継は現在、1〜3人の先行体験に限って有効です/);
+  assert.match(roadmap, /1〜3人の先行体験を開始しました。次は利用状況と安全境界を観察します/);
   assert.match(roadmap, /Safari完全終了後の復元、約1時間後の自然失効、上限到達時の挙動は運用確認として残します/);
   assert.match(roadmap, /今回確認できたのは1回の公開ページ受け入れです。継続運用、複数回のブラウザ表示更新、古いデータ表示・自然失効は未確認/);
   assert.match(roadmap, /21:25 JSTの停止中Cron後も両KVキーの期限は停止後の基準から変わらず、想定した2キーだけでmetadataもありませんでした/);

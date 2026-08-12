@@ -1,8 +1,8 @@
-# GlucoScope Limited Data Relay — paused deployment and activation boundary
+# GlucoScope Limited Data Relay — 1–3 person early access and rollback boundary
 
-This directory contains the paused Gluroo-only relay, including its security, access-control, and request-limit boundaries.
+This directory contains the Gluroo-only relay, including its security, access-control, request-limit, and rollback boundaries.
 
-Phase 3A connected the user onboarding flow to the relay client while keeping the checked-in endpoint blank. Phase 3B created the stopped Cloudflare Worker shell and Durable Object, registered the required Worker Secrets, and verified the stopped production response. The checked-in frontend now points only to the approved target and requires explicit consent. The first basic Guardian and FreeStyle Libre 2 end-to-end acceptances passed on 2026-08-06; the relay was returned to `RELAY_ENABLED=false` after each check and remains unavailable for live use.
+Phase 3A connected the user onboarding flow to the relay client while keeping the checked-in endpoint blank. Phase 3B created the stopped Cloudflare Worker shell and Durable Object, registered the required Worker Secrets, and verified the stopped production response. The checked-in frontend now points only to the approved target and requires explicit consent. Guardian, FreeStyle Libre 2, and Dexcom G7 device acceptances passed. After separate explicit approval on 2026-08-12, deployment `5f8d00d9-9d68-4b2a-99cd-c58c26123684` routed accepted Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` to 100% for a 1–3 person early-access group. This is not a broad public rollout. The checked-in kill switch remains `RELAY_ENABLED=false`, and stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` remains the immediate rollback target.
 
 ## Implemented through Phase 3B
 
@@ -181,23 +181,23 @@ This completes the first basic Libre 2 end-to-end acceptance only. Historical co
 - Deployment `5c390d07-13ce-4547-b53c-9a7ea9936696` restored stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` at 100%. Stopped `POST` returned `503` with `Cache-Control: no-store` and `Vary: Origin`.
 - No Secret value, URL, credential, token, relay ticket, or glucose value was printed, logged, or committed.
 
-The G7 basic user route and its period/reload/deletion checks are verified. Continuing enablement and small rollout remain separate decisions; Safari full-quit restoration, natural ticket expiry, and live limit exhaustion remain open operational gates.
+The G7 basic user route and its period/reload/deletion checks are verified. Separate explicit approval later enabled the reviewed Version for the 1–3 person early-access group; Safari full-quit restoration, natural ticket expiry, and live limit exhaustion remain open operational observations.
 
 ## Safe activation sequence
 
 Each numbered boundary is independently reviewable. Steps 1 through 7 are complete; G7 also completed current, period, reload, and deletion checks. Do not combine continuing live enablement with any remaining check in one unreviewed operation.
 
 1. Recheck the current Gluroo public materials for material changes or a known provider objection.
-2. Confirm that each intended device route is described according to its actual verification status. The general-user limited-relay Dexcom route and other untested relay routes must not be advertised as verified, and Libre 2 must not be described beyond its completed basic-path checks. The separate public-demo Worker keeps its own verification record.
+2. Confirm that each intended device route is described according to its actual verification status. The accepted general-user Dexcom G7 route may be described only within its recorded connection, period, reload, and deletion checks; other untested relay routes must not be advertised as verified, and Libre 2 must not be described beyond its completed basic-path checks. The separate public-demo Worker keeps its own verification record.
 3. Run `npm run verify`, `npm run deploy:dry`, `git diff --check`, the frontend checks, and a Secret-pattern scan. Confirm that `RELAY_ENABLED=false`, `workers_dev=true`, `preview_urls=false`, `observability.enabled=false`, the SQLite Durable Object export, and the exact CORS origin remain intact.
 4. After explicit approval, add only the agreed permanent Cloudflare target. This phase uses the single `workers.dev` target above. Any future Custom Domain or route change requires a separate review and approval.
 5. With `RELAY_ENABLED=false`, deploy only after separate explicit approval. Verify allowed-origin preflight, allowed-origin paused response, wrong-origin rejection, no-cache headers, Durable Object binding, and the presence of the two Secret binding names. Never print or copy Secret values into the repository, terminal record, screenshot, or support message.
 6. Keep the reviewed Trust wording and explicit consent UI aligned with the checked-in stopped endpoint. Direct Nightscout and the public demo must still work when the relay is paused.
 7. Ask for a separate explicit approval before changing `RELAY_ENABLED` to `true` and deploying that change. The first live check must use the person's Global Connect URL and API Secret only in the browser UI, never in commands, logs, screenshots, or test fixtures.
-8. Validate current, today, yesterday, 7-day, and 30-day reads for the first advertised route; credential deletion; ticket expiry; session and global limits; and the emergency pause path. Keep the rollout limited to Friends & Family.
+8. Current, today, yesterday, 7-day, and 30-day reads, credential deletion, and the emergency pause path are accepted for G7. During the 1–3 person early-access period, observe natural ticket expiry, full-Safari-quit restoration, and live session/global limit behavior without widening the rollout.
 9. Immediately restore `RELAY_ENABLED=false` if Gluroo objects, applicable terms materially change, abnormal traffic is detected, or a privacy or safety concern appears.
 
-## First advertised route acceptance — basic path accepted, extended matrix pending
+## Accepted routes and remaining operational checks
 
 The first candidate is the verified iPhone input segment extended through the full GlucoScope path:
 
@@ -215,14 +215,13 @@ GlucoScope
 
 The Guardian path has completed its first end-to-end iPhone Safari acceptance through the relay and GlucoScope for current glucose, graph display, and reload. The FreeStyle Libre 2 path has separately completed its first basic acceptance through FreeStyle LibreLink, LibreLinkUp, Gluroo, the relay, and GlucoScope for current glucose, graph display, reload, and return from the iOS Home Screen. The general-user Dexcom G7 route completed connection, current, today, yesterday, 7-day, 30-day, reload, and deletion checks in normal Safari. Other untested routes remain unverified, and every accepted route may be described only to the extent of its recorded checks. The separate public-demo Worker is outside this relay acceptance matrix.
 
-Before the remaining acceptance matrix resumes, recheck the current public materials and configuration, obtain separate approval for live enablement, and enter the person's Global Connect URL and API Secret only in the browser UI. Never place them in commands, fixtures, screenshots, or documents.
+Before any expansion beyond the approved 1–3 person group or any new device-route acceptance, recheck the current public materials and configuration, obtain separate approval, and enter the person's Global Connect URL and API Secret only in the browser UI. Never place them in commands, fixtures, screenshots, or documents.
 
-The remaining acceptance must confirm:
+The remaining operational observation must confirm:
 
-- current, today, yesterday, 7-day, and 30-day reads against Gluroo;
 - entries-only behavior with no treatments, insulin, carbohydrate, medication, pump-setting, or device-status retrieval;
 - gentle handling of missing, delayed, duplicated, invalid, expired-ticket, and rate-limited states;
-- deletion of the browser connection and relay ticket;
+- natural ticket expiry, full-Safari-quit restoration, and live limit behavior;
 - user-mode AI remains disabled and no relay data enters the AI Worker or shared cache;
 - direct Nightscout and the public demo remain independent;
 - an immediate return to `RELAY_ENABLED=false` works and produces the reviewed paused message.

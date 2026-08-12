@@ -2477,8 +2477,9 @@ Dexcom G7 has completed one approved live display acceptance in the comparison p
 The continuous public demo now includes its reviewed live route.
 
 The demo-only Worker is separate from the general-user Limited Data Relay.
-The general-user relay remains stopped with `RELAY_ENABLED=false`
-and keeps its transient, no-glucose-storage boundary.
+The general-user relay is currently enabled only for the approved 1–3 person
+early-access group; its checked-in `RELAY_ENABLED=false` safety default and
+transient, no-glucose-storage boundary remain unchanged.
 No general-user URL, credential, or glucose value may enter the demo feed or its KV.
 The public demo is public and non-anonymous by Kazuma's explicit choice. GlucoScope
 is not affiliated with Gluroo, must not be used for medical decisions, and must not
@@ -3552,7 +3553,7 @@ token、血糖値、接続情報はこの記録へ残しません。
 `Cache-Control: no-store`、`Vary: Origin` を維持し、一般利用者向け限定中継も停止中です。
 Phase 1BのUsage lifecycleは監督下実機受け入れ合格とします。このリリースで削除成功後の完了文言を
 明示し、書き出しを通常操作より目立たない「詳しい管理」へ移しました。一般利用者向け限定中継の
-Dexcom G7経路も、独立した安全境界として正式な実機確認に合格しました。次は少人数展開を判断します。
+Dexcom G7経路も、独立した安全境界として正式な実機確認に合格しました。この時点で次は少人数展開の判断としていました。
 
 同日、別の明示承認後、一般利用者向け限定中継のDexcom G7経路を通常Safariで正式に実機確認しました。
 事前に停止Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a`、許可Originのpreflight `204`、
@@ -4636,3 +4637,31 @@ Gluco may celebrate first, then gently mention other clues that deserve attentio
 
 血糖は、あなたを責めるための数字じゃないよ。
 明日を少し楽にするための、ちいさな手がかりだよ。
+
+---
+
+## 1–3 Person Early Access Activation — 2026-08-12
+
+After the supervised Usage lifecycle and general-user Dexcom G7 Limited Relay acceptances passed, separate explicit approval started continuous early access for a group of 1–3 people. This is not a broad public rollout.
+
+- Usage deployment `4fbf0e2c-5f5c-4f4f-98a9-ae57d73b4824` routes 100% to accepted Version `5d160aed-7b27-48e6-b0a8-783534f97b6f`.
+- Limited Relay deployment `5f8d00d9-9d68-4b2a-99cd-c58c26123684` routes 100% to accepted Version `a398d59e-54c1-4b8d-a9a4-b779af360a54`.
+- Approved-origin preflights returned `204`; invalid Turnstile, unapproved-origin, and originless requests returned `403`; no-store and `Vary: Origin` boundaries remained intact.
+- Usage D1 remained `profiles / usage_daily / event_receipts = 0 / 0 / 0` after boundary probes. The audit wrote no user row.
+- Checked-in `USAGE_COLLECTION_ENABLED=false` and `RELAY_ENABLED=false` remain unchanged. Usage stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` and relay stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` remain immediate rollback targets.
+- The public 3CGM demo remains live through its separate Worker and is not coupled to either early-access Worker.
+
+The early-access observation list is Safari restoration after a full quit, natural expiry of the approximately one-hour relay ticket, live limit exhaustion, abnormal traffic, provider-condition changes, and support questions. A problem in Usage recording must not block a verified CGM connection. Either Worker may be paused independently.
+
+## 1〜3人向け先行体験の継続有効化 — 2026-08-12
+
+Usage lifecycleと、一般利用者向け限定中継のDexcom G7実機受け入れに合格した後、別の明示承認を得て、1〜3人の先行体験として継続有効化しました。広い一般公開ではありません。
+
+- Usage deployment `4fbf0e2c-5f5c-4f4f-98a9-ae57d73b4824` は、受け入れ済みVersion `5d160aed-7b27-48e6-b0a8-783534f97b6f` へ通信の100%を向けます。
+- 限定中継deployment `5f8d00d9-9d68-4b2a-99cd-c58c26123684` は、受け入れ済みVersion `a398d59e-54c1-4b8d-a9a4-b779af360a54` へ通信の100%を向けます。
+- 許可Originの事前確認は `204`、不正なTurnstile、不許可Origin、Originなしは `403` で、no-storeと `Vary: Origin` の境界を維持しました。
+- 境界確認後もUsage D1は `profiles / usage_daily / event_receipts = 0 / 0 / 0` で、監査による利用者行の書き込みはありません。
+- Gitに保存する `USAGE_COLLECTION_ENABLED=false` と `RELAY_ENABLED=false` は変更しません。Usage停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb` と限定中継停止Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` を即時復帰先として保持します。
+- 公開3CGMデモは別Workerで独立してライブを継続し、先行体験用の2つのWorkerと連動させません。
+
+先行体験中は、Safari完全終了後の復元、約1時間のリレーチケット自然失効、実通信での上限到達、異常通信、提供条件の変更、問い合わせを観察します。Usageの失敗で確認済みCGM接続を止めず、必要時は2つのWorkerを独立して停止します。

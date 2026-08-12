@@ -1,8 +1,8 @@
-# GlucoScope Usage Worker – lifecycle accepted and paused
+# GlucoScope Usage Worker – lifecycle accepted and enabled for 1–3 person early access
 
 This directory contains a dedicated, dependency-light Cloudflare Worker and D1 schema for minimal device-profile usage counts.
 
-The stopped production foundation was created and verified on 2026-08-11. On 2026-08-12 JST, corrected Version `858cf438-b3d2-4a8c-801c-344503e0c58e` was used for a supervised device check. Profile creation succeeded, but a repeated callback after Turnstile reset produced a false error display after that success. The 2 known test profiles were later deleted, and the cascading deletion left `profiles`, `usage_daily`, and `event_receipts` at `0 / 0 / 0`. Two later supervised iPhone attempts reached a successful glucose connection test but returned to required setup after `GlucoScopeを始める`; both left D1 at `0 / 0 / 0`. After the second attempt, Usage and relay were immediately returned to stopped Versions `7cb71965-74c3-47f9-b589-75cf6d669edb` and `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a`. Runtime and checked-in collection are now `false`, and the general-user relay is `RELAY_ENABLED=false`.
+The stopped production foundation was created and verified on 2026-08-11. On 2026-08-12 JST, corrected Version `858cf438-b3d2-4a8c-801c-344503e0c58e` was used for a supervised device check. Profile creation succeeded, but a repeated callback after Turnstile reset produced a false error display after that success. The 2 known test profiles were later deleted, and the cascading deletion left `profiles`, `usage_daily`, and `event_receipts` at `0 / 0 / 0`. After the subsequent fixes, the full Create, reload deduplication and daily record, Stop, Resume, export, and Delete lifecycle passed on iPhone. After separate explicit approval, deployment `4fbf0e2c-5f5c-4f4f-98a9-ae57d73b4824` routed accepted Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` to 100% for a 1–3 person early-access group. Initial D1 counts remained `0 / 0 / 0`; invalid Turnstile and unapproved-origin requests returned `403` with no-store boundaries. The checked-in `USAGE_COLLECTION_ENABLED=false` remains unchanged, and stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` remains the immediate rollback target.
 
 ## Stopped production checkpoint (2026-08-11)
 
@@ -55,13 +55,13 @@ This checkpoint verifies a reachable but stopped production shell. It does not a
 
 The most likely explanation for D1 staying empty was a stale Safari-local `glucoscope.usageProfile.v1` credential left after the earlier server-side test-profile deletion. The browser treated it as registered, while profile `PATCH` returned exact `401 authentication_required`; the core CGM flow correctly failed open. The local recovery forgets only the exact credential that started that exact 401 request, preserves any newer or different profile and every non-401 failure, sends no usage events after cleanup, and waits for the next explicit save plus fresh Turnstile before creating. The later supervised device re-acceptance confirmed this diagnosis and behavior.
 
-## Usage lifecycle accepted and stopped (2026-08-12 JST)
+## Usage lifecycle accepted and stopped after the check (2026-08-12 JST)
 
 - Deployment `6dabe28d-19a4-40f6-9c6d-e6f273d18298` routed 100% of Usage traffic to active Version `5d160aed-7b27-48e6-b0a8-783534f97b6f`. The general-user relay remained stopped, and an iPhone using direct Azure Nightscout displayed glucose.
 - The first save safely removed the stale Safari credential and left D1 at `0 / 0 / 0`. A second explicit save with a fresh Turnstile created one profile. Reload kept one profile and produced `usage_daily=1` and `event_receipts=2`, accepting stale-credential recovery, creation, deduplication, and daily recording.
 - Stop produced 0 recording and 1 stopped profile; Resume returned to 1 recording and 0 stopped. The allowlisted JSON export downloaded successfully.
 - Delete cascaded the test profile and related records, returning `profiles / usage_daily / event_receipts` to `0 / 0 / 0`. No display name, profile identifier, token, glucose value, or connection detail is recorded here.
-- Deployment `20216b73-27a9-41e0-a3be-25595babe185` restored stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` at 100%. The stopped response remains `503` with `Cache-Control: no-store` and `Vary: Origin`; the general-user relay remains stopped.
+- Deployment `20216b73-27a9-41e0-a3be-25595babe185` restored stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` at 100%. At that checkpoint the stopped response was `503` with `Cache-Control: no-store` and `Vary: Origin`, and the general-user relay was also stopped.
 - This release shows an explicit success message after deletion and moves export into a less prominent `More options` path. The separate general-user G7 relay path has also completed its recorded device acceptance.
 
 ## Boundary
@@ -209,10 +209,10 @@ npm run deploy:dry
 
 There is intentionally no real `deploy` npm script.
 
-## Current supervised acceptance steps
+## Current early-access operations
 
-1. Keep Usage stopped at Version `7cb71965-74c3-47f9-b589-75cf6d669edb` and D1 at the clean `0 / 0 / 0` baseline while the separate relay acceptance is prepared.
-2. Completed in the release candidate: visible deletion success and a quieter export path.
-3. Accept the general-user G7 relay path separately before deciding on a small rollout. Do not infer relay authorization from this Usage acceptance.
+1. Keep Usage limited to the approved 1–3 person group through deployment `4fbf0e2c-5f5c-4f4f-98a9-ae57d73b4824`; do not describe it as a broad public rollout.
+2. Monitor only the reviewed allowlisted counts and lifecycle state. Do not copy display names, profile tokens, or production rows into operational notes.
+3. If a privacy, safety, traffic, or provider-condition concern appears, route 100% back to stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb`. Usage and the general-user relay remain independently stoppable.
 
 Secret values, profile tokens, display names, and production database content must never be copied into Git, command arguments, screenshots, logs, fixtures, or support messages.

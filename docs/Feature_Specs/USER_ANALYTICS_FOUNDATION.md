@@ -1,6 +1,6 @@
 # GlucoScope 利用者設定・利用分析基盤
 
-Status: Phase 1A implemented / core CGM handoff accepted / Phase 1B usage lifecycle device-accepted and paused
+Status: Phase 1A implemented / core CGM handoff accepted / Phase 1B usage lifecycle device-accepted and enabled for 1–3 person early access
 
 Last reviewed: 2026-08-12
 
@@ -270,3 +270,11 @@ D1が `0 / 0 / 0` のままだった理由として最も可能性が高いの�
 確認後、deployment `20216b73-27a9-41e0-a3be-25595babe185` で停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb` を100%へ戻した。許可Originの停止中送信は `503`、`Cache-Control: no-store`、`Vary: Origin` を維持し、一般利用者向け限定中継も停止中である。Gitに保存するWorker設定は `false` のまま変更していない。
 
 Phase 1BのUsage lifecycleは監督下実機受け入れ合格とする。このリリースで、削除成功後の完了文言を明示し、書き出しを通常操作より目立たない「詳しい管理」へ移した。一般利用者向け限定中継のDexcom G7経路も別の安全境界で正式受け入れを完了したため、次は少人数展開の判断とする。
+
+## 19. 1〜3人の先行体験を継続有効化（2026-08-12 JST）
+
+別の明示承認後、Usage deployment `4fbf0e2c-5f5c-4f4f-98a9-ae57d73b4824` で受け入れ済みVersion `5d160aed-7b27-48e6-b0a8-783534f97b6f` へ本番通信の100%を向けた。同時に、一般利用者向け限定中継deployment `5f8d00d9-9d68-4b2a-99cd-c58c26123684` で受け入れ済みVersion `a398d59e-54c1-4b8d-a9a4-b779af360a54` へ100%を向け、1〜3人の先行体験を開始した。これは広い一般公開ではない。
+
+有効化後、両Workerの許可Origin preflightは `204`、不正なTurnstile tokenと不許可・Originなしの要求は `403`、応答は `Cache-Control: no-store` と `Vary: Origin` を維持した。Usage D1の `profiles`、`usage_daily`、`event_receipts` は境界確認後も `0 / 0 / 0` で、監査による書き込みはない。公開3CGMデモは別Workerで独立してライブを継続する。
+
+Gitに保存する `USAGE_COLLECTION_ENABLED=false` と `RELAY_ENABLED=false` は変更しない。Usage停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb`、限定中継停止Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` を即時復帰先として保持する。先行体験中は、Safari完全終了後の復元、約1時間のチケット自然失効、実通信での上限到達、異常通信、提供条件の変更、問い合わせを運用観察し、必要時は該当Workerだけを停止する。
