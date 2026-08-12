@@ -7329,6 +7329,51 @@ body.local-profile-dialog-open {
   gap:8px;
 }
 
+.usage-profile-advanced {
+  padding-top:9px;
+  border-top:1px solid rgba(148,163,184,.16);
+}
+
+.usage-profile-advanced summary {
+  display:inline-flex;
+  align-items:center;
+  min-height:44px;
+  width:max-content;
+  color:#aebfd3;
+  font-size:12.5px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.usage-profile-advanced summary:hover {
+  color:#d8e4f2;
+}
+
+.usage-profile-advanced summary:focus-visible {
+  border-radius:5px;
+  outline:3px solid rgba(74,222,128,.30);
+  outline-offset:3px;
+}
+
+.usage-profile-advanced-body {
+  display:grid;
+  justify-items:start;
+  gap:8px;
+  margin-top:9px;
+}
+
+.usage-profile-advanced .usage-profile-export-link {
+  min-height:44px;
+  padding-block:10px;
+}
+
+.usage-profile-advanced-body p {
+  margin:0;
+  color:#aebfd3;
+  font-size:12.5px;
+  line-height:1.65;
+}
+
 .usage-profile-primary-button,
 .usage-profile-secondary-button,
 .usage-profile-delete-button {
@@ -7408,6 +7453,10 @@ body.local-profile-dialog-open {
   color:#b9c9dd;
   font-size:12.5px;
   line-height:1.6;
+}
+
+.usage-profile-status:empty {
+  display:none;
 }
 
 .usage-profile-status:not(:empty) {

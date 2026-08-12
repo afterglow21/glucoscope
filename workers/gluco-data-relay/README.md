@@ -161,21 +161,31 @@ This completes the first basic Libre 2 end-to-end acceptance only. Historical co
 - Relay connection testing succeeded. After `GlucoScopeを始める`, Usage Turnstile appeared briefly and the required data-connection screen reopened. Usage D1 remained `0 / 0 / 0`; no usage profile was created.
 - Usage was immediately returned to stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb`, and this relay was returned to stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` with `RELAY_ENABLED=false`.
 - Reproduction traced the screen return to an unnecessary already-user-mode reload. If Safari lost or could not access the sessionStorage relay ticket during that reload, the saved config had no active adapter and required setup reopened. This was a browser handoff failure after successful connection testing, not a new relay acceptance result.
-- This release activates the saved config and adapter in place for an already-user-mode page and retains full navigation from the public demo. Local tests pass; supervised device confirmation is pending.
+- This release activates the saved config and adapter in place for an already-user-mode page and retains full navigation from the public demo. Local tests passed, and the later supervised Libre acceptance confirmed the fix on-device.
 - No Secret value, Turnstile token, Gluroo URL, credential, glucose payload, relay ticket, display name, or profile identifier is recorded here.
 
 ## Successful supervised user-mode acceptance — 2026-08-12
 
 - After the in-place fix was published, the same relay and Usage candidate Versions were temporarily enabled for a third supervised iPhone acceptance.
 - The Gluroo (Libre) connection passed, `GlucoScopeを始める` kept the existing user-mode page, and live glucose was displayed. This accepts the core CGM handoff fix on the tested device.
-- Usage D1 remained `profiles / usage_daily / event_receipts = 0 / 0 / 0`. No usage profile was created, so the Usage lifecycle remains a separate pending check.
+- Usage D1 remained `profiles / usage_daily / event_receipts = 0 / 0 / 0` in this historical checkpoint. The later separate Usage acceptance completed Create, Stop, Resume, export, and Delete.
 - Deployment `a1962cbf-9f77-48c1-b33a-05bd39323a8c` restored this relay's stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` to 100%. Deployment `17de293b-2d38-4b07-aa5f-604c2cc65d43` restored Usage stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` to 100%.
 - Approved-origin preflight returned `204` and an approved-origin stopped `POST` returned `503` for both Workers. Checked-in flags remain `false`; the public frontend supervised-candidate gate remains `true`, and the general-user relay is paused.
 - No Secret value, Turnstile token, Gluroo URL, credential, glucose payload, relay ticket, display name, or profile identifier is recorded here.
 
+## General-user Dexcom G7 acceptance — 2026-08-12
+
+- After separate approval, deployment `eb10444c-56ca-46eb-8e6c-0a15d2bd9fdf` routed active Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` to 100% after stopped-state CORS and rejection checks passed.
+- iPhone normal Safari passed connection testing, current glucose, graph display, today/yesterday/7-day/30-day switching, reload and redisplay, and browser-connection deletion followed by return to setup.
+- The public 3CGM demo Worker and Usage Worker were untouched; Usage stayed stopped.
+- Deployment `5c390d07-13ce-4547-b53c-9a7ea9936696` restored stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` at 100%. Stopped `POST` returned `503` with `Cache-Control: no-store` and `Vary: Origin`.
+- No Secret value, URL, credential, token, relay ticket, or glucose value was printed, logged, or committed.
+
+The G7 basic user route and its period/reload/deletion checks are verified. Continuing enablement and small rollout remain separate decisions; Safari full-quit restoration, natural ticket expiry, and live limit exhaustion remain open operational gates.
+
 ## Safe activation sequence
 
-Each numbered boundary is independently reviewable. Steps 1 through 7 and the current/reload portion of step 8 are complete for the approved `workers.dev` target. Do not combine continuing live enablement with any remaining check in one unreviewed operation.
+Each numbered boundary is independently reviewable. Steps 1 through 7 are complete; G7 also completed current, period, reload, and deletion checks. Do not combine continuing live enablement with any remaining check in one unreviewed operation.
 
 1. Recheck the current Gluroo public materials for material changes or a known provider objection.
 2. Confirm that each intended device route is described according to its actual verification status. The general-user limited-relay Dexcom route and other untested relay routes must not be advertised as verified, and Libre 2 must not be described beyond its completed basic-path checks. The separate public-demo Worker keeps its own verification record.
@@ -203,7 +213,7 @@ Limited Data Relay
 GlucoScope
 ```
 
-The Guardian path has completed its first end-to-end iPhone Safari acceptance through the relay and GlucoScope for current glucose, graph display, and reload. The FreeStyle Libre 2 path has separately completed its first basic acceptance through FreeStyle LibreLink, LibreLinkUp, Gluroo, the relay, and GlucoScope for current glucose, graph display, reload, and return from the iOS Home Screen. The general-user limited-relay Dexcom G7 path and other untested relay routes must remain unverified in public wording, and neither accepted relay route may be described beyond the checks it actually passed. The separate public-demo Worker is outside this relay acceptance matrix.
+The Guardian path has completed its first end-to-end iPhone Safari acceptance through the relay and GlucoScope for current glucose, graph display, and reload. The FreeStyle Libre 2 path has separately completed its first basic acceptance through FreeStyle LibreLink, LibreLinkUp, Gluroo, the relay, and GlucoScope for current glucose, graph display, reload, and return from the iOS Home Screen. The general-user Dexcom G7 route completed connection, current, today, yesterday, 7-day, 30-day, reload, and deletion checks in normal Safari. Other untested routes remain unverified, and every accepted route may be described only to the extent of its recorded checks. The separate public-demo Worker is outside this relay acceptance matrix.
 
 Before the remaining acceptance matrix resumes, recheck the current public materials and configuration, obtain separate approval for live enablement, and enter the person's Global Connect URL and API Secret only in the browser UI. Never place them in commands, fixtures, screenshots, or documents.
 

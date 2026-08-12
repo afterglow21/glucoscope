@@ -2,7 +2,7 @@
 
 ## Status
 
-- First Guardian and FreeStyle Libre 2 end-to-end acceptances completed; the relay is paused while extended range and operational gates remain.
+- Guardian, FreeStyle Libre 2, and the general-user Dexcom G7 relay path have completed their recorded real-device acceptances; the relay is paused while remaining operational gates are considered.
 - The Worker shell, SQLite Durable Object, required Secrets, and one permanent `workers.dev` target have been created in Cloudflare.
 - The checked-in frontend points only to the approved stopped `workers.dev` target and requires explicit consent before a relay request.
 - `RELAY_ENABLED=false`; the Worker stops before Turnstile verification, ticket issuance, counter use, or upstream access, so the relay is not available for live use.
@@ -12,7 +12,7 @@
 - An earlier Guardian candidate-route acceptance temporarily routed Version `84139213-8521-4772-b3f3-47ee0018c5d3`, but stopped before credential submission because the public Pages build did not yet expose the Guardian guide. Stopped Version `89d8166d-a50e-4e94-b3d3-a06f7a0b6fb1` was deployed immediately afterward.
 - On 2026-08-06, PR #12 merged the Siteverify request alignment to `main` at `d3051852b6a3b698de67d163cd290bd2b4ad2c3a`. A separately approved temporary enablement then completed the first Guardian path through iPhone Safari, Turnstile, the signed ticket, Gluroo, the relay, and GlucoScope. Current glucose and the graph appeared and appeared again after reload.
 - Later on 2026-08-06, a separately approved temporary enablement completed the first basic FreeStyle Libre 2 path through FreeStyle LibreLink, LibreLinkUp, Gluroo, the relay, and GlucoScope. Current glucose, graph display, reload, and return from the iOS Home Screen passed in Safari Private Browsing. Normal-tab persistence after fully quitting Safari was not retested by user choice.
-- Stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` was restored immediately after the latest acceptance and receives 100% of traffic with `RELAY_ENABLED=false`. Continuing enablement still requires separate approval; extended period, expiry, deletion, and limit checks remain.
+- Stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` was restored immediately after the latest acceptance and receives 100% of traffic with `RELAY_ENABLED=false`. Continuing enablement still requires separate approval; Safari full-quit restoration, natural ticket expiry, and limit-exhaustion checks remain.
 - Version-specific Preview URLs are disabled. The earlier temporary connectivity probe remains deleted.
 - User Foundation PR #7 was merged before this work began.
 - The current implementation is merged to `main`.
@@ -636,6 +636,18 @@ After separate explicit approval:
 - no Secret value, Turnstile token, Gluroo URL, credential, glucose payload, or relay ticket was printed, logged, or committed.
 
 This completes the first basic Libre 2 end-to-end acceptance only. Historical comparison capture, extended periods, deletion, ticket expiry, limit behavior, and any continuing enablement remain separate gates.
+
+## General-user Dexcom G7 relay acceptance — 2026-08-12
+
+After separate explicit approval:
+
+- preflight confirmed stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` at 100%, approved-origin `OPTIONS` at `204`, approved-origin stopped `POST` at `503`, and wrong/missing origin at `403`;
+- deployment `eb10444c-56ca-46eb-8e6c-0a15d2bd9fdf` routed active Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` to 100%; exact CORS, invalid-Turnstile `403`, `Cache-Control: no-store`, and `Vary: Origin` passed;
+- iPhone normal Safari completed the G7 Gluroo connection test, current-glucose and graph display, today/yesterday/7-day/30-day switching, reload and redisplay, and browser-connection deletion followed by return to setup;
+- the public 3CGM demo Worker and Usage Worker were untouched, and Usage remained stopped;
+- deployment `5c390d07-13ce-4547-b53c-9a7ea9936696` restored the stopped Version to 100%; stopped `POST` again returned `503` with `Cache-Control: no-store` and `Vary: Origin`.
+
+No Gluroo URL, credential, Turnstile token, relay ticket, or glucose value was printed, logged, or committed. The general-user G7 basic route and its period/reload/deletion checks are verified. Continuing enablement or a small rollout remains a separate decision. Safari full-quit restoration, natural ticket expiry, and live limit exhaustion remain separate operational gates.
 
 ## Phase 1 tests
 

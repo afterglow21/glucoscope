@@ -1715,9 +1715,13 @@ The consent UI, local paused-state frontend acceptance, final Trust Pack review,
 
 Later on 2026-08-06, FreeStyle LibreLink, LibreLinkUp, and live Libre 2 readings in Gluroo were confirmed before a separately approved temporary enablement. Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` then received 100% of traffic with `RELAY_ENABLED=true`. A dummy invalid Turnstile token returned the expected `403` and safe diagnostic `710202`. iPhone Safari Private Browsing completed consent, ticket issuance, Libre glucose-entry retrieval, current glucose, graph display, reload, and return from the iOS Home Screen. Closing Private Browsing removed its browser-stored configuration as expected; normal-tab persistence after fully quitting Safari was not retested by user choice. Traffic was returned immediately to stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` at 100%, and the paused `503` response was rechecked. No Secret value, Turnstile token, Gluroo URL, credential, glucose payload, or relay ticket was printed, logged, or committed. This completes the first basic Libre 2 end-to-end acceptance only; historical comparison capture and the extended acceptance matrix remain unverified.
 
-On 2026-08-12, relay Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` was temporarily enabled with Usage Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` for a second supervised iPhone user-flow retry. Connection testing succeeded, but after `GlucoScopeを始める` and a brief Usage Turnstile display, required setup reopened. Usage D1 remained `0 / 0 / 0`. Usage and relay were immediately returned to stopped Versions `7cb71965-74c3-47f9-b589-75cf6d669edb` and `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a`. Reproduction identified a frontend handoff issue rather than a new relay result: an unnecessary already-user-mode reload can lose access to the sessionStorage relay ticket, leaving saved config without an active adapter and reopening setup. This release includes the locally tested in-place activation fix; supervised device confirmation is pending.
+On 2026-08-12, relay Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` was temporarily enabled with Usage Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` for a second supervised iPhone user-flow retry. Connection testing succeeded, but after `GlucoScopeを始める` and a brief Usage Turnstile display, required setup reopened. Usage D1 remained `0 / 0 / 0`. Usage and relay were immediately returned to stopped Versions `7cb71965-74c3-47f9-b589-75cf6d669edb` and `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a`. Reproduction identified a frontend handoff issue rather than a new relay result: an unnecessary already-user-mode reload can lose access to the sessionStorage relay ticket, leaving saved config without an active adapter and reopening setup. This release included the locally tested in-place activation fix; at that historical checkpoint, supervised device confirmation had not yet occurred.
 
-After that fix was published, a third supervised iPhone acceptance temporarily used the same active relay and Usage Versions. The Gluroo (Libre) connection passed, `GlucoScopeを始める` remained in the existing user-mode page, and live glucose was displayed. This confirms the in-place handoff fix for the core CGM path. Usage D1 nevertheless remained `profiles / usage_daily / event_receipts = 0 / 0 / 0`; profile creation and the Usage Create, Stop, Resume, Delete, and secondary export lifecycle therefore remain pending and are not implied by the CGM result. Immediately afterward, deployment `a1962cbf-9f77-48c1-b33a-05bd39323a8c` restored relay stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` at 100%, and deployment `17de293b-2d38-4b07-aa5f-604c2cc65d43` restored Usage stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` at 100%. For both Workers, approved-origin preflight returned `204` and an approved-origin stopped `POST` returned `503`. The checked-in Worker flags remain `false`; the public frontend supervised-candidate gate remains `true`, while the general-user relay is paused.
+After that fix was published, a third supervised iPhone acceptance temporarily used the same active relay and Usage Versions. The Gluroo (Libre) connection passed, `GlucoScopeを始める` remained in the existing user-mode page, and live glucose was displayed. This confirms the in-place handoff fix for the core CGM path. Usage D1 nevertheless remained `profiles / usage_daily / event_receipts = 0 / 0 / 0`; profile creation and the Usage Create, Stop, Resume, Delete, and secondary export lifecycle were still pending at that checkpoint and were not implied by the CGM result. Immediately afterward, deployment `a1962cbf-9f77-48c1-b33a-05bd39323a8c` restored relay stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` at 100%, and deployment `17de293b-2d38-4b07-aa5f-604c2cc65d43` restored Usage stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` at 100%. For both Workers, approved-origin preflight returned `204` and an approved-origin stopped `POST` returned `503`. The checked-in Worker flags remain `false`; the public frontend supervised-candidate gate remains `true`, while the general-user relay is paused.
+
+A later supervised iPhone check accepted the Usage lifecycle. Deployment `6dabe28d-19a4-40f6-9c6d-e6f273d18298` temporarily routed active Usage Version `5d160aed-7b27-48e6-b0a8-783534f97b6f`. The first save safely removed the stale Safari credential, a second explicit save created one profile, reload kept one profile while recording the allowlisted daily usage, and Stop, Resume, export, and Delete all passed. Delete returned `profiles / usage_daily / event_receipts` to `0 / 0 / 0`; deployment `20216b73-27a9-41e0-a3be-25595babe185` then restored stopped Usage Version `7cb71965-74c3-47f9-b589-75cf6d669edb` at 100%.
+
+The general-user Limited Data Relay Dexcom G7 route also passed a supervised normal-Safari acceptance. Connection, current glucose, today/yesterday/7-day/30-day graph periods, reload and redisplay, and connection deletion returning to setup passed. Deployment `eb10444c-56ca-46eb-8e6c-0a15d2bd9fdf` temporarily routed active relay Version `a398d59e-54c1-4b8d-a9a4-b779af360a54`; deployment `5c390d07-13ce-4547-b53c-9a7ea9936696` then restored stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a`. Continuing enablement remains a separate decision.
 
 ---
 
@@ -1758,9 +1762,9 @@ Phase 3Bでは、停止状態の本番Worker、SQLite Durable Object、必要な
 
 同じ2026年8月6日、FreeStyle LibreLink、LibreLinkUp、GlurooでLibre 2の実データが見えていることを確認してから、別の明示的な承認を得て一時有効Version `a398d59e-54c1-4b8d-a9a4-b779af360a54`へ通信を100%向けました。無効なダミーTurnstile tokenは期待どおり`403`と安全コード`710202`を返しました。iPhoneのSafariプライベートブラウズで、同意、チケット発行、Libre血糖エントリー取得、現在血糖、グラフ表示、再読み込み、iOSホーム画面からの復帰まで成功しました。プライベートブラウズ終了時にブラウザ保存情報が消えたのは仕様どおりです。通常タブでSafariを完全終了した後の保存は、利用者の判断で再テストを省略したため未確認です。確認直後に停止Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a`へ通信を100%戻し、停止中の`503`応答を再確認しました。Secret値、Turnstile token、GlurooのURL、接続用の合言葉、血糖データ、リレーチケットは、印字、ログ記録、Gitへの保存をしていません。これでLibre 2の最初の基本経路確認だけが完了しました。比較用の期間取得と追加の受け入れ確認は未確認のままです。
 
-2026年8月12日、iPhoneのユーザー導線を2回目に監督下確認するため、限定中継Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` とUsage Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` を一時有効にしました。接続確認は成功しましたが、「GlucoScopeを始める」でUsage用Turnstileが短く表示された後、必須の接続画面が再表示されました。Usage D1は `0 / 0 / 0` のままです。確認直後にUsageを停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb`、限定中継を停止Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` へ戻しました。再現確認では、すでにユーザーモードの画面を不要に再読み込みするとsessionStorageの短期リレーチケットを参照できなくなる場合があり、保存済みconfigに有効なadapterを設定できず必須画面を開くことを特定しました。これは新しい限定中継の受け入れ結果ではなく、フロントの引き継ぎ問題です。このリリースにはローカルテストに合格した、その場でconfigとadapterを有効にする修正を含めています。監督下実機確認は未完了です。
+2026年8月12日、iPhoneのユーザー導線を2回目に監督下確認するため、限定中継Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` とUsage Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` を一時有効にしました。接続確認は成功しましたが、「GlucoScopeを始める」でUsage用Turnstileが短く表示された後、必須の接続画面が再表示されました。Usage D1は `0 / 0 / 0` のままです。確認直後にUsageを停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb`、限定中継を停止Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` へ戻しました。再現確認では、すでにユーザーモードの画面を不要に再読み込みするとsessionStorageの短期リレーチケットを参照できなくなる場合があり、保存済みconfigに有効なadapterを設定できず必須画面を開くことを特定しました。これは新しい限定中継の受け入れ結果ではなく、フロントの引き継ぎ問題です。このリリースにはローカルテストに合格した、その場でconfigとadapterを有効にする修正を含めています。この時点では、監督下実機確認は未完了でした。
 
-その修正を公開した後、同じ一時有効の限定中継VersionとUsage Versionで、iPhoneの3回目の監督下確認を行いました。Gluroo（Libre）の接続に成功し、「GlucoScopeを始める」の後も同じユーザーモード画面にとどまり、ライブ血糖を表示できました。これでCGM表示の中核経路について、その場で引き継ぐ修正を実機確認できました。一方、Usage D1は `profiles / usage_daily / event_receipts = 0 / 0 / 0` のままでした。利用プロフィール作成とUsageの作成・停止・再開・削除・補助的な書き出しは未確認のままであり、CGM表示の成功とは分けて扱います。確認直後、deployment `a1962cbf-9f77-48c1-b33a-05bd39323a8c` で限定中継の停止Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a`、deployment `17de293b-2d38-4b07-aa5f-604c2cc65d43` でUsageの停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb` を、それぞれ本番通信の100%へ戻しました。両Workerとも、許可Originのpreflightは `204`、許可Originから停止中の `POST` は `503` を返しました。Gitに保存するWorker設定は `false`、公開フロントの監督下候補gateは `true` のままで、一般利用者向け限定中継は停止中です。
+その修正を公開した後、同じ一時有効の限定中継VersionとUsage Versionで、iPhoneの3回目の監督下確認を行いました。Gluroo（Libre）の接続に成功し、「GlucoScopeを始める」の後も同じユーザーモード画面にとどまり、ライブ血糖を表示できました。これでCGM表示の中核経路について、その場で引き継ぐ修正を実機確認できました。一方、Usage D1は `profiles / usage_daily / event_receipts = 0 / 0 / 0` のままでした。この3回目確認の時点では、利用プロフィール作成とUsageの作成・停止・再開・削除・補助的な書き出しは未確認であり、CGM表示の成功とは分けて扱いました。確認直後、deployment `a1962cbf-9f77-48c1-b33a-05bd39323a8c` で限定中継の停止Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a`、deployment `17de293b-2d38-4b07-aa5f-604c2cc65d43` でUsageの停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb` を、それぞれ本番通信の100%へ戻しました。両Workerとも、許可Originのpreflightは `204`、許可Originから停止中の `POST` は `503` を返しました。Gitに保存するWorker設定は `false`、公開フロントの監督下候補gateは `true` のままで、一般利用者向け限定中継は停止中です。
 
 ---
 
@@ -3329,8 +3333,8 @@ relay remains `RELAY_ENABLED=false`.
 
 The updated public frontend makes core connection storage robust, treats display-name-only storage
 as best effort, and gives usage-profile creation a bounded timeout. It was published while the Usage
-Worker remained stopped. Supervised re-testing must first confirm that Start reaches user mode when enrollment
-does not complete; Create, Stop, Resume, Delete, and the secondary export check remain pending.
+Worker remained stopped. At that historical checkpoint, supervised re-testing still needed to confirm that Start reached user mode when enrollment
+did not complete; Create, Stop, Resume, Delete, and the secondary export check had not yet passed. Later checkpoints below completed both the CGM handoff and Usage lifecycle acceptance.
 
 During a second supervised iPhone retry on 2026-08-12, Usage Version
 `5d160aed-7b27-48e6-b0a8-783534f97b6f` and relay Version
@@ -3343,14 +3347,14 @@ Reproduction identified the root cause: the already-user-mode save path reloaded
 If Safari lost or could not access the sessionStorage relay ticket across that reload, initialization
 still found saved config but could not restore an active relay adapter, so required setup reopened.
 This release activates saved config and the adapter in place for user mode while keeping full
-navigation for entry from the public demo. The fix has passed local tests; supervised device
-confirmation is pending.
+navigation for entry from the public demo. The fix had passed local tests; supervised device
+confirmation was pending at that historical checkpoint and passed in the later check below.
 
 After publication, a third supervised iPhone acceptance confirmed the fix on the core CGM path:
 the Gluroo (Libre) connection passed, Start remained in the existing user-mode page, and live
 glucose was displayed. Usage D1 nevertheless remained `profiles / usage_daily / event_receipts =
 0 / 0 / 0`, so usage-profile creation and Create, Stop, Resume, Delete, and the secondary export
-check remain pending. Deployment `a1962cbf-9f77-48c1-b33a-05bd39323a8c` then restored relay stopped
+check had not yet passed at that historical checkpoint. Deployment `a1962cbf-9f77-48c1-b33a-05bd39323a8c` then restored relay stopped
 Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` at 100%, and deployment
 `17de293b-2d38-4b07-aa5f-604c2cc65d43` restored Usage stopped Version
 `7cb71965-74c3-47f9-b589-75cf6d669edb` at 100%. Approved-origin preflight returned `204` and a
@@ -3364,7 +3368,7 @@ exact `401 authentication_required`; the core CGM flow correctly remained availa
 candidate fix now forgets only the exact same stale credential on that exact response, preserves a
 newer or different profile and every non-401 failure, sends no usage events after cleanup, and waits
 for the next explicit save plus fresh Turnstile before creating a profile. This explanation remains
-the most likely diagnosis until the next device check. This release candidate includes the fix and awaits supervised device re-acceptance.
+the most likely diagnosis until the next device check. The later supervised device re-acceptance confirmed the stale-credential cleanup and the complete Usage lifecycle.
 
 Product analytics must remain separate from public Web Analytics, CGM transport, and
 glucose storage. Do not place glucose values, graphs, AI-letter contents, Nightscout or
@@ -3509,12 +3513,12 @@ runtimeの `USAGE_COLLECTION_ENABLED=true` とフロントの開始画面を監�
 Safariで再読み込みをまたいだsessionStorageの短期リレーチケットが失われる、または参照できない場合、
 保存済みconfigはあっても有効なリレーadapterを復元できず、必須の接続画面を開きます。このリリースでは、
 ユーザーモードでは保存済みconfigとadapterをその場で有効化し、公開デモから入る場合だけ完全なページ遷移を
-維持します。このリリースにはローカルテストに合格した修正を含めています。監督下実機確認は未完了です。
+維持します。このリリースにはローカルテストに合格した修正を含めています。この時点では、監督下実機確認は未完了でした。
 
 公開後の3回目のiPhone監督下確認では、Gluroo（Libre）の接続に成功し、開始後も同じユーザーモード画面に
 とどまってライブ血糖を表示できました。これでCGM表示の中核経路に対する修正を実機確認できました。一方、
 Usage D1は `profiles / usage_daily / event_receipts = 0 / 0 / 0` のままで、利用プロフィール作成と作成・停止・
-再開・削除・補助的な書き出しは未確認です。確認直後、deployment
+再開・削除・補助的な書き出しは、この3回目確認の時点では未確認でした。確認直後、deployment
 `a1962cbf-9f77-48c1-b33a-05bd39323a8c` で限定中継の停止Version
 `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a`、deployment `17de293b-2d38-4b07-aa5f-604c2cc65d43` で
 Usageの停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb` を、それぞれ本番通信の100%へ戻しました。
@@ -3527,7 +3531,46 @@ Safari内に古い `glucoscope.usageProfile.v1` 認証情報が残っていた�
 端末内だけの修正候補では、この正確な応答を受けた時だけ、開始時と完全に同じ古い認証情報を忘れます。より新しい、
 または別のプロフィールと401以外の失敗は保持し、削除後は利用イベントを送らず、次に本人が明示的に保存して新しい
 Turnstileを完了するまでプロフィールを作りません。次の実機確認までは「最も可能性が高い原因」として扱い、この候補は
-この公開候補に修正を含め、次の監督下実機確認を待ちます。
+この公開候補に修正を含め、その後の監督下実機確認で古い認証情報の整理と新規プロフィール作成を確認しました。
+
+同日、その公開候補を使った次の監督下iPhone確認を完了しました。別の明示承認後、deployment
+`6dabe28d-19a4-40f6-9c6d-e6f273d18298` でUsage active Version
+`5d160aed-7b27-48e6-b0a8-783534f97b6f` へ本番通信の100%を向けました。
+一般利用者向け限定中継は停止したまま、Azure Nightscoutへのブラウザ直接接続で血糖表示を確認しました。
+最初の保存は古いSafari認証情報だけを安全に整理し、D1は `0 / 0 / 0` のままでした。
+次の明示的な保存と新しいTurnstileでprofileが1件作成され、再読み込み後もprofileは1件のまま、
+`usage_daily=1`、`event_receipts=2` となりました。これにより古い認証情報の回復、profile作成、
+重複防止、日別記録を実機合格とします。
+
+続いて、利用記録の停止で記録中0件・停止中1件、再開で記録中1件・停止中0件となること、
+allowlist JSONを書き出せることを確認しました。最後に端末プロフィールを削除し、cascade後の
+`profiles / usage_daily / event_receipts` が再び `0 / 0 / 0` になりました。表示名、profile ID、
+token、血糖値、接続情報はこの記録へ残しません。
+
+確認後、deployment `20216b73-27a9-41e0-a3be-25595babe185` で停止Version
+`7cb71965-74c3-47f9-b589-75cf6d669edb` を100%へ戻しました。停止中送信は `503`、
+`Cache-Control: no-store`、`Vary: Origin` を維持し、一般利用者向け限定中継も停止中です。
+Phase 1BのUsage lifecycleは監督下実機受け入れ合格とします。このリリースで削除成功後の完了文言を
+明示し、書き出しを通常操作より目立たない「詳しい管理」へ移しました。一般利用者向け限定中継の
+Dexcom G7経路も、独立した安全境界として正式な実機確認に合格しました。次は少人数展開を判断します。
+
+同日、別の明示承認後、一般利用者向け限定中継のDexcom G7経路を通常Safariで正式に実機確認しました。
+事前に停止Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a`、許可Originのpreflight `204`、
+停止中の送信 `503`、不許可OriginとOriginなしの `403` を確認しました。deployment
+`eb10444c-56ca-46eb-8e6c-0a15d2bd9fdf` でactive Version
+`a398d59e-54c1-4b8d-a9a4-b779af360a54` へ100%を向け、CORS `204`、無効なTurnstileの `403`、
+`Cache-Control: no-store`、`Vary: Origin` を維持しました。
+
+iPhoneの通常SafariだけでG7用Gluroo URLとAPI Secretを入力し、接続確認、現在血糖、グラフ、
+今日・昨日・7日・30日の期間切替、再読み込み後の再表示、端末接続の削除と設定画面への復帰を確認し、
+すべて合格しました。URL、Secret、Turnstile token、relay ticket、血糖値は記録していません。
+公開3CGMデモWorkerとUsage Workerには変更を加えず、Usageは停止したままです。確認後、deployment
+`5c390d07-13ce-4547-b53c-9a7ea9936696` で停止Versionを100%へ戻し、停止中の送信 `503`、
+`Cache-Control: no-store`、`Vary: Origin` を再確認しました。
+
+これで一般利用者向け限定中継のDexcom G7基本経路は実機確認済みです。継続有効化と少人数展開は
+別の判断と承認にし、通常Safariの完全終了後の復元、約1時間のticket自然失効、上限到達時の挙動は
+未確認の運用gateとして残します。
 
 プロダクト内の利用分析は、未ログインの公開Web Analytics、CGMの通信、
 血糖データの保存とは分離します。血糖値、グラフ、AIお手紙本文、

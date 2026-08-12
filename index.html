@@ -25,7 +25,7 @@
   <!-- GlucoScope Limited Data Relay: the public endpoint is configured for paused acceptance testing only. -->
   <meta name="glucoscope-data-relay-endpoint" content="https://glucoscope-data-relay.afterglow21.workers.dev">
   <meta name="glucoscope-usage-profile-enabled" content="true">
-  <link rel="stylesheet" href="style.css?v=20260812-demo-identity-1">
+  <link rel="stylesheet" href="style.css?v=20260812-early-access-1">
 </head>
 <body>
 
@@ -41,8 +41,8 @@
     <div class="data-source-dialog-hero">
       <img src="assets/gluco/about/gluco-data-link.png" alt="" class="data-source-dialog-gluco" width="220" height="220">
       <div>
-        <h2 id="dataSourceDialogTitle" data-i18n-key="dataSourceDialogTitle">データ接続（工事中）</h2>
-        <p data-i18n-key="dataSourceDialogLead">現在は一般公開に向けた準備中です。つなぎ方は確認できますが、Gluroo接続はまだ限定テスト中です。</p>
+        <h2 id="dataSourceDialogTitle" data-i18n-key="dataSourceDialogTitle">データ接続（先行体験）</h2>
+        <p data-i18n-key="dataSourceDialogLead">自分の血糖データをGlucoScopeで表示できます。Gluroo接続は少人数で確認しながら提供しています。</p>
       </div>
     </div>
 
@@ -242,7 +242,13 @@
             <button id="usageProfileStopButton" class="usage-profile-secondary-button" type="button" data-i18n-key="usageProfileStopButton">利用記録を停止する</button>
             <button id="usageProfileDeleteActiveButton" class="usage-profile-delete-button" type="button" data-i18n-key="usageProfileDeleteButton">利用記録を削除する</button>
           </div>
-          <button id="usageProfileExportActiveButton" class="usage-profile-export-link" type="button" data-i18n-key="usageProfileExportButton">保存されている利用記録を確認・保存</button>
+          <details class="usage-profile-advanced">
+            <summary data-i18n-key="usageProfileAdvancedSummary">詳しい管理</summary>
+            <div class="usage-profile-advanced-body">
+              <p data-i18n-key="usageProfileAdvancedLead">必要なときだけ、この端末に利用記録の控えを保存できます。</p>
+              <button id="usageProfileExportActiveButton" class="usage-profile-export-link" type="button" data-i18n-key="usageProfileExportButton">利用記録を確認・保存する</button>
+            </div>
+          </details>
         </div>
 
         <div id="usageProfileStopped" class="usage-profile-state-panel" hidden>
@@ -252,12 +258,18 @@
             <button id="usageProfileStopDisabledButton" class="usage-profile-secondary-button" type="button" data-i18n-key="usageProfileStopDisabledButton" hidden>今後の記録も停止する</button>
             <button id="usageProfileDeleteStoppedButton" class="usage-profile-delete-button" type="button" data-i18n-key="usageProfileDeleteButton">利用記録を削除する</button>
           </div>
-          <button id="usageProfileExportStoppedButton" class="usage-profile-export-link" type="button" data-i18n-key="usageProfileExportButton">保存されている利用記録を確認・保存</button>
+          <details class="usage-profile-advanced">
+            <summary data-i18n-key="usageProfileAdvancedSummary">詳しい管理</summary>
+            <div class="usage-profile-advanced-body">
+              <p data-i18n-key="usageProfileAdvancedLead">必要なときだけ、この端末に利用記録の控えを保存できます。</p>
+              <button id="usageProfileExportStoppedButton" class="usage-profile-export-link" type="button" data-i18n-key="usageProfileExportButton">利用記録を確認・保存する</button>
+            </div>
+          </details>
         </div>
 
-        <div id="usageProfileStatus" class="usage-profile-status" role="status" aria-live="polite"></div>
       </section>
 
+      <div id="usageProfileStatus" class="usage-profile-status" role="status" aria-live="polite"></div>
       <div id="localProfileStatus" class="local-profile-status" role="status" aria-live="polite"></div>
 
       <div class="local-profile-actions">
@@ -309,7 +321,7 @@
   </nav>
 
   <div class="view-toolbar-actions">
-    <button id="dataSourceButton" type="button" class="data-source-toolbar-button">🔗 <span data-i18n-key="dataSourceButtonDemo">データ接続（工事中）</span></button>
+    <button id="dataSourceButton" type="button" class="data-source-toolbar-button">🔗 <span data-i18n-key="dataSourceButtonDemo">データ接続（先行体験）</span></button>
     <button id="localProfileButton" type="button" class="local-profile-toolbar-button" hidden>🍀 <span data-i18n-key="localProfileButton">あなたの設定</span></button>
     <div class="language-switch" aria-label="Language switch">
       <span data-i18n-key="languageLabel">Language</span>
@@ -556,7 +568,7 @@
     </div>
     <button id="mobileDataSourceButton" type="button" class="mobile-data-source-button">
       <span aria-hidden="true">🔗</span>
-      <span><strong data-i18n-key="mobileMoreDataSource">データ接続（工事中）</strong><small data-i18n-key="mobileMoreDataSourceNote">準備中 · Gluroo / Nightscout</small></span>
+      <span><strong data-i18n-key="mobileMoreDataSource">データ接続（先行体験）</strong><small data-i18n-key="mobileMoreDataSourceNote">先行体験 · Gluroo / Nightscout</small></span>
     </button>
     <button id="mobileLocalProfileButton" type="button" class="mobile-local-profile-button" hidden>
       <span aria-hidden="true">🍀</span>
@@ -826,7 +838,7 @@
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js?v=20260721-user-foundation-3"></script>
-<script src="js/app.js?v=20260812-demo-identity-1"></script>
+<script src="js/app.js?v=20260812-early-access-1"></script>
 <!-- Cloudflare Web Analytics: aggregate page-view and performance metrics only -->
 <script src="js/analytics-loader.js?v=20260811-usage-profile-stage-1"></script>
 <!-- End Cloudflare Web Analytics -->

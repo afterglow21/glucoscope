@@ -75,14 +75,22 @@ test("registered profiles get a small management section with no enrollment cont
     assert.match(index, new RegExp(`id="${id}"`), id);
   }
   assert.match(index, /id="usageProfileCardTitle"[^>]*>利用記録の管理</);
-  assert.match(index, /class="usage-profile-export-link"[^>]*[^<]*保存されている利用記録を確認・保存/);
+  assert.equal((index.match(/<details class="usage-profile-advanced">/g) || []).length, 2);
+  assert.match(index, /<summary[^>]*>詳しい管理<\/summary>[\s\S]*class="usage-profile-export-link"[^>]*[^<]*利用記録を確認・保存する/);
+  const usageCardEnd = index.indexOf("</section>", index.indexOf('id="usageProfileCard"'));
+  assert.ok(index.indexOf('id="usageProfileStatus"') > usageCardEnd);
   assert.doesNotMatch(index, /id="usageProfileStartButton"|id="usageProfileSkipButton"/);
   assert.match(app, /updateProfile\?\.\(\{\s*collectionEnabled: Boolean\(collectionEnabled\)/s);
   assert.match(app, /exportData\?\.\(\)/);
   assert.match(app, /deleteData\?\.\(\)/);
   assert.match(app, /if \(!getUsageProfileState\(\)\.registered \|\| usageProfileActionInFlight\) return;/);
   assert.match(app, /stopDisabledButton\.hidden = state\.enabled \|\| !state\.registered \|\| !state\.collectionEnabled/);
-  assert.match(app, /端末内の表示名、データ接続、血糖データ、グルコの想い出は削除しません/);
+  assert.match(app, /usageProfileDeletedStatus: "利用記録を削除しました。血糖の接続や表示名はそのままです。"/);
+  assert.match(app, /usageProfileDeleteConfirm: "この端末の利用記録を削除しますか？ 血糖の接続や表示名、グルコの想い出は消えません。"/);
+  assert.match(app, /function openLocalProfileDialog[\s\S]*setUsageProfileStatus\(\);[\s\S]*populateLocalProfileForm\(\);/);
+  assert.match(css, /\.usage-profile-status:empty\s*\{\s*display:none;/);
+  assert.match(css, /\.usage-profile-advanced summary\s*\{[\s\S]*min-height:44px;/);
+  assert.match(css, /\.usage-profile-advanced \.usage-profile-export-link\s*\{[\s\S]*min-height:44px;/);
 });
 
 test("connection save makes the dedicated usage check best-effort and generation-safe", () => {
@@ -620,7 +628,8 @@ test("local display-name storage remains network-free and server sync is separat
   assert.doesNotMatch(localProfile, /\b(?:fetch|XMLHttpRequest|sendBeacon|WebSocket)\b/u);
   assert.match(index, /js\/local-profile\.js\?v=20260811-usage-profile-stage-1/);
   assert.match(index, /js\/usage-client\.js\?v=20260812-stale-profile-recovery-1/);
-  assert.match(index, /js\/app\.js\?v=20260812-demo-identity-1/);
+  assert.match(index, /style\.css\?v=20260812-early-access-1/);
+  assert.match(index, /js\/app\.js\?v=20260812-early-access-1/);
   assert.match(app, /updateUsageProfileDisplayName\(result\.profile\.displayName\)/);
   assert.doesNotMatch(app, /handleLocalProfileDelete|localProfileDeleteButton/);
   assert.match(app, /if \(!state\.enabled \|\| !state\.registered\) return;/);

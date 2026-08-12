@@ -16,12 +16,12 @@ const nightscoutGuide = await readFile(new URL("../guides/nightscout-about/index
 const guardianGuide = await readFile(new URL("../guides/guardian-monitor/index.html", import.meta.url), "utf8");
 
 // Existing user-foundation coverage.
-test("public data connection remains clickable while clearly marked under construction", () => {
-  assert.match(index, /データ接続（工事中）/);
-  assert.match(index, /Gluroo接続はまだ限定テスト中/);
-  assert.match(index, /js\/app\.js\?v=20260812-demo-identity-1/);
-  assert.match(app, /dataSourceButtonDemo: "データ接続（工事中）"/);
-  assert.match(app, /dataSourceDialogTitle: "Data connection \(under construction\)"/);
+test("public data connection remains clickable and clearly marked as early access", () => {
+  assert.match(index, /データ接続（先行体験）/);
+  assert.match(index, /Gluroo接続は少人数で確認しながら提供しています/);
+  assert.match(index, /js\/app\.js\?v=20260812-early-access-1/);
+  assert.match(app, /dataSourceButtonDemo: "データ接続（先行体験）"/);
+  assert.match(app, /dataSourceDialogTitle: "Data connection \(early access\)"/);
   assert.doesNotMatch(index, /id="dataSourceButton"[^>]+disabled/);
 });
 

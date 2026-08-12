@@ -1,4 +1,4 @@
-# GlucoScope Usage Worker – paused after supervised re-acceptance checkpoint
+# GlucoScope Usage Worker – lifecycle accepted and paused
 
 This directory contains a dedicated, dependency-light Cloudflare Worker and D1 schema for minimal device-profile usage counts.
 
@@ -43,17 +43,26 @@ This checkpoint verifies a reachable but stopped production shell. It does not a
 - The checked-in `wrangler.jsonc` remains `USAGE_COLLECTION_ENABLED=false`. The public frontend still has the supervised-candidate gate enabled at this checkpoint, while the general-user relay remains independently stopped at `RELAY_ENABLED=false`.
 - A second iPhone retry temporarily enabled this same Usage Version and relay Version `a398d59e-54c1-4b8d-a9a4-b779af360a54`. The connection test again succeeded, but a brief Turnstile display was followed by the required data-connection screen. D1 remained `0 / 0 / 0`.
 - Usage was immediately returned to stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb`, and the relay to stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a`.
-- Reproduction identified an unnecessary reload in the already-user-mode save path. When Safari lost or could not access the sessionStorage relay ticket across that reload, initialization had saved config but no active adapter and reopened required setup. This release activates config and adapter in place for user mode while retaining full navigation from the public demo. Local tests pass; supervised device confirmation is pending.
+- Reproduction identified an unnecessary reload in the already-user-mode save path. When Safari lost or could not access the sessionStorage relay ticket across that reload, initialization had saved config but no active adapter and reopened required setup. This release activates config and adapter in place for user mode while retaining full navigation from the public demo. Local tests and the later supervised device confirmation passed.
 
-## Core CGM handoff accepted; Usage lifecycle still pending (2026-08-12 JST)
+## Historical checkpoint: core CGM handoff accepted before Usage lifecycle (2026-08-12 JST)
 
 - After the in-place fix was published, a third supervised iPhone acceptance temporarily used the same Usage and relay candidate Versions.
 - Gluroo (Libre) connected, `GlucoScopeを始める` remained on the existing user-mode page, and live glucose was displayed. This accepts the core CGM handoff fix, not the Usage lifecycle.
-- D1 remained `profiles / usage_daily / event_receipts = 0 / 0 / 0`, so no usage profile was created. Create, Stop, Resume, Delete, and the secondary allowlisted-export check remain pending.
+- D1 remained `profiles / usage_daily / event_receipts = 0 / 0 / 0`, so no usage profile was created at this checkpoint. Create, Stop, Resume, Delete, and the secondary allowlisted-export check had not yet been accepted; the later checkpoint below completes them.
 - Deployment `17de293b-2d38-4b07-aa5f-604c2cc65d43` restored Usage stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` at 100%, and deployment `a1962cbf-9f77-48c1-b33a-05bd39323a8c` restored relay stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` at 100%.
 - Approved-origin preflight returned `204` and an approved-origin stopped `POST` returned `503` for both Workers. Checked-in flags remain `false`; the public supervised-candidate gate remains `true`, and the general-user relay is paused.
 
-The most likely explanation for D1 staying empty is a stale Safari-local `glucoscope.usageProfile.v1` credential left after the earlier server-side test-profile deletion. The browser treated it as registered, while profile `PATCH` returned exact `401 authentication_required`; the core CGM flow correctly failed open. A local-only candidate now forgets only the exact credential that started that exact 401 request, preserves any newer or different profile and every non-401 failure, sends no usage events after cleanup, and waits for the next explicit save plus fresh Turnstile before creating. This remains the most likely diagnosis until device re-acceptance; this release candidate includes the fix and awaits supervised confirmation.
+The most likely explanation for D1 staying empty was a stale Safari-local `glucoscope.usageProfile.v1` credential left after the earlier server-side test-profile deletion. The browser treated it as registered, while profile `PATCH` returned exact `401 authentication_required`; the core CGM flow correctly failed open. The local recovery forgets only the exact credential that started that exact 401 request, preserves any newer or different profile and every non-401 failure, sends no usage events after cleanup, and waits for the next explicit save plus fresh Turnstile before creating. The later supervised device re-acceptance confirmed this diagnosis and behavior.
+
+## Usage lifecycle accepted and stopped (2026-08-12 JST)
+
+- Deployment `6dabe28d-19a4-40f6-9c6d-e6f273d18298` routed 100% of Usage traffic to active Version `5d160aed-7b27-48e6-b0a8-783534f97b6f`. The general-user relay remained stopped, and an iPhone using direct Azure Nightscout displayed glucose.
+- The first save safely removed the stale Safari credential and left D1 at `0 / 0 / 0`. A second explicit save with a fresh Turnstile created one profile. Reload kept one profile and produced `usage_daily=1` and `event_receipts=2`, accepting stale-credential recovery, creation, deduplication, and daily recording.
+- Stop produced 0 recording and 1 stopped profile; Resume returned to 1 recording and 0 stopped. The allowlisted JSON export downloaded successfully.
+- Delete cascaded the test profile and related records, returning `profiles / usage_daily / event_receipts` to `0 / 0 / 0`. No display name, profile identifier, token, glucose value, or connection detail is recorded here.
+- Deployment `20216b73-27a9-41e0-a3be-25595babe185` restored stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` at 100%. The stopped response remains `503` with `Cache-Control: no-store` and `Vary: Origin`; the general-user relay remains stopped.
+- This release shows an explicit success message after deletion and moves export into a less prominent `More options` path. The separate general-user G7 relay path has also completed its recorded device acceptance.
 
 ## Boundary
 
@@ -202,8 +211,8 @@ There is intentionally no real `deploy` npm script.
 
 ## Current supervised acceptance steps
 
-1. Keep both Workers stopped at the recorded rollback Versions until the next supervised Usage check. Keep Gluroo relay confirmation as a separate boundary.
-2. Starting from the clean `0 / 0 / 0` D1 baseline, check profile creation without a false callback error, followed by stop, resume, deletion, and the secondary allowlisted-export link on one user-controlled device. The separate CGM handoff check already passes.
-3. Only after those Usage checks, decide separately whether to resume a small rollout. Keep the general-user relay independent at `RELAY_ENABLED=false`.
+1. Keep Usage stopped at Version `7cb71965-74c3-47f9-b589-75cf6d669edb` and D1 at the clean `0 / 0 / 0` baseline while the separate relay acceptance is prepared.
+2. Completed in the release candidate: visible deletion success and a quieter export path.
+3. Accept the general-user G7 relay path separately before deciding on a small rollout. Do not infer relay authorization from this Usage acceptance.
 
 Secret values, profile tokens, display names, and production database content must never be copied into Git, command arguments, screenshots, logs, fixtures, or support messages.
