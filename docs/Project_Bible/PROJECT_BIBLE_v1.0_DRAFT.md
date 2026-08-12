@@ -4751,6 +4751,30 @@ so that a harmless wording imperfection does not repeatedly become a failure.
 端末内の旧v11キャッシュは読み取り時と保存済み接続の削除時に消し、
 新しい歓迎・寄り添いと判定境界を古い保存済み文章が上書きしないようにします。
 
+### AI Worker production checkpoint — 2026-08-13
+### AI Worker本番反映記録 — 2026-08-13
+
+Deployment `aebf4032-1d00-4946-9d3c-773a2e0bf7d3` routes 100% of
+`gluco-letter-worker` traffic to Version
+`1f4d0c91-808c-4600-8d63-e9207d06b7e0`.
+Version `1b8a67ca-dc1b-4655-9f09-83e24a249f7b` remains the immediate
+rollback target. The release changes only the letter voice,
+the output-quality boundary, and cache schema v12.
+Secrets, bindings, migrations, CORS, generation limits,
+and retention settings are unchanged.
+After deployment, the public usage endpoint returned `200`
+and the approved-origin AI preflight returned `204`.
+
+AI Worker deployment `aebf4032-1d00-4946-9d3c-773a2e0bf7d3` は、
+Version `1f4d0c91-808c-4600-8d63-e9207d06b7e0` へ
+通信の100%を向けています。
+Version `1b8a67ca-dc1b-4655-9f09-83e24a249f7b` を
+即時復帰先として残しました。
+この反映で変えたのは、お手紙の話し方、出力品質の境界、
+cache schema v12だけです。
+Secret、binding、migration、CORS、生成上限、保存期間は変更していません。
+反映後、公開Usage endpointは `200`、許可OriginのAI事前確認は `204` でした。
+
 ---
 
 ## 1–3 Person Early Access Activation — 2026-08-12

@@ -14,6 +14,13 @@ GitHub Pages
 
 ## Current production behavior
 
+Production checkpoint — 2026-08-13:
+
+- deployment `aebf4032-1d00-4946-9d3c-773a2e0bf7d3` routes 100% to Version `1f4d0c91-808c-4600-8d63-e9207d06b7e0`
+- Version `1b8a67ca-dc1b-4655-9f09-83e24a249f7b` remains the immediate rollback target
+- the release changes only the letter voice, output-quality boundary, and cache schema; Secrets, bindings, migrations, CORS, limits, and storage retention are unchanged
+- the public usage endpoint returned `200` and the approved-origin AI preflight returned `204` after deployment
+
 - `AI_PROVIDER=openai`
 - OpenAI API key is stored as a Cloudflare secret.
 - Turnstile verification is required.
