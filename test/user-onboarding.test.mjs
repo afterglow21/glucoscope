@@ -19,7 +19,7 @@ const guardianGuide = await readFile(new URL("../guides/guardian-monitor/index.h
 test("public data connection remains clickable while clearly marked under construction", () => {
   assert.match(index, /データ接続（工事中）/);
   assert.match(index, /Gluroo接続はまだ限定テスト中/);
-  assert.match(index, /js\/app\.js\?v=20260812-supervised-usage-1/);
+  assert.match(index, /js\/app\.js\?v=20260812-safari-save-1/);
   assert.match(app, /dataSourceButtonDemo: "データ接続（工事中）"/);
   assert.match(app, /dataSourceDialogTitle: "Data connection \(under construction\)"/);
   assert.doesNotMatch(index, /id="dataSourceButton"[^>]+disabled/);
@@ -322,6 +322,11 @@ test("verified connection can start user mode from the onboarding button", () =>
   const persistHandler = app.slice(persistStart, persistEnd);
   assert.match(persistHandler, /localProfileManager\?\.save\?\.\(\{ displayName: snapshot\.displayName \}\)/);
   assert.match(persistHandler, /dataSourceManager\.saveUserConfig\(snapshot\.config/);
+  assert.ok(
+    persistHandler.indexOf("dataSourceManager.saveUserConfig(snapshot.config")
+      < persistHandler.indexOf("localProfileManager?.save?.({ displayName: snapshot.displayName })")
+  );
+  assert.match(persistHandler, /return \{ displayNameStored: false \}/);
   assert.match(persistHandler, /if \(isUserDataSourceMode\(\)\) \{[\s\S]*window\.location\.reload\(\)/);
   assert.match(persistHandler, /window\.location\.href = buildUserModeUrl\("glucose"\)/);
 });
@@ -423,7 +428,7 @@ test("field feedback copy and red-frame navigation are reflected", () => {
 });
 
 test("current cache and CSS markers are present", () => {
-  assert.match(index, /js\/data-source\.js\?v=20260812-connection-lifecycle-1/);
+  assert.match(index, /js\/data-source\.js\?v=20260812-safari-save-1/);
   assert.match(index, /js\/data-relay-client\.js\?v=20260812-connection-lifecycle-1/);
   assert.match(guideCss, /User Foundation 0\.3\.3/);
   assert.match(css, /Limited Data Relay Paused Acceptance/);

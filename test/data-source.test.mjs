@@ -21,7 +21,13 @@ function createStorage() {
   };
 }
 
-function loadModule({ search = "", pathname = "/index.html", fetchImpl = null } = {}) {
+function loadModule({
+  search = "",
+  pathname = "/index.html",
+  fetchImpl = null,
+  localStorage = createStorage(),
+  sessionStorage = createStorage()
+} = {}) {
   const context = {
     URL,
     URLSearchParams,
@@ -32,8 +38,8 @@ function loadModule({ search = "", pathname = "/index.html", fetchImpl = null } 
     crypto: webcrypto,
     fetch: fetchImpl || globalThis.fetch,
     location: { search, pathname },
-    localStorage: createStorage(),
-    sessionStorage: createStorage(),
+    localStorage,
+    sessionStorage,
     setTimeout,
     clearTimeout,
     console
@@ -83,6 +89,161 @@ test("persists user configuration only in the selected browser storage", () => {
   assert.equal(context.localStorage.getItem(api.STORAGE_KEY), null);
   assert.ok(context.sessionStorage.getItem(api.SESSION_STORAGE_KEY));
   assert.equal(api.getActiveConfig().provider, "gluroo");
+});
+
+test("a persistent connection survives a fresh page module load", () => {
+  const localStorage = createStorage();
+  const sessionStorage = createStorage();
+  const firstPage = loadModule({ search: "?mode=user", localStorage, sessionStorage });
+
+  firstPage.GlucoScopeDataSource.saveUserConfig({
+    provider: "gluroo",
+    baseUrl: "https://persistent-reload.example.test",
+    credential: "persistent-reload-secret",
+    persist: true
+  }, { persist: true });
+
+  const reloadedPage = loadModule({ search: "?mode=user", localStorage, sessionStorage });
+  const restored = reloadedPage.GlucoScopeDataSource.getActiveConfig();
+  assert.equal(restored?.provider, "gluroo");
+  assert.equal(restored?.baseUrl, "https://persistent-reload.example.test");
+  assert.equal(restored?.credential, "persistent-reload-secret");
+  assert.equal(restored?.persist, true);
+});
+
+test("a session connection survives a fresh page module load in the same tab", () => {
+  const localStorage = createStorage();
+  const sessionStorage = createStorage();
+  const firstPage = loadModule({ search: "?mode=user", localStorage, sessionStorage });
+
+  firstPage.GlucoScopeDataSource.saveUserConfig({
+    provider: "nightscout",
+    baseUrl: "https://session-reload.example.test",
+    credential: "session-reload-secret",
+    persist: false
+  }, { persist: false });
+
+  const reloadedPage = loadModule({ search: "?mode=user", localStorage, sessionStorage });
+  const restored = reloadedPage.GlucoScopeDataSource.getActiveConfig();
+  assert.equal(restored?.provider, "nightscout");
+  assert.equal(restored?.baseUrl, "https://session-reload.example.test");
+  assert.equal(restored?.credential, "session-reload-secret");
+  assert.equal(restored?.persist, false);
+});
+
+test("keeps the previous session connection when a new persistent write fails", () => {
+  const localStorage = createStorage();
+  const originalSetItem = localStorage.setItem.bind(localStorage);
+  let rejectPersistentWrite = false;
+  localStorage.setItem = (key, value) => {
+    if (rejectPersistentWrite) throw new Error("storage write rejected");
+    originalSetItem(key, value);
+  };
+  const context = loadModule({ search: "?mode=user", localStorage });
+  const api = context.GlucoScopeDataSource;
+
+  api.saveUserConfig({
+    provider: "nightscout",
+    baseUrl: "https://previous.example.test",
+    credential: "previous-secret",
+    persist: false
+  }, { persist: false });
+
+  rejectPersistentWrite = true;
+  assert.throws(() => api.saveUserConfig({
+    provider: "gluroo",
+    baseUrl: "https://new.example.test",
+    credential: "new-secret",
+    persist: true
+  }, { persist: true }), /storage write rejected/);
+
+  assert.ok(context.sessionStorage.getItem(api.SESSION_STORAGE_KEY));
+  assert.equal(api.getActiveConfig().baseUrl, "https://previous.example.test");
+  assert.equal(context.localStorage.getItem(api.STORAGE_KEY), null);
+});
+
+test("removes the previous storage copy only after the selected write succeeds", () => {
+  const context = loadModule({ search: "?mode=user" });
+  const api = context.GlucoScopeDataSource;
+
+  api.saveUserConfig({
+    provider: "nightscout",
+    baseUrl: "https://persistent.example.test",
+    credential: "persistent-secret",
+    persist: true
+  }, { persist: true });
+  assert.ok(context.localStorage.getItem(api.STORAGE_KEY));
+
+  api.saveUserConfig({
+    provider: "gluroo",
+    baseUrl: "https://session.example.test",
+    credential: "session-secret",
+    persist: false
+  }, { persist: false });
+
+  assert.equal(context.localStorage.getItem(api.STORAGE_KEY), null);
+  assert.ok(context.sessionStorage.getItem(api.SESSION_STORAGE_KEY));
+  assert.equal(api.getActiveConfig().baseUrl, "https://session.example.test");
+});
+
+test("keeps a successful persistent save when old session cleanup is rejected", () => {
+  const localStorage = createStorage();
+  const sessionStorage = createStorage();
+  const context = loadModule({ search: "?mode=user", localStorage, sessionStorage });
+  const api = context.GlucoScopeDataSource;
+  sessionStorage.setItem(api.SESSION_STORAGE_KEY, JSON.stringify({
+    schemaVersion: 1,
+    mode: "user",
+    provider: "nightscout",
+    baseUrl: "https://old-session.example.test",
+    credential: "old-session-secret",
+    persist: false,
+    savedAt: "2000-01-01T00:00:00.000Z"
+  }));
+  sessionStorage.removeItem = () => {
+    throw new Error("session cleanup rejected");
+  };
+
+  assert.doesNotThrow(() => api.saveUserConfig({
+    provider: "gluroo",
+    baseUrl: "https://new-persistent.example.test",
+    credential: "new-persistent-secret",
+    persist: true
+  }, { persist: true }));
+
+  assert.ok(localStorage.getItem(api.STORAGE_KEY));
+  assert.ok(sessionStorage.getItem(api.SESSION_STORAGE_KEY));
+  assert.equal(api.getActiveConfig().baseUrl, "https://new-persistent.example.test");
+});
+
+test("keeps a successful session save when old persistent cleanup is rejected", () => {
+  const localStorage = createStorage();
+  const sessionStorage = createStorage();
+  const context = loadModule({ search: "?mode=user", localStorage, sessionStorage });
+  const api = context.GlucoScopeDataSource;
+  localStorage.setItem(api.STORAGE_KEY, JSON.stringify({
+    schemaVersion: 1,
+    mode: "user",
+    provider: "nightscout",
+    baseUrl: "https://old-persistent.example.test",
+    credential: "old-persistent-secret",
+    persist: true,
+    savedAt: "2000-01-01T00:00:00.000Z"
+  }));
+  localStorage.removeItem = () => {
+    throw new Error("persistent cleanup rejected");
+  };
+
+  assert.doesNotThrow(() => api.saveUserConfig({
+    provider: "gluroo",
+    baseUrl: "https://new-session.example.test",
+    credential: "new-session-secret",
+    persist: false
+  }, { persist: false }));
+
+  assert.ok(sessionStorage.getItem(api.SESSION_STORAGE_KEY));
+  assert.ok(localStorage.getItem(api.STORAGE_KEY));
+  assert.equal(api.getActiveConfig().baseUrl, "https://new-session.example.test");
 });
 
 test("uses a SHA-1 api-secret header for a regular Nightscout source", async () => {

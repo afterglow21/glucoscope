@@ -44,7 +44,13 @@ function stored(overrides = {}) {
   });
 }
 
-function loadModule({ storage = createStorage(), fetchImpl, cryptoImpl } = {}) {
+function loadModule({
+  storage = createStorage(),
+  fetchImpl,
+  cryptoImpl,
+  setTimeoutImpl = setTimeout,
+  clearTimeoutImpl = clearTimeout
+} = {}) {
   const calls = [];
   const context = {
     localStorage: storage,
@@ -53,6 +59,9 @@ function loadModule({ storage = createStorage(), fetchImpl, cryptoImpl } = {}) {
       return Response.json({ ok: true, results: [] });
     }),
     crypto: cryptoImpl || { randomUUID: () => "123e4567-e89b-42d3-a456-426614174111" },
+    AbortController,
+    setTimeout: setTimeoutImpl,
+    clearTimeout: clearTimeoutImpl,
     Date,
     Object,
     Array,
@@ -141,6 +150,98 @@ test("start is explicit and sends only the profile allowlist", async () => {
   assert.equal("glucose" in persisted, false);
   assert.equal("connectionUrl" in persisted, false);
   assert.equal(api.getState().profileToken, undefined);
+});
+
+test("start aborts an unresponsive profile request and never writes late credentials or events", async () => {
+  const storage = createStorage();
+  const seen = [];
+  let lateResolve;
+  let aborted = false;
+  const { api } = loadModule({
+    storage,
+    setTimeoutImpl(callback, delay) {
+      assert.equal(delay, 10_000);
+      queueMicrotask(callback);
+      return 1;
+    },
+    clearTimeoutImpl() {},
+    fetchImpl: async (url, init) => {
+      seen.push({ url, init });
+      return new Promise((resolve, reject) => {
+        lateResolve = resolve;
+        init.signal.addEventListener("abort", () => {
+          aborted = true;
+          const error = new Error("aborted");
+          error.name = "AbortError";
+          reject(error);
+        }, { once: true });
+      });
+    }
+  });
+  configure(api);
+
+  const result = await api.start({
+    displayName: "Gluco",
+    turnstileToken: "turnstile-token"
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.error, "request_timeout");
+  assert.equal(aborted, true);
+  assert.equal(seen.length, 1);
+  assert.equal(seen[0].init.signal.aborted, true);
+  assert.equal(storage.getItem(STORAGE_KEY), null);
+  assert.equal(api.getState().registered, false);
+
+  lateResolve(Response.json({
+    ok: true,
+    profile: { id: PROFILE_ID, displayName: "Gluco", collectionEnabled: true },
+    profileToken: PROFILE_TOKEN
+  }, { status: 201 }));
+  await Promise.resolve();
+  assert.equal(storage.getItem(STORAGE_KEY), null);
+  assert.equal((await api.recordVisit()).skipped, true);
+  assert.equal(seen.length, 1);
+});
+
+test("start forwards a caller abort and clears its timeout without storing a profile", async () => {
+  const storage = createStorage();
+  const controller = new AbortController();
+  let clearCalls = 0;
+  let requestSignal;
+  const { api } = loadModule({
+    storage,
+    setTimeoutImpl() { return 19; },
+    clearTimeoutImpl(id) {
+      assert.equal(id, 19);
+      clearCalls += 1;
+    },
+    fetchImpl: async (url, init) => {
+      requestSignal = init.signal;
+      return new Promise((resolve, reject) => {
+        init.signal.addEventListener("abort", () => {
+          const error = new Error("aborted");
+          error.name = "AbortError";
+          reject(error);
+        }, { once: true });
+      });
+    }
+  });
+  configure(api);
+
+  const starting = api.start({
+    displayName: "Gluco",
+    turnstileToken: "turnstile-token",
+    signal: controller.signal
+  });
+  controller.abort();
+  const result = await starting;
+
+  assert.equal(result.ok, false);
+  assert.equal(result.error, "request_aborted");
+  assert.equal(requestSignal.aborted, true);
+  assert.equal(clearCalls, 1);
+  assert.equal(storage.getItem(STORAGE_KEY), null);
+  assert.equal(api.getState().registered, false);
 });
 
 test("start rejects an empty normalized display name before storage writes or network", async () => {

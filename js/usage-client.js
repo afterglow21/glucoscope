@@ -7,6 +7,8 @@
   const MAX_DISPLAY_NAME_CODE_POINTS = 30;
   const MAX_PENDING_AI_EVENTS = 20;
   const MAX_LIFECYCLE_GENERATION = 1_000_000_000;
+  const PROFILE_CREATE_TIMEOUT_MS = 10_000;
+  const PROFILE_CLEANUP_TIMEOUT_MS = 2_000;
   const CONTROL_AND_BIDI_PATTERN = /[\u0000-\u001f\u007f-\u009f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/gu;
   const PROFILE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
   const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/u;
@@ -267,7 +269,10 @@
     return `${year}-${month}-${day}`;
   }
 
-  async function requestJson(path, { method = "GET", body, token = "" } = {}) {
+  async function requestJson(
+    path,
+    { method = "GET", body, token = "", signal, timeoutMs = 0 } = {}
+  ) {
     if (!configuration.endpoint || typeof root?.fetch !== "function") {
       return { ok: false, error: "usage_unavailable" };
     }
@@ -276,30 +281,99 @@
     if (body !== undefined) headers["Content-Type"] = "application/json";
     if (token) headers.Authorization = `Bearer ${token}`;
 
-    let response;
+    const requestedTimeoutMs = Number(timeoutMs);
+    const hasTimeout = Number.isFinite(requestedTimeoutMs) && requestedTimeoutMs > 0;
+    const externalSignal = signal
+      && typeof signal === "object"
+      && typeof signal.aborted === "boolean"
+      ? signal
+      : null;
+    let requestSignal = externalSignal || undefined;
+    let abortController = null;
+    let timeoutId = null;
+    let timedOut = false;
+    let removeExternalAbortListener = null;
+
+    if (hasTimeout) {
+      if (
+        typeof root?.AbortController !== "function"
+        || typeof root?.setTimeout !== "function"
+        || typeof root?.clearTimeout !== "function"
+      ) {
+        return { ok: false, error: "usage_unavailable" };
+      }
+
+      abortController = new root.AbortController();
+      requestSignal = abortController.signal;
+      const abortRequest = () => {
+        try {
+          abortController.abort();
+        } catch (error) {
+          // Aborting is best effort on older browser implementations.
+        }
+      };
+      if (externalSignal?.aborted) {
+        abortRequest();
+      } else if (typeof externalSignal?.addEventListener === "function") {
+        const forwardExternalAbort = () => abortRequest();
+        externalSignal.addEventListener("abort", forwardExternalAbort, { once: true });
+        removeExternalAbortListener = () => {
+          if (typeof externalSignal.removeEventListener === "function") {
+            externalSignal.removeEventListener("abort", forwardExternalAbort);
+          }
+        };
+      }
+      if (!requestSignal.aborted) {
+        timeoutId = root.setTimeout(() => {
+          timedOut = true;
+          abortRequest();
+        }, requestedTimeoutMs);
+      }
+    }
+
+    const abortError = () => ({
+      ok: false,
+      error: timedOut ? "request_timeout" : "request_aborted"
+    });
+
+    if (requestSignal?.aborted) {
+      removeExternalAbortListener?.();
+      return abortError();
+    }
+
     try {
-      response = await root.fetch(`${configuration.endpoint}${path}`, {
+      const response = await root.fetch(`${configuration.endpoint}${path}`, {
         method,
         headers,
         body: body === undefined ? undefined : JSON.stringify(body),
         cache: "no-store",
         credentials: "omit",
-        referrerPolicy: "no-referrer"
+        referrerPolicy: "no-referrer",
+        signal: requestSignal
       });
+      let data = {};
+      try {
+        data = await response.json();
+      } catch (error) {
+        if (requestSignal?.aborted || error?.name === "AbortError") throw error;
+        data = {};
+      }
+      if (requestSignal?.aborted) return abortError();
+      if (!response.ok || data?.ok === false) {
+        return {
+          ok: false,
+          error: String(data?.error || `http_${response.status}`),
+          status: response.status
+        };
+      }
+      return { ok: true, data, status: response.status };
     } catch (error) {
+      if (requestSignal?.aborted || error?.name === "AbortError") return abortError();
       return { ok: false, error: "network_failed" };
+    } finally {
+      if (timeoutId !== null) root.clearTimeout(timeoutId);
+      removeExternalAbortListener?.();
     }
-
-    let data = {};
-    try {
-      data = await response.json();
-    } catch (error) {
-      data = {};
-    }
-    if (!response.ok || data?.ok === false) {
-      return { ok: false, error: String(data?.error || `http_${response.status}`), status: response.status };
-    }
-    return { ok: true, data, status: response.status };
   }
 
   async function start(input = {}) {
@@ -331,8 +405,13 @@
     const startEpoch = advanceLifecycleEpoch();
     const startGeneration = nextLifecycleGeneration(existing.state.lifecycleGeneration);
     sessionCollectionBlocked = true;
+    // A timeout can race a server commit whose credentials never reach this browser.
+    // Without that token the client cannot clean up the server row, so it must never
+    // accept a late response or persist credentials after the aborted request settles.
     const result = await requestJson("/v1/profiles", {
       method: "POST",
+      signal: input.signal,
+      timeoutMs: PROFILE_CREATE_TIMEOUT_MS,
       body: {
         displayName,
         turnstileToken
@@ -357,7 +436,12 @@
     });
     if (!storedState) {
       if (TOKEN_PATTERN.test(profileToken)) {
-        await requestJson("/v1/me", { method: "DELETE", token: profileToken });
+        await requestJson("/v1/me", {
+          method: "DELETE",
+          token: profileToken,
+          signal: input.signal,
+          timeoutMs: PROFILE_CLEANUP_TIMEOUT_MS
+        });
       }
       if (lifecycleEpoch === startEpoch) sessionCollectionBlocked = false;
       return { ok: false, error: "invalid_server_response", state: getState() };
@@ -372,7 +456,9 @@
     ) {
       const cleanupResult = await requestJson("/v1/me", {
         method: "DELETE",
-        token: profileToken
+        token: profileToken,
+        signal: input.signal,
+        timeoutMs: PROFILE_CLEANUP_TIMEOUT_MS
       });
       return {
         ok: false,
@@ -386,7 +472,9 @@
     if (!writeResult.ok) {
       const cleanupResult = await requestJson("/v1/me", {
         method: "DELETE",
-        token: profileToken
+        token: profileToken,
+        signal: input.signal,
+        timeoutMs: PROFILE_CLEANUP_TIMEOUT_MS
       });
       if (cleanupResult.ok && lifecycleEpoch === startEpoch) {
         const cleanupState = readStoredState();
