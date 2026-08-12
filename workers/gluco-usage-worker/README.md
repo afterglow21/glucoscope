@@ -45,6 +45,16 @@ This checkpoint verifies a reachable but stopped production shell. It does not a
 - Usage was immediately returned to stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb`, and the relay to stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a`.
 - Reproduction identified an unnecessary reload in the already-user-mode save path. When Safari lost or could not access the sessionStorage relay ticket across that reload, initialization had saved config but no active adapter and reopened required setup. This release activates config and adapter in place for user mode while retaining full navigation from the public demo. Local tests pass; supervised device confirmation is pending.
 
+## Core CGM handoff accepted; Usage lifecycle still pending (2026-08-12 JST)
+
+- After the in-place fix was published, a third supervised iPhone acceptance temporarily used the same Usage and relay candidate Versions.
+- Gluroo (Libre) connected, `GlucoScopeを始める` remained on the existing user-mode page, and live glucose was displayed. This accepts the core CGM handoff fix, not the Usage lifecycle.
+- D1 remained `profiles / usage_daily / event_receipts = 0 / 0 / 0`, so no usage profile was created. Create, Stop, Resume, Delete, and the secondary allowlisted-export check remain pending.
+- Deployment `17de293b-2d38-4b07-aa5f-604c2cc65d43` restored Usage stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` at 100%, and deployment `a1962cbf-9f77-48c1-b33a-05bd39323a8c` restored relay stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` at 100%.
+- Approved-origin preflight returned `204` and an approved-origin stopped `POST` returned `503` for both Workers. Checked-in flags remain `false`; the public supervised-candidate gate remains `true`, and the general-user relay is paused.
+
+The most likely explanation for D1 staying empty is a stale Safari-local `glucoscope.usageProfile.v1` credential left after the earlier server-side test-profile deletion. The browser treated it as registered, while profile `PATCH` returned exact `401 authentication_required`; the core CGM flow correctly failed open. A local-only candidate now forgets only the exact credential that started that exact 401 request, preserves any newer or different profile and every non-401 failure, sends no usage events after cleanup, and waits for the next explicit save plus fresh Turnstile before creating. This remains the most likely diagnosis until device re-acceptance; this release candidate includes the fix and awaits supervised confirmation.
+
 ## Boundary
 
 This is a browser-device profile, not a verified person account. It has no login or recovery flow. If the browser loses its profile token, the profile cannot be recovered from that browser.
@@ -192,8 +202,8 @@ There is intentionally no real `deploy` npm script.
 
 ## Current supervised acceptance steps
 
-1. Keep both Workers stopped while the tested in-place activation fix is published. Keep Gluroo relay confirmation as a separate boundary.
-2. Starting from the clean `0 / 0 / 0` D1 baseline, first recheck that `GlucoScopeを始める` keeps the existing user-mode page and active adapter without a reload. Then check profile creation without a false callback error, followed by stop, resume, deletion, and the secondary allowlisted-export link on one user-controlled device.
-3. Only after those checks, decide separately whether to resume a small rollout. Keep the general-user relay independent at `RELAY_ENABLED=false`.
+1. Keep both Workers stopped at the recorded rollback Versions until the next supervised Usage check. Keep Gluroo relay confirmation as a separate boundary.
+2. Starting from the clean `0 / 0 / 0` D1 baseline, check profile creation without a false callback error, followed by stop, resume, deletion, and the secondary allowlisted-export link on one user-controlled device. The separate CGM handoff check already passes.
+3. Only after those Usage checks, decide separately whether to resume a small rollout. Keep the general-user relay independent at `RELAY_ENABLED=false`.
 
 Secret values, profile tokens, display names, and production database content must never be copied into Git, command arguments, screenshots, logs, fixtures, or support messages.

@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 
 const index = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const app = await readFile(new URL("../js/app.js", import.meta.url), "utf8");
+const css = await readFile(new URL("../style.css", import.meta.url), "utf8");
 const localProfile = await readFile(new URL("../js/local-profile.js", import.meta.url), "utf8");
 const usageClient = await readFile(new URL("../js/usage-client.js", import.meta.url), "utf8");
 
@@ -26,6 +27,19 @@ test("supervised usage recording keeps its frontend and analytics gates in locks
   assert.equal(metaEnabled, appEnabled, "the pre-enrollment analytics gate must match the UI flag");
   assert.match(app, /configure\?\.\(\{\s*enabled: USAGE_PROFILE_ENABLED,\s*endpoint: USAGE_PROFILE_ENDPOINT/s);
   assert.ok(app.indexOf("setupLocalProfileFoundation();") < app.indexOf("initializeUsageProfileFoundation();"));
+});
+
+test("the public demo is clearly labelled and user mode hides the demo identity", () => {
+  assert.match(index, /id="publicDemoBanner" class="public-demo-banner" role="note"/);
+  assert.match(index, /data-i18n-key="publicDemoBannerTitle">公開デモ</);
+  assert.match(index, /ここに表示されているのは公開デモのデータです。あなた自身のデータではありません。/);
+  assert.match(app, /publicDemoPageTitle: "GlucoScope｜公開デモ"/);
+  assert.match(app, /publicDemoBannerLead: "You are viewing the public demo, not your own glucose data\."/);
+  assert.match(app, /const userMode = isUserDataSourceMode\(\);[\s\S]*classList\.toggle\("public-demo-mode", !userMode\)/);
+  assert.match(app, /document\.title = userMode \? "GlucoScope" : t\("publicDemoPageTitle"\)/);
+  assert.match(css, /\.public-demo-banner\{\s*display:none;/);
+  assert.match(css, /body\.public-demo-mode \.public-demo-banner\{\s*display:flex;/);
+  assert.doesNotMatch(index, /テストデータ|サンプルデータ/);
 });
 
 test("data connection asks for a required display name with one short usage note", () => {
@@ -169,7 +183,7 @@ test("in-place user activation keeps the relay session and starts data refresh a
     focus() { this.focused = true; }
   };
   const classNames = new Set(["data-source-dialog-open"]);
-  const calls = { reset: 0, refresh: 0, labels: 0, live: 0 };
+  const calls = { reset: 0, refresh: 0, labels: 0, live: 0, identity: 0 };
   const savedConfig = { mode: "user", provider: "gluroo", baseUrl: "https://example.test" };
   const savedAdapter = { kind: "relay-adapter" };
   const context = {
@@ -199,6 +213,7 @@ test("in-place user activation keeps the relay session and starts data refresh a
     },
     isUserDataSourceMode: () => true,
     resetDataSourceDerivedUi: () => { calls.reset += 1; },
+    updatePageModeIdentity: () => { calls.identity += 1; },
     updateDataSourceUiLabels: () => { calls.labels += 1; },
     getActiveDataSourceLabel: () => "Gluroo",
     setLiveStatus: () => { calls.live += 1; },
@@ -218,6 +233,7 @@ test("in-place user activation keeps the relay session and starts data refresh a
   assert.equal(closeButton.hidden, false);
   assert.equal(classNames.has("data-source-dialog-open"), false);
   assert.equal(calls.reset, 1);
+  assert.equal(calls.identity, 1);
   assert.equal(calls.labels, 1);
   assert.equal(calls.live, 1);
   assert.equal(calls.refresh, 1);
@@ -355,6 +371,7 @@ test("in-place activation clears the former source before a pending or failed re
       syncMobileRangeSummary: () => {},
       showAiLetterResult: (value) => { elements.get("aiLetterResult").textContent = value; },
       updateAiLetterControls: () => {},
+      updatePageModeIdentity: () => {},
       updateDataSourceUiLabels: () => {},
       getActiveDataSourceLabel: () => "Gluroo",
       setLiveStatus: () => {},
@@ -602,8 +619,8 @@ test("AI usage is recorded only for a completed new OpenAI generation", () => {
 test("local display-name storage remains network-free and server sync is separate", () => {
   assert.doesNotMatch(localProfile, /\b(?:fetch|XMLHttpRequest|sendBeacon|WebSocket)\b/u);
   assert.match(index, /js\/local-profile\.js\?v=20260811-usage-profile-stage-1/);
-  assert.match(index, /js\/usage-client\.js\?v=20260812-in-place-start-1/);
-  assert.match(index, /js\/app\.js\?v=20260812-in-place-start-1/);
+  assert.match(index, /js\/usage-client\.js\?v=20260812-stale-profile-recovery-1/);
+  assert.match(index, /js\/app\.js\?v=20260812-demo-identity-1/);
   assert.match(app, /updateUsageProfileDisplayName\(result\.profile\.displayName\)/);
   assert.doesNotMatch(app, /handleLocalProfileDelete|localProfileDeleteButton/);
   assert.match(app, /if \(!state\.enabled \|\| !state\.registered\) return;/);

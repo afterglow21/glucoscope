@@ -197,6 +197,33 @@
       : { ok: false, skipped: false, error: writeResult.error, state: currentResult.state };
   }
 
+  function forgetAuthenticatedProfileIfCurrent(startedState) {
+    const currentResult = readStoredState();
+    if (!currentResult.ok) {
+      return { ok: false, skipped: false, error: currentResult.error };
+    }
+
+    const currentState = currentResult.state;
+    if (
+      currentState.profileId !== startedState.profileId
+      || currentState.profileToken !== startedState.profileToken
+      || currentState.lifecycleGeneration !== startedState.lifecycleGeneration
+    ) {
+      return { ok: true, skipped: true, error: null };
+    }
+
+    const storage = getStorage();
+    if (!storage) return { ok: false, skipped: false, error: "storage_unavailable" };
+    advanceLifecycleEpoch();
+    sessionCollectionBlocked = true;
+    try {
+      storage.removeItem(STORAGE_KEY);
+      return { ok: true, skipped: false, error: null };
+    } catch (error) {
+      return { ok: false, skipped: false, error: "storage_delete_failed" };
+    }
+  }
+
   function preflightStartStorage() {
     const storage = getStorage();
     if (!storage) return { ok: false, error: "storage_unavailable" };
@@ -706,8 +733,18 @@
       timeoutMs: PROFILE_UPDATE_TIMEOUT_MS
     });
     if (!result.ok) {
+      const staleProfileCleanup = result.status === 401
+        && result.error === "authentication_required"
+        ? forgetAuthenticatedProfileIfCurrent(readResult.state)
+        : null;
       return {
         ...result,
+        staleProfileForgotten: staleProfileCleanup
+          ? staleProfileCleanup.ok && !staleProfileCleanup.skipped
+          : undefined,
+        staleProfileCleanupError: staleProfileCleanup && !staleProfileCleanup.ok
+          ? staleProfileCleanup.error
+          : undefined,
         localStopped: body.collectionEnabled === false,
         localStopPersisted: body.collectionEnabled === false ? lifecycleWrite.ok : undefined,
         state: getState()

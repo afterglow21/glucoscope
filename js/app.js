@@ -206,6 +206,9 @@ const translations = {
     tabCollection: "🍀 想い出",
     tabAbout: "✨ About",
     languageLabel: "Language",
+    publicDemoPageTitle: "GlucoScope｜公開デモ",
+    publicDemoBannerTitle: "公開デモ",
+    publicDemoBannerLead: "ここに表示されているのは公開デモのデータです。あなた自身のデータではありません。",
     glucoScoreLabel: "🍀 GlucoScore",
     currentGlucoseLabel: "現在血糖",
     mobileNavGlucose: "血糖値",
@@ -528,6 +531,9 @@ const translations = {
     tabCollection: "🍀 Collection",
     tabAbout: "✨ About",
     languageLabel: "Language",
+    publicDemoPageTitle: "GlucoScope | Public Demo",
+    publicDemoBannerTitle: "PUBLIC DEMO",
+    publicDemoBannerLead: "You are viewing the public demo, not your own glucose data.",
     glucoScoreLabel: "🍀 GlucoScore",
     currentGlucoseLabel: "Current glucose",
     mobileNavGlucose: "Glucose",
@@ -861,6 +867,13 @@ function isUserDataSourceMode() {
 
 function hasActiveDataSource() {
   return Boolean(activeDataSourceAdapter && activeDataSourceConfig);
+}
+
+function updatePageModeIdentity() {
+  const userMode = isUserDataSourceMode();
+  document.body.classList.toggle("user-data-source-mode", userMode);
+  document.body.classList.toggle("public-demo-mode", !userMode);
+  document.title = userMode ? "GlucoScope" : t("publicDemoPageTitle");
 }
 
 function getActiveDataSourceLabel() {
@@ -1456,7 +1469,7 @@ function activateSavedDataSourceInPlace(savedConfig) {
   resetDataSourceDerivedUi();
   activeDataSourceConfig = savedConfig;
   activeDataSourceAdapter = savedAdapter;
-  document.body.classList.add("user-data-source-mode");
+  updatePageModeIdentity();
 
   const dialog = document.getElementById("dataSourceDialog");
   if (dialog) {
@@ -1755,7 +1768,7 @@ function setupDataSourceFoundation() {
   });
 
   updateDataSourceUiLabels();
-  if (isUserDataSourceMode()) document.body.classList.add("user-data-source-mode");
+  updatePageModeIdentity();
 
   const glurooRelaySessionRequired = Boolean(
     isUserDataSourceMode()
@@ -3747,6 +3760,7 @@ function applyLanguage() {
   safelyUpdateLetterControls();
   updateRuleCommentDisplay();
   updateAiLetterControls();
+  updatePageModeIdentity();
   updateDataSourceUiLabels();
   updateLocalProfileEntryLabels();
   const localProfileStatus = document.getElementById("localProfileStatus");

@@ -17,6 +17,8 @@ The simplified flow, repeated-callback guard, robust connection storage, best-ef
 
 Reproduction identified a browser handoff issue: an already-user-mode save unnecessarily reloaded the page. If Safari lost or could not access the sessionStorage relay ticket across that reload, initialization had saved connection configuration but no active relay adapter and reopened the required setup screen. This release activates the saved configuration and adapter in place when already in user mode; entry from the public demo keeps full navigation. Local tests pass; supervised device confirmation is pending.
 
+The subsequent supervised iPhone acceptance confirmed that fix on the core CGM path. With the same relay and Usage candidate Versions temporarily active, the Gluroo (Libre) connection passed, `GlucoScopeを始める` kept the existing user-mode page, and live glucose was displayed. Usage D1 remained `profiles / usage_daily / event_receipts = 0 / 0 / 0`, so no usage profile was created and the usage lifecycle remains pending. Immediately afterward, relay deployment `a1962cbf-9f77-48c1-b33a-05bd39323a8c` restored stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` at 100%, and Usage deployment `17de293b-2d38-4b07-aa5f-604c2cc65d43` restored stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` at 100%. Approved-origin preflight returned `204` and stopped `POST` returned `503` for both Workers. Checked-in flags remain `false`; the frontend supervised-candidate gate remains `true`, and the general-user relay is paused.
+
 1. Open `user.html` or `index.html?mode=user`.
 2. Choose exactly one numbered route.
 3. Tapping Method 1 opens the Gluroo preparation step and screenshot guide; tapping Method 2 opens the Nightscout connection form.
@@ -129,6 +131,7 @@ Connection errors, missing data, old data, and unsupported formats should be sho
 ## Release acceptance criteria
 
 - The public demo still opens without setup.
+- The main public demo always shows a visible `公開デモ` label and says that its displayed data is not the viewer's own data. `?mode=user` and `user.html` never show that label, whether setup is pending or a personal connection is active.
 - User mode opens a required setup screen when no connection is stored.
 - A new personal-data connection requires a display name, clearly says that a real name is unnecessary, and creates the usage profile only when `GlucoScopeを始める` is pressed.
 - A usage-profile-only failure leaves usage unregistered and off but does not block a verified CGM connection; Gluroo relay security and browser-storage failures still block completion.
@@ -150,7 +153,7 @@ Connection errors, missing data, old data, and unsupported formats should be sho
 - Saving from an already-user-mode setup activates the saved config and adapter in place. It must not reopen required setup solely because a reload lost an otherwise valid in-memory relay ticket.
 - Entry from the public demo still performs full navigation into user mode.
 
-The frontend keeps the verified connection as the core browser-storage operation, treats display-name-only storage as best effort, and gives usage-profile creation and updates bounded timeouts. This release includes the locally tested in-place activation fix. Supervised re-testing must first confirm that `GlucoScopeを始める` stays in user mode with an active adapter; the later lifecycle checks remain pending.
+The frontend keeps the verified connection as the core browser-storage operation, treats display-name-only storage as best effort, and gives usage-profile creation and updates bounded timeouts. Supervised iPhone acceptance has now confirmed that `GlucoScopeを始める` stays in user mode with an active adapter and can display live Gluroo (Libre) glucose. Usage profile creation did not occur in that acceptance, so Create, Stop, Resume, Delete, and the secondary export check remain pending.
 
 ## Beginner-first onboarding rule
 
