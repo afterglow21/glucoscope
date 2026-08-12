@@ -240,7 +240,7 @@ test("Dexcom Share preparation guide explains account identity and password rese
 });
 
 test("Dexcom Share guide uses every supplied screen in one-screen steps", async () => {
-  const stepImages = dexcomGuide.match(/images\/steps\/\d{2}-[a-z0-9-]+\.jpg/g) || [];
+  const stepImages = dexcomGuide.match(/images\/steps\/\d{2}-[a-z0-9-]+\.(?:jpg|png)/g) || [];
   assert.equal(stepImages.length, 10);
   assert.equal(new Set(stepImages).size, 10);
   assert.equal((dexcomGuide.match(/guide-step-number/g) || []).length, 10);
