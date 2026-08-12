@@ -1,6 +1,6 @@
 # GlucoScope 利用者設定・利用分析基盤
 
-Status: Phase 1A implemented / Phase 1B paused after supervised re-acceptance checkpoint
+Status: Phase 1A implemented / core CGM handoff accepted / Phase 1B usage lifecycle paused and pending
 
 Last reviewed: 2026-08-12
 
@@ -246,3 +246,15 @@ runtimeの `USAGE_COLLECTION_ENABLED=false`、許可Originのpreflight `204`、�
 同じ2026年8月12日JSTの2回目の監督下確認では、Usage Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` と限定中継Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` を一時有効にした。接続確認は成功したが、「GlucoScopeを始める」でTurnstileが短く表示された後、必須のデータ接続画面が再表示された。D1は再び `0 / 0 / 0` のままで、利用プロフィールは作成されていない。確認直後にUsageを停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb`、限定中継を停止Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` へ戻した。
 
 再現確認で、すでにユーザーモードにいる保存処理が不要な再読み込みを行い、SafariでsessionStorageの短期リレーチケットが失われる、または参照できない場合に、保存済み接続があっても有効なリレーadapterを復元できず必須画面を開くことを原因として特定した。このリリースは、ユーザーモードでは保存済みconfigを現在の接続として設定し、adapterをその場で有効化する。公開デモから入る場合は従来どおり完全なページ遷移を使う。ローカルテストは合格し、監督下実機確認を待つ。
+
+## 17. その場での接続引き継ぎ実機合格と停止復帰（2026-08-12 JST）
+
+修正版の公開後、同じUsage Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` と限定中継Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` を一時有効にして、iPhoneで3回目の監督下確認を行った。Gluroo（Libre）の接続に成功し、「GlucoScopeを始める」の後も同じユーザーモード画面にとどまり、ライブ血糖を表示できた。これにより、不要な再読み込みをやめてconfigとadapterをその場で有効化する修正は、CGM表示の中核経路で実機合格とする。
+
+一方、確認後のD1は `profiles`、`usage_daily`、`event_receipts` が `0 / 0 / 0` のままで、利用プロフィールは作成されていない。したがってこの結果は利用分析基盤の作成成功を意味せず、Create、Stop、Resume、Delete、小さな書き出しリンクの受け入れは引き続き未完了とする。CGM接続をUsageプロフィール作成の成否で遮らない境界は維持できた。
+
+確認直後、限定中継はdeployment `a1962cbf-9f77-48c1-b33a-05bd39323a8c` で停止Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a`、Usageはdeployment `17de293b-2d38-4b07-aa5f-604c2cc65d43` で停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb` を、それぞれ本番通信の100%へ戻した。両Workerとも許可Originのpreflightは `204`、許可Originからの停止中 `POST` は `503` を返した。Gitに保存する両Workerの設定は `false`、公開フロントの監督下候補gateは `true` のままで、一般利用者向け限定中継は停止中である。
+
+D1が `0 / 0 / 0` のままだった理由として最も可能性が高いのは、以前の試験用profileをサーバー側で削除した後も、Safariの `glucoscope.usageProfile.v1` に古い認証情報が残っていたことである。アプリは端末内の情報から登録済みとして更新を試み、profile `PATCH` は正確に `401 authentication_required` を返した。Usageだけの失敗でCGM表示を止めない設計どおり、中核CGM経路はそのまま成功した。
+
+端末内だけの修正候補は、`401 authentication_required` の場合に限り、要求開始時と現在のprofile ID、token、lifecycle generationがすべて一致する古い認証情報だけを忘れる。処理中に保存された新しい、または別のprofileと、401以外の失敗は保持する。削除後は利用イベントを送らず、次に本人が明示的に保存して新しいTurnstileを完了するまで新規profileを作らない。この公開候補へ修正を含め、次の監督下実機確認を待つ。原因は次の実機確認までは「最も可能性が高い」と表現し、確定扱いしない。

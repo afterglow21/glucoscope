@@ -79,8 +79,10 @@
       <div class="about-detail-mini-card">
         <div class="about-detail-mini-head"><span class="about-detail-mini-icon">🧭</span><h3><span class="about-detail-mini-title-en">Next Steps</span><span class="about-detail-mini-title-jp">次の課題</span></h3></div>
         <p>端末プロフィールの第1段階では最初の作成と日別記録に成功しましたが、成功後の再コールバックで誤ったエラーが表示されました。試験用プロフィール2件を削除した後、2回の監督下確認ではどちらも接続確認まで成功したものの、「GlucoScopeを始める」と短いTurnstile表示の後に必須のデータ接続画面が再表示されました。2回目はUsage Version <code>5d160aed-7b27-48e6-b0a8-783534f97b6f</code> と限定中継Version <code>a398d59e-54c1-4b8d-a9a4-b779af360a54</code> を一時有効にし、D1の <code>profiles</code>、<code>usage_daily</code>、<code>event_receipts</code> は <code>0 / 0 / 0</code> のままでした。確認直後にUsageを停止Version <code>7cb71965-74c3-47f9-b589-75cf6d669edb</code>、限定中継を停止Version <code>635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a</code> へ戻しました。原因は、すでにユーザーモードの画面を不要に再読み込みし、SafariでsessionStorageの短期リレーチケットを使えない場合に、有効な接続adapterを復元できず必須画面を開くことでした。このリリースには、その場でconfigとadapterを有効にするローカルテスト合格済みの修正を含めています。監督下実機確認は未完了です。Gitに保存する設定は <code>false</code>、一般利用者向け限定中継も <code>RELAY_ENABLED=false</code> のままです。</p>
+        <p><strong>修正版を公開した後の3回目のiPhone確認では、Gluroo（Libre）の接続に成功し、「GlucoScopeを始める」の後も同じユーザーモード画面にとどまってライブ血糖を表示できました。</strong> CGM表示の引き継ぎ修正は実機合格です。ただしD1は <code>profiles / usage_daily / event_receipts = 0 / 0 / 0</code> のままで、利用プロフィールは作成されていません。確認直後、deployment <code>a1962cbf-9f77-48c1-b33a-05bd39323a8c</code> と <code>17de293b-2d38-4b07-aa5f-604c2cc65d43</code> で限定中継とUsageを停止Versionへ戻しました。両Workerの許可Originの事前確認は <code>204</code>、停止中の送信は <code>503</code> です。Gitに保存する設定は <code>false</code>、公開フロントの監督下候補gateは <code>true</code> のままで、一般利用者向け限定中継は停止中です。</p>
+        <p>D1が空のままだった最も可能性が高い理由は、以前の試験用プロフィールをサーバー側で削除した後も、Safari内に古い <code>glucoscope.usageProfile.v1</code> 認証情報が残っていたことです。登録済みとして行った更新は正確に <code>401 authentication_required</code> となりましたが、CGM表示は設計どおり続きました。端末内だけの修正候補は、この正確な応答の時だけ同じ古い認証情報を忘れ、新しい・別のプロフィールと401以外の失敗は保持します。削除後は利用イベントを送らず、次に本人が明示的に保存して新しいTurnstileを完了するまで新規作成しません。この公開候補に修正を含め、次の監督下実機確認を待ちます。原因もそれまでは「最も可能性が高い」と扱います。</p>
         <ol>
-          <li>ユーザー基盤の続き：開始後に接続画面へ戻らないことを監督下で実機再確認。その後に作成・停止・再開・削除と小さな書き出しリンクを確認</li>
+          <li>ユーザー基盤の続き：利用プロフィールの作成を実機確認。その後に停止・再開・削除と小さな書き出しリンクを確認</li>
           <li>管理者ダッシュボード</li>
           <li>Plus 30日パスと支援導線</li>
           <li>ユーザー展開開始後の、横向きグラフ限定の常時表示モード</li>

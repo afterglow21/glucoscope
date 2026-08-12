@@ -91,6 +91,24 @@ test("persists user configuration only in the selected browser storage", () => {
   assert.equal(api.getActiveConfig().provider, "gluroo");
 });
 
+test("launch mode keeps the public demo separate from personal user mode", () => {
+  const localStorage = createStorage();
+  const sessionStorage = createStorage();
+  const userPage = loadModule({ search: "?mode=user", localStorage, sessionStorage });
+  userPage.GlucoScopeDataSource.saveUserConfig({
+    provider: "nightscout",
+    baseUrl: "https://example.test",
+    credential: "reader-token",
+    persist: true
+  });
+
+  const publicPage = loadModule({ localStorage, sessionStorage });
+  assert.equal(publicPage.GlucoScopeDataSource.getLaunchMode(), "public-demo");
+  assert.equal(publicPage.GlucoScopeDataSource.getActiveConfig().mode, "public-demo");
+  assert.equal(loadModule({ search: "?mode=user" }).GlucoScopeDataSource.getLaunchMode(), "user");
+  assert.equal(loadModule({ pathname: "/user.html" }).GlucoScopeDataSource.getLaunchMode(), "user");
+});
+
 test("a persistent connection survives a fresh page module load", () => {
   const localStorage = createStorage();
   const sessionStorage = createStorage();

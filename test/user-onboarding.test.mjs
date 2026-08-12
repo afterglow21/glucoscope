@@ -19,7 +19,7 @@ const guardianGuide = await readFile(new URL("../guides/guardian-monitor/index.h
 test("public data connection remains clickable while clearly marked under construction", () => {
   assert.match(index, /データ接続（工事中）/);
   assert.match(index, /Gluroo接続はまだ限定テスト中/);
-  assert.match(index, /js\/app\.js\?v=20260812-in-place-start-1/);
+  assert.match(index, /js\/app\.js\?v=20260812-demo-identity-1/);
   assert.match(app, /dataSourceButtonDemo: "データ接続（工事中）"/);
   assert.match(app, /dataSourceDialogTitle: "Data connection \(under construction\)"/);
   assert.doesNotMatch(index, /id="dataSourceButton"[^>]+disabled/);

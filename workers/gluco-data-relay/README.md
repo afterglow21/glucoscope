@@ -164,6 +164,15 @@ This completes the first basic Libre 2 end-to-end acceptance only. Historical co
 - This release activates the saved config and adapter in place for an already-user-mode page and retains full navigation from the public demo. Local tests pass; supervised device confirmation is pending.
 - No Secret value, Turnstile token, Gluroo URL, credential, glucose payload, relay ticket, display name, or profile identifier is recorded here.
 
+## Successful supervised user-mode acceptance — 2026-08-12
+
+- After the in-place fix was published, the same relay and Usage candidate Versions were temporarily enabled for a third supervised iPhone acceptance.
+- The Gluroo (Libre) connection passed, `GlucoScopeを始める` kept the existing user-mode page, and live glucose was displayed. This accepts the core CGM handoff fix on the tested device.
+- Usage D1 remained `profiles / usage_daily / event_receipts = 0 / 0 / 0`. No usage profile was created, so the Usage lifecycle remains a separate pending check.
+- Deployment `a1962cbf-9f77-48c1-b33a-05bd39323a8c` restored this relay's stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` to 100%. Deployment `17de293b-2d38-4b07-aa5f-604c2cc65d43` restored Usage stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` to 100%.
+- Approved-origin preflight returned `204` and an approved-origin stopped `POST` returned `503` for both Workers. Checked-in flags remain `false`; the public frontend supervised-candidate gate remains `true`, and the general-user relay is paused.
+- No Secret value, Turnstile token, Gluroo URL, credential, glucose payload, relay ticket, display name, or profile identifier is recorded here.
+
 ## Safe activation sequence
 
 Each numbered boundary is independently reviewable. Steps 1 through 7 and the current/reload portion of step 8 are complete for the approved `workers.dev` target. Do not combine continuing live enablement with any remaining check in one unreviewed operation.

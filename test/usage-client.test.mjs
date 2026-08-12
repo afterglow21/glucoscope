@@ -472,6 +472,132 @@ test("a profile PATCH times out without accepting a late resume response", async
   assert.equal(api.getState().collectionEnabled, false);
 });
 
+test("an authentication-required profile PATCH forgets only its stale local credential", async () => {
+  const storage = createStorage({ [STORAGE_KEY]: stored() });
+  const seen = [];
+  const { api } = loadModule({
+    storage,
+    fetchImpl: async (url, init) => {
+      seen.push({ url, init });
+      return Response.json(
+        { ok: false, error: "authentication_required" },
+        { status: 401 }
+      );
+    }
+  });
+  configure(api);
+
+  const result = await api.updateProfile({ displayName: "Gluco" });
+  assert.equal(result.ok, false);
+  assert.equal(result.error, "authentication_required");
+  assert.equal(result.staleProfileForgotten, true);
+  assert.equal(result.staleProfileCleanupError, undefined);
+  assert.equal(storage.getItem(STORAGE_KEY), null);
+  assert.equal(api.getState().registered, false);
+  assert.equal(api.getState().collectionEnabled, false);
+  assert.equal(seen.length, 1);
+  assert.equal(seen[0].init.method, "PATCH");
+});
+
+test("a stale profile PATCH never removes a newer profile written while it is in flight", async () => {
+  const storage = createStorage({ [STORAGE_KEY]: stored() });
+  let releasePatch;
+  const patchResponse = new Promise((resolve) => { releasePatch = resolve; });
+  const { api } = loadModule({
+    storage,
+    fetchImpl: async () => patchResponse
+  });
+  configure(api);
+
+  const stalePatch = api.updateProfile({ displayName: "old" });
+  storage.setItem(STORAGE_KEY, stored({
+    profileId: NEW_PROFILE_ID,
+    profileToken: NEW_PROFILE_TOKEN,
+    lifecycleGeneration: 1
+  }));
+  releasePatch(Response.json(
+    { ok: false, error: "authentication_required" },
+    { status: 401 }
+  ));
+
+  const result = await stalePatch;
+  assert.equal(result.ok, false);
+  assert.equal(result.error, "authentication_required");
+  assert.equal(result.staleProfileForgotten, false);
+  assert.equal(result.staleProfileCleanupError, undefined);
+  const persisted = JSON.parse(storage.getItem(STORAGE_KEY));
+  assert.equal(persisted.profileId, NEW_PROFILE_ID);
+  assert.equal(persisted.profileToken, NEW_PROFILE_TOKEN);
+  assert.equal(api.getState().registered, true);
+  assert.equal(api.getState().profileId, NEW_PROFILE_ID);
+  assert.equal(storage.calls.remove, 0);
+});
+
+test("a stale profile PATCH never removes a newer lifecycle of the same profile", async () => {
+  const storage = createStorage({ [STORAGE_KEY]: stored() });
+  let releasePatch;
+  const patchResponse = new Promise((resolve) => { releasePatch = resolve; });
+  const { api } = loadModule({
+    storage,
+    fetchImpl: async () => patchResponse
+  });
+  configure(api);
+
+  const stalePatch = api.updateProfile({ displayName: "old" });
+  storage.setItem(STORAGE_KEY, stored({
+    lifecycleGeneration: 1,
+    collectionEnabled: false
+  }));
+  releasePatch(Response.json(
+    { ok: false, error: "authentication_required" },
+    { status: 401 }
+  ));
+
+  const result = await stalePatch;
+  assert.equal(result.ok, false);
+  assert.equal(result.error, "authentication_required");
+  assert.equal(result.staleProfileForgotten, false);
+  assert.equal(result.staleProfileCleanupError, undefined);
+  const persisted = JSON.parse(storage.getItem(STORAGE_KEY));
+  assert.equal(persisted.profileId, PROFILE_ID);
+  assert.equal(persisted.profileToken, PROFILE_TOKEN);
+  assert.equal(persisted.lifecycleGeneration, 1);
+  assert.equal(persisted.collectionEnabled, false);
+  assert.equal(storage.calls.remove, 0);
+});
+
+test("no usage event is sent after stale-profile cleanup", async () => {
+  const storage = createStorage({
+    [STORAGE_KEY]: stored({
+      pendingAiEvents: [{
+        type: "ai_generation_success",
+        eventId: "123e4567-e89b-42d3-a456-426614174222"
+      }]
+    })
+  });
+  const seen = [];
+  const { api } = loadModule({
+    storage,
+    fetchImpl: async (url, init) => {
+      seen.push({ url, init });
+      return Response.json(
+        { ok: false, error: "authentication_required" },
+        { status: 401 }
+      );
+    }
+  });
+  configure(api);
+
+  assert.equal((await api.updateProfile({ displayName: "Gluco" })).staleProfileForgotten, true);
+  await api.init();
+  assert.equal((await api.recordVisit()).skipped, true);
+  assert.equal((await api.recordAiGeneration()).skipped, true);
+  assert.equal((await api.syncOrdinaryMemoryCount(1)).skipped, true);
+  assert.equal(seen.length, 1);
+  assert.equal(seen[0].init.method, "PATCH");
+  assert.equal(storage.getItem(STORAGE_KEY), null);
+});
+
 test("an in-flight AI failure cannot recreate a profile after deletion", async () => {
   const storage = createStorage({ [STORAGE_KEY]: stored() });
   let rejectAi;

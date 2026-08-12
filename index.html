@@ -25,7 +25,7 @@
   <!-- GlucoScope Limited Data Relay: the public endpoint is configured for paused acceptance testing only. -->
   <meta name="glucoscope-data-relay-endpoint" content="https://glucoscope-data-relay.afterglow21.workers.dev">
   <meta name="glucoscope-usage-profile-enabled" content="true">
-  <link rel="stylesheet" href="style.css?v=20260812-simple-connection-2">
+  <link rel="stylesheet" href="style.css?v=20260812-demo-identity-1">
 </head>
 <body>
 
@@ -268,6 +268,11 @@
 </div>
 
 <div class="dashboard">
+  <aside id="publicDemoBanner" class="public-demo-banner" role="note">
+    <strong data-i18n-key="publicDemoBannerTitle">公開デモ</strong>
+    <span data-i18n-key="publicDemoBannerLead">ここに表示されているのは公開デモのデータです。あなた自身のデータではありません。</span>
+  </aside>
+
   <header class="header">
     <div class="brand-block" aria-label="GlucoScope brand">
       <h1><span class="brand-icon">🍀</span> GlucoScope</h1>
@@ -294,8 +299,6 @@
       <span class="app-credit-line"><span class="app-credit-text">Made with</span> <span class="app-credit-clover">🍀</span> <span class="app-credit-text">by</span> <a href="https://www.instagram.com/kazuma.iddm/?hl=ja" target="_blank" rel="noopener noreferrer">Kazuma</a></span>
     </div>
   </header>
-
-
 
 <div class="view-toolbar">
   <nav class="view-tabs" aria-label="GlucoScope sections">
@@ -819,11 +822,11 @@
 <script src="js/data-source.js?v=20260812-safari-save-1"></script>
 <script src="js/data-relay-client.js?v=20260812-connection-lifecycle-1"></script>
 <script src="js/local-profile.js?v=20260811-usage-profile-stage-1"></script>
-<script src="js/usage-client.js?v=20260812-in-place-start-1"></script>
+<script src="js/usage-client.js?v=20260812-stale-profile-recovery-1"></script>
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js?v=20260721-user-foundation-3"></script>
-<script src="js/app.js?v=20260812-in-place-start-1"></script>
+<script src="js/app.js?v=20260812-demo-identity-1"></script>
 <!-- Cloudflare Web Analytics: aggregate page-view and performance metrics only -->
 <script src="js/analytics-loader.js?v=20260811-usage-profile-stage-1"></script>
 <!-- End Cloudflare Web Analytics -->

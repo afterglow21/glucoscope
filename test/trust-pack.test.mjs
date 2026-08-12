@@ -164,6 +164,10 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(privacy, /The checked-in Worker flag remains <code>false<\/code>/);
   assert.match(privacy, /SafariでsessionStorageの短期リレーチケットを使えない場合/);
   assert.match(privacy, /このリリースには、その場でconfigとadapterを有効にするローカルテスト合格済みの修正を含めています/);
+  assert.match(privacy, /3回目のiPhone監督下確認ではGluroo（Libre）の接続に成功/);
+  assert.match(privacy, /このCGM表示の成功によって利用状況を記録したとは扱いません/);
+  assert.match(privacy, /a1962cbf-9f77-48c1-b33a-05bd39323a8c/);
+  assert.match(privacy, /17de293b-2d38-4b07-aa5f-604c2cc65d43/);
   assert.match(privacy, /公開デモを見るだけなら、名前の入力も利用プロフィールの作成もありません/);
   assert.match(safety, /接続失敗は、CGMやポンプが止まったことを意味しません/);
   assert.match(support, /Gluroo、Nightscout、Azure、Cloudflare、OpenAI/);
@@ -176,9 +180,16 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(roadmap, /5d160aed-7b27-48e6-b0a8-783534f97b6f/);
   assert.match(roadmap, /a398d59e-54c1-4b8d-a9a4-b779af360a54/);
   assert.match(roadmap, /635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a/);
-  assert.match(roadmap, /このリリースにはユーザーモード内でconfigとadapterをその場で有効にするローカルテスト合格済みの修正を含めています/);
+  assert.match(roadmap, /CGM表示までの実機確認は合格しました/);
+  assert.match(roadmap, /Gluroo（Libre）の接続に成功し、「GlucoScopeを始める」の後も同じ画面にとどまってライブ血糖を表示できました/);
+  assert.match(roadmap, /D1は <code>profiles \/ usage_daily \/ event_receipts = 0 \/ 0 \/ 0<\/code> のまま/);
   assert.match(developerStatus, /sessionStorageの短期リレーチケットを使えない場合/);
   assert.match(developerStatus, /このリリースには、その場でconfigとadapterを有効にするローカルテスト合格済みの修正を含めています/);
+  assert.match(developerStatus, /CGM表示の引き継ぎ修正は実機合格です/);
+  assert.match(developerStatus, /利用プロフィールは作成されていません/);
+  assert.match(developerStatus, /D1が空のままだった最も可能性が高い理由/);
+  assert.match(developerStatus, /401 authentication_required/);
+  assert.match(developerStatus, /この公開候補に修正を含め、次の監督下実機確認を待ちます/);
   assert.match(roadmap, /管理者ダッシュボードをつくります/);
   assert.match(roadmap, /Plus 30日パスと、任意の開発支援への分かりやすい導線/);
   assert.match(roadmap, /ユーザー展開を始めた後、横向きグラフだけで本人が選べる常時表示モード/);
@@ -190,7 +201,7 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(roadmap, /今回確認できたのは1回の公開ページ受け入れです。継続運用、複数回のブラウザ表示更新、古いデータ表示・自然失効は未確認/);
   assert.match(roadmap, /21:25 JSTの停止中Cron後も両KVキーの期限は停止後の基準から変わらず、想定した2キーだけでmetadataもありませんでした/);
   assert.match(roadmap, /The public 3CGM Comparison Lab began continuous live publication/);
-  assert.match(roadmap, /this release activates config and adapter in place in user mode/);
+  assert.match(roadmap, /The device check through live CGM display now passes/);
   assert.match(roadmap, /After user rollout begins, add an opt-in always-on mode only for the landscape graph/);
   assert.match(roadmap, /After the 21:25 JST stopped Cron, both KV expirations were unchanged from the post-stop baseline/);
   assert.match(roadmap, /Libreだけを一時有効にしたVersion `2e72847d-5011-47c5-80e6-8cb931a1b141`/);
