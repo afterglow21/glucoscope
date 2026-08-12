@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { access } from "node:fs/promises";
 
 const index = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const userEntry = await readFile(new URL("../user.html", import.meta.url), "utf8");
@@ -238,6 +239,22 @@ test("Dexcom Share preparation guide explains account identity and password rese
   assert.match(dexcomGuide, /GlucoScopeへDexcomのパスワードを入力することはありません/);
 });
 
+test("Dexcom Share guide uses every supplied screen in one-screen steps", async () => {
+  const stepImages = dexcomGuide.match(/images\/steps\/\d{2}-[a-z0-9-]+\.jpg/g) || [];
+  assert.equal(stepImages.length, 10);
+  assert.equal(new Set(stepImages).size, 10);
+  assert.equal((dexcomGuide.match(/guide-step-number/g) || []).length, 10);
+  assert.match(dexcomGuide, /フォロワーはまだいません/);
+  assert.match(dexcomGuide, /有効なフォロワーなし.*エラーではありません/s);
+  assert.match(dexcomGuide, /招待メールを送信しました/);
+  assert.match(dexcomGuide, /本人側（Sharer）のユーザーIDとパスワード/);
+  assert.match(dexcomGuide, /画像例とご自身の画面でオン・オフが違っても問題ありません/);
+  assert.match(dexcomGuide, /\.\.\/gluroo-setup\/#screen-30/);
+  for (const relativePath of stepImages) {
+    await access(new URL(`../guides/dexcom-share/${relativePath}`, import.meta.url));
+  }
+});
+
 test("Libre guide identifies each app before switching", () => {
   assert.match(glurooGuide, /\.\.\/librelinkup/);
   assert.match(libreGuide, /FreeStyle LibreLink – JP/);
@@ -263,6 +280,38 @@ test("LibreLinkUp preparation guide explains invitation and credentials", () => 
   assert.match(libreGuide, /LibreLinkUpへ登録したメールアドレス/);
   assert.match(libreGuide, /再設定/);
   assert.match(libreGuide, /GlucoScopeへLibreLinkUpのパスワードを入力することはありません/);
+});
+
+test("LibreLinkUp guide uses every supplied screen and separates both phones", async () => {
+  const stepImages = libreGuide.match(/images\/steps\/\d{2}-[a-z0-9-]+\.png/g) || [];
+  assert.equal(stepImages.length, 27);
+  assert.equal(new Set(stepImages).size, 27);
+  assert.equal((libreGuide.match(/guide-step-number/g) || []).length, 27);
+  assert.match(libreGuide, /第1章 · 共有する人のスマホ/);
+  assert.match(libreGuide, /第2章 · 招待を受ける人のスマホ/);
+  assert.match(libreGuide, /「必須です」と出ても大丈夫です/);
+  assert.match(libreGuide, /「最近のデータなし」と表示されることがあります/);
+  assert.match(libreGuide, /「許可」または「許可しない」/);
+  assert.match(libreGuide, /\.\.\/gluroo-setup\/#screen-30/);
+  for (const relativePath of stepImages) {
+    await access(new URL(`../guides/librelinkup/${relativePath}`, import.meta.url));
+  }
+});
+
+test("CGM preparation screenshots are accessible and privacy-explained", () => {
+  for (const guide of [libreGuide, dexcomGuide]) {
+    const imageTags = guide.match(/<img\s[^>]+>/g) || [];
+    assert.ok(imageTags.length > 0);
+    imageTags.forEach((tag) => {
+      assert.match(tag, /\salt="[^"]+"/);
+      assert.match(tag, /\sloading="lazy"/);
+      assert.match(tag, /\sdecoding="async"/);
+    });
+    assert.match(guide, /公開用に隠しています/);
+    assert.doesNotMatch(guide, /API Secret|Nightscout URL/);
+  }
+  assert.match(guideCss, /\.guide-brand,\.guide-back\{[^}]*min-height:44px/);
+  assert.match(guideCss, /env\(safe-area-inset-top\)/);
 });
 
 test("guide has connection-screen return links at the end", () => {

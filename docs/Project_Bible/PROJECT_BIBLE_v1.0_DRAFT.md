@@ -1793,6 +1793,10 @@ Gluroo is an external service. GlucoScope must state that its availability, pric
 
 The beginner route must state its device boundary honestly. Guardian (MiniMed 780G) may use the verified iPhone route from Guardian Monitor to Gluroo Global Connect. Guardian Monitor remains an external uploader and its one-destination limitation is shown only as a conditional note. Dexcom Share, LibreLinkUp, and Guardian Monitor receive separate preparation guides, and CGM manufacturer passwords are never entered into GlucoScope.
 
+The beginner guides incorporate every supplied device-preparation capture as one screen per step: 27 LibreLink / LibreLinkUp screens and 10 Dexcom Share screens. Personal fields in the supplied captures are masked. Both branches continue to the shared Gluroo flow at screen 30 after device preparation, and both warn that app updates may change screens, wording, and order.
+
+The screenshots explain connection setup only. Glucose values, graphs, notification selections, and other settings visible in an example are not targets, medical advice, or instructions to change treatment or device settings. Treatment decisions, alerts, and current sensor state remain with the original CGM app and the person's medical guidance.
+
 Do not place fixed-position focus markers over guide screenshots. Their positions can drift across devices or after image replacement. Use numbered steps, short captions, and plain-language instructions; keep screenshots as replaceable assets.
 
 Limited-life CGM sensors should be activated only after the onboarding, guide, connection test, and graph path are ready. A participant should complete setup on their own phone without sending credentials to the developer.
@@ -1847,6 +1851,17 @@ Guardian（MiniMed 780G）は、iPhoneのGuardian MonitorからGluroo Global Con
 Guardian Monitorは外部の送信アプリであり、送信先が1つだけという制約は該当する人にだけ小さく補足します。
 Dexcom Share、LibreLinkUp、Guardian Monitorは別の準備ガイドを用意し、
 CGMメーカーのパスワードをGlucoScopeへ入力させません。
+
+初心者向けガイドでは、提供された機器準備画面をすべて1画面ずつの手順として使います。
+LibreLink / LibreLinkUpは27画面、Dexcom Shareは10画面です。
+提供画像内のメールアドレス、生年月日など、公開に不要な情報は隠します。
+どちらの機器別ガイドも、準備完了後は共通GlurooガイドのSTEP 30へ続け、
+アプリ更新によって画面、言葉、順番が変わる可能性を伝えます。
+
+画像は接続準備の案内だけに使います。
+画像に写る血糖値、グラフ、通知選択、その他の設定は、
+目標値、医療上の助言、治療や機器設定を変える指示ではありません。
+治療判断、アラート、現在のセンサー状態は、元のCGMアプリと医療者から受けた案内を確認します。
 
 スクリーンショットには、
 端末や画像差し替えで位置がずれる固定の枠を重ねません。

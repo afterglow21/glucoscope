@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex">
-  <title>LibreLinkUpをGlurooにつなぐ準備 | GlucoScope</title>
-  <link rel="stylesheet" href="../guide.css?v=20260723-user-foundation-3-8">
+  <title>LibreLinkUpをGlurooにつなぐ手順 | GlucoScope</title>
+  <link rel="stylesheet" href="../guide.css?v=20260812-cgm-captures-1">
 </head>
 <body>
   <main class="guide-wrap guide-narrow">
@@ -16,163 +16,391 @@
 
     <header class="guide-hero">
       <p class="guide-kicker">FreeStyle Libre 2を使っている方</p>
-      <h1>LibreLinkUpを準備します</h1>
-      <p class="guide-lead">途中で3つのアプリを切り替えます。各STEPの最初に「今開くアプリ」を表示するので、アイコンだけでなくアプリ名も確認しながら進めてください。</p>
+      <h1>LibreLinkUpを<br>1画面ずつ準備します</h1>
+      <p class="guide-lead">画面の順番どおりに進めれば大丈夫です。<strong>共有する人</strong>と<strong>招待を受ける人</strong>の2つの役割があります。同じ人が1台のiPhoneで両方を進めてもかまいません。</p>
       <div class="guide-meta">
         <span class="guide-chip">iPhone向け</span>
-        <span class="guide-chip">全14 STEP</span>
-        <span class="guide-chip">実機確認をもとに改訂</span>
+        <span class="guide-chip">全27画面</span>
+        <span class="guide-chip">画像を見ながら進める</span>
       </div>
     </header>
 
-    <section class="guide-callout guide-version-warning">
-      <h2>Libre側の画面も変わることがあります</h2>
-      <p>アプリアイコンは更新で変わることがあります。FreeStyle LibreLink – JP、LibreLinkUp、Glurooの更新により、画面、文言、メニューの場所も変わる場合があります。アイコンだけでなく、各STEPに書かれた正式なアプリ名も確認してください。</p>
+    <section class="guide-callout guide-field-note">
+      <h2>先に用意するもの</h2>
+      <ul>
+        <li>血糖値が表示されている<strong>FreeStyle LibreLink – JP</strong></li>
+        <li>自分で受け取れるメールアドレス</li>
+        <li>LibreLinkUpで使う12文字以上のパスワード</li>
+      </ul>
+      <p class="guide-note">LibreLinkUpのメールアドレスとパスワードをあとで入力する場所は<strong>Gluroo</strong>です。GlucoScopeへLibreLinkUpのパスワードを入力することはありません。</p>
     </section>
 
     <section class="guide-callout guide-warning">
       <h2>3つのアプリを見分けます</h2>
-      <p>アプリ名だけでなく、公式App Storeに表示されるアイコンも確認します。アイコンは更新で変わることがあるため、<strong>アイコンの下にある名前</strong>も必ず確認します。</p>
       <div class="guide-app-compare">
         <div class="guide-app-card">
-          <a class="guide-app-store-icon-link" href="https://apps.apple.com/jp/app/freestyle-librelink-jp/id1449296861" target="_blank" rel="noopener noreferrer" aria-label="App StoreでFreeStyle LibreLink – JPの現在のアイコンを確認する"><span class="guide-app-store-icon-placeholder">App<br>Store</span></a>
-          <div><small>① いつも血糖値を見る側</small><strong>FreeStyle LibreLink – JP</strong><span>開発元：Abbott Labs</span></div>
+          <a class="guide-app-store-icon-link" href="https://apps.apple.com/jp/app/freestyle-librelink-jp/id1449296861" target="_blank" rel="noopener noreferrer" aria-label="App StoreでFreeStyle LibreLink – JPを確認する"><span class="guide-app-store-icon-placeholder">App<br>Store</span></a>
+          <div><small>最初に開く</small><strong>FreeStyle LibreLink – JP</strong><span>開発元：Abbott Labs</span></div>
         </div>
         <div class="guide-app-card">
-          <a class="guide-app-store-icon-link" href="https://apps.apple.com/jp/app/librelinkup/id1234323923" target="_blank" rel="noopener noreferrer" aria-label="App StoreでLibreLinkUpの現在のアイコンを確認する"><span class="guide-app-store-icon-placeholder">App<br>Store</span></a>
-          <div><small>② 共有を受け取る側</small><strong>LibreLinkUp</strong><span>開発元：Newyu, Inc</span></div>
+          <a class="guide-app-store-icon-link" href="https://apps.apple.com/jp/app/librelinkup/id1234323923" target="_blank" rel="noopener noreferrer" aria-label="App StoreでLibreLinkUpを確認する"><span class="guide-app-store-icon-placeholder">App<br>Store</span></a>
+          <div><small>招待を受ける</small><strong>LibreLinkUp</strong><span>開発元：Newyu, Inc</span></div>
         </div>
         <div class="guide-app-card">
-          <img class="guide-app-icon-image" src="images/app-icons/gluroo-app-store.webp" alt="App Storeに表示されたGluroo Diabetes Loggerのアイコン">
-          <div><small>③ 最後に戻るアプリ</small><strong>Gluroo Diabetes Logger</strong><span>開発元：Gluroo Imaginations Inc.</span></div>
+          <img class="guide-app-icon-image" src="images/app-icons/gluroo-app-store.webp" alt="Gluroo Diabetes Loggerのアイコン" loading="lazy" decoding="async">
+          <div><small>最後に戻る</small><strong>Gluroo Diabetes Logger</strong><span>カンガルーの絵があるアプリ</span></div>
         </div>
       </div>
-      <p class="guide-note">Glurooは、今回送られたApp Store画面から切り出した実際のアイコンです。FreeStyle LibreLink – JPとLibreLinkUpは「App Store」を押すと、現在の正しいアイコンを公式ページで確認できます。</p>
     </section>
 
-    <section class="guide-callout guide-warning">
-      <h2>GlucoScopeへ入力しないもの</h2>
-      <p>LibreLinkUpのメールアドレスとパスワードを入力する場所は<strong>Gluroo</strong>です。GlucoScopeへLibreLinkUpのパスワードを入力することはありません。</p>
-      <p class="guide-note">このガイドは共有設定の場所を案内するものです。センサー、アラート、治療に関する設定変更は案内しません。</p>
+    <section class="guide-callout guide-version-warning">
+      <h2>画面が少し違っても大丈夫です</h2>
+      <p>アプリアイコンは更新で変わることがあります。言葉やボタンの場所も変わることがあります。画像とまったく同じでなくても、各STEPの「押すところ」と近い名前を探してください。</p>
+      <p class="guide-note">画像のメールアドレス、生年月日など、公開に不要な情報は隠しています。ご自身の画面には入力内容が表示されます。</p>
     </section>
 
-    <section class="guide-app-now">
-      <a class="guide-app-store-icon-link" href="https://apps.apple.com/jp/app/freestyle-librelink-jp/id1449296861" target="_blank" rel="noopener noreferrer" aria-label="App StoreでFreeStyle LibreLink – JPの現在のアイコンを確認する"><span class="guide-app-store-icon-placeholder">App<br>Store</span></a>
-      <div><small>STEP 1〜6で開くアプリ</small><strong>FreeStyle LibreLink – JP</strong><span>普段、自分の血糖値を確認しているアプリ</span></div>
-    </section>
-
-    <section class="guide-card guide-simple-steps guide-detailed-steps">
+    <section class="guide-card guide-toc" aria-labelledby="guide-toc-title">
+      <h2 id="guide-toc-title">この手順の流れ</h2>
       <ol>
-        <li>
-          <h2>ホーム画面でLibreのアプリを探します</h2>
-          <p><strong>「FreeStyle LibreLink – JP」</strong>を開きます。LibreLinkUpやGlurooではありません。</p>
-          <a class="guide-primary-link" href="https://apps.apple.com/jp/app/freestyle-librelink-jp/id1449296861" target="_blank" rel="noopener noreferrer">App Storeで正しいアプリを確認する</a>
-        </li>
-        <li>
-          <h2>自分の血糖値が表示されていることを確認します</h2>
-          <p>いつもの測定値が見えることだけ確認します。センサーやアラートの設定は変更しません。</p>
-        </li>
-        <li>
-          <h2>Libreアプリのメニューを開きます</h2>
-          <p>画面上のメニュー印を押します。表示位置や言葉が少し違う場合は「接続」「共有」に近い項目を探します。</p>
-        </li>
-        <li>
-          <h2>「アプリ連携済み」を開きます</h2>
-          <p>現在の日本向け画面では「アプリ連携済み」を押します。アプリの版によって「接続するアプリ」または「Connected Apps」と表示される場合もあります。</p>
-        </li>
-        <li>
-          <h2>LibreLinkUpの「管理」または「接続」を押します</h2>
-          <p>LibreLinkUpの欄を見つけ、「管理」「接続」などのボタンを押します。</p>
-        </li>
-        <li>
-          <h2>「接続を追加」から招待を送ります</h2>
-          <p>自分で受け取れるメールアドレスを入力して招待を送ります。入力したメールアドレスを、あとでLibreLinkUpの登録に使います。</p>
-          <p class="guide-note">メールアドレスをカズマやGlucoScopeへ送る必要はありません。</p>
-        </li>
+        <li><a href="#librelink">共有する人のLibreLinkで招待を送る</a></li>
+        <li><a href="#linkup">招待を受ける人がLibreLinkUpを設定する</a></li>
+        <li><a href="#finish">Glurooへ戻って接続する</a></li>
       </ol>
     </section>
 
+    <span id="librelink" class="guide-anchor"></span>
+    <section class="guide-chapter">
+      <p>第1章 · 共有する人のスマホ</p>
+      <h2>LibreLinkから招待を送ります</h2>
+    </section>
     <section class="guide-app-now">
-      <span class="guide-app-icon guide-app-icon-mail" aria-hidden="true">✉</span>
-      <div><small>STEP 7で開くアプリ</small><strong>メール</strong><span>招待を受け取ったメールアプリ</span></div>
+      <span class="guide-app-icon guide-app-icon-libre" aria-hidden="true">Libre</span>
+      <div><small>いま使うアプリ</small><strong>FreeStyle LibreLink – JP</strong><span>いつも血糖値を確認している黄色いアプリ</span></div>
     </section>
 
-    <section class="guide-card guide-simple-steps guide-detailed-steps">
-      <ol style="counter-reset:guide-simple 6">
-        <li>
-          <h2>届いたLibreLinkUpの招待メールを開きます</h2>
-          <p>メール内の案内からLibreLinkUpへ進みます。見つからないときは迷惑メールも確認します。</p>
-          <p class="guide-note">招待メールの画面やリンクを他の人へ転送しません。</p>
-        </li>
-      </ol>
+    <section class="guide-card guide-step" id="libre-step-1">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">1</span><span class="guide-step-badge">LibreLink</span></div>
+        <h2>FreeStyle LibreLink – JPを確認します</h2>
+        <p>まだ入っていない場合は、App Storeで正式なアプリ名を確認して入れます。以前入れたことがある場合は雲のマーク、新しい場合は「入手」と表示されます。</p>
+        <div class="guide-step-action"><strong>押すところ</strong><span>雲のマーク、または「入手」</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/01-app-store-librelink.png" alt="App StoreのFreeStyle LibreLink – JP画面。ダウンロードの雲マークが表示されている" loading="lazy" decoding="async"><figcaption>アプリ名が「FreeStyle LibreLink – JP」であることも確認します。</figcaption></figure>
     </section>
 
+    <section class="guide-card guide-step" id="libre-step-2">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">2</span><span class="guide-step-badge">LibreLink</span></div>
+        <h2>黄色いLibreLinkを開きます</h2>
+        <p>iPhoneのホーム画面へ戻り、黄色いアイコンのLibreLinkを開きます。</p>
+        <div class="guide-step-action"><strong>押すところ</strong><span>「LibreLink」</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/02-home-open-librelink.png" alt="iPhoneホーム画面。黄色いLibreLinkアプリが赤枠で示されている" loading="lazy" decoding="async"><figcaption>LibreLinkUpやGlurooではなく、黄色いLibreLinkです。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="libre-step-3">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">3</span><span class="guide-step-badge">LibreLink</span></div>
+        <h2>左上のメニューを開きます</h2>
+        <p>血糖値が表示されるホーム画面で、左上の三本線を押します。</p>
+        <div class="guide-step-action"><strong>押すところ</strong><span>左上の「三本線」</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/03-librelink-open-menu.png" alt="LibreLinkのホーム画面。左上の三本線メニューが赤枠で示されている" loading="lazy" decoding="async"><figcaption>血糖値やグラフは撮影時の例です。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="libre-step-4">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">4</span><span class="guide-step-badge">LibreLink</span></div>
+        <h2>「連携アプリ」を開きます</h2>
+        <p>メニューの中から「連携アプリ」を探します。アプリの版によっては「アプリ連携済み」や「接続するアプリ」に近い名前で表示されることがあります。</p>
+        <div class="guide-step-action"><strong>押すところ</strong><span>「連携アプリ」</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/04-librelink-connected-apps.png" alt="LibreLinkのメニュー。「連携アプリ」が赤枠で示されている" loading="lazy" decoding="async"><figcaption>画面によっては近い名前で表示される場合があります。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="libre-step-5">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">5</span><span class="guide-step-badge">LibreLink</span></div>
+        <h2>LibreLinkUpを連携します</h2>
+        <p>連携アプリの一覧で「LibreLinkUp」を見つけます。</p>
+        <div class="guide-step-action"><strong>押すところ</strong><span>LibreLinkUp欄の「連携する」</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/05-librelink-connect-linkup.png" alt="LibreLinkの連携アプリ一覧。LibreLinkUpの連携するボタンが赤枠で示されている" loading="lazy" decoding="async"><figcaption>ほかの連携先は変更しません。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="libre-step-6">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">6</span><span class="guide-step-badge">LibreLink</span></div>
+        <h2>新しい連携を追加します</h2>
+        <p>LibreLinkUpの説明を確認して、招待の作成へ進みます。</p>
+        <div class="guide-step-action"><strong>押すところ</strong><span>「連携を追加する」</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/06-librelink-add-connection.png" alt="LibreLinkUpの説明画面。連携を追加するボタンが赤枠で示されている" loading="lazy" decoding="async"><figcaption>まだ相手へは送信されません。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="libre-step-7">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">7</span><span class="guide-step-badge">LibreLink</span></div>
+        <h2>招待を受ける人を入力します</h2>
+        <p>招待を受ける人の名、姓、メールアドレスを入力します。自分で受け取る場合は、自分が受信できるメールアドレスを使います。</p>
+        <div class="guide-step-action"><strong>入力して押すところ</strong><span>名・姓・メールアドレス →「追加する」</span></div>
+        <p class="guide-note">入力したメールアドレスを、あとでLibreLinkUpの登録にも使います。</p>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/07-librelink-invite-form.png" alt="LibreLinkUpの連携追加画面。名、姓、メールアドレスの入力欄と追加するボタンが表示されている" loading="lazy" decoding="async"><figcaption>公開用画像では個人情報を隠しています。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="libre-step-8">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">8</span><span class="guide-step-badge">LibreLink</span></div>
+        <h2>「承認待ち」を確認します</h2>
+        <p>「招待メールが送信されました」と表示されたら、共有する人側の操作は一度完了です。</p>
+        <div class="guide-step-action"><strong>押すところ</strong><span>「完了」</span></div>
+        <p class="guide-note">「承認待ち」はエラーではありません。次は、招待を受ける人のスマホへ移ります。</p>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/08-librelink-invitation-pending-redacted.png" alt="LibreLinkの連携アプリ画面。連携は承認待ちです、招待メールが送信されましたと表示されている" loading="lazy" decoding="async"><figcaption>名前とメールアドレスは公開用に隠しています。</figcaption></figure>
+    </section>
+
+    <span id="linkup" class="guide-anchor"></span>
+    <section class="guide-chapter">
+      <p>第2章 · 招待を受ける人のスマホ</p>
+      <h2>LibreLinkUpを設定します</h2>
+    </section>
     <section class="guide-app-now">
-      <a class="guide-app-store-icon-link" href="https://apps.apple.com/jp/app/librelinkup/id1234323923" target="_blank" rel="noopener noreferrer" aria-label="App StoreでLibreLinkUpの現在のアイコンを確認する"><span class="guide-app-store-icon-placeholder">App<br>Store</span></a>
-      <div><small>STEP 8〜10で開くアプリ</small><strong>LibreLinkUp</strong><span>共有された血糖値を受け取るアプリ</span></div>
+      <span class="guide-app-icon guide-app-icon-linkup" aria-hidden="true">LinkUp</span>
+      <div><small>ここから使うアプリ</small><strong>メール → LibreLinkUp</strong><span>届いた招待から、受け取り側の設定を始めます</span></div>
     </section>
 
-    <section class="guide-card guide-simple-steps guide-detailed-steps">
-      <ol style="counter-reset:guide-simple 7">
-        <li>
-          <h2>LibreLinkUpを入れて開きます</h2>
-          <p>App Storeで<strong>「LibreLinkUp」</strong>と表示され、開発元が<strong>Newyu, Inc</strong>になっているアプリを確認します。</p>
-          <a class="guide-primary-link" href="https://apps.apple.com/jp/app/librelinkup/id1234323923" target="_blank" rel="noopener noreferrer">App StoreでLibreLinkUpを確認する</a>
-        </li>
-        <li>
-          <h2>招待を送ったメールアドレスで登録します</h2>
-          <p>招待に使ったメールアドレスでLibreLinkUpの案内に沿って登録・ログインします。</p>
-          <p class="guide-note">パスワードが分からない場合は、表示を探すのではなくLibreLinkUpの正規の再設定を使います。</p>
-        </li>
-        <li>
-          <h2>LibreLinkUpに自分の血糖値が表示されることを確認します</h2>
-          <p>ここで血糖値が見えれば、Libre側の共有準備は完了です。表示されないままGlurooへ進まず、招待とログイン先を確認します。</p>
-        </li>
-      </ol>
+    <section class="guide-card guide-step" id="linkup-step-9">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">9</span><span class="guide-step-badge">メール</span></div>
+        <h2>招待メールを開きます</h2>
+        <p>STEP 7で入力したメールアドレスに届く、LibreLinkUpの招待メールを開きます。見つからないときは迷惑メールも確認します。</p>
+        <div class="guide-step-action"><strong>iPhoneで押すところ</strong><span>メール内の「App Store」</span></div>
+        <p class="guide-note">このメールをほかの人へ転送しないでください。</p>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/09-linkup-invitation-email-redacted.png" alt="LibreLinkUpの招待メール。App Storeボタンが赤枠で示されている" loading="lazy" decoding="async"><figcaption>招待した人の名前は公開用に隠しています。</figcaption></figure>
     </section>
 
+    <section class="guide-card guide-step" id="linkup-step-10">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">10</span><span class="guide-step-badge">App Store</span></div>
+        <h2>LibreLinkUpを入れて開きます</h2>
+        <p>App Storeでアプリ名が「LibreLinkUp」であることを確認します。</p>
+        <div class="guide-step-action"><strong>押すところ</strong><span>「入手」または「開く」</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/10-app-store-linkup.png" alt="App StoreのLibreLinkUp画面。開くボタンが赤枠で示されている" loading="lazy" decoding="async"><figcaption>黄色いLibreLinkとは別のアプリです。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="linkup-step-11">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">11</span><span class="guide-step-badge">LibreLinkUp</span></div>
+        <h2>法律上の注意事項を読みます</h2>
+        <p>利用規約とプライバシー通知を開いて確認します。内容に同意できる場合のみ、2つのチェック欄を押します。</p>
+        <div class="guide-step-action"><strong>押すところ</strong><span>2つの四角いチェック欄</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/11-linkup-legal-unchecked.png" alt="LibreLinkUpの法律上の注意事項。利用規約とプライバシー通知の未選択チェック欄が表示されている" loading="lazy" decoding="async"><figcaption>チェックする前の画面です。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="linkup-step-12">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">12</span><span class="guide-step-badge">LibreLinkUp</span></div>
+        <h2>2つのチェックを確認して進みます</h2>
+        <p>両方に青いチェックが付くと、「承諾」を押せるようになります。</p>
+        <div class="guide-step-action"><strong>押すところ</strong><span>「承諾」</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/12-linkup-legal-checked.png" alt="LibreLinkUpの法律上の注意事項。2つのチェックが選択され、承諾ボタンが赤枠で示されている" loading="lazy" decoding="async"><figcaption>内容に同意できない場合は、無理に進めません。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="linkup-step-13">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">13</span><span class="guide-step-badge">LibreLinkUp</span></div>
+        <h2>ようこそ画面を進みます</h2>
+        <p>「リブレLinkUpへようこそ」と表示されたら、初回設定を始めます。</p>
+        <div class="guide-step-action"><strong>押すところ</strong><span>「続ける」</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/13-linkup-welcome.png" alt="リブレLinkUpへようこそ画面。続けるボタンが赤枠で示されている" loading="lazy" decoding="async"><figcaption>ここからアカウントを作ります。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="linkup-step-14">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">14</span><span class="guide-step-badge">LibreLinkUp</span></div>
+        <h2>アカウントを作ります</h2>
+        <p>初めて使う場合は、新しいアカウントを作ります。すでにLibreLinkUpのアカウントがある場合は「サインイン」を使います。</p>
+        <div class="guide-step-action"><strong>初めての方が押すところ</strong><span>「アカウントを作成する」</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/14-linkup-create-account.png" alt="LibreLinkUpの開始画面。アカウントを作成するボタンが赤枠で示されている" loading="lazy" decoding="async"><figcaption>既存アカウントがある方は下のサインインを使います。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="linkup-step-15">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">15</span><span class="guide-step-badge">LibreLinkUp</span></div>
+        <h2>国が「日本」か確認します</h2>
+        <p>国はあとから変更できません。「日本」になっていることをよく確認します。</p>
+        <div class="guide-step-action"><strong>確認して押すところ</strong><span>注意事項のチェック →「次へ」</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/15-linkup-country.png" alt="LibreLinkUpの国を選択する画面。日本、確認チェック、次へボタンが赤枠で示されている" loading="lazy" decoding="async"><figcaption>日本以外になっている場合は、進む前に選び直します。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="linkup-step-16">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">16</span><span class="guide-step-badge">困ったとき</span></div>
+        <h2>「必須です」と出ても大丈夫です</h2>
+        <p>空欄のまま進むと「必須です」と表示されます。故障ではありません。入力されていない欄へ戻ります。</p>
+        <div class="guide-step-action guide-step-optional"><strong>この画面になったら</strong><span>空欄の「名」を入力する</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/16-linkup-name-required-error.png" alt="LibreLinkUpのアカウント作成画面。名の欄に必須ですというエラーが表示されている" loading="lazy" decoding="async"><figcaption>入力不足を知らせる画面です。落ち着いて空欄を埋めます。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="linkup-step-17">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">17</span><span class="guide-step-badge">LibreLinkUp</span></div>
+        <h2>名前と生年月日を入力します</h2>
+        <p>名、姓、生年月日を入力して確認します。</p>
+        <div class="guide-step-action"><strong>入力して押すところ</strong><span>名・姓・生年月日 →「次へ」</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/17-linkup-profile-redacted.png" alt="LibreLinkUpのアカウント作成画面。名、姓、生年月日と次へボタンが表示されている" loading="lazy" decoding="async"><figcaption>氏名と生年月日は公開用に隠しています。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="linkup-step-18">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">18</span><span class="guide-step-badge">LibreLinkUp</span></div>
+        <h2>メールとパスワードを決めます</h2>
+        <p>招待メールを受け取ったメールアドレスと、LibreLinkUp専用の12文字以上のパスワードを2回入力します。</p>
+        <div class="guide-step-action"><strong>入力して押すところ</strong><span>メール・パスワード2回 →「アカウントを作成する」</span></div>
+        <p class="guide-note">パスワードは人へ送らず、安全な場所に保管してください。忘れたときは、LibreLinkUpの正規のパスワード再設定を使います。GlucoScopeには入力しません。</p>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/18-linkup-email-password.png" alt="LibreLinkUpのアカウント作成画面。メール、パスワード、確認用パスワードとアカウントを作成するボタンが表示されている" loading="lazy" decoding="async"><figcaption>秘密の入力内容は公開用に隠しています。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="linkup-step-19">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">19</span><span class="guide-step-badge">LibreLinkUp</span></div>
+        <h2>「準備完了です」を進みます</h2>
+        <p>アカウントが作成されると、最初の説明が始まります。</p>
+        <div class="guide-step-action"><strong>押すところ</strong><span>「続ける」</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/19-linkup-account-ready.png" alt="LibreLinkUpの準備完了画面。続けるボタンが表示されている" loading="lazy" decoding="async"><figcaption>呼びかけに使われる名前は公開用に隠しています。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="linkup-step-20">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">20</span><span class="guide-step-badge">説明 1/4</span></div>
+        <h2>インターネット接続の説明を読みます</h2>
+        <p>LibreLinkUpで最新情報を受け取るには、携帯電話回線またはWi-Fiが必要です。</p>
+        <div class="guide-step-action"><strong>押すところ</strong><span>「次へ」</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/20-linkup-overview-internet.png" alt="LibreLinkUpの概要1。携帯電話またはWi-Fi接続が必要という説明と次へボタン" loading="lazy" decoding="async"><figcaption>通信できない間は、表示が遅れることがあります。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="linkup-step-21">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">21</span><span class="guide-step-badge">説明 2/4</span></div>
+        <h2>通知の説明を読みます</h2>
+        <p>次にiPhoneから通知の確認が表示されます。</p>
+        <div class="guide-step-action"><strong>押すところ</strong><span>「次へ」</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/21-linkup-overview-notifications.png" alt="LibreLinkUpの概要2。通知許可を有効にする説明と次へボタン" loading="lazy" decoding="async"><figcaption>次の画面で、ご自身で通知を選びます。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="linkup-step-22">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">22</span><span class="guide-step-badge">iPhoneの確認</span></div>
+        <h2>通知を受け取るか選びます</h2>
+        <p>通知を受け取りたい場合は「許可」を選びます。通知が不要な場合は「許可しない」でも、接続の手続きは先へ進められます。</p>
+        <div class="guide-step-action"><strong>どちらかを押す</strong><span>「許可」または「許可しない」</span></div>
+        <p class="guide-note">画像では「許可しない」を示していますが、これを勧めるものではありません。ご自身の使い方に合わせて選んでください。</p>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/22-linkup-ios-notifications.png" alt="iPhoneの通知確認。LibreLinkUpは通知を送信しますという画面で、許可しないが赤枠で示されている" loading="lazy" decoding="async"><figcaption>どちらを選んでも、このガイドの続きへ進めます。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="linkup-step-23">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">23</span><span class="guide-step-badge">説明 3/4</span></div>
+        <h2>診療判断についての説明を読みます</h2>
+        <p>LibreLinkUpは、元のCGMアプリや医療相談の代わりではありません。治療判断やアラートは、元のLibreアプリと医療者からの案内を確認します。</p>
+        <div class="guide-step-action"><strong>押すところ</strong><span>「次へ」</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/23-linkup-overview-decisions.png" alt="LibreLinkUpの概要3。診療判断についての説明と次へボタン" loading="lazy" decoding="async"><figcaption>内容を読んでから進みます。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="linkup-step-24">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">24</span><span class="guide-step-badge">説明 4/4</span></div>
+        <h2>接続方法の説明を読みます</h2>
+        <p>招待を承諾すると、共有する人の測定値を受け取れるようになります。</p>
+        <div class="guide-step-action"><strong>押すところ</strong><span>「次へ」</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/24-linkup-overview-connect.png" alt="LibreLinkUpの概要4。接続方法についての説明と次へボタン" loading="lazy" decoding="async"><figcaption>あと少しで初期設定が完了します。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="linkup-step-25">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">25</span><span class="guide-step-badge">LibreLinkUp</span></div>
+        <h2>「準備が整いました」を進みます</h2>
+        <p>初期設定の説明はここで完了です。</p>
+        <div class="guide-step-action"><strong>押すところ</strong><span>「続ける」</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/25-linkup-ready.png" alt="LibreLinkUpの準備が整いました画面。続けるボタンが赤枠で示されている" loading="lazy" decoding="async"><figcaption>次に、届いている招待を承諾します。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="linkup-step-26">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">26</span><span class="guide-step-badge">重要</span></div>
+        <h2>血糖値の共有を承諾します</h2>
+        <p>共有する人の名前を確認します。知っている相手からの招待で、受け取ってよい場合だけ承諾します。</p>
+        <div class="guide-step-action"><strong>押すところ</strong><span>「承諾」</span></div>
+        <p class="guide-note">知らない相手や心当たりのない招待なら「拒否する」を選びます。</p>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/26-linkup-accept-invitation.png" alt="LibreLinkUpの招待承認画面。承諾ボタンが赤枠で示されている" loading="lazy" decoding="async"><figcaption>共有する人と受ける人の名前は公開用に隠しています。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="linkup-step-27">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">27</span><span class="guide-step-badge">完了確認</span></div>
+        <h2>LibreLinkUpのホームを確認します</h2>
+        <p>ホーム画面が表示されたら接続は完了です。LibreLinkUpに自分の血糖値が表示されるまで待ちます。最初は「最近のデータなし」と表示されることがあります。通信したまま数分待ちます。</p>
+        <div class="guide-step-action"><strong>確認するところ</strong><span>しばらくして血糖値とグラフが表示される</span></div>
+        <p class="guide-note">長く待っても表示されない場合は、STEP 26で正しい招待を承諾したか、元のLibreLinkに最新値があるかを確認します。</p>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/27-linkup-waiting-for-data.png" alt="LibreLinkUpのホーム画面。グルコース値は最近のデータなしと表示されている" loading="lazy" decoding="async"><figcaption>これは初回の同期待ちで表示されることがある画面です。</figcaption></figure>
+    </section>
+
+    <span id="finish" class="guide-anchor"></span>
+    <section class="guide-chapter">
+      <p>第3章</p>
+      <h2>Glurooへ戻ります</h2>
+    </section>
     <section class="guide-app-now">
-      <img class="guide-app-icon-image" src="images/app-icons/gluroo-app-store.webp" alt="App Storeに表示されたGluroo Diabetes Loggerのアイコン">
-      <div><small>STEP 11〜14で開くアプリ</small><strong>Gluroo Diabetes Logger</strong><span>カンガルーの絵と名前を確認</span></div>
+      <img class="guide-app-icon-image" src="images/app-icons/gluroo-app-store.webp" alt="Gluroo Diabetes Loggerのアイコン" loading="lazy" decoding="async">
+      <div><small>今から開くアプリ</small><strong>Gluroo Diabetes Logger</strong><span>LibreLinkUpを閉じ、カンガルーのアプリへ戻ります</span></div>
     </section>
-
-    <section class="guide-card guide-simple-steps guide-detailed-steps">
-      <ol style="counter-reset:guide-simple 10">
-        <li>
-          <h2>ホーム画面からGlurooを開きます</h2>
-          <p>LibreLinkUpを閉じ、カンガルーの絵があるGlurooへ戻ります。</p>
-        </li>
-        <li>
-          <h2>「メニュー → 設定 → CGM」を開きます</h2>
-          <p>Glurooの左上の三本線から「設定」を押し、「CGM」を開きます。</p>
-        </li>
-        <li>
-          <h2>FreeStyle Libre 2を選びます</h2>
-          <p>使っているCGMとしてFreeStyle Libre 2を選びます。治療に関する設定は変更しません。</p>
-        </li>
-        <li>
-          <h2>LibreLinkUpの情報をGlurooへ入力します</h2>
-          <p>LibreLinkUpへ登録したメールアドレスとパスワードを、<strong>GlurooのCGM接続画面</strong>へ入力します。</p>
-          <p class="guide-note">GlucoScopeの接続画面ではありません。Glurooに血糖値が表示されたら、元のGlurooガイドへ戻ります。</p>
-        </li>
+    <section class="guide-callout guide-field-note">
+      <h2>LibreLinkUpに血糖値が見えたら準備完了です🍀</h2>
+      <ol>
+        <li>Glurooを開きます。</li>
+        <li>「メニュー → 設定 → CGM」を開きます。</li>
+        <li>「FreeStyle Libre 2」を選びます。</li>
+        <li>STEP 18で<strong>LibreLinkUpへ登録したメールアドレスとパスワード</strong>をGlurooへ入力します。</li>
+        <li>Glurooに血糖値が表示されるまで待ちます。</li>
       </ol>
+      <p class="guide-note">ここで入力するのはGlurooです。GlucoScopeへLibreLinkUpのパスワードを入力しません。</p>
+      <a class="guide-primary-link" href="../gluroo-setup/#screen-30">Glurooガイドの続きへ進む</a>
     </section>
 
     <section class="guide-callout">
       <h2>血糖値が表示されないとき</h2>
       <ul>
-        <li>FreeStyle LibreLink – JPで血糖値が見えるか</li>
-        <li>LibreLinkUpで同じ血糖値が見えるか</li>
-        <li>招待を送ったメールアドレスでLibreLinkUpへ登録したか</li>
-        <li>利用規約など、完了していない確認画面が残っていないか</li>
-        <li>GlurooのCGM画面に、秘密情報を含まないエラー文が出ていないか</li>
+        <li>元のFreeStyle LibreLink – JPに最新の血糖値が見えるか</li>
+        <li>LibreLinkUpで招待を「承諾」したか</li>
+        <li>LibreLinkUpに血糖値が表示されるまで数分待ったか</li>
+        <li>Glurooへ入力したのがLibreLinkUpのメールアドレスとパスワードか</li>
       </ul>
       <div class="guide-secondary-links"><a href="https://gluroo.com/support/libre-cgm-troubleshooting/" target="_blank" rel="noopener noreferrer">Gluroo公式 Libre案内（英語・外部サイト）</a></div>
     </section>
 
     <section class="guide-card guide-footer">
-      <p class="guide-note">治療判断、アラート、最新のセンサー状態は、元のFreeStyle LibreLink – JPアプリを確認してください。</p>
-      <a class="guide-primary-link" href="../gluroo-setup/#step-cgm">Glurooガイドへ戻る</a>
+      <p class="guide-note">GlucoScopeは医療機器ではありません。治療判断、アラート、最新のセンサー状態は、元のFreeStyle LibreLink – JPを確認してください。</p>
+      <a class="guide-primary-link guide-footer-return" href="../../?mode=user&source=gluroo#glucose">GlucoScopeの接続画面へ戻る</a>
     </section>
   </main>
 </body>

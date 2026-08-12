@@ -4,73 +4,220 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex">
-  <title>Dexcom G7をGlurooにつなぐ準備 | GlucoScope</title>
-  <link rel="stylesheet" href="../guide.css?v=20260721-user-foundation-3-1">
+  <title>Dexcom ShareをGlurooにつなぐ手順 | GlucoScope</title>
+  <link rel="stylesheet" href="../guide.css?v=20260812-cgm-captures-1">
 </head>
 <body>
   <main class="guide-wrap guide-narrow">
     <nav class="guide-topbar" aria-label="ガイドのナビゲーション">
       <a class="guide-brand" href="../../?mode=user#glucose">🍀 GlucoScope</a>
-      <a class="guide-back" href="../gluroo-setup/#step-5">Glurooガイドへ戻る</a>
+      <a class="guide-back" href="../gluroo-setup/#step-cgm">Glurooガイドへ戻る</a>
     </nav>
 
     <header class="guide-hero">
       <p class="guide-kicker">Dexcom G7を使っている方</p>
-      <h1>Dexcom Shareを準備します</h1>
-      <p class="guide-lead">Glurooへ血糖値を届けるため、Dexcom G7アプリの共有機能と、本人側のDexcomアカウントを確認します。</p>
+      <h1>Dexcom Shareを<br>1画面ずつ準備します</h1>
+      <p class="guide-lead">Dexcom G7アプリのShareをオンにして、フォロワーを1人招待します。画面の順番どおりに進めれば大丈夫です。</p>
       <div class="guide-meta">
-        <span class="guide-chip">公式案内をもとに作成</span>
-        <span class="guide-chip">実機画像は追加予定</span>
+        <span class="guide-chip">iPhone向け</span>
+        <span class="guide-chip">全10画面</span>
+        <span class="guide-chip">本人側（Sharer）の操作</span>
       </div>
     </header>
 
-    <section class="guide-callout guide-warning">
-      <h2>GlucoScopeには入力しません</h2>
-      <p>Dexcomのユーザー名とパスワードを入力する場所は<strong>Gluroo</strong>です。GlucoScopeへDexcomのパスワードを入力することはありません。</p>
+    <section class="guide-callout guide-field-note">
+      <h2>先に用意するもの</h2>
+      <ul>
+        <li>血糖値が表示されている<strong>Dexcom G7</strong>アプリ</li>
+        <li>招待を受け取って承諾できる人のメールアドレス</li>
+        <li>Dexcom G7を使っている本人側のDexcomユーザーIDとパスワード</li>
+      </ul>
+      <p class="guide-note">本人側のDexcomユーザーIDとパスワードをあとで入力する場所は<strong>Gluroo</strong>です。GlucoScopeへDexcomのパスワードを入力することはありません。</p>
+      <p class="guide-note">ユーザーIDは、Dexcom G7アプリの「プロフィール → アカウント」で確認できる場合があります。パスワードが分からないときは、Dexcomの正規の再設定を使います。</p>
     </section>
 
-    <section class="guide-card guide-simple-steps">
+    <section class="guide-callout guide-version-warning">
+      <h2>画面が少し違っても大丈夫です</h2>
+      <p>アプリの更新により、言葉やボタンの場所が変わることがあります。画像とまったく同じでなくても、各STEPの「押すところ」と近い名前を探してください。</p>
+      <p class="guide-note">画像内の血糖値やグラフは撮影時の例で、目標値や医療上の案内ではありません。氏名とメールアドレスは公開用に隠しています。</p>
+    </section>
+
+    <section class="guide-card guide-toc" aria-labelledby="guide-toc-title">
+      <h2 id="guide-toc-title">この手順の流れ</h2>
       <ol>
-        <li>
-          <h2>Dexcom G7アプリで血糖値が見えることを確認します</h2>
-          <p>センサーの開始や治療に関する設定は、Dexcomの説明と医療者から受けた案内に従います。</p>
-        </li>
-        <li>
-          <h2>「接続」から「Share」を開きます</h2>
-          <p>Shareをオンにし、少なくとも1人のフォロワーを追加します。Dexcomのクラウドへ共有できていることを確認するために必要です。</p>
-        </li>
-        <li>
-          <h2>本人側のDexcomアカウントを確認します</h2>
-          <p>Glurooへ入力するのは、Dexcom G7を使っている本人側（Sharer）のアカウントです。Dexcom Followを見る人のアカウントではありません。</p>
-          <p class="guide-note">ユーザーIDは、アカウントを作った時期によって、ユーザー名・メールアドレス・携帯電話番号のいずれかです。Dexcom G7アプリの「プロフィール → アカウント」で確認できます。</p>
-        </li>
-        <li>
-          <h2>パスワードが分からないとき</h2>
-          <p>現在のパスワードをアプリ画面で表示することはできません。思い出せない場合は、Dexcomのアカウント画面から再設定します。</p>
-        </li>
-        <li>
-          <h2>GlurooでDexcom G7を選びます</h2>
-          <p>Glurooの「メニュー → 設定 → CGM」でDexcom G7を選び、確認した本人側のユーザーIDとパスワードを入力します。表示まで数分かかる場合があります。</p>
-        </li>
+        <li><a href="#share">Dexcom G7でShareの招待を送る</a></li>
+        <li><a href="#accept">招待を受ける人に承諾してもらう</a></li>
+        <li><a href="#finish">Glurooへ戻って接続する</a></li>
       </ol>
+    </section>
+
+    <span id="share" class="guide-anchor"></span>
+    <section class="guide-chapter">
+      <p>第1章 · Dexcom G7を使っている本人のスマホ</p>
+      <h2>Shareの招待を送ります</h2>
+    </section>
+    <section class="guide-app-now">
+      <span class="guide-app-icon guide-app-icon-dexcom" aria-hidden="true">G7</span>
+      <div><small>いま使うアプリ</small><strong>Dexcom G7</strong><span>白地に緑のマークがあるアプリ</span></div>
+    </section>
+
+    <section class="guide-card guide-step" id="dexcom-step-1">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">1</span><span class="guide-step-badge">Dexcom G7</span></div>
+        <h2>Dexcom G7を開きます</h2>
+        <p>iPhoneのホーム画面で、白地に緑のマークがあるDexcom G7アプリを探します。</p>
+        <div class="guide-step-action"><strong>押すところ</strong><span>「Dexcom G7」</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/01-home-open-dexcom.jpg" alt="iPhoneホーム画面。Dexcom G7アプリが赤枠で示されている" loading="lazy" decoding="async"><figcaption>隣のGlurooではなく、先にDexcom G7を開きます。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="dexcom-step-2">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">2</span><span class="guide-step-badge">Dexcom G7</span></div>
+        <h2>下の「接続」を開きます</h2>
+        <p>現在の血糖値が表示されるホーム画面で、下部メニューの「接続」を押します。</p>
+        <div class="guide-step-action"><strong>押すところ</strong><span>画面下の「接続」</span></div>
+        <p class="guide-note">血糖値やグラフは撮影時の例です。ご自身の値と同じである必要はありません。</p>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/02-dexcom-open-connections.jpg" alt="Dexcom G7のグルコース画面。下部の接続タブが赤枠で示されている" loading="lazy" decoding="async"><figcaption>治療判断やアラートは、ご自身のDexcom G7画面を確認してください。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="dexcom-step-3">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">3</span><span class="guide-step-badge">Dexcom G7</span></div>
+        <h2>「Dexcom Share connection」を開きます</h2>
+        <p>接続の一覧から、緑の点が並んだ「Dexcom Share connection」を探します。</p>
+        <div class="guide-step-action"><strong>押すところ</strong><span>「Dexcom Share connection」</span></div>
+        <p class="guide-note">「有効なフォロワーなし」は、まだ招待が承諾されていない状態です。エラーではありません。</p>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/03-dexcom-share-connection.jpg" alt="Dexcom G7の接続一覧。Dexcom Share connectionが赤枠で示されている" loading="lazy" decoding="async"><figcaption>センサーやほかの接続設定は変更しません。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="dexcom-step-4">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">4</span><span class="guide-step-badge">Dexcom Share</span></div>
+        <h2>フォロワーの招待を始めます</h2>
+        <p>「フォロワーはまだいません。」と表示されたら、招待の作成へ進みます。</p>
+        <div class="guide-step-action"><strong>押すところ</strong><span>「フォロワーを招待する」</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/04-share-invite-follower.jpg" alt="Dexcom Shareのフォロワー未登録画面。フォロワーを招待するボタンが赤枠で示されている" loading="lazy" decoding="async"><figcaption>Shareを使うため、フォロワーを1人招待します。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="dexcom-step-5">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">5</span><span class="guide-step-badge">Dexcom Share</span></div>
+        <h2>フォロワーのニックネームを入力します</h2>
+        <p>招待を受ける人を自分が分かる名前で入力します。本名でなくてもかまいません。</p>
+        <div class="guide-step-action"><strong>入力して押すところ</strong><span>ニックネーム →「次へ」</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/05-share-follower-nickname.jpg" alt="Dexcom Shareのフォロワー招待画面。ニックネーム欄と次へボタンが表示されている" loading="lazy" decoding="async"><figcaption>入力したニックネームは公開用に隠しています。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="dexcom-step-6">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">6</span><span class="guide-step-badge">Dexcom Share</span></div>
+        <h2>招待先のメールアドレスを入力します</h2>
+        <p>招待を受け取って承諾できる人のメールアドレスを入力します。入力間違いがないか確認します。</p>
+        <div class="guide-step-action"><strong>入力して押すところ</strong><span>メールアドレス →「次へ」</span></div>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/06-share-follower-email.jpg" alt="Dexcom Shareのフォロワー招待画面。メールアドレス欄と次へボタンが表示されている" loading="lazy" decoding="async"><figcaption>メールアドレスは公開用に隠しています。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="dexcom-step-7">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">7</span><span class="guide-step-badge">Dexcom Share</span></div>
+        <h2>共有するデータを選びます</h2>
+        <p>Glurooでグラフも表示するため、「センサー測定値とトレンドグラフ」を選びます。</p>
+        <div class="guide-step-action"><strong>選んで押すところ</strong><span>「センサー測定値とトレンドグラフ」→「次へ」</span></div>
+        <p class="guide-note">説明イラスト内の「142 mg/dL」は例で、あなたの血糖値ではありません。</p>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/07-share-data-selection.jpg" alt="Dexcom Shareの共有データ選択画面。センサー測定値とトレンドグラフが選択されている" loading="lazy" decoding="async"><figcaption>右側の、グラフが描かれた選択肢を使います。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="dexcom-step-8">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">8</span><span class="guide-step-badge">Dexcom Share</span></div>
+        <h2>フォロワーの通知設定を確認します</h2>
+        <p>表示される通知設定を確認します。GlucoScopeのために通知値やオン・オフを変更する必要はありません。</p>
+        <div class="guide-step-action"><strong>確認して押すところ</strong><span>「次へ」</span></div>
+        <p class="guide-note">画像例とご自身の画面でオン・オフが違っても問題ありません。通知は治療判断の代わりではなく、ご自身のDexcomの案内に沿って設定します。</p>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/08-share-notifications.jpg" alt="Dexcom Shareの推奨される通知設定画面。通知項目と次へボタンが表示されている" loading="lazy" decoding="async"><figcaption>撮影時の設定例です。これと同じ設定にする必要はありません。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="dexcom-step-9">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">9</span><span class="guide-step-badge">最終確認</span></div>
+        <h2>招待内容を確認して送ります</h2>
+        <p>ニックネーム、メール、共有データ、通知を確認します。間違いがあれば各項目の「編集」で戻れます。</p>
+        <div class="guide-step-action"><strong>内容が正しければ押すところ</strong><span>「招待メールの送信」</span></div>
+        <p class="guide-note">この最終確認画面に表示される内容が、実際に送られる設定です。</p>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/09-share-review-invitation.jpg" alt="Dexcom Shareの招待内容確認画面。フォロワー、データ共有、通知と招待メールの送信ボタンが表示されている" loading="lazy" decoding="async"><figcaption>ニックネームとメールアドレスは公開用に隠しています。</figcaption></figure>
+    </section>
+
+    <section class="guide-card guide-step" id="dexcom-step-10">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">10</span><span class="guide-step-badge">送信完了</span></div>
+        <h2>「招待メールを送信しました」を確認します</h2>
+        <p>招待した人が一覧に表示されたら、本人側の送信操作は完了です。</p>
+        <div class="guide-step-action"><strong>確認するところ</strong><span>招待した人の横に「招待メールを送信しました」</span></div>
+        <p class="guide-note">まだ「有効なフォロワーなし」でもエラーではありません。相手が招待を承諾すると有効になります。</p>
+      </div>
+      <figure class="guide-shot guide-shot-full"><img src="images/steps/10-share-invitation-sent.jpg" alt="Dexcom Share画面。招待したフォロワーと招待メールを送信しましたという状態が表示されている" loading="lazy" decoding="async"><figcaption>招待した人の名前は公開用に隠しています。</figcaption></figure>
+    </section>
+
+    <span id="accept" class="guide-anchor"></span>
+    <section class="guide-chapter">
+      <p>第2章 · 招待を受ける人</p>
+      <h2>メールの招待を承諾してもらいます</h2>
+    </section>
+    <section class="guide-callout guide-field-note">
+      <h2>ここは招待を受ける人の操作です</h2>
+      <ol>
+        <li>招待先のメールを開きます。見つからない場合は迷惑メールも確認します。</li>
+        <li>メールの案内に沿って、Dexcom Followで招待を承諾します。</li>
+        <li>本人側のDexcom G7で「有効なフォロワー」が表示されるまで待ちます。</li>
+      </ol>
+      <p class="guide-note">招待を受ける側の画面は、端末やDexcom Followの利用状況で異なるため、メールに表示されるDexcomの案内に沿ってください。</p>
+    </section>
+
+    <span id="finish" class="guide-anchor"></span>
+    <section class="guide-chapter">
+      <p>第3章</p>
+      <h2>Glurooへ戻ります</h2>
+    </section>
+    <section class="guide-app-now">
+      <img class="guide-app-icon-image" src="../librelinkup/images/app-icons/gluroo-app-store.webp" alt="Gluroo Diabetes Loggerのアイコン" loading="lazy" decoding="async">
+      <div><small>今から開くアプリ</small><strong>Gluroo Diabetes Logger</strong><span>Dexcom G7を閉じ、カンガルーのアプリへ戻ります</span></div>
+    </section>
+    <section class="guide-callout guide-field-note">
+      <h2>有効なフォロワーが確認できたら準備完了です🍀</h2>
+      <ol>
+        <li>Glurooを開きます。</li>
+        <li>「メニュー → 設定 → CGM」を開きます。</li>
+        <li>「Dexcom G7」を選びます。</li>
+        <li>Dexcom G7を使っている<strong>本人側（Sharer）のユーザーIDとパスワード</strong>をGlurooへ入力します。</li>
+        <li>Glurooに血糖値が表示されるまで待ちます。</li>
+      </ol>
+      <p class="guide-note">フォロワー側のログイン情報ではありません。DexcomのユーザーIDは、メールアドレス・携帯電話番号・作成時のユーザー名のいずれかの場合があります。分からない場合はDexcomの正規の再設定を使います。</p>
+      <a class="guide-primary-link" href="../gluroo-setup/#screen-30">Glurooガイドの続きへ進む</a>
     </section>
 
     <section class="guide-callout">
       <h2>血糖値が表示されないとき</h2>
       <ul>
-        <li>Dexcom G7アプリのShareがオンになっているか</li>
-        <li>フォロワーが1人以上登録されているか</li>
-        <li>Followerではなく本人側のログイン情報か</li>
-        <li>GlurooのCGM画面にエラーが出ていないか</li>
+        <li>元のDexcom G7アプリに最新の血糖値が見えるか</li>
+        <li>Shareがオンになっているか</li>
+        <li>招待先がメールを開いて承諾し、「有効なフォロワー」が表示されたか</li>
+        <li>Glurooへ入力したのが本人側（Sharer）のユーザーIDとパスワードか</li>
       </ul>
-      <div class="guide-secondary-links">
-        <a href="https://gluroo.com/support/dexcom-cgm-troubleshooting/" target="_blank" rel="noopener noreferrer">Gluroo公式 Dexcom案内（英語・外部サイト）</a>
-      </div>
+      <div class="guide-secondary-links"><a href="https://gluroo.com/support/dexcom-cgm-troubleshooting/" target="_blank" rel="noopener noreferrer">Gluroo公式 Dexcom案内（英語・外部サイト）</a></div>
     </section>
 
     <section class="guide-card guide-footer">
-      <p class="guide-note">治療判断にはGlurooやGlucoScopeではなく、元のDexcom G7アプリを確認してください。</p>
-      <a class="guide-primary-link" href="../gluroo-setup/#step-5">Glurooガイドへ戻る</a>
+      <p class="guide-note">GlucoScopeは医療機器ではありません。治療判断、アラート、最新のセンサー状態は、元のDexcom G7アプリを確認してください。</p>
+      <a class="guide-primary-link guide-footer-return" href="../../?mode=user&source=gluroo#glucose">GlucoScopeの接続画面へ戻る</a>
     </section>
   </main>
 </body>

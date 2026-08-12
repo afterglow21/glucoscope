@@ -17,10 +17,11 @@ html{font-size:18px;scroll-behavior:smooth}
 body{margin:0;background:var(--guide-bg);color:var(--guide-ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;line-height:1.8}
 a{color:#176da8;text-underline-offset:3px}
 button,a{touch-action:manipulation}
-.guide-wrap{width:min(920px,100%);margin:0 auto;padding:20px 18px 64px}
+.guide-wrap{width:min(920px,100%);margin:0 auto;padding:max(20px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(64px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left))}
 .guide-topbar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:18px}
 .guide-brand{font-weight:800;color:var(--guide-green-deep);text-decoration:none}
-.guide-back{font-size:.9rem}
+.guide-brand,.guide-back{display:inline-flex;align-items:center;min-height:44px;padding:4px 2px}
+.guide-back{font-size:.9rem;text-align:right}
 .guide-hero,.guide-card{background:var(--guide-paper);border:1px solid var(--guide-border);border-radius:22px}
 .guide-hero{padding:28px;margin-bottom:18px}
 .guide-kicker{margin:0 0 6px;color:var(--guide-green-deep);font-weight:800;font-size:.85rem}
@@ -42,6 +43,7 @@ p{margin:0 0 12px}
 .guide-step-number{display:inline-grid;place-items:center;width:42px;height:42px;border-radius:50%;background:var(--guide-green);color:#fff;font-weight:900;margin-bottom:10px}
 .guide-step-copy ul{padding-left:1.35em;margin:10px 0}
 .guide-step-copy li{margin-bottom:8px}
+.guide-step-copy>p:last-child{margin-bottom:0}
 .guide-shot{margin:0}
 .guide-shot img{display:block;width:100%;height:auto;border:1px solid var(--guide-border);border-radius:18px;background:#fff}
 .guide-shot figcaption{margin-top:8px;color:var(--guide-muted);font-size:.82rem;text-align:center}
@@ -130,6 +132,7 @@ p{margin:0 0 12px}
 .guide-app-icon-gluroo{background:linear-gradient(145deg,#7156a8,#3e2f78)}
 .guide-app-icon-libre{background:linear-gradient(145deg,#ffd83d,#ee9c20);color:#27384d}
 .guide-app-icon-linkup{background:linear-gradient(145deg,#31a7d3,#19729e)}
+.guide-app-icon-dexcom{background:linear-gradient(145deg,#35a853,#13823b)}
 .guide-app-icon-mail{background:linear-gradient(145deg,#59a9ee,#246fb6)}
 .guide-app-compare{display:grid;gap:10px;margin-top:14px}
 .guide-app-card{padding:12px}
@@ -164,3 +167,16 @@ p{margin:0 0 12px}
 .guide-app-store-icon-placeholder{font-size:.65rem!important;line-height:1.05!important;font-weight:900;text-align:center;color:#1d1d1f!important}
 .guide-app-store-icon-link:focus-visible{outline:3px solid #4e9bd6;outline-offset:3px}
 @media(max-width:720px){.guide-app-icon-image,.guide-app-store-icon-link{width:46px;height:46px;border-radius:12px}}
+
+/* User Foundation 0.4: complete LibreLinkUp and Dexcom Share capture guides */
+.guide-step-action span{font-size:1rem;line-height:1.55}
+.guide-step .guide-shot-full{align-self:start}
+.guide-step .guide-shot-full img{max-height:none}
+.guide-field-note ol{padding-left:1.4em}
+.guide-field-note li{margin-bottom:8px}
+@media(max-width:720px){
+  .guide-wrap{padding-top:max(12px,env(safe-area-inset-top));padding-right:max(10px,env(safe-area-inset-right));padding-bottom:max(46px,env(safe-area-inset-bottom));padding-left:max(10px,env(safe-area-inset-left))}
+  .guide-topbar{align-items:flex-start}
+  .guide-brand,.guide-back{max-width:48%}
+  .guide-step-action{padding:13px 14px}
+}

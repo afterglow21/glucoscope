@@ -13,7 +13,7 @@ Cloudflare Pages may be considered later, but the current priority is to publish
 The AI letter API continues to run through Cloudflare Worker.
 Provider API keys must stay server-side in the Worker environment and must never be committed to GitHub or placed in frontend JavaScript.
 
-## User Foundation 0.4 / Limited Data Relay stopped after supervised acceptances
+## User Foundation 0.4 / 1–3 person early access
 
 The root page remains Kazuma's public demo. The user-data route is:
 
@@ -287,5 +287,7 @@ The user-mode onboarding is designed for people with little technical knowledge,
 - The screenshot guide is maintained separately at `guides/gluroo-setup/` so Gluroo screen changes can be updated without redesigning the dashboard.
 - Guide screenshots are displayed without fixed-position overlays. Numbered steps and captions identify what to look for without risking marker drift across devices.
 - Separate preparation pages explain Dexcom Share, LibreLinkUp, and Guardian Monitor.
+- The beginner guides now incorporate all 27 supplied LibreLink / LibreLinkUp captures and all 10 supplied Dexcom Share captures as one-screen-per-step walkthroughs. Personal fields in the supplied captures are masked, each guide warns that app updates may change screens, and completion continues into the common Gluroo guide at `#screen-30`.
+- The screenshots and instructions are connection guidance only. Example glucose values or graph settings are not targets or medical advice; treatment decisions, alerts, and current sensor state remain with the original CGM app and the person's medical guidance.
 - General-user Gluroo connection details may stay in the selected browser and pass transiently through the limited relay. They are not stored in Azure, KV, Durable Objects, relay logs, shared cache, or AI. The separate public demo feed now continuously publishes only Kazuma's explicitly consented Libre and G7 demo values and never receives a general user's connection details or glucose data. The frontend keeps `dexcomRouteVerified=true` as a record of the verified G7 display path, while the deployed demo-Worker Version independently controls publication. The general-user relay is currently enabled only for the approved 1–3 person early-access group.
 - Existing Nightscout remains a direct browser route and does not use the limited relay.

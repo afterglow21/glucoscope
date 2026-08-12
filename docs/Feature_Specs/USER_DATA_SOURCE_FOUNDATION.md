@@ -233,11 +233,15 @@ The Libre guide explains:
 - switch back to Gluroo and use the LibreLinkUp email and password there;
 - reset the password when it is unknown rather than attempting to display it.
 
+On 2026-08-12, the beginner preparation guides were expanded from summary steps into one-screen-per-step walkthroughs using every supplied capture: 27 LibreLink / LibreLinkUp screens and 10 Dexcom Share screens. Personal fields in the supplied assets are masked. Each guide warns that app updates may change wording, layout, or screen order, and its completion action continues to the shared Gluroo flow at `#screen-30` rather than returning to the device branch.
+
+These captures explain connection setup only. Example glucose values, graphs, and notification selections are not targets, medical advice, or instructions to change treatment, alerts, or device settings. The original CGM app and the person's medical guidance remain the source for treatment decisions, alerts, and current sensor state.
+
 ## Screenshot maintenance
 
 Guide screenshots remain separate, replaceable assets. Fixed-position focus boxes are not placed over screenshots because their position can drift across screen sizes or image revisions. Numbered step headings, short captions, and plain-language instructions identify what to look for.
 
-Every source screenshot that represents a distinct screen or user decision should have a corresponding step or screen checkpoint. Optional screens must not disappear into a broad summary. The reviewed iPhone Gluroo 2.0.5 source set contains 34 screens from App Store search through Global Connect URL/token confirmation; CGM-specific Dexcom and Libre screens are documented as alternative branches rather than actions every person must complete. The guide must display the reviewed date/version and clearly warn that Gluroo updates, CGM choice, answers, language, and region may change the screen, wording, order, or whether a screen appears. When an exact app-icon image is not available as a reviewed local asset, the guide must not draw a look-alike and present it as official. It should instead show a clearly labeled app-identification card, exact app name, developer name, and official App Store link until the reviewed icon or screenshot is added.
+Every source screenshot that represents a distinct screen or user decision should have a corresponding step or screen checkpoint. Optional screens must not disappear into a broad summary. The reviewed iPhone Gluroo 2.0.5 source set contains 34 screens from App Store search through Global Connect URL/token confirmation. The device branches additionally use the complete supplied sets of 27 LibreLink / LibreLinkUp captures and 10 Dexcom Share captures. CGM-specific screens remain alternative branches rather than actions every person must complete. Each guide must display or explain its reviewed environment and clearly warn that app updates, CGM choice, answers, language, and region may change the screen, wording, order, or whether a screen appears. When an exact app-icon image is not available as a reviewed local asset, the guide must not draw a look-alike and present it as official. It should instead show a clearly labeled app-identification card, exact app name, developer name, and official App Store link until the reviewed icon or screenshot is added.
 
 ## Real-device test gate
 
