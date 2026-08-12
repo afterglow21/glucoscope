@@ -450,8 +450,8 @@
         });
       },
 
-      async testConnection() {
-        const result = await requestJson(config, "/api/v1/entries.json", { count: 2 });
+      async testConnection(options = {}) {
+        const result = await requestJson(config, "/api/v1/entries.json", { count: 2 }, options);
         const rawEntries = Array.isArray(result.data) ? result.data : [];
         if (!rawEntries.length) {
           throw createRequestError(

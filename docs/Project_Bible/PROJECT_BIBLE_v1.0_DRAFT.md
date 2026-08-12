@@ -2786,7 +2786,7 @@ Guardian 4、FreeStyle Libre 2、Dexcom G7を、
 
 1. ユーザー基盤・最小限の利用分析の設計
    - Phase 1Aとして、任意の表示名だけを端末内へ保存する準備画面を実装した。
-   - Phase 1Bとして、収集項目と目的の説明、簡単な停止方法、90日保存、書き出し・削除、利用回数API、D1とWorkerを実装した。2026年8月12日JSTにWorker境界確認を完了して監督下のopt-in受け入れを開始した。次は最初の端末で開始・停止・再開・書き出し・削除を確認する。
+   - Phase 1Bとして、収集項目と目的の説明、簡単な停止方法、90日保存、書き出し・削除、利用回数API、D1とWorkerを実装した。2026年8月12日JSTの実機確認では最初のprofile作成と日別記録に成功したが、成功後の再callbackで誤エラーを表示した。この時点でD1に試験用profile 2件と日別記録2件が残り、Workerとフロントは停止へ戻した。その後、既知の試験用profile 2件を削除し、cascade後の `profiles`、`usage_daily`、`event_receipts` が `0 / 0 / 0` であることを確認した。新しい停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb` はdeployment `25be2258-b72a-4e2c-8bf1-ab47781c48dc` で通信の100%を受け、runtimeの `USAGE_COLLECTION_ENABLED=false` と停止境界を維持する。接続開始への表示名・profile作成統合と再callback防止はローカル実装済みであり、次は停止したまま開始・停止・再開・削除、補助的な書き出しの監督下再受け入れを行う。
 2. その設計を前提にした管理者ダッシュボード
 3. Plus 30日パスと、任意の開発支援への分かりやすい導線
 4. ユーザー展開開始後に、横向きグラフだけへ追加する任意の常時表示モード
@@ -3158,8 +3158,8 @@ the analytics implementation or collected information changes.
 公開HTMLページにCloudflare Web Analyticsを導入します。
 ただし、ローカルのプライバシー判定用ローダーを通し、
 ユーザーモード中、接続情報の保存キーが1つでも存在する間、
-bearer credentialを含む利用状況共有の端末プロフィールキーが存在する間、
-メインページで端末プロフィールの共有開始が利用可能な間、
+bearer credentialを含む利用記録用の端末プロフィールキーが存在する間、
+メインページで端末プロフィールの利用記録開始が可能な間、
 または保存状態を安全に確認できない場合は読み込みません。
 任意の表示名を保存または削除したことだけを理由に、
 公開Web Analyticsを停止または再開しません。
@@ -3213,17 +3213,23 @@ stop collection. Separate explicit consent is required before any future collect
 health or glucose data, public sharing of a person's data, or another genuinely sensitive
 use. The administrator must see only what is necessary to operate and improve GlucoScope.
 
-The first implementation step is a local-only preparation screen. It may save only an
-optional display name in the current browser. It creates no user identifier and sends no
-profile or usage event. Saving the display name neither starts first-party usage
-collection nor changes public Web Analytics.
+Phase 1A was a completed local-only preparation screen. It saved only an optional
+display name in the current browser, created no user identifier, and sent no profile or
+usage event. Saving the display name neither started first-party usage collection nor
+changed public Web Analytics. This is a historical implementation note; the current
+Phase 1B connection rule is defined below.
 The Gluco visitor seed is for local visual selection only and must not become an account
 or analytics identifier.
 
-The staged Phase 1B implementation uses a separate browser profile, not an account.
-It shows one short notice and separate `Share usage from this device` and `Not now`
-buttons, without adding a checkbox or blocking core features. A browser profile may
-send only the optional display name, one visit day per day, genuinely new completed AI
+The Phase 1B implementation uses a separate browser profile, not an account. Public-demo
+viewers need no display name or profile. A new personal-data connection requires a display
+name, but never a real name, and creates the profile as part of `Start GlucoScope` after the
+connection check. The large standalone sharing panel is removed. Before that action, show
+one short notice — “We record your display name and basic usage counts to improve GlucoScope.
+We do not record glucose values or connection details.” — plus a details link. Do not add a
+legal-style checkbox. Keep the Gluroo relay confirmation as a separate boundary because it
+explains transient processing of connection details. A browser profile may send only the
+display name, one visit day per day, genuinely new completed AI
 generation counts, and the current count of ordinary Gluco memories No. 1–50. Lucky
 Gluco No. 51–70 and Unicorn Gluco must be excluded because their appearance can be
 influenced by glucose-derived conditions. Memory IDs and encounter dates must not be
@@ -3231,7 +3237,14 @@ sent. The same person on two browsers appears as two profiles, and erasing brows
 storage prevents recovery or cross-device merging. This identity must not be reused for
 Plus, payment, or medical data.
 
-The notice must also disclose the random profile ID, sharing state, notice version, and
+A failure limited to the usage-profile Turnstile or Usage Worker must not block an
+otherwise verified CGM connection. Save the required display name and connection in the
+browser, start user mode, and leave the usage profile unregistered with collection off.
+This fail-open boundary does not include Gluroo relay consent, its separate Turnstile and
+signed ticket, destination validation, or successful browser storage; those remain
+fail-closed.
+
+The notice must also disclose the random profile ID, usage-recording state, notice version, and
 created, updated, and last-used times needed to operate the browser profile. Daily data
 and inactive browser profiles use a maximum 90-day live-D1 boundary. Cloudflare D1 Time
 Travel is always on: deleted live data may remain recoverable for up to 7 days on the
@@ -3241,7 +3254,9 @@ to Privacy Notes, which must state the exact plan-dependent periods.
 The Phase 1B client and controls are initially checked in with collection disabled.
 While disabled, the public screen says the feature is in preparation, does not invite a
 new registration, and sends no profile or usage event. A previously registered browser
-must still be able to stop future collection and export or delete its existing record.
+must still be able to manage its existing record when the service is available. The regular
+UI keeps only compact Stop, Resume, and Delete controls; allowlisted export is a small
+secondary link.
 Stop and Delete must fail closed on the device: locally block new events and clear
 pending AI events before the network request. Keep the bearer credential when the
 server request fails so export or deletion can be retried, and remove it only after a
@@ -3252,10 +3267,10 @@ foundation without starting collection. D1 `glucoscope-usage` was created in APA
 the initial migration was applied. The three tables and the D1-only administrator view
 all returned zero rows. The required Secret binding name `TURNSTILE_SECRET_KEY` was
 registered without recording its value. The stopped Worker was deployed at
-`https://glucoscope-usage.afterglow21.workers.dev`; the verified current Version ID was
+`https://glucoscope-usage.afterglow21.workers.dev`; the Version ID at that checkpoint was
 `3c2c3d19-3744-4d01-8e62-76a0f1bdd5bf`. Allowed-origin preflight returned `204`,
 profile and event writes returned paused `503`, and wrong-origin and originless requests
-returned `403`. The deployment keeps `workers_dev=true`, `preview_urls=false`,
+returned `403`. That deployment kept `workers_dev=true`, `preview_urls=false`,
 observability and invocation logs disabled, `USAGE_COLLECTION_ENABLED=false`, frontend
 `USAGE_PROFILE_ENABLED=false`, and general-user `RELAY_ENABLED=false`.
 
@@ -3266,16 +3281,29 @@ final pre-rollout check.
 
 On 2026-08-12 JST, the separately approved supervised opt-in acceptance started with
 100% of Usage Worker traffic on corrected Version
-`858cf438-b3d2-4a8c-801c-344503e0c58e`. The checked-in Worker switch remains `false`,
-and stopped Version `3c2c3d19-3744-4d01-8e62-76a0f1bdd5bf` remains the rollback.
+`858cf438-b3d2-4a8c-801c-344503e0c58e`. The checked-in Worker switch remained `false`,
+and stopped Version `3c2c3d19-3744-4d01-8e62-76a0f1bdd5bf` was retained as the rollback at that point.
 The first enabled smoke check was rolled back with all D1 counts still zero after a
 Siteverify request-format incompatibility was found. The request was aligned with the
 proven relay format (`URLSearchParams` and `application/x-www-form-urlencoded`) and the
 corrected Version passed allowed preflight `204`, wrong and missing Origin `403`, invalid
 dummy Turnstile `403 turnstile_failed`, `no-store`, and `Vary: Origin`. All three D1
-tables and the administrator view still had zero rows. The frontend is opt-in and creates
-nothing merely from a page view. One-device start, stop, resume, export, and deletion
-acceptance remains pending. The general-user relay remains independently stopped.
+tables and the administrator view still had zero rows immediately after that boundary check.
+The later real-device check successfully created the first profile and daily record, but a
+repeated callback after Turnstile reset showed a false error after success. At that checkpoint,
+D1 contained 2 test profiles and 2 daily records. Worker collection and frontend enrollment
+were returned to stopped mode.
+
+Later on 2026-08-12 JST, the 2 known test profiles were deleted. Cascading deletion left
+`profiles`, `usage_daily`, and `event_receipts` at `0 / 0 / 0`. New stopped Version
+`7cb71965-74c3-47f9-b589-75cf6d669edb` now receives 100% of traffic through deployment
+`25be2258-b72a-4e2c-8bf1-ab47781c48dc`. Runtime `USAGE_COLLECTION_ENABLED=false` was
+verified. Allowed-origin preflight returned `204`; allowed-origin profile `POST` returned
+`503 usage_collection_paused`; wrong-origin and originless requests returned `403`. D1 was
+rechecked at `0 / 0 / 0`. Frontend enrollment remains paused, and the general-user relay
+remains independently stopped at `RELAY_ENABLED=false`. The callback guard and simplified
+connection-integrated flow are implemented in the local candidate; keep them stopped while
+completing supervised re-acceptance of Create, Stop, Resume, Delete, and the secondary export link.
 
 Product analytics must remain separate from public Web Analytics, CGM transport, and
 glucose storage. Do not place glucose values, graphs, AI-letter contents, Nightscout or
@@ -3314,21 +3342,32 @@ viewing convenience, not an alarm or a substitute for the original CGM applicati
 その他の機微な用途には、別途明示的な同意を求めます。管理者が見られるのは、
 GlucoScopeの運営と改善に必要な範囲だけにします。
 
-最初の実装は、端末内だけの準備画面とします。保存できるのは、任意の表示名だけです。
-利用者IDを作らず、プロフィールや利用イベントを送信しません。
-表示名の保存だけで利用状況収集を開始せず、公開Web Analyticsの動作も変えません。
+Phase 1Aでは、端末内だけの準備画面を実装しました（履歴）。保存できたのは任意の表示名だけで、
+利用者IDを作らず、プロフィールや利用イベントを送信しませんでした。
+表示名の保存だけで利用状況収集を開始せず、公開Web Analyticsの動作も変えませんでした。
+現在のPhase 1Bの接続ルールは、この直後に定めます。
 グルコ表示用のvisitor seedは、アカウントや利用分析の識別子へ流用しません。
 
-停止状態で準備するPhase 1Bは、アカウントではなくブラウザごとの端末プロフィールです。
-短い案内と「この端末の利用状況を共有する」「今はしない」を分けて表示し、
-チェックボックスを追加せず、共有しなくても基本機能を使えるようにします。
-送ってよいのは、任意の表示名、1日最大1回の利用日、新しく正常に完了したAI分析回数、
+Phase 1Bは、アカウントではなくブラウザごとの端末プロフィールです。公開デモを見るだけなら、
+表示名やプロフィールを求めません。自分の血糖データを新しくつなぐ時だけ、本名でなくてよい
+表示名を必須にし、接続確認後の「GlucoScopeを始める」にプロフィール作成を統合します。
+大きな利用状況共有パネルは置きません。開始前には「表示名と基本的な利用回数を、GlucoScopeを
+よくするために記録します。血糖値や接続情報は記録しません。」と「詳しく」リンクを表示し、
+法律文書のようなチェックボックスは追加しません。Gluroo限定中継の確認は、接続情報を
+Cloudflareで一時処理する別の境界として維持します。送ってよいのは、表示名、1日最大1回の
+利用日、新しく正常に完了したAI分析回数、
 通常のグルコの想い出No.1〜50の現在数だけです。血糖由来の条件が出現に影響し得る
 Lucky Gluco No.51〜70とUnicorn Glucoは除外し、想い出IDや出会った日も送りません。
 同じ人が2つのブラウザで使うと2件になり、ブラウザ保存を消すと復旧・端末統合はできません。
 この識別情報をPlus、決済、医療データへ流用しません。
 
-運営に必要なランダムなprofile ID、共有状態、説明版、作成・更新・最終利用日時も案内します。
+利用プロフィール専用のTurnstileまたはUsage Workerだけが失敗した場合は、検証済みの
+CGM接続を止めません。必須表示名と接続情報をブラウザへ保存してユーザーモードを開始し、
+利用プロフィールは未登録・利用記録OFFのままとします。Gluroo限定中継そのものの同意、
+Turnstile、署名付きticket、接続先検証と、ブラウザ保存の成功はこの例外へ含めず、
+従来どおりfail-closedを維持します。
+
+運営に必要なランダムなprofile ID、利用記録の状態、説明版、作成・更新・最終利用日時も案内します。
 日別記録と利用のない端末プロフィールは、稼働中のD1で90日を上限とします。
 Cloudflare D1のTime Travelは常時有効で、稼働DBから削除した後もFreeプランでは最長7日、
 Paidプランでは最長30日、復旧可能な履歴に残る場合があります。開始画面では短く案内し、
@@ -3336,8 +3375,8 @@ Privacy Notesでプラン別期間を明記します。
 
 Phase 1Bのクライアントと操作画面は、最初は収集停止の設定でGitへ追加します。
 停止中の公開画面は「準備中」と表示して新規登録へ誘導せず、プロフィールや利用イベントを
-送りません。過去に登録済みのブラウザがある場合は、停止中でも今後の共有停止と、
-既存記録の書き出し・削除を利用できます。
+送りません。通常UIには停止・再開・削除だけを小さな管理導線として置き、allowlist形式の
+書き出しは補助リンクにします。
 停止または削除では、通信結果を待たず端末側を先に停止してpending AI eventを消します。
 通信に失敗した時はbearer credentialを残して書き出し・削除を再試行できるようにし、
 サーバー削除成功後だけ端末の利用プロフィールキーを削除します。
@@ -3346,12 +3385,12 @@ Phase 1Bのクライアントと操作画面は、最初は収集停止の設定
 整えました。APACにD1 `glucoscope-usage` を作成して初期migrationを適用し、3つの
 tableとD1内だけの管理者viewがすべて0件であることを確認しました。Secret名
 `TURNSTILE_SECRET_KEY` を値を記録せず登録し、停止Workerを
-`https://glucoscope-usage.afterglow21.workers.dev` へデプロイしました。確認時の
-Current Version IDは `3c2c3d19-3744-4d01-8e62-76a0f1bdd5bf` です。許可Originの
+`https://glucoscope-usage.afterglow21.workers.dev` へデプロイしました。その確認時点の
+Version IDは `3c2c3d19-3744-4d01-8e62-76a0f1bdd5bf` でした。許可Originの
 preflightは`204`、profileとeventの書き込みは停止中の`503`、不許可OriginとOriginなしは
 `403`でした。`workers_dev=true`、`preview_urls=false`、observabilityとinvocation logsを
 無効にし、Worker側 `USAGE_COLLECTION_ENABLED=false`、フロント側
-`USAGE_PROFILE_ENABLED=false`、一般利用者向け `RELAY_ENABLED=false` を維持しています。
+`USAGE_PROFILE_ENABLED=false`、一般利用者向け `RELAY_ENABLED=false` を維持しました。
 
 これは停止した本番の器の確認であり、収集開始ではありません。公開案内、保存期間と
 Cloudflareの復旧履歴、停止・書き出し・削除を最終確認した後も、収集有効化と
@@ -3360,14 +3399,26 @@ Cloudflareの復旧履歴、停止・書き出し・削除を最終確認した�
 2026年8月12日JST、別に承認された監督下のopt-in受け入れを開始し、修正版Version
 `858cf438-b3d2-4a8c-801c-344503e0c58e`へUsage Worker通信の100%を向けました。
 Gitに保存するWorkerスイッチは`false`のまま、停止Version
-`3c2c3d19-3744-4d01-8e62-76a0f1bdd5bf`をrollback先として維持します。最初の有効確認では
+`3c2c3d19-3744-4d01-8e62-76a0f1bdd5bf`をその時点のrollback先として維持しました。最初の有効確認では
 Siteverify要求形式の互換性問題を見つけ、D1がすべて0件のまま停止へ戻しました。既存リレーで
 確認済みの`URLSearchParams`と`application/x-www-form-urlencoded`へ揃えて再デプロイし、
 許可Originのpreflight `204`、不許可・Originなしの`403`、無効ダミーTurnstileの
-`403 turnstile_failed`、`no-store`、`Vary: Origin`を確認しました。3つのD1 tableと管理者viewは
-引き続き0件です。ページを開くだけでは何も作成・送信せず、本人が共有開始を押してTurnstileを
-完了した場合だけ始まります。最初の端末での開始・停止・再開・書き出し・削除は未確認です。
-一般利用者向け限定中継は独立して停止中です。
+`403 turnstile_failed`、`no-store`、`Vary: Origin`を確認しました。その境界確認直後は3つの
+D1 tableと管理者viewが引き続き0件でした。その後の実機確認では最初のプロフィール作成と
+日別記録に成功しましたが、Turnstile reset後のcallback再実行により、成功済みなのに誤った
+エラーを表示しました。この時点ではD1に試験用profile 2件と日別記録2件が残り、Usage Workerの
+収集とフロントの開始画面を停止へ戻しました。
+
+同じ2026年8月12日JST、既知の試験用profile 2件を削除し、cascade削除後の `profiles`、
+`usage_daily`、`event_receipts` が `0 / 0 / 0` であることを確認しました。新しい停止Version
+`7cb71965-74c3-47f9-b589-75cf6d669edb` はdeployment
+`25be2258-b72a-4e2c-8bf1-ab47781c48dc` で本番通信の100%を受けています。runtimeの
+`USAGE_COLLECTION_ENABLED=false`、許可Originのpreflight `204`、許可Originからのprofile
+`POST` が `503 usage_collection_paused`、不許可OriginとOriginなしが `403` であることを確認し、
+D1も `0 / 0 / 0` のまま再確認しました。フロントの開始画面は停止中で、一般利用者向け限定中継も
+独立して `RELAY_ENABLED=false` を維持しています。callback再実行を防ぐ処理と、接続開始へ統合した
+簡素な画面はローカル実装済みです。停止したまま開始・停止・再開・削除と補助的な書き出しを
+監督下で再確認します。
 
 プロダクト内の利用分析は、未ログインの公開Web Analytics、CGMの通信、
 血糖データの保存とは分離します。血糖値、グラフ、AIお手紙本文、

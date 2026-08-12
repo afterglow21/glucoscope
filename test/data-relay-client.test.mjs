@@ -109,6 +109,25 @@ function futureIso(minutes = 30) {
   return new Date(Date.now() + minutes * 60_000).toISOString();
 }
 
+function createRelayTurnstileElement() {
+  return {
+    hidden: true,
+    classList: { add() {}, remove() {} }
+  };
+}
+
+function createSuccessfulSessionFetch(requests = []) {
+  return async (url, options) => {
+    requests.push({ url, options, body: JSON.parse(options.body) });
+    return Response.json({
+      ok: true,
+      relayTicket: "s".repeat(40),
+      expiresAt: futureIso(60),
+      expiresInSeconds: 3600
+    });
+  };
+}
+
 test("Nightscout keeps the existing direct adapter", () => {
   const { context, directCalls } = loadModule();
   const adapter = context.GlucoScopeDataSource.createAdapter({
@@ -273,6 +292,295 @@ test("Turnstile confirmation-code normalization rejects unexpected values", () =
   assert.equal(normalize("11020"), "");
   assert.equal(normalize("error 110200"), "");
   assert.equal(normalize(null), "");
+});
+
+test("a Turnstile render failure is cleaned up so the next attempt can succeed", async () => {
+  const requests = [];
+  const rendered = [];
+  let renderCount = 0;
+  const turnstile = {
+    render(_container, options) {
+      renderCount += 1;
+      if (renderCount === 1) throw new Error("render failed");
+      rendered.push(options);
+      return `relay-widget-${renderCount}`;
+    },
+    remove() {}
+  };
+  const { context, elements } = loadModule({
+    turnstile,
+    fetchImpl: createSuccessfulSessionFetch(requests)
+  });
+  elements.set("dataSourceRelayTurnstile", createRelayTurnstileElement());
+  const config = {
+    provider: "gluroo",
+    baseUrl: "https://sample.ns.gluroo.com",
+    credential: "test-credential"
+  };
+
+  await assert.rejects(
+    context.GlucoScopeDataRelay.prepareConnection(config),
+    (error) => error.code === "turnstile_failed"
+  );
+
+  const retry = context.GlucoScopeDataRelay.prepareConnection(config);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(rendered.length, 1);
+  assert.equal(rendered[0].callback("fresh-token"), true);
+  const session = await retry;
+
+  assert.equal(session.ticket, "s".repeat(40));
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].body.turnstileToken, "fresh-token");
+});
+
+test("a Turnstile challenge timeout leaves the next attempt usable", async () => {
+  const requests = [];
+  const rendered = [];
+  const turnstile = {
+    render(_container, options) {
+      rendered.push(options);
+      return `relay-widget-${rendered.length}`;
+    },
+    remove() {}
+  };
+  const { context, elements } = loadModule({
+    turnstile,
+    fetchImpl: createSuccessfulSessionFetch(requests)
+  });
+  elements.set("dataSourceRelayTurnstile", createRelayTurnstileElement());
+  const config = {
+    provider: "gluroo",
+    baseUrl: "https://sample.ns.gluroo.com",
+    credential: "test-credential"
+  };
+
+  await assert.rejects(
+    context.GlucoScopeDataRelay.prepareConnection(config, { challengeTimeoutMs: 5 }),
+    (error) => error.code === "turnstile_failed"
+  );
+
+  const retry = context.GlucoScopeDataRelay.prepareConnection(config);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(rendered.length, 2);
+  assert.equal(rendered[1].callback("retry-token"), true);
+  await retry;
+  assert.equal(requests.length, 1);
+});
+
+test("a stale Turnstile callback cannot complete a newer challenge", async () => {
+  const requests = [];
+  const rendered = [];
+  const turnstile = {
+    render(_container, options) {
+      rendered.push(options);
+      return `relay-widget-${rendered.length}`;
+    },
+    remove() {}
+  };
+  const { context, elements } = loadModule({
+    turnstile,
+    fetchImpl: createSuccessfulSessionFetch(requests)
+  });
+  elements.set("dataSourceRelayTurnstile", createRelayTurnstileElement());
+  const config = {
+    provider: "gluroo",
+    baseUrl: "https://sample.ns.gluroo.com",
+    credential: "test-credential"
+  };
+
+  await assert.rejects(
+    context.GlucoScopeDataRelay.prepareConnection(config, { challengeTimeoutMs: 5 }),
+    (error) => error.code === "turnstile_failed"
+  );
+  const staleCallback = rendered[0].callback;
+
+  let retrySettled = false;
+  const retry = context.GlucoScopeDataRelay.prepareConnection(config);
+  const observedRetry = retry.then(
+    (value) => {
+      retrySettled = true;
+      return value;
+    },
+    (error) => {
+      retrySettled = true;
+      throw error;
+    }
+  );
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(staleCallback("stale-token"), false);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(retrySettled, false);
+  assert.equal(requests.length, 0);
+
+  assert.equal(rendered[1].callback("fresh-token"), true);
+  await observedRetry;
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].body.turnstileToken, "fresh-token");
+});
+
+test("aborting a Turnstile challenge prevents a late callback from creating a session", async () => {
+  const requests = [];
+  const rendered = [];
+  const turnstile = {
+    render(_container, options) {
+      rendered.push(options);
+      return `relay-widget-${rendered.length}`;
+    },
+    remove() {}
+  };
+  const { context, elements } = loadModule({
+    turnstile,
+    fetchImpl: createSuccessfulSessionFetch(requests)
+  });
+  elements.set("dataSourceRelayTurnstile", createRelayTurnstileElement());
+  const config = {
+    provider: "gluroo",
+    baseUrl: "https://sample.ns.gluroo.com",
+    credential: "test-credential"
+  };
+
+  const controller = new AbortController();
+  const first = context.GlucoScopeDataRelay.prepareConnection(config, {
+    signal: controller.signal
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  const staleCallback = rendered[0].callback;
+  controller.abort();
+  await assert.rejects(first, (error) => error.code === "request_aborted");
+  assert.equal(staleCallback("late-token"), false);
+  assert.equal(requests.length, 0);
+
+  const retry = context.GlucoScopeDataRelay.prepareConnection(config);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(rendered[1].callback("fresh-token"), true);
+  await retry;
+  assert.equal(requests.length, 1);
+});
+
+test("aborting session creation stops the relay request and stores no ticket", async () => {
+  const controller = new AbortController();
+  const { context, sessionStorage } = loadModule({
+    fetchImpl: async (_url, options) => new Promise((_resolve, reject) => {
+      options.signal.addEventListener("abort", () => {
+        const error = new Error("aborted");
+        error.name = "AbortError";
+        reject(error);
+      }, { once: true });
+    })
+  });
+
+  const pending = context.GlucoScopeDataRelay.prepareConnection({
+    provider: "gluroo",
+    baseUrl: "https://sample.ns.gluroo.com",
+    credential: "test-credential"
+  }, {
+    signal: controller.signal,
+    turnstileToken: "direct-test-token",
+    timeoutMs: 1000
+  });
+  controller.abort();
+
+  await assert.rejects(pending, (error) => error.code === "request_aborted");
+  assert.equal(sessionStorage.getItem(context.GlucoScopeDataRelay.SESSION_KEY), null);
+});
+
+test("concurrent preparation rejects the later caller and creates only one session", async () => {
+  const requests = [];
+  const rendered = [];
+  const turnstile = {
+    render(_container, options) {
+      rendered.push(options);
+      return `relay-widget-${rendered.length}`;
+    },
+    remove() {}
+  };
+  const { context, elements } = loadModule({
+    turnstile,
+    fetchImpl: createSuccessfulSessionFetch(requests)
+  });
+  elements.set("dataSourceRelayTurnstile", createRelayTurnstileElement());
+  const config = {
+    provider: "gluroo",
+    baseUrl: "https://sample.ns.gluroo.com",
+    credential: "test-credential"
+  };
+
+  const first = context.GlucoScopeDataRelay.prepareConnection(config);
+  const concurrent = context.GlucoScopeDataRelay.prepareConnection(config);
+  await assert.rejects(concurrent, (error) => error.code === "relay_busy");
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(rendered.length, 1);
+  assert.equal(rendered[0].callback("single-flight-token"), true);
+  await first;
+
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].body.turnstileToken, "single-flight-token");
+});
+
+test("an older session response cannot clean up a later relay challenge", async () => {
+  const rendered = [];
+  const requests = [];
+  let releaseFirstResponse = null;
+  const turnstile = {
+    render(_container, options) {
+      rendered.push(options);
+      return `relay-widget-${rendered.length}`;
+    },
+    remove() {}
+  };
+  const { context, elements } = loadModule({
+    turnstile,
+    fetchImpl: async (url, options) => {
+      requests.push({ url, options, body: JSON.parse(options.body) });
+      if (requests.length === 1) {
+        return new Promise((resolve) => {
+          releaseFirstResponse = () => resolve(Response.json({
+            ok: true,
+            relayTicket: "a".repeat(40),
+            expiresAt: futureIso(60),
+            expiresInSeconds: 3600
+          }));
+        });
+      }
+      return Response.json({
+        ok: true,
+        relayTicket: "b".repeat(40),
+        expiresAt: futureIso(60),
+        expiresInSeconds: 3600
+      });
+    }
+  });
+  elements.set("dataSourceRelayTurnstile", createRelayTurnstileElement());
+  const config = {
+    provider: "gluroo",
+    baseUrl: "https://sample.ns.gluroo.com",
+    credential: "test-credential"
+  };
+
+  const first = context.GlucoScopeDataRelay.prepareConnection(config);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(rendered[0].callback("first-token"), true);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(typeof releaseFirstResponse, "function");
+
+  await assert.rejects(
+    context.GlucoScopeDataRelay.prepareConnection(config),
+    (error) => error.code === "relay_busy"
+  );
+  releaseFirstResponse();
+  await first;
+
+  context.GlucoScopeDataRelay.clearRelaySession();
+  const retry = context.GlucoScopeDataRelay.prepareConnection(config);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(rendered.length, 2);
+  assert.equal(rendered[1].callback("second-token"), true);
+  const retrySession = await retry;
+
+  assert.equal(retrySession.ticket, "b".repeat(40));
+  assert.equal(requests.length, 2);
+  assert.equal(requests[1].body.turnstileToken, "second-token");
 });
 
 test("an invalid relay ticket clears the browser session", async () => {

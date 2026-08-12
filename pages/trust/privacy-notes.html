@@ -50,15 +50,18 @@
   <p>Apple、Google、Gluroo、CareLink、Dexcom、Libreなどのログインパスワードを、GlucoScopeへ入力してもらうことはありません。</p>
 </section>
 <section class="trust-section">
-  <h2>端末内の「あなたの設定」</h2>
-  <p>任意の表示名だけを、このブラウザへ保存できます。表示名は本名である必要はありません。利用状況の共有を別に始めない限り、GlucoScopeのサーバーや管理者へ送信しません。</p>
-  <p>利用状況の共有は、短い説明を読んで「この端末の利用状況を共有する」を押した場合だけ始まります。管理者が確認する利用状況は、任意表示名、過去90日間の利用日、新しく成功したAI分析、通常のグルコの想い出No.1〜50の数です。運営に必要な内部情報として、この端末用のランダムなprofile ID、共有状態、説明版、作成・更新・最終利用日時も保存します。profile tokenはこのブラウザだけに保存し、D1にはtokenのSHA-256 hashだけを保存します。</p>
-  <p>血糖値、測定時刻、グラフ、TIR/TAR/TBR、CGMの種類、接続情報、AIお手紙本文、Lucky Gluco No.51〜70、Unicorn Gluco、IPアドレス、raw User-Agent、referrer、queryを利用状況のrequest bodyへ入れません。Usage WorkerはIPアドレス、raw User-Agent、referrerを読み取り・アプリログ記録・D1保存しません。Cloudflareは通信・安全対策に必要なネットワーク情報を、Cloudflare自身の方針に基づいて処理する場合があります。共有しなくても基本機能は変わりません。</p>
-  <p>日別の利用記録と、90日利用のない端末プロフィールは、通常のD1データから90日を上限に削除します。本人はいつでも共有を停止し、allowlist形式で書き出し、稼働中のD1から端末プロフィールと関連記録を削除できます。通信に失敗しても、停止または削除を押した端末では先に新しい送信を止め、認証情報を残して書き出し・削除を再試行できるようにします。</p>
+  <h2>表示名と利用状況</h2>
+  <p>現在、利用状況の記録は停止しています。公開デモを見るだけなら、名前の入力はありません。利用記録を再開するときは、自分の血糖データをつなぐときだけ、本名でなくてよい表示名を入力し、「GlucoScopeを始める」を押すと、このブラウザの利用プロフィールを作ります。</p>
+  <p><strong>表示名と基本的な利用回数を、GlucoScopeをよくするために記録します。血糖値や接続情報は記録しません。</strong></p>
+  <p>管理者が確認する利用状況は、表示名、過去90日間の利用日、新しく成功したAI分析、通常のグルコの想い出No.1〜50の数です。運営に必要な内部情報として、この端末用のランダムなprofile ID、利用記録の状態、説明版、作成・更新・最終利用日時も保存します。profile tokenはこのブラウザだけに保存し、D1にはtokenのSHA-256 hashだけを保存します。</p>
+  <p>血糖値、測定時刻、グラフ、TIR/TAR/TBR、CGMの種類、接続情報、AIお手紙本文、Lucky Gluco No.51〜70、Unicorn Gluco、IPアドレス、raw User-Agent、referrer、queryを利用状況のrequest bodyへ入れません。Usage WorkerはIPアドレス、raw User-Agent、referrerを読み取り・アプリログ記録・D1保存しません。Cloudflareは通信・安全対策に必要なネットワーク情報を、Cloudflare自身の方針に基づいて処理する場合があります。利用記録は設定から停止でき、停止しても基本機能は変わりません。</p>
+  <p>日別の利用記録と、90日利用のない端末プロフィールは、通常のD1データから90日を上限に削除します。機能の公開中は、本人が利用記録を停止し、allowlist形式で書き出し、稼働中のD1から端末プロフィールと関連記録を削除できます。通信に失敗しても、停止または削除を押した端末では先に新しい送信を止め、認証情報を残して書き出し・削除を再試行できるようにします。</p>
+  <p>利用プロフィール用の安全確認またはUsage Workerだけが一時的に使えない場合も、確認済みの血糖データ接続は止めません。表示名と接続情報をブラウザへ保存して開始し、利用プロフィールは未登録・利用記録停止のままとします。Gluroo限定中継そのものの安全確認と接続先検証は、この例外へ含めません。</p>
   <p>Cloudflare D1のTime Travel復旧履歴は常時有効です。稼働中のD1から削除した後も、CloudflareのFreeプランでは最長7日、Paidプランでは最長30日、復旧可能な履歴に残る場合があります。この履歴は通常の画面や管理者集計からは見えません。復旧操作が必要になった場合は収集を停止し、削除済みデータを通常運用へ戻さないことを確認してから再開します。</p>
-  <p>これはアカウントではなくブラウザごとの端末プロフィールです。同じ人が別端末で使うと別々になり、ブラウザ保存を消すと復旧・統合できません。新しい共有の開始を全体停止している間も、登録済み端末は停止・書き出し・削除を使えます。</p>
-  <p>表示名を保存したかどうかだけで、Cloudflare Web Analyticsを停止・再開しません。利用状況共有を始められる画面では開始前から読み込まず、端末プロフィールの認証情報がこのブラウザに保存されている間も、その情報を第三者スクリプトと同じページに置かないため読み込みません。</p>
-  <p>血糖・健康データを保存する場合や、本人データを公開共有する場合などは、別に明示的な確認を行います。この設定は血糖データ接続、限定中継、AI、グルコの想い出と分離しています。</p>
+  <p>これはアカウントではなくブラウザごとの端末プロフィールです。同じ人が別端末で使うと別々になり、ブラウザ保存を消すと復旧・統合できません。通常画面には停止・再開・削除の小さな管理導線を置き、書き出しは補助リンクにします。</p>
+  <p>表示名を保存したかどうかだけで、Cloudflare Web Analyticsを停止・再開しません。利用記録を始められる画面では開始前から読み込まず、端末プロフィールの認証情報がこのブラウザに保存されている間も、その情報を第三者スクリプトと同じページに置かないため読み込みません。</p>
+  <p>Gluroo限定中継では、接続情報をCloudflareで一時処理することを別に確認します。この確認は利用プロフィールの案内と分けて維持します。血糖・健康データを保存する場合や、本人データを公開共有する場合も、別に明示的な確認を行います。</p>
+  <p>2026年8月12日の実機確認では、最初の作成自体は成功しましたが、成功後の再コールバックで誤ったエラーが表示されました。この時点でD1に残った既知の試験用プロフィール2件は、その後削除しました。cascade後の <code>profiles</code>、<code>usage_daily</code>、<code>event_receipts</code> は <code>0 / 0 / 0</code> です。新しい停止Version <code>7cb71965-74c3-47f9-b589-75cf6d669edb</code> をdeployment <code>25be2258-b72a-4e2c-8bf1-ab47781c48dc</code> で100%配信し、runtimeの <code>USAGE_COLLECTION_ENABLED=false</code>、許可Originのpreflight <code>204</code>、許可Originからのprofile <code>POST</code> が <code>503 usage_collection_paused</code>、不許可OriginとOriginなしが <code>403</code>、D1が再確認でも <code>0 / 0 / 0</code> であることを確認しました。画面と利用記録は停止中で、一般利用者向け限定中継も <code>RELAY_ENABLED=false</code> のままです。</p>
 </section>
 <section class="trust-section">
   <h2>ユーザー版のAI</h2>
@@ -83,7 +86,7 @@
 </section>
 <section class="trust-section">
   <h2>公開ページのアクセス分析</h2>
-  <p>公開デモなどの公開ページには、プライバシーを重視したCloudflare Web Analyticsを導入し、ページ閲覧や表示性能の全体傾向を確認しています。ただし、ユーザーモード中、利用状況共有を始められるメイン画面、接続情報または利用状況共有の端末プロフィールがこのブラウザに保存されている間、または保存状態を安全に確認できない場合は、AboutやTrustを含むGlucoScope内のページでWeb Analyticsのビーコンを読み込みません。任意の表示名を保存または削除したことだけでは停止・再開しません。個々の人をGlucoScope内で識別するための独自IDや、独自の行動追跡イベントも追加していません。</p>
+  <p>公開デモなどの公開ページには、プライバシーを重視したCloudflare Web Analyticsを導入し、ページ閲覧や表示性能の全体傾向を確認しています。ただし、ユーザーモード中、個人データ接続や利用プロフィールを扱うメイン画面、接続情報または端末プロフィールがこのブラウザに保存されている間、または保存状態を安全に確認できない場合は、AboutやTrustを含むGlucoScope内のページでWeb Analyticsのビーコンを読み込みません。個々の人をGlucoScope内で識別するための独自IDや、独自の行動追跡イベントも追加していません。</p>
   <p>ユーザー版で使うChart.jsはGlucoScope内に同梱し、接続情報や血糖データを扱うページで外部CDNのグラフ用JavaScriptを実行しない構成にしています。</p>
   <p>血糖値、GlucoScore、AIお手紙本文、Nightscout URL、API情報をアクセス分析のイベント名や追加データとして送る実装は行いません。スマホの各タブ操作も、健康情報を含む個別イベントとして追跡しません。</p>
 </section>
@@ -115,15 +118,18 @@
   <p>GlucoScope does not ask for Apple, Google, Gluroo, CareLink, Dexcom, Libre, or other manufacturer login passwords.</p>
 </section>
 <section class="trust-section">
-  <h2>Local “Your settings”</h2>
-  <p>An optional display name can be saved in this browser. A real name is not required. It is not sent to a GlucoScope server or the administrator unless usage sharing is started separately.</p>
-  <p>Usage sharing starts only after the person reads a short notice and presses “Share usage from this device.” The administrator-visible usage fields are the optional display name, visit days from the past 90 days, newly completed AI analyses, and the number of ordinary Gluco memories No. 1–50. Operational fields also include a random profile ID for this browser, sharing state, notice version, and created, updated, and last-used times. The profile token stays only in this browser; D1 stores only its SHA-256 hash.</p>
-  <p>Glucose values, reading times, graphs, TIR/TAR/TBR, CGM type, connection details, AI letter contents, Lucky Gluco No. 51–70, Unicorn Gluco, IP address, raw User-Agent, referrer, and query are not placed in the usage request body. The Usage Worker does not read, application-log, or D1-store IP addresses, raw User-Agent, or referrer. Cloudflare may process network information needed for transport and security under its own policies. Core features work without sharing.</p>
-  <p>Daily usage records and browser profiles inactive for 90 days are removed from the live D1 data within a maximum of 90 days. The person can stop sharing, export the allowlisted record, or delete the browser profile and related records from the live D1 database at any time. A failed Stop or Delete request first blocks new sending on that browser and retains the credential so export or deletion can be retried.</p>
+  <h2>Display name and usage</h2>
+  <p>Usage recording is currently paused. Viewing the public demo does not require a name. When usage recording resumes, a person connecting their own glucose data enters a required display name, which does not need to be a real name. Pressing “Start GlucoScope” creates a usage profile for that browser.</p>
+  <p><strong>We record your display name and basic usage counts to improve GlucoScope. We do not record glucose values or connection details.</strong></p>
+  <p>The administrator-visible usage fields are the display name, visit days from the past 90 days, newly completed AI analyses, and the number of ordinary Gluco memories No. 1–50. Operational fields also include a random profile ID for this browser, usage-recording state, notice version, and created, updated, and last-used times. The profile token stays only in this browser; D1 stores only its SHA-256 hash.</p>
+  <p>Glucose values, reading times, graphs, TIR/TAR/TBR, CGM type, connection details, AI letter contents, Lucky Gluco No. 51–70, Unicorn Gluco, IP address, raw User-Agent, referrer, and query are not placed in the usage request body. The Usage Worker does not read, application-log, or D1-store IP addresses, raw User-Agent, or referrer. Cloudflare may process network information needed for transport and security under its own policies. Usage recording can be stopped in settings, and stopping it does not change the core features.</p>
+  <p>Daily usage records and browser profiles inactive for 90 days are removed from the live D1 data within a maximum of 90 days. While the feature is available, the person can stop usage recording, export the allowlisted record, or delete the browser profile and related records from the live D1 database. A failed Stop or Delete request first blocks new sending on that browser and retains the credential so export or deletion can be retried.</p>
+  <p>If only the usage-profile safety check or Usage Worker is temporarily unavailable, an otherwise verified glucose-data connection is not blocked. The display name and connection are saved in the browser, while the usage profile remains unregistered with recording off. This exception does not apply to the Gluroo relay safety check or destination validation.</p>
   <p>Cloudflare D1 Time Travel recovery history is always on. After deletion from the live D1 database, recoverable history may remain for up to 7 days on the Free plan or up to 30 days on a Paid plan. It is not shown in the normal UI or administrator aggregates. If a recovery is ever required, collection will be paused and previously deleted records will be kept out of normal operation before collection resumes.</p>
-  <p>This is a per-browser profile, not an account. The same person appears separately on another device, and erasing browser storage prevents recovery or merging. Registered browsers can still stop, export, or delete while new enrollment is globally paused.</p>
-  <p>Saving the display name alone does not stop or start Cloudflare Web Analytics. The main page does not load it when usage sharing can be started, and it also remains off while a browser-profile credential exists, so that credential does not coexist with a third-party script on the page.</p>
-  <p>Separate explicit confirmation will be used for health or glucose data, public sharing of a person's data, or another genuinely sensitive use. This setting remains separate from glucose connection, the limited relay, AI, and Gluco memories.</p>
+  <p>This is a per-browser profile, not an account. The same person appears separately on another device, and erasing browser storage prevents recovery or merging. The regular UI will keep compact Stop, Resume, and Delete controls, with export as a small secondary link.</p>
+  <p>Saving the display name alone does not stop or start Cloudflare Web Analytics. The main page does not load it when usage recording can be started, and it also remains off while a browser-profile credential exists, so that credential does not coexist with a third-party script on the page.</p>
+  <p>The Gluroo Limited Relay keeps a separate confirmation because connection details are processed transiently through Cloudflare. That boundary is not merged into the usage-profile notice. Separate explicit confirmation will also be used for storing health or glucose data or publicly sharing a person's data.</p>
+  <p>During the 2026-08-12 device check, the first creation succeeded, but a repeated callback after success showed a false error. The 2 known test profiles left at that checkpoint were later deleted. Cascading deletion left <code>profiles</code>, <code>usage_daily</code>, and <code>event_receipts</code> at <code>0 / 0 / 0</code>. New stopped Version <code>7cb71965-74c3-47f9-b589-75cf6d669edb</code> now receives 100% of traffic through deployment <code>25be2258-b72a-4e2c-8bf1-ab47781c48dc</code>. Runtime <code>USAGE_COLLECTION_ENABLED=false</code>, allowed-origin preflight <code>204</code>, allowed-origin profile <code>POST</code> <code>503 usage_collection_paused</code>, wrong-origin and originless <code>403</code>, and a post-deployment D1 count of <code>0 / 0 / 0</code> were verified. Frontend enrollment and usage recording remain paused, and the general-user relay remains <code>RELAY_ENABLED=false</code>.</p>
 </section>
 <section class="trust-section">
   <h2>User-mode AI</h2>
@@ -148,7 +154,7 @@
 </section>
 <section class="trust-section">
   <h2>Public web analytics</h2>
-  <p>Public-demo pages use privacy-first Cloudflare Web Analytics to review aggregate page visits and performance. The analytics beacon is not loaded in user mode, on the main page while usage sharing can be started, while a GlucoScope user connection or usage browser profile remains in browser storage, or when that storage state cannot be checked. Saving or removing the optional local display name alone does not stop or start it. This applies across same-origin About and Trust pages. GlucoScope does not add a custom visitor ID or custom behavioral events.</p>
+  <p>Public-demo pages use privacy-first Cloudflare Web Analytics to review aggregate page visits and performance. The analytics beacon is not loaded in user mode, on the main page while a personal-data connection or usage profile can be handled, while a GlucoScope user connection or usage browser profile remains in browser storage, or when that storage state cannot be checked. This applies across same-origin About and Trust pages. GlucoScope does not add a custom visitor ID or custom behavioral events.</p>
   <p>Chart.js is served from a reviewed local copy on the user-data page instead of running the chart library from a third-party CDN.</p>
   <p>Glucose values, GlucoScore, AI letter text, Nightscout URLs, and API information are not intentionally sent as analytics event names or additional analytics data. Mobile tab actions are not tracked as health-data events.</p>
 </section>

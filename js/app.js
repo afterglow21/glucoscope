@@ -7,9 +7,17 @@ let activeDataSourceAdapter = activeDataSourceConfig && dataSourceManager
   : null;
 let dataRefreshTimer = null;
 let testedDataSourceConfig = null;
+let dataSourceDialogOpener = null;
 let localProfileDialogOpener = null;
-let usageProfileSkippedForSession = false;
 let usageProfileActionInFlight = false;
+let pendingDataSourceSave = null;
+let dataSourceSaveInFlight = false;
+let dataSourceSaveGeneration = 0;
+let dataSourceSaveInFlightGeneration = 0;
+let dataSourceTestGeneration = 0;
+let dataSourceTestAbortController = null;
+let usageProfileTurnstileTimeoutId = null;
+let usageProfileTurnstileTimeoutGeneration = 0;
 
 let glucoseChart = null;
 let currentLanguage = localStorage.getItem("glucoscope.language.v1") || "ja";
@@ -42,6 +50,7 @@ const GLUCO_CELEBRATION_THRESHOLDS = Object.freeze({
 });
 const TURNSTILE_SITE_KEY = "0x4AAAAAADyftbRcWQW23mEa";
 const TURNSTILE_SCRIPT_ID = "glucoscope-turnstile-script";
+const USAGE_PROFILE_TURNSTILE_TIMEOUT_MS = 15_000;
 const USAGE_PROFILE_ENABLED = false;
 const USAGE_PROFILE_ENDPOINT = "https://glucoscope-usage.afterglow21.workers.dev";
 const PRODUCTION_AI_LETTER_WORKER_ENDPOINT = "https://gluco-letter-worker.afterglow21.workers.dev/api/gluco-letter";
@@ -225,60 +234,39 @@ const translations = {
     mobileMoreDataSource: "データ接続（工事中）",
     mobileMoreDataSourceNote: "準備中 · Gluroo / Nightscout",
     localProfileButton: "あなたの設定",
-    localProfileButtonNote: "表示名をこの端末に保存",
+    localProfileButtonNote: "表示名と利用記録の管理",
     localProfileButtonSavedNote: "この端末に保存済み",
     localProfileEyebrow: "この端末だけの設定",
     localProfileDialogTitle: "あなたの設定",
-    localProfileDialogLead: "GlucoScopeで使う表示名を、この端末のブラウザに保存できます。下の共有機能を始めない限り、管理者には送信されません。",
-    localProfileDisplayNameLabel: "表示名（任意）",
-    localProfileDisplayNameHelp: "本名でなくて大丈夫です。ニックネームをあとから変更・削除できます（最大30文字）。",
-    localProfileSaveButton: "保存する",
-    localProfileDeleteButton: "この端末から表示名を削除",
-    localProfileSaved: "表示名をこの端末に保存しました。管理者には送信していません。",
+    localProfileDialogLead: "表示名の変更と、この端末の利用記録を管理できます。",
+    localProfileDisplayNameLabel: "表示名",
+    localProfileDisplayNameHelp: "本名でなくて大丈夫です。GlucoScopeで呼ばれたい名前を入力してね（最大30文字）。",
+    localProfileSaveButton: "表示名を変更する",
+    localProfileSaved: "表示名を変更しました。",
+    localProfileNameRequired: "表示名を入力してね。",
     localProfileEmpty: "表示名は空欄です。この端末には保存していません。",
-    localProfileDeleted: "この端末から表示名を削除しました。",
     localProfileStorageError: "この端末には保存できませんでした。表示名は送信していません。",
-    localProfileDeleteError: "この端末から削除できませんでした。表示名は送信していません。",
-    localProfileDeleteConfirm: "この端末に保存した表示名を削除しますか？ データ接続やグルコの想い出は削除しません。",
     localProfileCloseLabel: "閉じる",
-    usageProfileCardTitle: "利用状況の共有",
+    usageProfileCardTitle: "利用記録の管理",
     usageProfileBadgePreparing: "準備中",
-    usageProfileBadgeAvailable: "共有していません",
-    usageProfileBadgeActive: "共有中",
+    usageProfileBadgeAvailable: "利用記録なし",
+    usageProfileBadgeActive: "記録中",
     usageProfileBadgeStopped: "停止中",
-    usageProfilePreparing: "この機能はただいま準備中です。いまは表示名だけがこの端末に保存され、利用状況は送信されません。",
-    usageProfileNoticeLead: "共有を始めると、GlucoScopeをよりよくするために、Kazumaが次の利用状況を確認できます。",
-    usageProfileNoticeDisplayName: "任意の表示名",
-    usageProfileNoticeVisitDays: "過去90日間にGlucoScopeを利用した日数",
-    usageProfileNoticeAiCount: "新しく成功したAI分析の回数",
-    usageProfileNoticeMemoryCount: "通常のグルコの想い出（No.1〜50）の数",
-    usageProfileNoticeBoundary: "血糖値、グラフ、接続情報、AIお手紙の内容は送りません。共有しなくても、血糖表示などの基本機能はそのまま使えます。",
-    usageProfileOperationalNote: "この端末を区別するランダムな番号と、共有の状態・開始日時・最終利用日時も保存します。",
-    usageProfileRetentionNote: "記録はCloudflareで処理し、通常の保存場所では90日を上限にします。いつでも停止・書き出し・削除できます。",
-    usageProfilePrivacyLink: "保存と削除の詳しい説明",
-    usageProfileDeviceNote: "これはアカウントではなく、このブラウザだけの端末プロフィールです。別の端末とはまとまらず、ブラウザのデータを消すと引き継げません。",
-    usageProfileStartButton: "この端末の利用状況を共有する",
-    usageProfileSkipButton: "今はしない",
-    usageProfileActive: "この端末の利用状況を共有しています。いつでも停止、書き出し、削除できます。",
-    usageProfileStopped: "共有を停止しています。新しい利用回数は送りません。これまでの記録は、再開、書き出し、削除ができます。",
-    usageProfilePaused: "新しい共有の開始は準備中です。以前共有した記録は、書き出し・削除ができます。共有中だった場合は今後の送信も停止できます。",
-    usageProfileStopButton: "共有を停止する",
-    usageProfileStopDisabledButton: "今後の共有も停止する",
-    usageProfileResumeButton: "共有を再開する",
-    usageProfileExportButton: "自分の記録を書き出す",
-    usageProfileDeleteButton: "共有した記録を削除する",
-    usageProfileSafetyCheck: "安全確認を準備しています。少しお待ちください。",
-    usageProfileStarting: "この端末の共有を準備しています。",
-    usageProfileStarted: "この端末の利用状況の共有を始めました。",
-    usageProfileSkipped: "今は共有していません。基本機能はそのまま使えます。",
-    usageProfileStoppedStatus: "新しい利用状況の共有を停止しました。",
-    usageProfileResumedStatus: "利用状況の共有を再開しました。",
+    usageProfileActive: "利用記録はオンです。",
+    usageProfileStopped: "利用記録は停止しています。新しい回数は記録しません。",
+    usageProfilePaused: "利用記録は現在停止しています。以前の試験記録は確認・削除できます。",
+    usageProfileStopButton: "利用記録を停止する",
+    usageProfileStopDisabledButton: "今後の記録も停止する",
+    usageProfileResumeButton: "利用記録を再開する",
+    usageProfileExportButton: "保存されている利用記録を確認・保存",
+    usageProfileDeleteButton: "利用記録を削除する",
+    usageProfileStoppedStatus: "利用記録を停止しました。",
+    usageProfileResumedStatus: "利用記録を再開しました。",
     usageProfileExportedStatus: "この端末の記録を書き出しました。",
     usageProfileDeletedStatus: "現在使っているCloudflare D1から端末プロフィールと利用記録を削除しました。復旧用履歴には最大30日残る場合があります。端末内の表示名や血糖データは削除していません。",
-    usageProfileStartError: "共有を始められませんでした。利用状況は送信していません。",
     usageProfileActionError: "操作を完了できませんでした。少し時間をおいて、もう一度試してください。",
     usageProfileDeleteConfirm: "現在使っているCloudflare D1から、この端末プロフィールと利用記録を削除しますか？ 削除後も復旧用履歴には最大30日残る場合があります。端末内の表示名、データ接続、血糖データ、グルコの想い出は削除しません。",
-    usageProfileTurnstileLabel: "利用状況共有の安全確認",
+    usageProfileTurnstileLabel: "利用記録の安全確認",
     dataSourceDialogTitle: "データ接続（工事中）",
     dataSourceDialogLead: "現在は一般公開に向けた準備中です。つなぎ方は確認できますが、Gluroo接続はまだ限定テスト中です。",
     dataSourceChooseLead: "血糖データのつなぎ方を、どちらか1つ選びます。",
@@ -309,6 +297,13 @@ const translations = {
     dataSourceGlurooOfficialLink: "Gluroo公式FAQ（英語・外部サイト）",
     dataSourceNightscoutHelpTitle: "自分のNightscout環境をすでに使っている方",
     dataSourceNightscoutHelpLead: "ご自身のNightscout URLと読み取り用の情報を、下の欄へ貼り付けます。新しく環境を作るところから始める方法は上級者向けです。",
+    dataSourceDisplayNameLabel: "表示名",
+    dataSourceDisplayNameHelp: "本名でなくて大丈夫です。GlucoScopeで呼ばれたい名前を入力してね（最大30文字）。",
+    dataSourceDisplayNameRequired: "表示名を入力してね。",
+    dataSourceUsageNote: "表示名と基本的な利用回数を、GlucoScopeをよくするために記録します。血糖値や接続情報は記録しません。",
+    dataSourceUsageNotePaused: "表示名はこの端末に保存します。利用記録は現在停止中です。",
+    dataSourceUsageDetails: "詳しく見る",
+    dataSourceUsageSafetyCheck: "最後の安全確認をしています…",
     dataSourceLocalOnlyTitle: "この端末への保存について",
     dataSourceLocalOnlyLine1: "接続先URLと接続用の合言葉は、選んだ場合だけこのブラウザへ保存します。",
     dataSourceLocalOnlyLine2: "家族などと共用している端末では、「この端末に保存する」をオフにしてください。",
@@ -337,7 +332,7 @@ const translations = {
     dataSourcePersistHelp: "オフにすると、画面を閉じたあとにもう一度入力が必要です。",
     dataSourceTestButton: "つながるか確認する",
     dataSourceTesting: "つながるか確認しているよ…",
-    dataSourceTestWaiting: "上の2つを貼り付けて、つながるか確認します。",
+    dataSourceTestWaiting: "表示名と接続情報を入力して、つながるか確認します。",
     dataSourceTestSuccess: "つながりました。最新の血糖データを確認できたよ🍀",
     dataSourceTestNoData: "接続先には届きましたが、血糖データはまだ見つかりませんでした。まずGlurooに血糖値が表示されているか確認してみてね。",
     dataSourceTestAuthError: "接続用の情報を確認できませんでした。2つの情報をもう一度コピーして貼り付けてみてね。",
@@ -560,60 +555,39 @@ const translations = {
     mobileMoreDataSource: "Data connection (under construction)",
     mobileMoreDataSourceNote: "In preparation · Gluroo / Nightscout",
     localProfileButton: "Your settings",
-    localProfileButtonNote: "Save a display name on this device",
+    localProfileButtonNote: "Display name and usage records",
     localProfileButtonSavedNote: "Saved on this device",
     localProfileEyebrow: "Settings on this device",
     localProfileDialogTitle: "Your settings",
-    localProfileDialogLead: "You can save a display name for GlucoScope in this browser. It is not sent to the administrator unless you separately start usage sharing below.",
-    localProfileDisplayNameLabel: "Display name (optional)",
-    localProfileDisplayNameHelp: "It does not need to be your real name. You can change or delete the nickname later (up to 30 characters).",
-    localProfileSaveButton: "Save",
-    localProfileDeleteButton: "Delete the display name from this device",
-    localProfileSaved: "The display name was saved on this device. It was not sent to the administrator.",
+    localProfileDialogLead: "Change your display name and manage this device's usage record.",
+    localProfileDisplayNameLabel: "Display name",
+    localProfileDisplayNameHelp: "It does not need to be your real name. Enter the name you want GlucoScope to use (up to 30 characters).",
+    localProfileSaveButton: "Change display name",
+    localProfileSaved: "The display name was changed.",
+    localProfileNameRequired: "Enter a display name.",
     localProfileEmpty: "The display name is blank and was not saved on this device.",
-    localProfileDeleted: "The display name was deleted from this device.",
     localProfileStorageError: "This device could not save the display name. It was not sent.",
-    localProfileDeleteError: "This device could not delete the display name. It was not sent.",
-    localProfileDeleteConfirm: "Delete the saved display name from this device? Your data connection and Gluco memories will not be deleted.",
     localProfileCloseLabel: "Close",
-    usageProfileCardTitle: "Share usage information",
+    usageProfileCardTitle: "Manage usage records",
     usageProfileBadgePreparing: "In preparation",
-    usageProfileBadgeAvailable: "Not sharing",
-    usageProfileBadgeActive: "Sharing",
+    usageProfileBadgeAvailable: "Not recording",
+    usageProfileBadgeActive: "Recording",
     usageProfileBadgeStopped: "Stopped",
-    usageProfilePreparing: "This feature is still being prepared. For now, only the display name is saved in this browser, and no usage information is sent.",
-    usageProfileNoticeLead: "If you start sharing, Kazuma can see the following usage information to help improve GlucoScope.",
-    usageProfileNoticeDisplayName: "Your optional display name",
-    usageProfileNoticeVisitDays: "The number of days GlucoScope was used during the past 90 days",
-    usageProfileNoticeAiCount: "The number of newly completed AI analyses",
-    usageProfileNoticeMemoryCount: "The number of ordinary Gluco memories (No. 1–50)",
-    usageProfileNoticeBoundary: "Glucose values, graphs, connection details, and AI letter contents are not sent. Core features such as glucose display still work if you do not share.",
-    usageProfileOperationalNote: "A random identifier for this browser, sharing state, and created and last-used times are also stored.",
-    usageProfileRetentionNote: "Records are processed by Cloudflare and kept in the live store for no more than 90 days. You can stop, export, or delete them at any time.",
-    usageProfilePrivacyLink: "Details about storage and deletion",
-    usageProfileDeviceNote: "This is a browser profile, not an account. It is separate on each device and cannot be recovered if this browser’s data is erased.",
-    usageProfileStartButton: "Share usage from this device",
-    usageProfileSkipButton: "Not now",
-    usageProfileActive: "This device is sharing usage information. You can stop, export, or delete it at any time.",
-    usageProfileStopped: "Sharing is stopped. No new usage counts are sent. You can resume, export, or delete the existing record.",
-    usageProfilePaused: "Starting new sharing is still in preparation. You can export or delete an earlier record, and stop future sending if it had been active.",
-    usageProfileStopButton: "Stop sharing",
-    usageProfileStopDisabledButton: "Stop future sharing too",
-    usageProfileResumeButton: "Resume sharing",
-    usageProfileExportButton: "Export my record",
-    usageProfileDeleteButton: "Delete the shared record",
-    usageProfileSafetyCheck: "Preparing the safety check. Please wait a moment.",
-    usageProfileStarting: "Preparing usage sharing for this device.",
-    usageProfileStarted: "Usage sharing has started for this device.",
-    usageProfileSkipped: "Nothing is being shared. Core features remain available.",
-    usageProfileStoppedStatus: "New usage sharing has stopped.",
-    usageProfileResumedStatus: "Usage sharing has resumed.",
+    usageProfileActive: "Usage recording is on.",
+    usageProfileStopped: "Usage recording is stopped. No new counts are recorded.",
+    usageProfilePaused: "Usage recording is currently paused. Earlier test records can still be viewed or deleted.",
+    usageProfileStopButton: "Stop usage recording",
+    usageProfileStopDisabledButton: "Stop future recording too",
+    usageProfileResumeButton: "Resume usage recording",
+    usageProfileExportButton: "View and save stored usage records",
+    usageProfileDeleteButton: "Delete usage records",
+    usageProfileStoppedStatus: "Usage recording has stopped.",
+    usageProfileResumedStatus: "Usage recording has resumed.",
     usageProfileExportedStatus: "This device’s record was exported.",
     usageProfileDeletedStatus: "The browser profile and usage record were deleted from the live Cloudflare D1 database. Recovery history may remain for up to 30 days. The local display name and glucose data were not deleted.",
-    usageProfileStartError: "Sharing could not be started. No usage information was sent.",
     usageProfileActionError: "The action could not be completed. Please try again later.",
     usageProfileDeleteConfirm: "Delete this browser profile and its usage record from the live Cloudflare D1 database? Recovery history may remain for up to 30 days. The local display name, data connection, glucose data, and Gluco memories will remain on this device.",
-    usageProfileTurnstileLabel: "Usage-sharing safety check",
+    usageProfileTurnstileLabel: "Usage-recording safety check",
     dataSourceDialogTitle: "Data connection (under construction)",
     dataSourceDialogLead: "We are preparing this feature for public release. You can review the connection steps, but Gluroo connection is still in limited testing.",
     dataSourceChooseLead: "Choose one way to connect your glucose data.",
@@ -644,6 +618,13 @@ const translations = {
     dataSourceGlurooOfficialLink: "Gluroo official FAQ (external site)",
     dataSourceNightscoutHelpTitle: "For people who already use their own Nightscout environment",
     dataSourceNightscoutHelpLead: "Paste your Nightscout URL and read credential below. Building a new environment from scratch is an advanced route.",
+    dataSourceDisplayNameLabel: "Display name",
+    dataSourceDisplayNameHelp: "It does not need to be your real name. Enter the name you want GlucoScope to use (up to 30 characters).",
+    dataSourceDisplayNameRequired: "Enter a display name.",
+    dataSourceUsageNote: "GlucoScope records your display name and basic usage counts to improve the service. Glucose values and connection details are not recorded.",
+    dataSourceUsageNotePaused: "The display name is saved on this device. Usage recording is currently paused.",
+    dataSourceUsageDetails: "Learn more",
+    dataSourceUsageSafetyCheck: "Completing one last safety check…",
     dataSourceLocalOnlyTitle: "Saving on this device",
     dataSourceLocalOnlyLine1: "The connection URL and passphrase are saved in this browser only when you choose to save them.",
     dataSourceLocalOnlyLine2: "On a device shared with family or others, turn off Save on this device.",
@@ -672,7 +653,7 @@ const translations = {
     dataSourcePersistHelp: "When off, you will need to enter it again after closing the page.",
     dataSourceTestButton: "Check the connection",
     dataSourceTesting: "Checking the connection…",
-    dataSourceTestWaiting: "Paste the two items above, then check the connection.",
+    dataSourceTestWaiting: "Enter a display name and the connection details, then check the connection.",
     dataSourceTestSuccess: "Connected. The latest glucose entry was found 🍀",
     dataSourceTestNoData: "The source responded, but no glucose data was found. First check that Gluroo is displaying a glucose value.",
     dataSourceTestAuthError: "The connection information could not be confirmed. Copy and paste both items again.",
@@ -971,27 +952,78 @@ function updateDataSourceProviderHelp() {
   window.GlucoScopeDataRelay?.updateUi?.(provider);
 }
 
+function isDataSourceSaveBusy() {
+  return Boolean(pendingDataSourceSave || dataSourceSaveInFlight);
+}
+
+function queueDataSourceFocus(element) {
+  window.requestAnimationFrame(() => {
+    const dialog = document.getElementById("dataSourceDialog");
+    if (!dialog || dialog.hidden || isDataSourceSaveBusy()) return;
+    element?.focus?.();
+  });
+}
+
+function getDataSourceDialogFocusableElements() {
+  const dialog = document.getElementById("dataSourceDialog");
+  if (!dialog || dialog.hidden) return [];
+  return [...dialog.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), iframe')]
+    .filter((element) => (
+      !element.hidden
+      && !element.closest("[hidden]")
+      && element.getAttribute("aria-hidden") !== "true"
+      && element.getAttribute("aria-disabled") !== "true"
+    ));
+}
+
+function focusCurrentDataSourceStep() {
+  const choosePanel = document.getElementById("dataSourceChoosePanel");
+  const prepPanel = document.getElementById("dataSourceGlurooPrepPanel");
+  const connectPanel = document.getElementById("dataSourceConnectPanel");
+  if (connectPanel && !connectPanel.hidden) {
+    queueDataSourceFocus(document.getElementById("dataSourceDisplayName"));
+    return;
+  }
+  if (prepPanel && !prepPanel.hidden) {
+    const heading = prepPanel.querySelector("h3");
+    if (heading) heading.tabIndex = -1;
+    queueDataSourceFocus(heading);
+    return;
+  }
+  if (choosePanel && !choosePanel.hidden) {
+    const provider = document.querySelector('input[name="dataSourceProvider"]:checked')?.value || "gluroo";
+    queueDataSourceFocus(document.getElementById(
+      provider === "nightscout" ? "dataSourceNightscoutChoice" : "dataSourceGlurooChoice"
+    ));
+  }
+}
+
 function showDataSourceChooseStep() {
+  if (isDataSourceSaveBusy()) return;
   const choosePanel = document.getElementById("dataSourceChoosePanel");
   const prepPanel = document.getElementById("dataSourceGlurooPrepPanel");
   const connectPanel = document.getElementById("dataSourceConnectPanel");
   if (choosePanel) choosePanel.hidden = false;
   if (prepPanel) prepPanel.hidden = true;
   if (connectPanel) connectPanel.hidden = true;
-  testedDataSourceConfig = null;
+  invalidateDataSourceTest();
+  focusCurrentDataSourceStep();
 }
 
 function showDataSourceGlurooPrepStep() {
+  if (isDataSourceSaveBusy()) return;
   const choosePanel = document.getElementById("dataSourceChoosePanel");
   const prepPanel = document.getElementById("dataSourceGlurooPrepPanel");
   const connectPanel = document.getElementById("dataSourceConnectPanel");
   if (choosePanel) choosePanel.hidden = true;
   if (prepPanel) prepPanel.hidden = false;
   if (connectPanel) connectPanel.hidden = true;
-  testedDataSourceConfig = null;
+  invalidateDataSourceTest();
+  focusCurrentDataSourceStep();
 }
 
 function showDataSourceConnectStep() {
+  if (isDataSourceSaveBusy()) return;
   const choosePanel = document.getElementById("dataSourceChoosePanel");
   const prepPanel = document.getElementById("dataSourceGlurooPrepPanel");
   const connectPanel = document.getElementById("dataSourceConnectPanel");
@@ -1000,10 +1032,11 @@ function showDataSourceConnectStep() {
   if (connectPanel) connectPanel.hidden = false;
   updateDataSourceProviderHelp();
   invalidateDataSourceTest();
-  window.setTimeout(() => document.getElementById("dataSourceUrl")?.focus(), 0);
+  focusCurrentDataSourceStep();
 }
 
 function selectDataSourceProvider(provider) {
+  if (isDataSourceSaveBusy()) return;
   const resolvedProvider = provider === "nightscout" ? "nightscout" : "gluroo";
   const input = document.querySelector(`input[name="dataSourceProvider"][value="${resolvedProvider}"]`);
   if (input) input.checked = true;
@@ -1016,10 +1049,24 @@ function selectDataSourceProvider(provider) {
 }
 
 function invalidateDataSourceTest() {
+  dataSourceTestAbortController?.abort?.();
+  dataSourceTestAbortController = null;
+  dataSourceTestGeneration += 1;
   testedDataSourceConfig = null;
   const saveButton = document.getElementById("dataSourceSaveButton");
+  const testButton = document.getElementById("dataSourceTestButton");
   if (saveButton) saveButton.disabled = true;
+  if (testButton && !isDataSourceSaveBusy()) testButton.disabled = false;
   setDataSourceTestStatus(t("dataSourceTestWaiting"));
+}
+
+function nextDataSourceTestGeneration() {
+  dataSourceTestGeneration += 1;
+  return dataSourceTestGeneration;
+}
+
+function isCurrentDataSourceTest(generation) {
+  return dataSourceTestGeneration === generation;
 }
 
 function populateDataSourceForm(config = null) {
@@ -1030,10 +1077,15 @@ function populateDataSourceForm(config = null) {
 
   const urlInput = document.getElementById("dataSourceUrl");
   const secretInput = document.getElementById("dataSourceSecret");
+  const displayNameInput = document.getElementById("dataSourceDisplayName");
   const persistInput = document.getElementById("dataSourcePersist");
   const relayConsentInput = document.getElementById("dataSourceRelayConsent");
   const deleteButton = document.getElementById("dataSourceDeleteButton");
 
+  if (displayNameInput) {
+    displayNameInput.value = readLocalProfile().profile?.displayName || "";
+    displayNameInput.setAttribute("aria-invalid", "false");
+  }
   if (urlInput) urlInput.value = resolved?.mode === "user" ? resolved.baseUrl || "" : "";
   if (secretInput) {
     secretInput.value = resolved?.mode === "user" ? resolved.credential || "" : "";
@@ -1091,6 +1143,13 @@ function updateDataSourceUiLabels() {
       : t("mobileMoreDataSourceNote");
   }
 
+  const usageNote = document.getElementById("dataSourceUsageNoteText");
+  if (usageNote) {
+    const usageNoteKey = USAGE_PROFILE_ENABLED ? "dataSourceUsageNote" : "dataSourceUsageNotePaused";
+    usageNote.dataset.i18nKey = usageNoteKey;
+    usageNote.textContent = t(usageNoteKey);
+  }
+
   const secretToggle = document.getElementById("dataSourceSecretToggle");
   const secretInput = document.getElementById("dataSourceSecret");
   if (secretToggle) secretToggle.textContent = t(secretInput?.type === "text" ? "dataSourceSecretHide" : "dataSourceSecretShow");
@@ -1099,6 +1158,7 @@ function updateDataSourceUiLabels() {
 function openDataSourceDialog(options = {}) {
   const dialog = document.getElementById("dataSourceDialog");
   if (!dialog) return;
+  dataSourceDialogOpener = options.opener || document.activeElement;
   const required = options.required === true;
   dialog.dataset.required = required ? "true" : "false";
   dialog.hidden = false;
@@ -1108,23 +1168,36 @@ function openDataSourceDialog(options = {}) {
   if (closeButton) closeButton.hidden = required;
   populateDataSourceForm(dataSourceManager?.readUserConfig?.());
   updateDataSourceUiLabels();
+  focusCurrentDataSourceStep();
 }
 
 function closeDataSourceDialog() {
   const dialog = document.getElementById("dataSourceDialog");
-  if (!dialog || dialog.dataset.required === "true") return;
+  if (!dialog || dialog.dataset.required === "true" || isDataSourceSaveBusy()) return;
+  invalidateDataSourceTest();
   dialog.hidden = true;
   document.body.classList.remove("data-source-dialog-open");
+  const opener = dataSourceDialogOpener;
+  dataSourceDialogOpener = null;
+  if (opener && typeof opener.focus === "function") {
+    window.requestAnimationFrame(() => opener.focus());
+  }
 }
 
 async function handleDataSourceTest() {
+  if (isDataSourceSaveBusy()) return;
   const testButton = document.getElementById("dataSourceTestButton");
   const saveButton = document.getElementById("dataSourceSaveButton");
   if (!dataSourceManager) {
     setDataSourceTestStatus(t("dataSourceTestGenericError"), "error");
     return;
   }
+  if (!requireDataSourceDisplayName()) return;
 
+  dataSourceTestAbortController?.abort?.();
+  const testAbortController = new AbortController();
+  dataSourceTestAbortController = testAbortController;
+  const generation = nextDataSourceTestGeneration();
   testedDataSourceConfig = null;
   if (saveButton) saveButton.disabled = true;
   if (testButton) testButton.disabled = true;
@@ -1144,9 +1217,13 @@ async function handleDataSourceTest() {
         relayError.code = "relay_unavailable";
         throw relayError;
       }
-      await relay.prepareConnection(candidate);
+      await relay.prepareConnection(candidate, { signal: testAbortController.signal });
+      if (!isCurrentDataSourceTest(generation)) return;
     }
-    const result = await dataSourceManager.createAdapter(candidate).testConnection();
+    const result = await dataSourceManager.createAdapter(candidate).testConnection({
+      signal: testAbortController.signal
+    });
+    if (!isCurrentDataSourceTest(generation)) return;
     testedDataSourceConfig = dataSourceManager.sanitizeConfig({
       ...candidate,
       authStrategy: result.strategy
@@ -1158,10 +1235,14 @@ async function handleDataSourceTest() {
       : "";
     setDataSourceTestStatus(`${t("dataSourceTestSuccess")}${detail}`, "success");
   } catch (error) {
+    if (!isCurrentDataSourceTest(generation)) return;
     console.warn("Data source connection test failed", error?.code || error?.message);
     setDataSourceTestStatus(getDataSourceErrorMessage(error), "error");
   } finally {
-    if (testButton) testButton.disabled = false;
+    if (isCurrentDataSourceTest(generation)) {
+      if (dataSourceTestAbortController === testAbortController) dataSourceTestAbortController = null;
+      if (testButton) testButton.disabled = false;
+    }
   }
 }
 
@@ -1180,36 +1261,200 @@ function buildUserModeUrl(hash = "glucose") {
   return url.toString();
 }
 
+function nextDataSourceSaveGeneration() {
+  dataSourceSaveGeneration += 1;
+  return dataSourceSaveGeneration;
+}
+
+function isCurrentPendingDataSourceSave(generation) {
+  return Boolean(
+    pendingDataSourceSave
+    && pendingDataSourceSave.generation === generation
+    && dataSourceSaveGeneration === generation
+  );
+}
+
+function clearUsageProfileTurnstileTimeout(generation = null) {
+  if (usageProfileTurnstileTimeoutId === null) return;
+  if (generation !== null && usageProfileTurnstileTimeoutGeneration !== generation) return;
+  window.clearTimeout(usageProfileTurnstileTimeoutId);
+  usageProfileTurnstileTimeoutId = null;
+  usageProfileTurnstileTimeoutGeneration = 0;
+}
+
+function invalidatePendingDataSourceSave() {
+  nextDataSourceSaveGeneration();
+  pendingDataSourceSave = null;
+  clearUsageProfileTurnstileTimeout();
+  destroyUsageProfileTurnstile();
+}
+
+function setDataSourceSaveControlsDisabled(disabled) {
+  [
+    "dataSourceDisplayName",
+    "dataSourceUrl",
+    "dataSourceSecret",
+    "dataSourcePersist",
+    "dataSourceTestButton",
+    "dataSourceSaveButton",
+    "dataSourceDeleteButton",
+    "dataSourceBackButton",
+    "dataSourceGlurooPrepBackButton",
+    "dataSourceGlurooChoice",
+    "dataSourceNightscoutChoice",
+    "dataSourceGlurooConnectButton",
+    "dataSourceSecretToggle",
+    "dataSourceDialogClose"
+  ].forEach((id) => {
+    const control = document.getElementById(id);
+    if (control) control.disabled = Boolean(disabled);
+  });
+  document.getElementById("dataSourceDialog")?.querySelectorAll('a[href]').forEach((link) => {
+    if (!link) return;
+    link.setAttribute("aria-disabled", disabled ? "true" : "false");
+    link.tabIndex = disabled ? -1 : 0;
+  });
+}
+
+function persistDataSourceBrowserState(snapshot) {
+  const localResult = localProfileManager?.save?.({ displayName: snapshot.displayName });
+  if (!localResult?.ok || !localResult.stored) {
+    const error = new Error("The display name could not be saved.");
+    error.code = localResult?.error || "display_name_save_failed";
+    throw error;
+  }
+
+  dataSourceManager.saveUserConfig(snapshot.config, { persist: snapshot.persist });
+  clearDataSourceSpecificBrowserState();
+}
+
+function navigateToSavedDataSource() {
+  // user.html already opens this exact user-mode URL. Assigning the same URL
+  // may be treated as a same-document navigation, so reload explicitly after
+  // saving. This lets the newly stored connection become the active source.
+  if (isUserDataSourceMode()) {
+    window.location.reload();
+    return;
+  }
+
+  window.location.href = buildUserModeUrl("glucose");
+}
+
+async function completePendingDataSourceSave(
+  turnstileToken = "",
+  generation = pendingDataSourceSave?.generation,
+  { skipUsageProfile = false } = {}
+) {
+  const snapshot = pendingDataSourceSave;
+  if (
+    !snapshot
+    || !isCurrentPendingDataSourceSave(generation)
+    || dataSourceSaveInFlight
+    || !dataSourceManager
+  ) return;
+
+  dataSourceSaveInFlight = true;
+  dataSourceSaveInFlightGeneration = generation;
+  usageProfileActionInFlight = true;
+  setDataSourceSaveControlsDisabled(true);
+  clearUsageProfileTurnstileTimeout(generation);
+  let navigationStarted = false;
+
+  try {
+    // Required browser state is committed before any optional usage-profile
+    // request. A storage failure therefore cannot leave a remote profile
+    // without the glucose connection the person just verified.
+    persistDataSourceBrowserState(snapshot);
+
+    const state = getUsageProfileState();
+    if (USAGE_PROFILE_ENABLED && !skipUsageProfile) {
+      try {
+        if (!state.registered) {
+          setDataSourceTestStatus(t("dataSourceUsageSafetyCheck"), "pending");
+          requireUsageProfileResult(await usageProfileManager?.start?.({
+            displayName: snapshot.displayName,
+            turnstileToken
+          }));
+        } else {
+          requireUsageProfileResult(await usageProfileManager?.updateProfile?.({
+            displayName: snapshot.displayName
+          }));
+        }
+      } catch (usageError) {
+        // Usage records are best-effort. A profile or dedicated Turnstile
+        // failure must never block a verified CGM connection.
+        console.warn("Continuing without a usage profile", usageError?.code || usageError?.message);
+      }
+    }
+
+    if (!isCurrentPendingDataSourceSave(generation) || dataSourceSaveInFlightGeneration !== generation) return;
+    navigateToSavedDataSource();
+    navigationStarted = true;
+    pendingDataSourceSave = null;
+  } catch (error) {
+    console.warn("Could not save required data source setup", error?.code || error?.message);
+    if (isCurrentPendingDataSourceSave(generation)) {
+      pendingDataSourceSave = null;
+      setDataSourceTestStatus(t("dataSourceTestGenericError"), "error");
+    }
+  } finally {
+    const ownsInFlightSave = dataSourceSaveInFlightGeneration === generation;
+    if (ownsInFlightSave) {
+      dataSourceSaveInFlight = false;
+      dataSourceSaveInFlightGeneration = 0;
+      usageProfileActionInFlight = false;
+    }
+    destroyUsageProfileTurnstile(generation);
+    if (ownsInFlightSave && !navigationStarted) {
+      setDataSourceSaveControlsDisabled(false);
+      const saveButton = document.getElementById("dataSourceSaveButton");
+      if (saveButton) saveButton.disabled = !testedDataSourceConfig;
+    }
+    renderUsageProfileState();
+  }
+}
+
 function handleDataSourceSave(event) {
   event?.preventDefault?.();
+  if (dataSourceSaveInFlight || pendingDataSourceSave) return;
   if (!testedDataSourceConfig || !dataSourceManager) {
     setDataSourceTestStatus(t("dataSourceTestWaiting"), "error");
     return;
   }
 
-  try {
-    dataSourceManager.saveUserConfig(testedDataSourceConfig, {
-      persist: document.getElementById("dataSourcePersist")?.checked !== false
-    });
-    clearDataSourceSpecificBrowserState();
+  const displayName = requireDataSourceDisplayName();
+  if (!displayName) return;
+  destroyUsageProfileTurnstile();
+  const generation = nextDataSourceSaveGeneration();
+  pendingDataSourceSave = {
+    generation,
+    config: testedDataSourceConfig,
+    displayName,
+    persist: document.getElementById("dataSourcePersist")?.checked !== false
+  };
 
-    // user.html already opens this exact user-mode URL. Assigning the same URL
-    // may be treated as a same-document navigation, so reload explicitly after
-    // saving. This lets the newly stored connection become the active source.
-    if (isUserDataSourceMode()) {
-      window.location.reload();
-      return;
-    }
-
-    window.location.href = buildUserModeUrl("glucose");
-  } catch (error) {
-    console.warn("Could not save data source", error);
-    setDataSourceTestStatus(t("dataSourceTestGenericError"), "error");
+  const state = getUsageProfileState();
+  if (!USAGE_PROFILE_ENABLED || !state.enabled) {
+    void completePendingDataSourceSave("", generation, { skipUsageProfile: true });
+    return;
   }
+  if (state.registered) {
+    void completePendingDataSourceSave("", generation);
+    return;
+  }
+
+  setDataSourceTestStatus(t("dataSourceUsageSafetyCheck"), "pending");
+  setDataSourceSaveControlsDisabled(true);
+  prepareUsageProfileTurnstile(generation);
 }
 
 function handleDataSourceDelete() {
-  if (!dataSourceManager) return;
+  if (!dataSourceManager || isDataSourceSaveBusy()) return;
+  invalidateDataSourceTest();
+  invalidatePendingDataSourceSave();
+  if (getUsageProfileState().registered) {
+    void usageProfileManager?.updateProfile?.({ collectionEnabled: false });
+  }
   dataSourceManager.clearUserConfig();
   clearDataSourceSpecificBrowserState();
   activeDataSourceConfig = null;
@@ -1265,7 +1510,6 @@ function setupDataSourceFoundation() {
   document.getElementById("dataSourceBackButton")?.addEventListener("click", showDataSourceChooseStep);
   document.getElementById("dataSourceTestButton")?.addEventListener("click", handleDataSourceTest);
   document.getElementById("dataSourceDeleteButton")?.addEventListener("click", handleDataSourceDelete);
-  document.getElementById("dataSourceSaveButton")?.addEventListener("click", handleDataSourceSave);
   form?.addEventListener("submit", handleDataSourceSave);
 
   providerInputs.forEach((input) => input.addEventListener("change", () => {
@@ -1273,6 +1517,9 @@ function setupDataSourceFoundation() {
     if (!document.getElementById("dataSourceConnectPanel")?.hidden) invalidateDataSourceTest();
   }));
   changeInputs.forEach((input) => input.addEventListener("input", invalidateDataSourceTest));
+  document.getElementById("dataSourceDisplayName")?.addEventListener("input", (event) => {
+    event.currentTarget?.setAttribute("aria-invalid", "false");
+  });
   document.getElementById("dataSourceRelayConsent")?.addEventListener("change", invalidateDataSourceTest);
 
   document.getElementById("dataSourceSecretToggle")?.addEventListener("click", () => {
@@ -1282,11 +1529,43 @@ function setupDataSourceFoundation() {
     updateDataSourceUiLabels();
   });
 
+  dialog?.querySelectorAll('a[href]').forEach((link) => {
+    link.addEventListener("click", (event) => {
+      if (!isDataSourceSaveBusy()) return;
+      event.preventDefault();
+    });
+  });
+
   dialog?.addEventListener("click", (event) => {
     if (event.target === dialog) closeDataSourceDialog();
   });
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !dialog?.hidden) closeDataSourceDialog();
+    if (!dialog || dialog.hidden) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeDataSourceDialog();
+      return;
+    }
+    if (event.key !== "Tab") return;
+
+    const focusable = getDataSourceDialogFocusableElements();
+    if (!focusable.length) {
+      event.preventDefault();
+      return;
+    }
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const activeElement = document.activeElement;
+    if (!dialog.contains(activeElement)) {
+      event.preventDefault();
+      (event.shiftKey ? last : first).focus();
+    } else if (event.shiftKey && activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
   });
 
   updateDataSourceUiLabels();
@@ -1344,6 +1623,26 @@ function getUsageProfileState() {
   };
 }
 
+function getNormalizedDataSourceDisplayName() {
+  const input = document.getElementById("dataSourceDisplayName");
+  const rawValue = input?.value || "";
+  const normalized = localProfileManager?.normalizeDisplayName
+    ? localProfileManager.normalizeDisplayName(rawValue)
+    : Array.from(String(rawValue).replace(/\s+/gu, " ").trim()).slice(0, 30).join("").trim();
+  if (input) input.value = normalized;
+  return normalized;
+}
+
+function requireDataSourceDisplayName() {
+  const input = document.getElementById("dataSourceDisplayName");
+  const displayName = getNormalizedDataSourceDisplayName();
+  input?.setAttribute("aria-invalid", displayName ? "false" : "true");
+  if (displayName) return displayName;
+  setDataSourceTestStatus(t("dataSourceDisplayNameRequired"), "error");
+  input?.focus();
+  return "";
+}
+
 function setUsageProfileStatus(messageKey = "", type = "") {
   const status = document.getElementById("usageProfileStatus");
   if (!status) return;
@@ -1362,8 +1661,6 @@ function requireUsageProfileResult(result) {
 
 function setUsageProfileControlsDisabled(disabled) {
   [
-    "usageProfileStartButton",
-    "usageProfileSkipButton",
     "usageProfileStopButton",
     "usageProfileStopDisabledButton",
     "usageProfileResumeButton",
@@ -1379,8 +1676,7 @@ function setUsageProfileControlsDisabled(disabled) {
 
 function renderUsageProfileState() {
   const state = getUsageProfileState();
-  const preparing = document.getElementById("usageProfilePreparing");
-  const notice = document.getElementById("usageProfileNotice");
+  const card = document.getElementById("usageProfileCard");
   const active = document.getElementById("usageProfileActive");
   const stopped = document.getElementById("usageProfileStopped");
   const stoppedMessage = document.getElementById("usageProfileStoppedMessage");
@@ -1388,8 +1684,7 @@ function renderUsageProfileState() {
   const stopDisabledButton = document.getElementById("usageProfileStopDisabledButton");
   const badge = document.getElementById("usageProfileStateBadge");
 
-  if (preparing) preparing.hidden = state.enabled || state.registered;
-  if (notice) notice.hidden = !state.enabled || state.registered || usageProfileSkippedForSession;
+  if (card) card.hidden = !state.registered;
   if (active) active.hidden = !state.enabled || !state.registered || !state.collectionEnabled;
   if (stopped) stopped.hidden = !state.registered || (state.enabled && state.collectionEnabled);
   if (stoppedMessage) {
@@ -1460,80 +1755,112 @@ async function updateUsageProfileDisplayName(displayName) {
   }
 }
 
-function resetUsageProfileTurnstile() {
+function destroyUsageProfileTurnstile(generation = null) {
   const container = document.getElementById("usageProfileTurnstile");
+  const widgetGeneration = Number(container?.dataset?.generation || 0);
+  if (generation !== null && widgetGeneration && widgetGeneration !== generation) return;
+  clearUsageProfileTurnstileTimeout(generation);
   const widgetId = container?.dataset?.widgetId;
-  if (container) container.hidden = true;
-  if (widgetId && window.turnstile && typeof window.turnstile.reset === "function") {
+  if (widgetId && window.turnstile && typeof window.turnstile.remove === "function") {
     try {
-      window.turnstile.reset(widgetId);
+      window.turnstile.remove(widgetId);
     } catch (error) {
-      // The next explicit start attempt can render a fresh challenge.
+      // Removing a widget is best-effort; its callback is still guarded below.
     }
+  }
+  if (container) {
+    container.hidden = true;
+    delete container.dataset.widgetId;
+    delete container.dataset.rendered;
+    delete container.dataset.generation;
   }
 }
 
-async function handleUsageProfileStart(turnstileToken) {
-  if (!getUsageProfileState().enabled || usageProfileActionInFlight) return;
-  usageProfileActionInFlight = true;
-  setUsageProfileStatus("usageProfileStarting");
-  renderUsageProfileState();
-
-  try {
-    const displayName = document.getElementById("localProfileDisplayName")?.value || "";
-    const started = requireUsageProfileResult(
-      await usageProfileManager?.start?.({ displayName, turnstileToken })
-    );
-    const localResult = localProfileManager?.save?.({
-      displayName: started.profile?.displayName ?? displayName
-    });
-    if (localResult?.ok) {
-      const displayNameInput = document.getElementById("localProfileDisplayName");
-      if (displayNameInput) displayNameInput.value = localResult.profile.displayName;
-      const deleteButton = document.getElementById("localProfileDeleteButton");
-      if (deleteButton) deleteButton.hidden = !localResult.stored;
-      updateLocalProfileEntryLabels();
-    }
-    usageProfileSkippedForSession = false;
-    await Promise.allSettled([
-      recordUsageProfileVisit(),
-      syncUsageProfileOrdinaryMemoryCount()
-    ]);
-    setUsageProfileStatus("usageProfileStarted", "success");
-  } catch (error) {
-    setUsageProfileStatus("usageProfileStartError", "error");
-  } finally {
-    usageProfileActionInFlight = false;
-    resetUsageProfileTurnstile();
-    renderUsageProfileState();
-  }
+function continueDataSourceSaveWithoutUsageProfile(generation, reason = "usage_profile_unavailable") {
+  if (!isCurrentPendingDataSourceSave(generation) || dataSourceSaveInFlight) return;
+  clearUsageProfileTurnstileTimeout(generation);
+  console.warn("Continuing without a usage profile", reason);
+  void completePendingDataSourceSave("", generation, { skipUsageProfile: true });
 }
 
-function renderUsageProfileTurnstileWidget() {
+function scheduleUsageProfileTurnstileTimeout(generation) {
+  if (!isCurrentPendingDataSourceSave(generation) || dataSourceSaveInFlight) return;
+  clearUsageProfileTurnstileTimeout();
+  usageProfileTurnstileTimeoutGeneration = generation;
+  usageProfileTurnstileTimeoutId = window.setTimeout(() => {
+    continueDataSourceSaveWithoutUsageProfile(generation, "usage_turnstile_timeout");
+  }, USAGE_PROFILE_TURNSTILE_TIMEOUT_MS);
+}
+
+function renderUsageProfileTurnstileWidget(generation = pendingDataSourceSave?.generation) {
   const container = document.getElementById("usageProfileTurnstile");
-  if (!container || !getUsageProfileState().enabled || !TURNSTILE_SITE_KEY) return;
+  const state = getUsageProfileState();
+  if (
+    !container
+    || !isCurrentPendingDataSourceSave(generation)
+    || !state.enabled
+    || state.registered
+    || dataSourceSaveInFlight
+    || !TURNSTILE_SITE_KEY
+  ) return;
   if (!window.turnstile || typeof window.turnstile.render !== "function") return;
-  if (container.dataset.rendered === "true") return;
+  if (container.dataset.rendered === "true") {
+    if (container.dataset.generation === String(generation)) return;
+    destroyUsageProfileTurnstile(Number(container.dataset.generation || 0) || null);
+  }
 
-  const widgetId = window.turnstile.render(container, {
-    sitekey: TURNSTILE_SITE_KEY,
-    action: "glucoscope-usage-profile",
-    theme: "auto",
-    callback: (token) => handleUsageProfileStart(token),
-    "expired-callback": () => setUsageProfileStatus("usageProfileSafetyCheck"),
-    "error-callback": () => setUsageProfileStatus("usageProfileStartError", "error")
-  });
   container.dataset.rendered = "true";
-  container.dataset.widgetId = String(widgetId);
+  container.dataset.generation = String(generation);
+  try {
+    const widgetId = window.turnstile.render(container, {
+      sitekey: TURNSTILE_SITE_KEY,
+      action: "glucoscope-usage-profile",
+      theme: "auto",
+      size: "flexible",
+      callback: (token) => {
+        if (!isCurrentPendingDataSourceSave(generation) || dataSourceSaveInFlight) return;
+        void completePendingDataSourceSave(token, generation);
+      },
+      "expired-callback": () => {
+        continueDataSourceSaveWithoutUsageProfile(generation, "usage_turnstile_expired");
+      },
+      "error-callback": () => {
+        continueDataSourceSaveWithoutUsageProfile(generation, "usage_turnstile_error");
+        return true;
+      }
+    });
+    container.dataset.widgetId = String(widgetId);
+    window.requestAnimationFrame(() => {
+      if (isCurrentPendingDataSourceSave(generation) && !dataSourceSaveInFlight) {
+        container.querySelector("iframe")?.focus();
+      }
+    });
+  } catch (error) {
+    continueDataSourceSaveWithoutUsageProfile(generation, "usage_turnstile_render_failed");
+  }
 }
 
-function prepareUsageProfileStart() {
-  if (!getUsageProfileState().enabled || usageProfileActionInFlight) return;
+function prepareUsageProfileTurnstile(generation = pendingDataSourceSave?.generation) {
+  if (!isCurrentPendingDataSourceSave(generation) || dataSourceSaveInFlight) return;
+  if (!getUsageProfileState().enabled || !TURNSTILE_SITE_KEY) {
+    continueDataSourceSaveWithoutUsageProfile(generation, "usage_turnstile_unavailable");
+    return;
+  }
   const container = document.getElementById("usageProfileTurnstile");
-  if (container) container.hidden = false;
-  setUsageProfileStatus("usageProfileSafetyCheck");
-  ensureTurnstileScript();
-  renderUsageProfileTurnstileWidget();
+  if (container) {
+    container.hidden = false;
+    if (container.dataset.rendered !== "true") {
+      container.dataset.generation = String(generation);
+    }
+  }
+  const script = ensureTurnstileScript();
+  if (script && (!window.turnstile || typeof window.turnstile.render !== "function")) {
+    script.addEventListener("error", () => {
+      continueDataSourceSaveWithoutUsageProfile(generation, "usage_turnstile_script_failed");
+    }, { once: true });
+  }
+  renderUsageProfileTurnstileWidget(generation);
+  scheduleUsageProfileTurnstileTimeout(generation);
 }
 
 async function handleUsageProfileCollectionChange(collectionEnabled) {
@@ -1630,6 +1957,13 @@ async function initializeUsageProfileFoundation() {
 
 function updateLocalProfileEntryLabels() {
   const result = readLocalProfile();
+  const shouldShow = Boolean(
+    isUserDataSourceMode() || hasActiveDataSource() || getUsageProfileState().registered
+  );
+  ["localProfileButton", "mobileLocalProfileButton"].forEach((id) => {
+    const button = document.getElementById(id);
+    if (button) button.hidden = !shouldShow;
+  });
   const mobileButton = document.getElementById("mobileLocalProfileButton");
   const mobileSmall = mobileButton?.querySelector("small");
   if (mobileSmall) {
@@ -1647,8 +1981,6 @@ function populateLocalProfileForm() {
     displayNameInput.setAttribute("aria-invalid", "false");
   }
 
-  const deleteButton = document.getElementById("localProfileDeleteButton");
-  if (deleteButton) deleteButton.hidden = !result.stored;
   setLocalProfileStatus(result.ok ? "" : "localProfileStorageError", result.ok ? "" : "error");
   renderUsageProfileState();
 }
@@ -1664,7 +1996,6 @@ function openLocalProfileDialog(opener = null) {
   const dialog = document.getElementById("localProfileDialog");
   if (!dialog) return;
   localProfileDialogOpener = opener || document.activeElement;
-  usageProfileSkippedForSession = false;
   populateLocalProfileForm();
   dialog.hidden = false;
   document.body.classList.add("local-profile-dialog-open");
@@ -1688,45 +2019,30 @@ function handleLocalProfileSave(event) {
     return;
   }
 
-  const result = localProfileManager.save({
-    displayName: document.getElementById("localProfileDisplayName")?.value || ""
-  });
+  const displayNameInput = document.getElementById("localProfileDisplayName");
+  const displayName = localProfileManager.normalizeDisplayName(
+    displayNameInput?.value || ""
+  );
+  if (displayNameInput) displayNameInput.value = displayName;
+  if (!displayName) {
+    displayNameInput?.setAttribute("aria-invalid", "true");
+    setLocalProfileStatus("localProfileNameRequired", "error");
+    displayNameInput?.focus();
+    return;
+  }
+
+  const result = localProfileManager.save({ displayName });
 
   if (!result.ok) {
     setLocalProfileStatus("localProfileStorageError", "error");
     return;
   }
 
-  const displayNameInput = document.getElementById("localProfileDisplayName");
+  displayNameInput?.setAttribute("aria-invalid", "false");
   if (displayNameInput) displayNameInput.value = result.profile.displayName;
-  const deleteButton = document.getElementById("localProfileDeleteButton");
-  if (deleteButton) deleteButton.hidden = !result.stored;
   setLocalProfileStatus(result.stored ? "localProfileSaved" : "localProfileEmpty", "success");
   updateLocalProfileEntryLabels();
   void updateUsageProfileDisplayName(result.profile.displayName);
-}
-
-function handleLocalProfileDelete() {
-  if (!localProfileManager?.clear) {
-    setLocalProfileStatus("localProfileDeleteError", "error");
-    return;
-  }
-  if (!window.confirm(t("localProfileDeleteConfirm"))) return;
-
-  const result = localProfileManager.clear();
-  if (!result.ok) {
-    setLocalProfileStatus("localProfileDeleteError", "error");
-    return;
-  }
-
-  const displayNameInput = document.getElementById("localProfileDisplayName");
-  if (displayNameInput) displayNameInput.value = "";
-  const deleteButton = document.getElementById("localProfileDeleteButton");
-  if (deleteButton) deleteButton.hidden = true;
-  displayNameInput?.focus();
-  setLocalProfileStatus("localProfileDeleted", "success");
-  updateLocalProfileEntryLabels();
-  void updateUsageProfileDisplayName("");
 }
 
 function setupLocalProfileFoundation() {
@@ -1741,14 +2057,6 @@ function setupLocalProfileFoundation() {
     button.addEventListener("click", () => openLocalProfileDialog(button));
   });
   document.getElementById("localProfileDialogClose")?.addEventListener("click", closeLocalProfileDialog);
-  document.getElementById("localProfileDeleteButton")?.addEventListener("click", handleLocalProfileDelete);
-  document.getElementById("usageProfileStartButton")?.addEventListener("click", prepareUsageProfileStart);
-  document.getElementById("usageProfileSkipButton")?.addEventListener("click", () => {
-    usageProfileSkippedForSession = true;
-    resetUsageProfileTurnstile();
-    setUsageProfileStatus("usageProfileSkipped", "success");
-    renderUsageProfileState();
-  });
   document.getElementById("usageProfileStopButton")?.addEventListener("click", () => {
     void handleUsageProfileCollectionChange(false);
   });
@@ -3826,8 +4134,9 @@ function getAiLetterErrorStatusKey(data) {
 }
 
 function ensureTurnstileScript() {
-  if (!TURNSTILE_SITE_KEY) return;
-  if (document.getElementById(TURNSTILE_SCRIPT_ID)) return;
+  if (!TURNSTILE_SITE_KEY) return null;
+  const existingScript = document.getElementById(TURNSTILE_SCRIPT_ID);
+  if (existingScript) return existingScript;
 
   const script = document.createElement("script");
   script.id = TURNSTILE_SCRIPT_ID;
@@ -3839,6 +4148,7 @@ function ensureTurnstileScript() {
     renderUsageProfileTurnstileWidget();
   };
   document.head.appendChild(script);
+  return script;
 }
 
 function findTextElementByLabel(label) {

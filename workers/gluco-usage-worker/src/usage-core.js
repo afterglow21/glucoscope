@@ -14,7 +14,7 @@ const EVENT_TYPES = new Set([
 
 const DEFAULTS = Object.freeze({
   enabled: false,
-  noticeVersion: "2026-08-11",
+  noticeVersion: "2026-08-12-simple-connection-1",
   timezoneOffsetHours: 9,
   maxRequestBytes: 8192,
   maxEventsPerRequest: 20,
@@ -154,8 +154,10 @@ function validateTurnstileToken(value) {
 function validateCreateProfilePayload(payload) {
   const value = requirePlainObject(payload);
   requireAllowedKeys(value, new Set(["displayName", "turnstileToken"]));
+  const displayName = normalizeDisplayName(value.displayName);
+  if (!displayName) throw new UsageApiError("invalid_request");
   return Object.freeze({
-    displayName: normalizeDisplayName(value.displayName),
+    displayName,
     turnstileToken: validateTurnstileToken(value.turnstileToken),
   });
 }

@@ -78,14 +78,14 @@
 
       <div class="about-detail-mini-card">
         <div class="about-detail-mini-head"><span class="about-detail-mini-icon">🧭</span><h3><span class="about-detail-mini-title-en">Next Steps</span><span class="about-detail-mini-title-jp">次の課題</span></h3></div>
-        <p>第1段階の端末内プレビューとして、「あなたの設定」を追加しました。任意の表示名だけをこのブラウザへ保存できます。端末プロフィール画面、通信クライアント、裏側の基盤は安全確認を終え、監督下の一時受け入れを開始しました。ページを開いただけでは記録せず、本人が短い案内を読んで共有ボタンを押した場合だけ始まります。</p>
+        <p>端末プロフィールの実機確認では、最初の作成と日別記録に成功しましたが、成功後の再コールバックで誤ったエラーが表示されました。この時点でD1に残った既知の試験用プロフィール2件は、その後削除しました。cascade後の <code>profiles</code>、<code>usage_daily</code>、<code>event_receipts</code> は <code>0 / 0 / 0</code> です。新しい停止Version <code>7cb71965-74c3-47f9-b589-75cf6d669edb</code> をdeployment <code>25be2258-b72a-4e2c-8bf1-ab47781c48dc</code> で100%配信し、runtimeの <code>USAGE_COLLECTION_ENABLED=false</code>、許可Originのpreflight <code>204</code>、許可Originからのprofile <code>POST</code> が <code>503 usage_collection_paused</code>、不許可OriginとOriginなしが <code>403</code>、D1が再確認でも <code>0 / 0 / 0</code> であることを確認しました。画面と利用記録は停止中で、一般利用者向け限定中継も <code>RELAY_ENABLED=false</code> のままです。</p>
         <ol>
-          <li>ユーザー基盤の続き：最初の端末で開始・停止・再開・書き出し・削除を確認し、継続公開の範囲を判断</li>
+          <li>ユーザー基盤の続き：新しい停止VersionとD1の <code>0 / 0 / 0</code> を基準に、ローカル実装済みの再コールバック防止と簡素な接続画面を停止したまま再受け入れし、開始・停止・再開・削除と小さな書き出しリンクを確認</li>
           <li>管理者ダッシュボード</li>
           <li>Plus 30日パスと支援導線</li>
           <li>ユーザー展開開始後の、横向きグラフ限定の常時表示モード</li>
         </ol>
-        <p>端末プロフィールはアカウントではなく、別端末との統合やブラウザ保存削除後の復旧はできません。血糖値、グラフ、接続情報、AIお手紙本文、Lucky / Unicorn Glucoを利用分析へ入れず、既存のAI Worker用Usage Dashboardとも分けます。Clinic構想は現在の計画から外しています。</p>
+        <p>公開デモを見るだけなら名前は不要です。自分のデータをつなぐ時だけ、本名でなくてよい表示名を使います。端末プロフィールはアカウントではなく、別端末との統合やブラウザ保存削除後の復旧はできません。血糖値、グラフ、接続情報、AIお手紙本文、Lucky / Unicorn Glucoを利用分析へ入れず、既存のAI Worker用Usage Dashboardとも分けます。Clinic構想は現在の計画から外しています。</p>
         <p><a href="../trust/roadmap.html">Roadmapを見る →</a></p>
       </div>
     </section>

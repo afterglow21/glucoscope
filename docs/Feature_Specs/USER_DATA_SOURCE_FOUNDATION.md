@@ -13,15 +13,17 @@ Gluroo support remains an interoperability proof of concept. GlucoScope does not
 
 ## User flow
 
+The following simplified flow is implemented in the local candidate. The repeated-callback guard is also implemented, but the usage Worker and frontend enrollment remain paused pending supervised re-acceptance, so this integrated flow is not yet live.
+
 1. Open `user.html` or `index.html?mode=user`.
 2. Choose exactly one numbered route.
 3. Tapping Method 1 opens the Gluroo preparation step and screenshot guide; tapping Method 2 opens the Nightscout connection form.
-4. Enter the Nightscout-compatible URL and an API Secret or read token when required.
-5. Run the connection test.
-6. Save the connection in browser local storage, or keep it only for the current browser session.
-7. After a successful test, GlucoScope reloads in user mode. Nightscout is read directly by the browser; Gluroo entries are read through Limited Data Relay using a short-lived session ticket.
+4. Enter a required display name. The display name does not need to be a real name. Directly below it, the form shows the short notice `表示名と基本的な利用回数を、GlucoScopeをよくするために記録します。血糖値や接続情報は記録しません。` with a `詳しく` link.
+5. Enter the Nightscout-compatible URL and an API Secret or read token when required, then run the connection test.
+6. After a successful test, pressing `GlucoScopeを始める` attempts to create the browser usage profile and saves the connection in browser local storage, or keeps it only for the current browser session. Failure of the usage-only Turnstile or Usage Worker must not block an otherwise verified CGM connection; in that case the connection starts with no usage profile and collection off. Gluroo relay consent, its separate Turnstile and signed ticket, destination validation, and browser-storage success remain fail-closed.
+7. GlucoScope reloads in user mode. Nightscout is read directly by the browser; Gluroo entries are read through Limited Data Relay using a short-lived session ticket.
 
-The existing root `index.html` without `mode=user` remains Kazuma's public demo.
+The existing root `index.html` without `mode=user` remains Kazuma's public demo. Viewing that demo never requires a display name or usage profile. The Gluroo relay notice and confirmation remain a separate boundary because they explain transient processing of connection details; they must not be merged into or replaced by the usage-profile notice.
 
 ## Privacy boundary
 
@@ -39,6 +41,7 @@ For User Foundation 0.4.0:
 - Chart.js is served from a reviewed local vendored file instead of a third-party runtime CDN on the page that handles connection details and glucose data.
 - The user can delete the saved connection from the setup screen. Deletion also clears the current relay ticket.
 - A shared device should use session-only storage or remove the connection after use.
+- The usage-profile service receives the display name and allowlisted usage counts only. The data-source URL, credential, glucose values, and relay ticket are never sent to that service.
 
 Browser local storage is not encrypted storage. Anyone who can use the same unlocked browser profile may be able to access locally stored information. JavaScript running on another page of the same GlucoScope origin can also share that browser-storage boundary. The setup screen must explain the shared-device boundary and the Gluroo relay boundary separately in plain language.
 
@@ -125,17 +128,23 @@ Connection errors, missing data, old data, and unsupported formats should be sho
 
 - The public demo still opens without setup.
 - User mode opens a required setup screen when no connection is stored.
+- A new personal-data connection requires a display name, clearly says that a real name is unnecessary, and creates the usage profile only when `GlucoScopeを始める` is pressed.
+- A usage-profile-only failure leaves usage unregistered and off but does not block a verified CGM connection; Gluroo relay security and browser-storage failures still block completion.
+- The fixed short usage notice and `詳しく` link appear before that start action; the separate Gluroo relay confirmation remains intact.
 - A connection cannot be saved until a live glucose entry is validated.
+- Changing the provider, connection fields, relay confirmation, or setup step cancels and invalidates the in-flight connection test; an older response cannot re-enable saving for newer fields.
+- Each Gluroo Turnstile challenge has its own generation and timeout. Relay preparation is single-flight, so a concurrent caller cannot overwrite a challenge or reuse its token. A render failure, cancellation, timeout, or stale callback is cleaned up without completing or blocking a later attempt.
 - HTTPS is required except for localhost development.
 - The secret is masked by default.
 - The user may choose persistent or session-only browser storage.
 - The saved connection can be deleted.
+- The regular UI keeps only compact stop, resume, and delete controls for usage recording; allowlisted export is a small secondary link.
 - Mobile and desktop display switches preserve `mode=user`.
 - AI Worker generation remains disabled in user mode.
 - No third-party runtime chart script is loaded on the user-data page.
 - Analytics remains disabled while either user connection storage key exists.
 - JavaScript syntax checks and adapter tests pass.
-- No Worker deployment is required for this phase.
+- The locally implemented repeated-callback guard and simplified lifecycle remain gated off until supervised re-acceptance passes.
 
 ## Beginner-first onboarding rule
 

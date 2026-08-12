@@ -25,7 +25,7 @@
   <!-- GlucoScope Limited Data Relay: the public endpoint is configured for paused acceptance testing only. -->
   <meta name="glucoscope-data-relay-endpoint" content="https://glucoscope-data-relay.afterglow21.workers.dev">
   <meta name="glucoscope-usage-profile-enabled" content="false">
-  <link rel="stylesheet" href="style.css?v=20260812-usage-profile-paused-1">
+  <link rel="stylesheet" href="style.css?v=20260812-simple-connection-2">
 </head>
 <body>
 
@@ -121,7 +121,7 @@
         <div id="dataSourceNightscoutHelp" class="data-source-help data-source-help-advanced" hidden>
           <strong data-i18n-key="dataSourceNightscoutHelpTitle">自分のNightscout環境をすでに使っている方</strong>
           <p data-i18n-key="dataSourceNightscoutHelpLead">ご自身のNightscout URLと読み取り用の情報を、下の欄へ貼り付けます。新しく環境を作るところから始める方法は上級者向けです。</p>
-          <a href="guides/nightscout-about/" data-i18n-key="dataSourceNightscoutAboutLink">Nightscoutとは？</a>
+          <a id="dataSourceNightscoutAboutLink" href="guides/nightscout-about/" data-i18n-key="dataSourceNightscoutAboutLink">Nightscoutとは？</a>
         </div>
 
         <div id="dataSourceRelayNotice" class="data-source-notice data-source-relay-notice">
@@ -150,7 +150,18 @@
           </p>
         </div>
 
-        <label class="data-source-field">
+        <label class="data-source-field" for="dataSourceDisplayName">
+          <span data-i18n-key="dataSourceDisplayNameLabel">表示名</span>
+          <input id="dataSourceDisplayName" name="displayName" type="text" autocomplete="nickname" required aria-describedby="dataSourceDisplayNameHelp">
+          <small id="dataSourceDisplayNameHelp" data-i18n-key="dataSourceDisplayNameHelp">本名でなくて大丈夫です。GlucoScopeで使う名前を決めてね（最大30文字）。</small>
+        </label>
+
+        <p class="data-source-usage-note">
+          <span id="dataSourceUsageNoteText" data-i18n-key="dataSourceUsageNotePaused">表示名はこの端末に保存します。利用記録は現在停止中です。</span>
+          <a id="dataSourceUsageDetailsLink" href="pages/trust/privacy-notes.html" data-i18n-key="dataSourceUsageDetails">記録と削除の詳しい説明</a>
+        </p>
+
+        <label class="data-source-field" for="dataSourceUrl">
           <span data-i18n-key="dataSourceUrlLabel">接続先URL</span>
           <input id="dataSourceUrl" type="url" inputmode="url" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="https://...">
           <small data-i18n-key="dataSourceUrlHelp">Glurooでは「Nightscout URL」と表示されています。</small>
@@ -181,13 +192,15 @@
 
         <div class="data-source-test-row">
           <button id="dataSourceTestButton" type="button" class="data-source-secondary-button" data-i18n-key="dataSourceTestButton">つながるか確認する</button>
-          <div id="dataSourceTestStatus" class="data-source-test-status" aria-live="polite" data-i18n-key="dataSourceTestWaiting">上の2つを貼り付けて、つながるか確認します。</div>
+          <div id="dataSourceTestStatus" class="data-source-test-status" aria-live="polite" data-i18n-key="dataSourceTestWaiting">表示名と接続情報を入力して、つながるか確認します。</div>
         </div>
+
+        <div id="usageProfileTurnstile" class="usage-profile-turnstile data-source-usage-turnstile" hidden aria-label="利用記録の安全確認"></div>
 
         <div class="data-source-actions">
           <button id="dataSourceSaveButton" type="submit" class="data-source-primary-button" disabled data-i18n-key="dataSourceSaveButton">GlucoScopeを始める</button>
           <button id="dataSourceDeleteButton" type="button" class="data-source-danger-button" data-i18n-key="dataSourceDeleteButton" hidden>この端末に保存した接続を削除</button>
-          <a class="data-source-demo-link" href="index.html" data-i18n-key="dataSourceDemoLink">まず公開デモを見る</a>
+          <a id="dataSourceDemoLink" class="data-source-demo-link" href="index.html" data-i18n-key="dataSourceDemoLink">まず公開デモを見る</a>
         </div>
       </form>
     </div>
@@ -208,62 +221,38 @@
       </div>
     </div>
 
-    <p id="localProfileDialogLead" class="local-profile-lead" data-i18n-key="localProfileDialogLead">GlucoScopeで使う表示名を、この端末のブラウザに保存できます。下の共有機能を始めない限り、管理者には送信されません。</p>
+    <p id="localProfileDialogLead" class="local-profile-lead" data-i18n-key="localProfileDialogLead">GlucoScopeで使う表示名を変更できます。</p>
 
     <form id="localProfileForm" class="local-profile-form" novalidate>
       <label class="local-profile-field" for="localProfileDisplayName">
-        <span data-i18n-key="localProfileDisplayNameLabel">表示名（任意）</span>
-        <input id="localProfileDisplayName" name="displayName" type="text" autocomplete="nickname" aria-describedby="localProfileDisplayNameHelp">
-        <small id="localProfileDisplayNameHelp" data-i18n-key="localProfileDisplayNameHelp">本名でなくて大丈夫です。ニックネームをあとから変更・削除できます（最大30文字）。</small>
+        <span data-i18n-key="localProfileDisplayNameLabel">表示名</span>
+        <input id="localProfileDisplayName" name="displayName" type="text" autocomplete="nickname" required aria-describedby="localProfileDisplayNameHelp">
+        <small id="localProfileDisplayNameHelp" data-i18n-key="localProfileDisplayNameHelp">本名でなくて大丈夫です。あとから変更できます（最大30文字）。</small>
       </label>
 
-      <section id="usageProfileCard" class="usage-profile-card" aria-labelledby="usageProfileCardTitle">
+      <section id="usageProfileCard" class="usage-profile-card" aria-labelledby="usageProfileCardTitle" hidden>
         <div class="usage-profile-card-head">
-          <strong id="usageProfileCardTitle" data-i18n-key="usageProfileCardTitle">利用状況の共有</strong>
-          <span id="usageProfileStateBadge" class="usage-profile-state-badge" data-i18n-key="usageProfileBadgePreparing">準備中</span>
-        </div>
-
-        <p id="usageProfilePreparing" class="usage-profile-preparing" data-i18n-key="usageProfilePreparing">この機能はただいま準備中です。いまは表示名だけがこの端末に保存され、利用状況は送信されません。</p>
-
-        <div id="usageProfileNotice" class="usage-profile-notice" hidden>
-          <p data-i18n-key="usageProfileNoticeLead">共有を始めると、GlucoScopeをよりよくするために、Kazumaが次の利用状況を確認できます。</p>
-          <ul>
-            <li data-i18n-key="usageProfileNoticeDisplayName">任意の表示名</li>
-            <li data-i18n-key="usageProfileNoticeVisitDays">過去90日間にGlucoScopeを利用した日数</li>
-            <li data-i18n-key="usageProfileNoticeAiCount">新しく成功したAI分析の回数</li>
-            <li data-i18n-key="usageProfileNoticeMemoryCount">通常のグルコの想い出（No.1〜50）の数</li>
-          </ul>
-          <p class="usage-profile-boundary" data-i18n-key="usageProfileNoticeBoundary">血糖値、グラフ、接続情報、AIお手紙の内容は送りません。共有しなくても、血糖表示などの基本機能はそのまま使えます。</p>
-          <p class="usage-profile-operational-note" data-i18n-key="usageProfileOperationalNote">この端末を区別するランダムな番号と、共有の状態・開始日時・最終利用日時も保存します。</p>
-          <p class="usage-profile-retention-note">
-            <span data-i18n-key="usageProfileRetentionNote">記録はCloudflareで処理し、通常の保存場所では90日を上限にします。いつでも停止・書き出し・削除できます。</span>
-            <a href="pages/trust/privacy-notes.html" data-i18n-key="usageProfilePrivacyLink">保存と削除の詳しい説明</a>
-          </p>
-          <p class="usage-profile-device-note" data-i18n-key="usageProfileDeviceNote">これはアカウントではなく、このブラウザだけの端末プロフィールです。別の端末とはまとまらず、ブラウザのデータを消すと引き継げません。</p>
-          <div class="usage-profile-actions">
-            <button id="usageProfileStartButton" class="usage-profile-primary-button" type="button" data-i18n-key="usageProfileStartButton">この端末の利用状況を共有する</button>
-            <button id="usageProfileSkipButton" class="usage-profile-secondary-button" type="button" data-i18n-key="usageProfileSkipButton">今はしない</button>
-          </div>
-          <div id="usageProfileTurnstile" class="usage-profile-turnstile" hidden aria-label="利用状況共有の安全確認"></div>
+          <strong id="usageProfileCardTitle" data-i18n-key="usageProfileCardTitle">利用記録の管理</strong>
+          <span id="usageProfileStateBadge" class="usage-profile-state-badge"></span>
         </div>
 
         <div id="usageProfileActive" class="usage-profile-state-panel" hidden>
-          <p data-i18n-key="usageProfileActive">この端末の利用状況を共有しています。いつでも停止、書き出し、削除できます。</p>
+          <p data-i18n-key="usageProfileActive">基本的な利用回数を記録しています。いつでも停止・削除できます。</p>
           <div class="usage-profile-actions">
-            <button id="usageProfileStopButton" class="usage-profile-secondary-button" type="button" data-i18n-key="usageProfileStopButton">共有を停止する</button>
-            <button id="usageProfileExportActiveButton" class="usage-profile-secondary-button" type="button" data-i18n-key="usageProfileExportButton">自分の記録を書き出す</button>
-            <button id="usageProfileDeleteActiveButton" class="usage-profile-delete-button" type="button" data-i18n-key="usageProfileDeleteButton">共有した記録を削除する</button>
+            <button id="usageProfileStopButton" class="usage-profile-secondary-button" type="button" data-i18n-key="usageProfileStopButton">利用記録を停止する</button>
+            <button id="usageProfileDeleteActiveButton" class="usage-profile-delete-button" type="button" data-i18n-key="usageProfileDeleteButton">利用記録を削除する</button>
           </div>
+          <button id="usageProfileExportActiveButton" class="usage-profile-export-link" type="button" data-i18n-key="usageProfileExportButton">保存されている利用記録を確認・保存</button>
         </div>
 
         <div id="usageProfileStopped" class="usage-profile-state-panel" hidden>
-          <p id="usageProfileStoppedMessage" data-i18n-key="usageProfileStopped">共有を停止しています。新しい利用回数は送りません。これまでの記録は、再開、書き出し、削除ができます。</p>
+          <p id="usageProfileStoppedMessage" data-i18n-key="usageProfileStopped">利用記録を停止しています。再開・削除はいつでもできます。</p>
           <div class="usage-profile-actions">
-            <button id="usageProfileResumeButton" class="usage-profile-primary-button" type="button" data-i18n-key="usageProfileResumeButton">共有を再開する</button>
-            <button id="usageProfileStopDisabledButton" class="usage-profile-secondary-button" type="button" data-i18n-key="usageProfileStopDisabledButton" hidden>今後の共有も停止する</button>
-            <button id="usageProfileExportStoppedButton" class="usage-profile-secondary-button" type="button" data-i18n-key="usageProfileExportButton">自分の記録を書き出す</button>
-            <button id="usageProfileDeleteStoppedButton" class="usage-profile-delete-button" type="button" data-i18n-key="usageProfileDeleteButton">共有した記録を削除する</button>
+            <button id="usageProfileResumeButton" class="usage-profile-primary-button" type="button" data-i18n-key="usageProfileResumeButton">利用記録を再開する</button>
+            <button id="usageProfileStopDisabledButton" class="usage-profile-secondary-button" type="button" data-i18n-key="usageProfileStopDisabledButton" hidden>今後の記録も停止する</button>
+            <button id="usageProfileDeleteStoppedButton" class="usage-profile-delete-button" type="button" data-i18n-key="usageProfileDeleteButton">利用記録を削除する</button>
           </div>
+          <button id="usageProfileExportStoppedButton" class="usage-profile-export-link" type="button" data-i18n-key="usageProfileExportButton">保存されている利用記録を確認・保存</button>
         </div>
 
         <div id="usageProfileStatus" class="usage-profile-status" role="status" aria-live="polite"></div>
@@ -273,7 +262,6 @@
 
       <div class="local-profile-actions">
         <button id="localProfileSaveButton" class="local-profile-save-button" type="submit" data-i18n-key="localProfileSaveButton">保存する</button>
-        <button id="localProfileDeleteButton" class="local-profile-delete-button" type="button" data-i18n-key="localProfileDeleteButton" hidden>この端末から表示名を削除</button>
       </div>
     </form>
   </div>
@@ -319,7 +307,7 @@
 
   <div class="view-toolbar-actions">
     <button id="dataSourceButton" type="button" class="data-source-toolbar-button">🔗 <span data-i18n-key="dataSourceButtonDemo">データ接続（工事中）</span></button>
-    <button id="localProfileButton" type="button" class="local-profile-toolbar-button">🍀 <span data-i18n-key="localProfileButton">あなたの設定</span></button>
+    <button id="localProfileButton" type="button" class="local-profile-toolbar-button" hidden>🍀 <span data-i18n-key="localProfileButton">あなたの設定</span></button>
     <div class="language-switch" aria-label="Language switch">
       <span data-i18n-key="languageLabel">Language</span>
       <button type="button" class="language-button active" data-language="ja">日本語</button>
@@ -567,7 +555,7 @@
       <span aria-hidden="true">🔗</span>
       <span><strong data-i18n-key="mobileMoreDataSource">データ接続（工事中）</strong><small data-i18n-key="mobileMoreDataSourceNote">準備中 · Gluroo / Nightscout</small></span>
     </button>
-    <button id="mobileLocalProfileButton" type="button" class="mobile-local-profile-button">
+    <button id="mobileLocalProfileButton" type="button" class="mobile-local-profile-button" hidden>
       <span aria-hidden="true">🍀</span>
       <span><strong data-i18n-key="localProfileButton">あなたの設定</strong><small data-i18n-key="localProfileButtonNote">表示名をこの端末に保存</small></span>
     </button>
@@ -828,14 +816,14 @@
 
 <script src="vendor/chart.js/chart.umd.min.js?v=4.5.1"></script>
 <script src="js/api.js"></script>
-<script src="js/data-source.js?v=20260721-user-foundation-3-2"></script>
-<script src="js/data-relay-client.js?v=20260806-turnstile-server-code-1"></script>
+<script src="js/data-source.js?v=20260812-connection-lifecycle-1"></script>
+<script src="js/data-relay-client.js?v=20260812-connection-lifecycle-1"></script>
 <script src="js/local-profile.js?v=20260811-usage-profile-stage-1"></script>
-<script src="js/usage-client.js?v=20260812-usage-profile-paused-1"></script>
+<script src="js/usage-client.js?v=20260812-simple-connection-2"></script>
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js?v=20260721-user-foundation-3"></script>
-<script src="js/app.js?v=20260812-usage-profile-paused-1"></script>
+<script src="js/app.js?v=20260812-simple-connection-2"></script>
 <!-- Cloudflare Web Analytics: aggregate page-view and performance metrics only -->
 <script src="js/analytics-loader.js?v=20260811-usage-profile-stage-1"></script>
 <!-- End Cloudflare Web Analytics -->
