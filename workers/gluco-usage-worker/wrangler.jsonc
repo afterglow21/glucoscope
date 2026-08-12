@@ -34,7 +34,7 @@
   },
   "vars": {
     "USAGE_COLLECTION_ENABLED": "false",
-    "USAGE_NOTICE_VERSION": "2026-08-11",
+    "USAGE_NOTICE_VERSION": "2026-08-12-simple-connection-1",
     "USAGE_TIMEZONE_OFFSET_HOURS": "9",
     "CORS_ALLOWED_ORIGIN": "https://afterglow21.github.io",
     "CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN": "false",

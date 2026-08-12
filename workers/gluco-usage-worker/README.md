@@ -1,14 +1,14 @@
-# GlucoScope Usage Worker – supervised opt-in acceptance
+# GlucoScope Usage Worker – stopped after supervised device check
 
 This directory contains a dedicated, dependency-light Cloudflare Worker and D1 schema for minimal device-profile usage counts.
 
-The stopped production foundation was created and verified on 2026-08-11. On 2026-08-12 JST, the dedicated Worker entered a supervised opt-in acceptance: production traffic is on Version `858cf438-b3d2-4a8c-801c-344503e0c58e` with the runtime collection switch enabled, while the checked-in `wrangler.jsonc` remains fail-safe at `USAGE_COLLECTION_ENABLED=false`. The frontend in this release exposes the start control, but opening the page alone creates no profile or usage record. The separate general-user relay remains `RELAY_ENABLED=false`.
+The stopped production foundation was created and verified on 2026-08-11. On 2026-08-12 JST, corrected Version `858cf438-b3d2-4a8c-801c-344503e0c58e` was used for a supervised device check. Profile creation succeeded, but a repeated callback after Turnstile reset produced a false error display after that success. The 2 known test profiles were later deleted, and the cascading deletion left `profiles`, `usage_daily`, and `event_receipts` at `0 / 0 / 0`. New stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` now receives 100% of traffic through deployment `25be2258-b72a-4e2c-8bf1-ab47781c48dc`. Runtime and checked-in configuration remain fail-safe at `USAGE_COLLECTION_ENABLED=false`; frontend enrollment remains stopped, and the separate general-user relay remains `RELAY_ENABLED=false`.
 
 ## Stopped production checkpoint (2026-08-11)
 
 - D1 database `glucoscope-usage` was created in APAC and migration `0001_initial_usage_schema.sql` was applied.
 - `profiles`, `usage_daily`, and `event_receipts` each contained 0 rows, and the `admin_device_usage` view returned 0 rows after setup.
-- The Worker was deployed at `https://glucoscope-usage.afterglow21.workers.dev` with current Version ID `3c2c3d19-3744-4d01-8e62-76a0f1bdd5bf`.
+- The Worker was deployed at `https://glucoscope-usage.afterglow21.workers.dev` with Version ID `3c2c3d19-3744-4d01-8e62-76a0f1bdd5bf` at that checkpoint.
 - The required Secret binding name `TURNSTILE_SECRET_KEY` is registered. Its value is not recorded in this repository or this runbook.
 - Allowed-origin preflight returned `204`; profile creation and event submission returned paused `503` responses; wrong-origin and originless requests returned `403`.
 - `workers_dev=true`, `preview_urls=false`, `observability.enabled=false`, and `observability.logs.invocation_logs=false` were verified in the deployed configuration.
@@ -17,11 +17,21 @@ This checkpoint verifies a reachable but stopped production shell. It does not a
 
 ## Supervised opt-in checkpoint (2026-08-12 JST)
 
-- The active Worker Version is `858cf438-b3d2-4a8c-801c-344503e0c58e` at 100% traffic. The reviewed rollback remains stopped Version `3c2c3d19-3744-4d01-8e62-76a0f1bdd5bf`.
+- Corrected Version `858cf438-b3d2-4a8c-801c-344503e0c58e` received 100% traffic for the supervised check. Traffic then returned to stopped Version `3c2c3d19-3744-4d01-8e62-76a0f1bdd5bf` before the later clean stopped deployment below.
 - The first enabled smoke check exposed a Siteverify request-format incompatibility before any profile was created. Traffic was returned to the stopped Version, the request was aligned with the proven relay pattern (`URLSearchParams` plus `application/x-www-form-urlencoded`), and the corrected Version was deployed only after 17 Worker tests passed.
 - Allowed-origin preflight returns `204`; wrong-origin and originless requests return `403 origin_not_allowed`; a correctly formed request with a dummy invalid Turnstile token returns `403 turnstile_failed`.
 - All checked responses use `Cache-Control: no-store` and `Vary: Origin`. Immediately after the checks, the three D1 tables and the administrator view still returned 0 rows.
-- The public frontend remains opt-in: no browser profile, identifier, visit, AI count, or memory count is created until the person presses the sharing button and completes Turnstile. The first real-device start, stop, export, and delete acceptance is still pending.
+- On a real device, the initial profile creation and daily record succeeded. Turnstile reset then caused a repeated callback and a false error display even though the first write had completed.
+- At this checkpoint, D1 contained 2 test profiles and 2 daily records from supervised checking. No display name, profile ID, token, or record contents are recorded here.
+- The local frontend now integrates a required, non-real-name display name and profile creation into `GlucoScopeを始める`; public-demo viewing remains name-free. It removes the large standalone sharing panel, keeps stop/resume/delete in a compact management path, and makes export a small secondary link. Worker collection and frontend enrollment remain stopped pending supervised re-acceptance.
+
+## Clean stopped production checkpoint (2026-08-12 JST)
+
+- The 2 known test profiles were deleted. Cascading deletion removed their related rows, after which `profiles`, `usage_daily`, and `event_receipts` returned `0 / 0 / 0`.
+- New stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` receives 100% of production traffic through deployment `25be2258-b72a-4e2c-8bf1-ab47781c48dc`.
+- Runtime `USAGE_COLLECTION_ENABLED=false` was verified. Allowed-origin preflight returned `204`; allowed-origin profile `POST` returned `503 usage_collection_paused`; wrong-origin and originless requests returned `403`.
+- D1 was rechecked after deployment and remained `0 / 0 / 0` for `profiles`, `usage_daily`, and `event_receipts`.
+- The general-user relay remains independently stopped at `RELAY_ENABLED=false`.
 
 ## Boundary
 
@@ -31,7 +41,7 @@ The Worker may store only:
 
 - a server-generated opaque profile UUID;
 - the SHA-256 hash of a server-generated 256-bit bearer token;
-- an optional normalized display name of at most 30 Unicode code points;
+- a normalized display name of at most 30 Unicode code points, required when a profile is created;
 - whether collection is enabled for that profile;
 - notice version and profile lifecycle timestamps;
 - one daily visit marker;
@@ -62,7 +72,7 @@ Originless and other-origin requests are rejected. JSON bodies are limited to 8 
 }
 ```
 
-`displayName` is optional. The successful response returns the bearer token exactly once:
+`displayName` is required and must remain non-empty after normalization. The successful response returns the bearer token exactly once:
 
 ```json
 {
@@ -89,7 +99,7 @@ The raw `profileToken` is never stored in D1. Later device requests send it as `
 }
 ```
 
-Either field may be omitted, but at least one is required. Stopping collection prevents new events without deleting the profile. Display-name changes, stopping collection, export, and deletion remain available while the global collection kill switch is off. Re-enabling collection with `collectionEnabled: true` is rejected until the global switch is on again.
+Either field may be omitted, but at least one is required. On PATCH, omitting `displayName` leaves it unchanged, while an empty value clears the saved display name. Stopping collection prevents new events without deleting the profile. Display-name changes, stopping collection, export, and deletion remain available while the global collection kill switch is off. Re-enabling collection with `collectionEnabled: true` is rejected until the global switch is on again.
 
 ### Record minimal events
 
@@ -168,12 +178,10 @@ npm run deploy:dry
 
 There is intentionally no real `deploy` npm script.
 
-## Supervised acceptance next step
+## Next supervised acceptance step
 
-1. On one user-controlled device, open “Your settings,” start sharing, and complete Turnstile.
-2. Confirm only aggregate row counts and allowlisted administrator-view columns; do not print a display name, profile ID, token, or production record.
-3. Verify stop, resume, allowlisted export, and deletion, then confirm the live D1 rows are removed.
-4. Decide separately whether to return the frontend and Worker to stopped mode or continue a small open beta.
-5. Keep the general-user relay decision independent; do not change `RELAY_ENABLED=false` as part of usage-profile rollout.
+1. Keep the locally implemented repeated-callback guard and simplified data-connection-integrated flow stopped while preparing supervised re-acceptance. Keep Gluroo relay confirmation as a separate boundary.
+2. Use the clean stopped Version and `0 / 0 / 0` D1 state as the baseline for supervised re-acceptance. Recheck profile creation without a false callback error, then stop, resume, deletion, and the secondary allowlisted-export link on one user-controlled device.
+3. Only after those checks, decide separately whether to resume a small rollout. Keep the general-user relay independent at `RELAY_ENABLED=false`.
 
 Secret values, profile tokens, display names, and production database content must never be copied into Git, command arguments, screenshots, logs, fixtures, or support messages.

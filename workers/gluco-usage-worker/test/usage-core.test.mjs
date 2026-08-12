@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   handleUsageRequest,
   normalizeDisplayName,
+  readUsageConfig,
   runUsageCleanup,
   UsageApiError,
 } from "../src/usage-core.js";
@@ -20,7 +21,7 @@ const TURNSTILE_SECRET = "test-only-turnstile-secret";
 
 const ENABLED_ENV = Object.freeze({
   USAGE_COLLECTION_ENABLED: "true",
-  USAGE_NOTICE_VERSION: "2026-08-11",
+  USAGE_NOTICE_VERSION: "2026-08-12-simple-connection-1",
   USAGE_TIMEZONE_OFFSET_HOURS: "9",
   CORS_ALLOWED_ORIGIN: ORIGIN,
   MAX_REQUEST_BYTES: "8192",
@@ -247,6 +248,8 @@ test("checked-in config is paused and declares D1, cron, privacy settings, and r
   assert.equal(config.observability.enabled, false);
   assert.equal(config.observability.logs.invocation_logs, false);
   assert.equal(config.vars.USAGE_COLLECTION_ENABLED, "false");
+  assert.equal(config.vars.USAGE_NOTICE_VERSION, "2026-08-12-simple-connection-1");
+  assert.equal(readUsageConfig({}).noticeVersion, config.vars.USAGE_NOTICE_VERSION);
   assert.equal(config.vars.CORS_ALLOWED_ORIGIN, ORIGIN);
   assert.equal(config.vars.CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN, "false");
   assert.deepEqual(config.secrets.required, ["TURNSTILE_SECRET_KEY"]);
@@ -435,7 +438,7 @@ test("CORS requires the exact GitHub Pages origin and limits preflight", async (
   assert.equal(disallowedHeader.status, 403);
 });
 
-test("profile creation normalizes the optional name and stores only the token hash", async () => {
+test("profile creation normalizes the required name and stores only the token hash", async () => {
   const context = createContext();
   const longName = `  グルコ\u0000   ${"🍀".repeat(40)}  `;
   const result = await createProfile(context, longName);
@@ -450,16 +453,38 @@ test("profile creation normalizes the optional name and stores only the token ha
   assert.equal(context.getTurnstileCalls(), 1);
   const stored = context.store.profiles.get(PROFILE_ID);
   assert.equal(stored.tokenHash, PROFILE_TOKEN_HASH);
+  assert.equal(stored.noticeVersion, ENABLED_ENV.USAGE_NOTICE_VERSION);
   assert.equal(JSON.stringify(stored).includes(PROFILE_TOKEN), false);
+});
+
+test("profile creation rejects names that normalize to empty before Turnstile or D1", async () => {
+  const emptyNames = [undefined, "", "   ", "\u0000\u200e\u2066\t"];
+
+  for (const displayName of emptyNames) {
+    const context = createContext();
+    const body = { turnstileToken: "not-used" };
+    if (displayName !== undefined) body.displayName = displayName;
+    const response = await handleUsageRequest(request("/v1/profiles", {
+      method: "POST",
+      body,
+    }), ENABLED_ENV, context.services);
+
+    assert.equal(response.status, 400);
+    assert.equal((await json(response)).error, "invalid_request");
+    assert.equal(context.getTurnstileCalls(), 0);
+    assert.equal(context.store.createCalls, 0);
+  }
 });
 
 test("profile creation rejects unknown fields and oversized bodies", async () => {
   const context = createContext();
   const unknown = await handleUsageRequest(request("/v1/profiles", {
     method: "POST",
-    body: { turnstileToken: "token", glucose: 123 },
+    body: { displayName: "Gluco", turnstileToken: "token", glucose: 123 },
   }), ENABLED_ENV, context.services);
   assert.equal(unknown.status, 400);
+  assert.equal((await json(unknown)).error, "invalid_request");
+  assert.equal(context.getTurnstileCalls(), 0);
   assert.equal(context.store.createCalls, 0);
 
   const oversized = await handleUsageRequest(request("/v1/profiles", {
@@ -476,7 +501,7 @@ test("profile creation fails closed when Turnstile verification fails", async ()
   });
   const response = await handleUsageRequest(request("/v1/profiles", {
     method: "POST",
-    body: { turnstileToken: "rejected-token" },
+    body: { displayName: "Gluco", turnstileToken: "rejected-token" },
   }), ENABLED_ENV, context.services);
   assert.equal(response.status, 403);
   assert.equal((await json(response)).error, "turnstile_failed");
@@ -520,6 +545,24 @@ test("authentication, PATCH allowlist, and collection stop gate work", async () 
   }), ENABLED_ENV, context.services);
   assert.equal(eventWhileStopped.status, 403);
   assert.equal((await json(eventWhileStopped)).error, "usage_collection_stopped");
+});
+
+test("PATCH keeps allowing an existing profile name to be cleared", async () => {
+  const context = createContext();
+  await createProfile(context);
+
+  const response = await handleUsageRequest(request("/v1/me", {
+    method: "PATCH",
+    token: PROFILE_TOKEN,
+    body: { displayName: "  \u200e\u2066  " },
+  }), ENABLED_ENV, context.services);
+
+  assert.equal(response.status, 200);
+  assert.deepEqual((await json(response)).profile, {
+    id: PROFILE_ID,
+    displayName: "",
+    collectionEnabled: true,
+  });
 });
 
 test("global pause blocks resume but never traps stop, export, or deletion behind the event cap", async () => {

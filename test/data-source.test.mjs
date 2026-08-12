@@ -309,3 +309,28 @@ test("external request cancellation is kept separate from a timeout", async () =
     (error) => error.code === "request_aborted"
   );
 });
+
+test("the connection-test adapter forwards external cancellation", async () => {
+  const controller = new AbortController();
+  const context = loadModule({
+    fetchImpl: async (_url, options) => new Promise((_resolve, reject) => {
+      options.signal.addEventListener("abort", () => {
+        const error = new Error("aborted");
+        error.name = "AbortError";
+        reject(error);
+      }, { once: true });
+    })
+  });
+  const adapter = context.GlucoScopeDataSource.createAdapter({
+    provider: "nightscout",
+    baseUrl: "https://example.test",
+    persist: false
+  });
+
+  const pending = adapter.testConnection({
+    signal: controller.signal,
+    timeoutMs: 1000
+  });
+  controller.abort();
+  await assert.rejects(pending, (error) => error.code === "request_aborted");
+});

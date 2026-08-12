@@ -143,6 +143,27 @@ test("start is explicit and sends only the profile allowlist", async () => {
   assert.equal(api.getState().profileToken, undefined);
 });
 
+test("start rejects an empty normalized display name before storage writes or network", async () => {
+  const emptyNames = [undefined, "", "   ", "\u0000\u200e\u2066\t"];
+
+  for (const displayName of emptyNames) {
+    const storage = createStorage();
+    const { api, calls } = loadModule({ storage });
+    configure(api);
+
+    const result = await api.start({
+      displayName,
+      turnstileToken: "turnstile-token"
+    });
+
+    assert.equal(result.ok, false);
+    assert.equal(result.error, "display_name_required");
+    assert.equal(storage.calls.set, 0);
+    assert.equal(storage.calls.remove, 0);
+    assert.equal(calls.length, 0);
+  }
+});
+
 test("start verifies writable storage before creating a server profile", async () => {
   let requests = 0;
   const storage = {
@@ -159,7 +180,10 @@ test("start verifies writable storage before creating a server profile", async (
   });
   configure(api);
 
-  const result = await api.start({ turnstileToken: "turnstile-token" });
+  const result = await api.start({
+    displayName: "Gluco",
+    turnstileToken: "turnstile-token"
+  });
   assert.equal(result.ok, false);
   assert.equal(result.error, "storage_write_failed");
   assert.equal(requests, 0);
@@ -192,7 +216,10 @@ test("a post-create persistence failure deletes the unreachable server profile",
   });
   configure(api);
 
-  const result = await api.start({ turnstileToken: "turnstile-token" });
+  const result = await api.start({
+    displayName: "Gluco",
+    turnstileToken: "turnstile-token"
+  });
   assert.equal(result.ok, false);
   assert.equal(result.error, "storage_write_failed");
   assert.equal(result.serverCleanupPending, false);

@@ -1,6 +1,6 @@
 # GlucoScope 利用者設定・利用分析基盤
 
-Status: Phase 1A local preview implemented / Phase 1B supervised opt-in acceptance active / first-device lifecycle acceptance pending
+Status: Phase 1A local preview implemented / Phase 1B simplified connection-integrated flow implemented locally / Worker and frontend stopped pending supervised re-acceptance
 
 Last reviewed: 2026-08-12
 
@@ -21,9 +21,9 @@ GlucoScopeを何人が、どの機能をどのくらい使っているかを、�
 
 この文書は1番だけを扱う。管理者ダッシュボード、決済、常時表示を先に実装しない。
 
-## 3. Phase 1A: 今回実装する端末内プレビュー
+## 3. Phase 1A: 完了済みの端末内プレビュー（履歴）
 
-「あなたの設定」では、任意の表示名だけをブラウザのlocalStorageへ保存できる。
+Phase 1Aでは、「あなたの設定」から任意の表示名だけをブラウザのlocalStorageへ保存できる画面を実装した。この画面はPhase 1Aの受け入れ確認に使った履歴であり、現在のPhase 1Bでは、自分の血糖データを新しくつなぐフォームへ表示名入力を統合し、空欄を許可しない。公開デモを見るだけの場合は表示名を求めない。
 
 保存キーは `glucoscope.localProfile.v1` とする。保存JSONは次の2項目だけを許可する。
 
@@ -34,9 +34,9 @@ GlucoScopeを何人が、どの機能をどのくらい使っているかを、�
 }
 ```
 
-表示名は空欄を許可し、前後と連続空白、制御文字、双方向制御文字を整理して最大30 Unicodeコードポイントとする。
+Phase 1Aの画面では表示名の空欄を許可し、前後と連続空白、制御文字、双方向制御文字を整理して最大30 Unicodeコードポイントとしていた。
 
-Phase 1Aでは利用者IDを生成しない。既存の `glucoscope.visitorSeed.v1` はグルコ表示の抽選用であり、利用者IDへ流用、送信、管理者表示しない。
+Phase 1Aでは利用者IDを生成しなかった。既存の `glucoscope.visitorSeed.v1` は現在もグルコ表示の抽選用であり、利用者IDへ流用、送信、管理者表示しない。
 
 ## 4. 利用分析は分かりやすく案内し、いつでも止められる
 
@@ -118,7 +118,9 @@ Cloudflare公式仕様を2026-08-11に再確認した。D1 Time Travelは常時�
 
 Plus 30日パスの利用権は、購入した機能を提供するための別領域として扱う。決済情報や金額を利用分析へ混ぜない。
 
-## 10. Phase 1Aの受け入れ条件
+## 10. Phase 1Aで確認済みの受け入れ条件（履歴）
+
+次は端末内プレビューを完了した時点の確認項目である。現在のPhase 1Bの新規データ接続では表示名を必須とし、表示名だけを削除する独立操作は設けない。現行の条件は12節を正とする。
 
 - 初回は表示名が空
 - 空欄のまま保存すると表示名の保存キーを残さず、再度開いても空欄へ戻る
@@ -148,16 +150,19 @@ Phase 1Bの端末プロフィール、D1、API、開始・停止、書き出し�
 
 早いユーザー公開と将来の利用者別集計を両立するため、最初からアカウント作成やログインを求めず、ブラウザごとの「端末プロフィール」を使う。これは人を一意に表すアカウントではない。同じ人が2台の端末で使うと2件として見え、ブラウザの保存データを消した場合は別端末へ復旧・統合できない。Plus利用権、決済、本人確認には流用しない。
 
-端末プロフィールを始める前に、法律文書のようなチェックボックスは置かず、短い案内と次の2つの選択肢を示す。
+公開デモを見るだけの人には、表示名や端末プロフィールを求めない。自分の血糖データを新しくつなぐフォームでは表示名を必須にするが、本名は不要とする。接続確認後の `GlucoScopeを始める` 操作に端末プロフィール作成を統合し、利用状況共有だけの大きな独立パネルは設けない。
 
-- `この端末の利用状況を共有する`
-- `今はしない`
+開始前には、次の短い案内とPrivacy Notesへの `詳しく` リンクを示す。
 
-案内では、Kazumaが見られる項目、運用上保存するランダムなprofile ID・共有状態・作成/最終利用日時、入れない情報、Cloudflareでの処理、90日保存、停止・書き出し・削除、基本機能への影響がないこと、端末ごとのプロフィールであることを明記する。表示名を端末へ保存しただけでは共有を開始しない。共有を始める操作の直前だけTurnstileを表示し、actionは `glucoscope-usage-profile` とする。
+> 表示名と基本的な利用回数を、GlucoScopeをよくするために記録します。血糖値や接続情報は記録しません。
+
+法律文書のようなチェックボックスは追加しない。Gluroo限定中継の確認は、接続先情報をCloudflareで一時処理する別の境界として維持し、この利用プロフィール案内へ混ぜない。端末プロフィール作成の直前だけTurnstileを表示し、actionは `glucoscope-usage-profile` とする。
+
+利用プロフィール用TurnstileまたはUsage Workerだけが失敗した場合は、検証済みのCGM接続を止めない。必須表示名と接続情報をブラウザへ保存してユーザーモードを開始し、利用プロフィールは未登録・利用記録OFFのままとする。Gluroo限定中継そのものの同意、Turnstile、署名付きticket、接続先検証はこのfail-open境界へ含めず、従来どおりfail-closedを維持する。ブラウザへの表示名または接続情報の保存に失敗した場合も、接続成功扱いにしない。
 
 Phase 1Bで扱ってよいのは次だけとする。
 
-- 任意の表示名
+- 表示名（新しい個人データ接続では必須、本名は不要）
 - 1日につき最大1回の利用日
 - 新しく正常に完了したAI分析の回数
 - 通常のグルコの想い出 No.1〜50 の現在数
@@ -168,7 +173,7 @@ AI分析は、OpenAIから新しく正常に生成され、`generation.complete=
 
 端末内の識別情報は `glucoscope.usageProfile.v1` へ分離する。既存の `glucoscope.localProfile.v1` と `local-profile.js` はネットワークを使わないPhase 1A境界を維持する。サーバーが作る不透明なprofile IDとbearer tokenはURL、query、hash、ログへ入れず、サーバーではtokenのhashだけを保存する。`glucoscope.usageProfile.v1` が存在するページでは公開Cloudflare Web Analyticsを読み込まず、任意表示名だけの `glucoscope.localProfile.v1` は停止条件にしない。
 
-本人向け操作として、共有の停止・再開、allowlist JSON書き出し、サーバー上の端末プロフィールと利用記録の削除を用意する。停止または削除を押した時は、通信結果を待たず端末側を先に停止し、pending AI eventも消して新しい利用イベントを送らない。サーバー削除が成功するまでは端末tokenを残し、成功後だけ利用プロフィール用キーを削除する。端末内の表示名、データ接続、血糖データ、AIキャッシュ、グルコの想い出は連動して削除しない。
+通常UIには、利用記録の停止・再開と、サーバー上の端末プロフィール・利用記録の削除だけを小さな管理導線として置く。allowlist JSON書き出しは同じ場所の小さな補助リンクとする。停止または削除を押した時は、通信結果を待たず端末側を先に停止し、pending AI eventも消して新しい利用イベントを送らない。サーバー削除が成功するまでは端末tokenを残し、成功後だけ利用プロフィール用キーを削除する。端末内の表示名、データ接続、血糖データ、AIキャッシュ、グルコの想い出は連動して削除しない。
 
 日別集計は90日ローリングとし、90日利用のない端末プロフィールも削除候補とする。稼働DBから削除した後もCloudflare D1のTime Travel復旧履歴に、Freeプランでは最長7日、Paidプランでは最長30日残る場合があることをPrivacy Notesへ日英で明記する。
 
@@ -177,8 +182,12 @@ AI分析は、OpenAIから新しく正常に生成され、`generation.complete=
 ### Phase 1Bの受け入れ条件
 
 - disabled状態では初期化、表示名保存、再読込、利用日・想い出同期で通信が0件
-- 共有開始前の表示名は従来どおり端末内だけに残る
-- 開始時だけTurnstileを使い、チェックボックスや同意という語を追加しない
+- 公開デモは表示名なしで開ける
+- 新しい個人データ接続では本名でなくてよい表示名を必須にし、`GlucoScopeを始める` 操作でprofileを作る
+- 開始前には固定した短い案内と `詳しく` リンクを示し、開始時だけTurnstileを使う
+- 利用プロフィール用TurnstileまたはUsage Workerの失敗だけでは検証済みCGM接続を止めず、利用プロフィールを未登録・利用記録OFFのまま開始する
+- Gluroo限定中継の確認は別境界として維持する
+- 通常UIは停止・再開・削除の小さな管理導線とし、書き出しは補助リンクにする
 - 同じ端末の再読込で新しいprofileを作らず、利用日は同日1回だけ
 - AIのキャッシュ、fallback、失敗、ボタン押下だけでは加算しない
 - 想い出はNo.1〜50の件数だけで、No.51〜70とUnicornを送らない
@@ -197,17 +206,25 @@ AI分析は、OpenAIから新しく正常に生成され、`generation.complete=
 - 確認時点で上記3テーブルとviewはすべて0件
 - `TURNSTILE_SECRET_KEY` というSecret名をWorkerへ登録（値は記録・表示・Git追加していない）
 - `https://glucoscope-usage.afterglow21.workers.dev` へ停止状態で正式設定をデプロイ
-- 確認時のCurrent Version IDは `3c2c3d19-3744-4d01-8e62-76a0f1bdd5bf`
+- その確認時点のVersion IDは `3c2c3d19-3744-4d01-8e62-76a0f1bdd5bf`
 - 許可Originのpreflightは`204`、profile作成とevents送信は停止中の`503`、不許可OriginとOriginなしは`403`
 - `workers_dev=true`、`preview_urls=false`、`observability.enabled=false`、`observability.logs.invocation_logs=false`
 - Worker側 `USAGE_COLLECTION_ENABLED=false`、フロント側 `USAGE_PROFILE_ENABLED=false`、一般利用者向け限定中継 `RELAY_ENABLED=false` を維持
 
 これは停止した本番の器と境界の確認であり、利用状況の収集開始、フロント接続、Friends & Family展開の承認ではない。収集有効化は、公開案内、Cloudflareの復旧履歴、開始・停止・書き出し・削除、90日保存の最終確認後に、別の明示承認を必要とする。
 
-## 14. Phase 1B 監督下opt-in受け入れ開始（2026-08-12 JST）
+## 14. Phase 1B 監督下実機確認と停止（2026-08-12 JST）
 
-別の明示承認後、Usage Workerは修正版Version `858cf438-b3d2-4a8c-801c-344503e0c58e`へ通信の100%を向け、runtimeの `USAGE_COLLECTION_ENABLED=true` で監督下の一時受け入れを開始した。Gitに保存する `wrangler.jsonc` は `false` のままとし、停止Version `3c2c3d19-3744-4d01-8e62-76a0f1bdd5bf` をrollback先として維持する。一般利用者向け限定中継の `RELAY_ENABLED=false` は変更していない。
+別の明示承認後、Usage Workerは修正版Version `858cf438-b3d2-4a8c-801c-344503e0c58e`へ通信の100%を向け、runtimeの `USAGE_COLLECTION_ENABLED=true` で監督下の一時受け入れを開始した。Gitに保存する `wrangler.jsonc` は `false` のままとし、停止Version `3c2c3d19-3744-4d01-8e62-76a0f1bdd5bf` をその時点のrollback先として維持した。一般利用者向け限定中継の `RELAY_ENABLED=false` は変更していない。
 
 最初の有効候補では、正しいJSONのダミー要求がSiteverify通信の互換性問題により `503 turnstile_unavailable` となったため、D1が0件であることを確認して停止Versionへ戻した。Turnstile要求を、既存リレーで実機確認済みの `URLSearchParams` と `application/x-www-form-urlencoded` へ揃え、`redirect`指定を除去し、専用テストを17件へ拡張してから修正版を再デプロイした。
 
-修正版では、許可Originのpreflight `204`、不許可OriginとOriginなしの `403 origin_not_allowed`、許可Originからの無効ダミーtokenの `403 turnstile_failed`、`Cache-Control: no-store`、`Vary: Origin` を確認した。確認後も `profiles`、`usage_daily`、`event_receipts`、`admin_device_usage` はすべて0件だった。フロントはopt-inであり、ページを開くだけではprofile、識別子、利用日、AI回数、想い出数を作成・送信しない。最初の端末での開始、停止、再開、書き出し、削除とD1削除確認は未完了である。
+修正版では、許可Originのpreflight `204`、不許可OriginとOriginなしの `403 origin_not_allowed`、許可Originからの無効ダミーtokenの `403 turnstile_failed`、`Cache-Control: no-store`、`Vary: Origin` を確認した。続く実機確認では最初のプロフィール作成と日別記録に成功したが、成功後のTurnstile resetでcallbackが再実行され、成功済みなのにエラーを表示した。この時点ではD1に試験用profile 2件と日別記録2件が残り、Usage Workerの収集とフロントの開始画面を停止へ戻した。一般利用者向け限定中継も `RELAY_ENABLED=false` のまま維持した。
+
+再callbackを防ぐガード、大きな共有パネルを廃止した新しいデータ接続フロー、表示名とプロフィール作成の統合はローカル実装済みである。Workerとフロントは停止したまま、開始・停止・再開・削除と補助リンクからの書き出しを監督下で再確認するまで収集を再開しない。
+
+## 15. 試験記録削除と新しい停止Version（2026-08-12 JST）
+
+既知の試験用profile 2件を削除し、cascade削除後に `profiles`、`usage_daily`、`event_receipts` が `0 / 0 / 0` であることを確認した。続いて、新しい停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb` をdeployment `25be2258-b72a-4e2c-8bf1-ab47781c48dc` で本番通信の100%へ反映した。
+
+runtimeの `USAGE_COLLECTION_ENABLED=false`、許可Originのpreflight `204`、許可Originからのprofile `POST` が `503 usage_collection_paused`、不許可OriginとOriginなしが `403` であることを確認した。デプロイ後もD1の3テーブルは `0 / 0 / 0` のままである。一般利用者向け限定中継は独立して `RELAY_ENABLED=false` を維持している。

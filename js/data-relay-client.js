@@ -11,6 +11,7 @@
   const TURNSTILE_ACTION = "glucoscope-data-relay";
   const TURNSTILE_SCRIPT_ID = "glucoscope-turnstile-script";
   const TURNSTILE_CONTAINER_ID = "dataSourceRelayTurnstile";
+  const TURNSTILE_CHALLENGE_TIMEOUT_MS = 15_000;
   const REQUEST_TIMEOUT_MS = 20_000;
   const TICKET_EXPIRY_SKEW_MS = 30_000;
   const MAX_RELAY_ENDPOINT_LENGTH = 2_048;
@@ -18,8 +19,9 @@
 
   let relayWidgetId = null;
   let pendingChallenge = null;
-  let pendingChallengeResolve = null;
-  let pendingChallengeReject = null;
+  let challengeGeneration = 0;
+  let pendingPreparation = null;
+  let preparationGeneration = 0;
 
   function createRelayError(code, message = code, details = {}) {
     const error = new Error(message);
@@ -269,7 +271,8 @@
     return container;
   }
 
-  async function waitForTurnstileApi(timeoutMs = 10_000) {
+  async function waitForTurnstileApi(timeoutMs = 10_000, signal = null) {
+    if (signal?.aborted) throw createRelayError("request_aborted");
     if (root.turnstile && typeof root.turnstile.render === "function") return root.turnstile;
 
     if (!root?.document?.createElement || !root?.document?.head?.appendChild) {
@@ -289,6 +292,7 @@
 
     const startedAt = Date.now();
     while (Date.now() - startedAt < timeoutMs) {
+      if (signal?.aborted) throw createRelayError("request_aborted");
       if (root.turnstile && typeof root.turnstile.render === "function") return root.turnstile;
       await new Promise((resolve) => root.setTimeout(resolve, 50));
     }
@@ -296,69 +300,126 @@
     throw createRelayError("turnstile_failed");
   }
 
-  function finishPendingChallenge(error, token = "") {
-    const resolve = pendingChallengeResolve;
-    const reject = pendingChallengeReject;
-    pendingChallenge = null;
-    pendingChallengeResolve = null;
-    pendingChallengeReject = null;
-
-    if (error) reject?.(error);
-    else resolve?.(token);
+  function hideRelayTurnstileContainer() {
+    const container = root?.document?.getElementById?.(TURNSTILE_CONTAINER_ID) || null;
+    if (!container) return;
+    container.classList.remove("is-visible");
+    container.hidden = true;
   }
 
-  async function requestTurnstileToken() {
-    if (pendingChallenge) return pendingChallenge;
+  function removeRelayTurnstileWidget(turnstile = root?.turnstile) {
+    const widgetId = relayWidgetId;
+    relayWidgetId = null;
+    if (widgetId === null || typeof turnstile?.remove !== "function") return;
+    try {
+      turnstile.remove(widgetId);
+    } catch {
+      // Callback generations still make a failed removal harmless to later attempts.
+    }
+  }
 
-    const turnstile = await waitForTurnstileApi();
+  function finishPendingChallenge(generation, error, token = "") {
+    const attempt = pendingChallenge;
+    if (!attempt || attempt.generation !== generation) return false;
+    pendingChallenge = null;
+    if (attempt.timeoutId !== null) root.clearTimeout(attempt.timeoutId);
+    if (attempt.abortHandler && typeof attempt.signal?.removeEventListener === "function") {
+      attempt.signal.removeEventListener("abort", attempt.abortHandler);
+    }
+    removeRelayTurnstileWidget(attempt.turnstile);
+    hideRelayTurnstileContainer();
+
+    if (error) attempt.reject(error);
+    else attempt.resolve(token);
+    return true;
+  }
+
+  function resetRelayTurnstile() {
+    const attempt = pendingChallenge;
+    if (attempt) {
+      finishPendingChallenge(attempt.generation, createRelayError("request_aborted"));
+      return;
+    }
+    challengeGeneration += 1;
+    removeRelayTurnstileWidget();
+    hideRelayTurnstileContainer();
+  }
+
+  async function requestTurnstileToken(options = {}) {
+    if (options.signal?.aborted) throw createRelayError("request_aborted");
+    if (pendingChallenge) return pendingChallenge.promise;
+
+    const turnstile = await waitForTurnstileApi(10_000, options.signal || null);
+    if (options.signal?.aborted) throw createRelayError("request_aborted");
     const container = ensureTurnstileContainer();
     container.hidden = false;
     container.classList.add("is-visible");
 
-    pendingChallenge = new Promise((resolve, reject) => {
-      pendingChallengeResolve = resolve;
-      pendingChallengeReject = reject;
+    challengeGeneration += 1;
+    const generation = challengeGeneration;
+    let resolveChallenge;
+    let rejectChallenge;
+    const promise = new Promise((resolve, reject) => {
+      resolveChallenge = resolve;
+      rejectChallenge = reject;
     });
+    const challengeTimeoutMs = Number(options.challengeTimeoutMs) > 0
+      ? Number(options.challengeTimeoutMs)
+      : TURNSTILE_CHALLENGE_TIMEOUT_MS;
+    const attempt = {
+      generation,
+      promise,
+      resolve: resolveChallenge,
+      reject: rejectChallenge,
+      signal: options.signal || null,
+      abortHandler: null,
+      timeoutId: null,
+      turnstile
+    };
+    pendingChallenge = attempt;
+    attempt.timeoutId = root.setTimeout(() => {
+      finishPendingChallenge(generation, createRelayError("turnstile_failed"));
+    }, challengeTimeoutMs);
+    if (attempt.signal && typeof attempt.signal.addEventListener === "function") {
+      attempt.abortHandler = () => {
+        finishPendingChallenge(generation, createRelayError("request_aborted"));
+      };
+      attempt.signal.addEventListener("abort", attempt.abortHandler, { once: true });
+    }
 
-    if (relayWidgetId === null) {
+    removeRelayTurnstileWidget(turnstile);
+    try {
       relayWidgetId = turnstile.render(container, {
         sitekey: TURNSTILE_SITE_KEY,
         action: TURNSTILE_ACTION,
         theme: "auto",
         size: "flexible",
-        callback: (token) => finishPendingChallenge(null, token),
-        "expired-callback": () => finishPendingChallenge(createRelayError("turnstile_failed")),
+        callback: (token) => finishPendingChallenge(generation, null, token),
+        "expired-callback": () => finishPendingChallenge(
+          generation,
+          createRelayError("turnstile_failed")
+        ),
         "error-callback": (errorCode) => {
           const turnstileErrorCode = normalizeTurnstileErrorCode(errorCode);
-          finishPendingChallenge(createRelayError(
-            "turnstile_failed",
-            "turnstile_failed",
-            turnstileErrorCode ? { turnstileErrorCode } : {}
-          ));
+          finishPendingChallenge(
+            generation,
+            createRelayError(
+              "turnstile_failed",
+              "turnstile_failed",
+              turnstileErrorCode ? { turnstileErrorCode } : {}
+            )
+          );
           return true;
         }
       });
-    } else if (typeof turnstile.reset === "function") {
-      turnstile.reset(relayWidgetId);
+    } catch (cause) {
+      finishPendingChallenge(
+        generation,
+        createRelayError("turnstile_failed", "Turnstile could not start.", { cause })
+      );
     }
 
-    return pendingChallenge;
-  }
-
-  function resetRelayTurnstile() {
-    const container = root?.document?.getElementById?.(TURNSTILE_CONTAINER_ID) || null;
-    if (container) {
-      container.classList.remove("is-visible");
-      container.hidden = true;
-    }
-
-    if (relayWidgetId !== null && root.turnstile && typeof root.turnstile.reset === "function") {
-      try {
-        root.turnstile.reset(relayWidgetId);
-      } catch {
-        // A later connection attempt can render again after a page reload.
-      }
-    }
+    return promise;
   }
 
   async function prepareConnection(configInput, options = {}) {
@@ -371,12 +432,23 @@
     const existing = readRelaySession();
     if (existing) return existing;
 
-    let token = options.turnstileToken || "";
+    // A Turnstile token is single-use. Keep token acquisition and session
+    // creation as one owned flight so a concurrent caller cannot overwrite a
+    // challenge, reuse its token, or let an older cleanup cancel a newer one.
+    if (pendingPreparation) throw createRelayError("relay_busy");
+    preparationGeneration += 1;
+    const generation = preparationGeneration;
+    pendingPreparation = { generation };
+
     try {
-      if (!token) token = await requestTurnstileToken();
+      let token = options.turnstileToken || "";
+      if (!token) token = await requestTurnstileToken(options);
       return await issueRelaySession(token, options);
     } finally {
-      resetRelayTurnstile();
+      if (pendingPreparation?.generation === generation) {
+        resetRelayTurnstile();
+        pendingPreparation = null;
+      }
     }
   }
 

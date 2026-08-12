@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "glucoscope.usageProfile.v1";
   const SCHEMA_VERSION = 1;
-  const NOTICE_VERSION = "2026-08-11";
+  const NOTICE_VERSION = "2026-08-12-simple-connection-1";
   const MAX_DISPLAY_NAME_CODE_POINTS = 30;
   const MAX_PENDING_AI_EVENTS = 20;
   const MAX_LIFECYCLE_GENERATION = 1_000_000_000;
@@ -311,6 +311,10 @@
     if (!turnstileToken || turnstileToken.length > 2048) {
       return { ok: false, error: "turnstile_required", state: getState() };
     }
+    const displayName = normalizeDisplayName(input.displayName);
+    if (!displayName) {
+      return { ok: false, error: "display_name_required", state: getState() };
+    }
 
     const existing = readStoredState();
     if (!existing.ok) {
@@ -330,7 +334,7 @@
     const result = await requestJson("/v1/profiles", {
       method: "POST",
       body: {
-        displayName: normalizeDisplayName(input.displayName),
+        displayName,
         turnstileToken
       }
     });

@@ -19,28 +19,48 @@ const guardianGuide = await readFile(new URL("../guides/guardian-monitor/index.h
 test("public data connection remains clickable while clearly marked under construction", () => {
   assert.match(index, /データ接続（工事中）/);
   assert.match(index, /Gluroo接続はまだ限定テスト中/);
-  assert.match(index, /js\/app\.js\?v=20260812-usage-profile-paused-1/);
+  assert.match(index, /js\/app\.js\?v=20260812-simple-connection-2/);
   assert.match(app, /dataSourceButtonDemo: "データ接続（工事中）"/);
   assert.match(app, /dataSourceDialogTitle: "Data connection \(under construction\)"/);
   assert.doesNotMatch(index, /id="dataSourceButton"[^>]+disabled/);
 });
 
-test("local profile is a simple optional display-name setting stored only on this device", () => {
+test("Gluroo and Nightscout share one required display-name field in the connection form", () => {
+  const formStart = index.indexOf('id="dataSourceForm"');
+  const formEnd = index.indexOf("</form>", formStart);
+  const form = index.slice(formStart, formEnd);
+  const displayNameInput = form.match(/<input id="dataSourceDisplayName"[^>]*>/)?.[0] || "";
+
+  assert.equal((form.match(/id="dataSourceDisplayName"/g) || []).length, 1);
+  assert.match(displayNameInput, /autocomplete="nickname"/);
+  assert.match(displayNameInput, /\brequired\b/);
+  assert.doesNotMatch(displayNameInput, /maxlength=/);
+  assert.ok(form.indexOf('id="dataSourceDisplayName"') < form.indexOf('id="dataSourceUrl"'));
+  assert.match(app, /queueDataSourceFocus\(document\.getElementById\("dataSourceDisplayName"\)\)/);
+  assert.match(form, /本名でなくて大丈夫です/);
+  assert.match(form, /id="dataSourceUsageNoteText"[^>]*data-i18n-key="dataSourceUsageNotePaused"/);
+  assert.match(form, /data-i18n-key="dataSourceUsageDetails"/);
+  assert.match(index, /id="dataSourceGlurooChoice"/);
+  assert.match(index, /id="dataSourceNightscoutChoice"/);
+});
+
+test("local profile is a compact display-name and registered-record management screen", () => {
   assert.match(index, /id="localProfileDialog"/);
   assert.match(index, /id="localProfileButton"/);
   assert.match(index, /id="mobileLocalProfileButton"/);
-  assert.match(index, /GlucoScopeで使う表示名を、この端末のブラウザに保存できます/);
-  assert.match(index, /共有機能を始めない限り、管理者には送信されません/);
-  assert.match(index, /表示名（任意）/);
+  assert.match(index, /GlucoScopeで使う表示名を変更できます/);
+  assert.doesNotMatch(index, /表示名（任意）/);
   assert.match(index, /本名でなくて大丈夫です/);
-  assert.match(index, /この端末から表示名を削除/);
 
   const profileStart = index.indexOf('id="localProfileDialog"');
   const profileEnd = index.indexOf('<div class="dashboard">', profileStart);
   const profileDialog = index.slice(profileStart, profileEnd);
+  assert.doesNotMatch(profileDialog, /id="localProfileDeleteButton"/);
   assert.doesNotMatch(profileDialog, /dataSourceRelayConsent/);
   assert.doesNotMatch(profileDialog, /type="radio"|localProfileUsageSharingPreference|localProfilePreference/);
-  assert.doesNotMatch(profileDialog, /利用分析|協力して|同意|あとで決める/);
+  assert.doesNotMatch(profileDialog, /usageProfileNotice|usageProfileStartButton|usageProfileSkipButton|この端末の利用状況を共有する|今はしない/);
+  assert.match(profileDialog, /id="usageProfileCard"[^>]*hidden/);
+  assert.match(profileDialog, /利用記録の管理/);
   assert.match(profileDialog, /autocomplete="nickname"/);
   assert.doesNotMatch(profileDialog, /id="localProfileDisplayName"[^>]+maxlength=/);
   assert.match(profileDialog, /role="status" aria-live="polite"/);
@@ -63,20 +83,18 @@ test("local profile controls stay local, fail closed, and preserve accessible di
   const populateEnd = app.indexOf("function getLocalProfileDialogFocusableElements", populateStart);
   const populateHandler = app.slice(populateStart, populateEnd);
   const saveStart = app.indexOf("function handleLocalProfileSave");
-  const saveEnd = app.indexOf("function handleLocalProfileDelete", saveStart);
+  const saveEnd = app.indexOf("function setupLocalProfileFoundation", saveStart);
   const saveHandler = app.slice(saveStart, saveEnd);
-  const deleteStart = app.indexOf("function handleLocalProfileDelete");
-  const deleteEnd = app.indexOf("function setupLocalProfileFoundation", deleteStart);
-  const deleteHandler = app.slice(deleteStart, deleteEnd);
-  assert.match(saveHandler, /localProfileManager\.save\(\{\s*displayName:[\s\S]*?\}\)/);
+  assert.match(saveHandler, /localProfileManager\.normalizeDisplayName\(/);
+  assert.match(saveHandler, /if \(!displayName\) \{[\s\S]*setLocalProfileStatus\("localProfileNameRequired", "error"\);[\s\S]*displayNameInput\?\.focus\(\);/);
+  assert.match(saveHandler, /localProfileManager\.save\(\{ displayName \}\)/);
   assert.match(saveHandler, /result\.stored \? "localProfileSaved" : "localProfileEmpty"/);
-  assert.doesNotMatch(`${populateHandler}\n${saveHandler}\n${deleteHandler}`, /localProfileUsageSharingPreference|futureUsageSharingPreference|type="radio"/);
+  assert.doesNotMatch(`${populateHandler}\n${saveHandler}`, /localProfileUsageSharingPreference|futureUsageSharingPreference|type="radio"/);
+  assert.doesNotMatch(app, /handleLocalProfileDelete|localProfileDeleteButton|localProfileDeleteConfirm/);
   assert.match(app, /requestAnimationFrame\(\(\) => document\.getElementById\("localProfileDisplayName"\)\?\.focus\(\)\)/);
   assert.match(app, /if \(event\.key === "Escape"\)/);
   assert.match(app, /if \(event\.key !== "Tab"\) return/);
   assert.match(app, /opener\.focus\(\)/);
-  assert.match(app, /window\.confirm\(t\("localProfileDeleteConfirm"\)\)/);
-  assert.match(deleteHandler, /displayNameInput\?\.focus\(\)/);
   assert.match(css, /\.local-profile-save-button,[\s\S]*min-height:46px/);
   assert.match(css, /\.local-profile-field input[\s\S]*font-size:16px/);
 });
@@ -284,12 +302,57 @@ test("guide HTML does not contain real credential strings", () => {
 });
 
 test("verified connection can start user mode from the onboarding button", () => {
-  assert.match(app, /dataSourceSaveButton"\)\?\.addEventListener\("click", handleDataSourceSave\)/);
+  assert.doesNotMatch(app, /dataSourceSaveButton"\)\?\.addEventListener\("click", handleDataSourceSave\)/);
+  assert.equal((app.match(/form\?\.addEventListener\("submit", handleDataSourceSave\)/g) || []).length, 1);
   const saveHandlerStart = app.indexOf("function handleDataSourceSave");
   const saveHandlerEnd = app.indexOf("function handleDataSourceDelete", saveHandlerStart);
   const saveHandler = app.slice(saveHandlerStart, saveHandlerEnd);
-  assert.match(saveHandler, /if \(isUserDataSourceMode\(\)\) \{[\s\S]*window\.location\.reload\(\)/);
-  assert.match(saveHandler, /window\.location\.href = buildUserModeUrl\("glucose"\)/);
+  assert.match(saveHandler, /if \(dataSourceSaveInFlight \|\| pendingDataSourceSave\) return;/);
+  assert.match(saveHandler, /const generation = nextDataSourceSaveGeneration\(\);\s*pendingDataSourceSave = \{\s*generation,\s*config: testedDataSourceConfig,\s*displayName,/s);
+  assert.match(saveHandler, /void completePendingDataSourceSave\("", generation, \{ skipUsageProfile: true \}\)/);
+  assert.match(saveHandler, /prepareUsageProfileTurnstile\(generation\)/);
+  const chooseStepStart = app.indexOf("function showDataSourceChooseStep");
+  const chooseStepEnd = app.indexOf("function showDataSourceGlurooPrepStep", chooseStepStart);
+  const chooseStep = app.slice(chooseStepStart, chooseStepEnd);
+  assert.match(chooseStep, /if \(isDataSourceSaveBusy\(\)\) return;/);
+  assert.match(chooseStep, /focusCurrentDataSourceStep\(\)/);
+
+  const persistStart = app.indexOf("function persistDataSourceBrowserState");
+  const persistEnd = app.indexOf("async function completePendingDataSourceSave", persistStart);
+  const persistHandler = app.slice(persistStart, persistEnd);
+  assert.match(persistHandler, /localProfileManager\?\.save\?\.\(\{ displayName: snapshot\.displayName \}\)/);
+  assert.match(persistHandler, /dataSourceManager\.saveUserConfig\(snapshot\.config/);
+  assert.match(persistHandler, /if \(isUserDataSourceMode\(\)\) \{[\s\S]*window\.location\.reload\(\)/);
+  assert.match(persistHandler, /window\.location\.href = buildUserModeUrl\("glucose"\)/);
+});
+
+test("data connection dialog traps focus and restores its opener", () => {
+  const openStart = app.indexOf("function openDataSourceDialog");
+  const openEnd = app.indexOf("async function handleDataSourceTest", openStart);
+  const dialogHandlers = app.slice(openStart, openEnd);
+  assert.match(dialogHandlers, /dataSourceDialogOpener = options\.opener \|\| document\.activeElement/);
+  assert.match(dialogHandlers, /focusCurrentDataSourceStep\(\)/);
+  assert.match(dialogHandlers, /dialog\.dataset\.required === "true" \|\| isDataSourceSaveBusy\(\)/);
+  assert.match(dialogHandlers, /window\.requestAnimationFrame\(\(\) => opener\.focus\(\)\)/);
+
+  const setupStart = app.indexOf("function setupDataSourceFoundation");
+  const setupEnd = app.indexOf("function setLocalProfileStatus", setupStart);
+  const setupHandler = app.slice(setupStart, setupEnd);
+  assert.match(setupHandler, /if \(event\.key === "Escape"\)/);
+  assert.match(setupHandler, /if \(event\.key !== "Tab"\) return;/);
+  assert.match(setupHandler, /getDataSourceDialogFocusableElements\(\)/);
+  assert.match(setupHandler, /!dialog\.contains\(activeElement\)/);
+  assert.match(setupHandler, /event\.shiftKey && activeElement === first/);
+  assert.match(setupHandler, /dialog\?\.querySelectorAll\('a\[href\]'\)/);
+  assert.match(setupHandler, /!event\.shiftKey && activeElement === last/);
+
+  const focusStart = app.indexOf("function focusCurrentDataSourceStep");
+  const focusEnd = app.indexOf("function showDataSourceChooseStep", focusStart);
+  const focusHandler = app.slice(focusStart, focusEnd);
+  assert.match(focusHandler, /dataSourceDisplayName/);
+  assert.match(focusHandler, /heading\.tabIndex = -1/);
+  assert.match(focusHandler, /dataSourceNightscoutChoice/);
+  assert.match(focusHandler, /dataSourceGlurooChoice/);
 });
 
 test("user mode survives static-server canonical URLs and mobile tab changes", () => {
@@ -360,7 +423,8 @@ test("field feedback copy and red-frame navigation are reflected", () => {
 });
 
 test("current cache and CSS markers are present", () => {
-  assert.match(index, /20260806-turnstile-server-code-1/);
+  assert.match(index, /js\/data-source\.js\?v=20260812-connection-lifecycle-1/);
+  assert.match(index, /js\/data-relay-client\.js\?v=20260812-connection-lifecycle-1/);
   assert.match(guideCss, /User Foundation 0\.3\.3/);
   assert.match(css, /Limited Data Relay Paused Acceptance/);
 });
@@ -383,7 +447,7 @@ test("limited relay frontend uses only the approved paused production endpoint",
   assert.match(index, /dataSourceRelayTurnstile/);
   assert.match(app, /candidate\.provider === "gluroo"/);
   assert.match(app, /relayError\.code = "relay_unavailable"/);
-  assert.match(app, /await relay\.prepareConnection\(candidate\)/);
+  assert.match(app, /await relay\.prepareConnection\(candidate, \{\s*signal: testAbortController\.signal\s*\}\)/);
 });
 
 test("Gluroo relay requires explicit consent before any relay request", () => {
@@ -394,7 +458,7 @@ test("Gluroo relay requires explicit consent before any relay request", () => {
   const handler = app.slice(testStart, testEnd);
   assert.match(handler, /dataSourceRelayConsent/);
   assert.match(handler, /relay_consent_required/);
-  assert.ok(handler.indexOf("relay_consent_required") < handler.indexOf("await relay.prepareConnection(candidate)"));
+  assert.ok(handler.indexOf("relay_consent_required") < handler.indexOf("await relay.prepareConnection(candidate, {"));
   assert.match(app, /relay_consent_required: "dataSourceRelayConsentRequired"/);
 });
 
