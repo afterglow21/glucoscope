@@ -1,16 +1,16 @@
 # GlucoScope administrator dashboard Worker
 
-Status: a fail-closed bootstrap shell is deployed, but Cloudflare Access and the real administrator identity are not configured. The dashboard remains unavailable and is not linked from the public site.
+Status: production deployed on 2026-08-14 JST / one-administrator browser acceptance completed on 2026-08-15 JST / not linked from the public site
 
 This dedicated Cloudflare Worker renders the first read-only administrator view for the minimal device-profile usage foundation. It is deliberately separate from the public GitHub Pages site, the existing public AI Usage Dashboard, and the public Usage Worker API.
 
-## Fail-closed bootstrap checkpoint — 2026-08-14
+## One-administrator production checkpoint — 2026-08-14 to 2026-08-15
 
-Version `ecdf08e7-84d6-439a-83bd-96f03986f87b` created the dedicated Worker hostname only. The checked-in team-domain and audience placeholders remain in that Version, and its temporary bootstrap identity does not match any real administrator. Every request therefore returns the same generic `403` before D1 is read. The before/after count check remained `0 / 0 / 0` for `profiles`, `usage_daily`, and `event_receipts`, with no rows written. Cloudflare Access is not yet configured, so this Version is not an accepted administrator dashboard and must not be treated as available.
+Version `d17e89e9-bc15-40fb-90a0-2e85cb19cf42` was deployed through deployment `392fb7b5-792c-4990-b939-6ab97481beb1` on 2026-08-14 JST. Cloudflare Access protects the dedicated hostname for one exact administrator email, and the Worker independently rechecks the signed Access JWT and the same email held in a Secret before any D1 read. Authenticated browser acceptance completed on 2026-08-15 JST: an unauthenticated request received a `302` to Access, the allowed administrator reached the server-rendered read-only empty state, query strings and unknown paths returned `404`, and the page loaded no scripts, images, or external links. The public site remains unlinked.
 
 ## Fixed safety boundary
 
-- Cloudflare Access must protect the whole Worker hostname with a deny-by-default policy for one exact administrator email.
+- Cloudflare Access protects the whole Worker hostname with a deny-by-default policy for one exact administrator email.
 - The Worker independently validates the signed `Cf-Access-Jwt-Assertion` header with `jose`, including the Access issuer, application audience, expiry, required issued-at claim, and RS256 signature.
 - The signed JWT email must also equal the `ADMIN_ALLOWED_EMAIL` Worker Secret. This second check fails closed if an Access policy is accidentally broadened.
 - The HTML is rendered on the server. There is no browser-side data API, script, analytics beacon, export, search, profile action, or write route.
@@ -37,19 +37,19 @@ The test suite uses a local RSA key and a local JWKS to exercise real `jose` sig
 
 There is intentionally no `deploy` script.
 
-## External configuration required before acceptance
+## Production configuration baseline
 
-The bootstrap shell above is intentionally unusable. Do not accept or use the dashboard until the administrator has approved and completed every item below.
+The accepted initial deployment uses the following baseline. Keep every item in place unless a separately reviewed replacement provides an equal or stronger boundary.
 
-1. Choose one exact administrator email. Register it interactively as the `ADMIN_ALLOWED_EMAIL` Worker Secret; never put the address in Git or a command argument.
-2. Create or select a Cloudflare Access organization and identity method. Prefer an existing identity provider with MFA. Email one-time PIN may be used for the initial single-administrator rollout.
-3. Create a self-hosted Access application for the entire dedicated Worker hostname. Use a deny-by-default Allow policy containing only the same exact email. Do not use `Everyone`, a whole email domain, or `Login Methods: One-time PIN` as the Allow selector.
-4. Copy the Access team domain into `TEAM_DOMAIN` and the application's immutable Audience tag into `POLICY_AUD`. They are configuration values, not credentials. The checked-in placeholders intentionally fail closed.
-5. Keep `preview_urls=false`. A protected `glucoscope-admin-dashboard.<account>.workers.dev` hostname is the smallest first deployment; a dedicated custom domain is preferred before broader operational use.
-6. Bind the existing `glucoscope-usage` D1 database as `USAGE_DB`. Do not create or apply a migration from this Worker.
-7. Enable Cloudflare Access on the Worker before accepting it. Because the Worker also validates the JWT, an unprotected or misrouted request still receives `403` and no data.
+1. One exact administrator email is registered interactively as the `ADMIN_ALLOWED_EMAIL` Worker Secret. Never put the address in Git or a command argument.
+2. The initial single-administrator rollout uses email one-time PIN and a 15-minute Access session. Email one-time PIN is not MFA; keep MFA enabled on the administrator's email account and prefer an MFA-capable identity provider before adding administrators or broadening operational use.
+3. A self-hosted Access application protects the entire dedicated Worker hostname. Its deny-by-default Allow policy contains only the same exact email. Do not add `Everyone`, a whole email domain, `Login Methods: One-time PIN`, or a Bypass policy as an Allow selector.
+4. The Access issuer and immutable application audience are set in Worker configuration. They are configuration values, not credentials, but their live values and Access identifiers are not copied into documentation or operational records.
+5. Keep `preview_urls=false`. The initial deployment uses the protected dedicated Worker production URL; prefer a dedicated custom domain before broader operational use.
+6. The existing `glucoscope-usage` D1 database is bound as `USAGE_DB`. Do not create or apply a migration from this Worker.
+7. Keep Cloudflare Access enabled. Because the Worker also validates the JWT, an unprotected or misrouted request still receives `403` and no data.
 
-Recommended browser-only hardening for the Access application: short session duration, HttpOnly cookies, and the optional Access binding cookie if no incompatible product is enabled on the dedicated hostname.
+The current Access session duration is 15 minutes. Retain browser-only cookie hardening and consider the optional Access binding cookie only if no incompatible product is enabled on the dedicated hostname.
 
 ## Production acceptance checklist
 
@@ -63,6 +63,8 @@ Recommended browser-only hardening for the Access application: short session dur
 - Before and after the smoke check, the counts in `profiles`, `usage_daily`, and `event_receipts` are unchanged.
 - No Secret value, Access token, email address, display name, profile row, or database content is copied into the deployment record.
 
+The 2026-08-15 browser acceptance directly confirmed the unauthenticated Access redirect, the allowed administrator's read-only empty state, `404` handling for a query string and an unknown path, and the absence of scripts, images, and external links. JWT signature, issuer, audience, expiry, required issued-at claim, email, method, header, escaping, and no-write boundaries remain covered by the local acceptance suite. Record the production D1 check only as “row counts unchanged”; never copy the counts or row contents into Git.
+
 ## Rollback
 
-Disable the dedicated administrator Worker route or route traffic back to its last reviewed stopped/unavailable Version. This must not change the existing Usage Worker or delete D1 data.
+Keep Cloudflare Access enabled while disabling the dedicated administrator Worker route or routing traffic back to the reviewed fail-closed Version `ecdf08e7-84d6-439a-83bd-96f03986f87b`. This must not change the existing Usage Worker or delete D1 data.

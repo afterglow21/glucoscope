@@ -2781,8 +2781,8 @@ Version.
 The implementation order chosen on 2026-08-08 is:
 
 1. Design the user foundation and minimal usage analytics.
-2. Build the administrator dashboard on that reviewed foundation. A fail-closed bootstrap
-   Worker is deployed; Cloudflare Access and real-administrator acceptance remain pending.
+2. Build the administrator dashboard on that reviewed foundation. Production deployment
+   and one-administrator acceptance with Cloudflare Access and Worker-side verification are complete.
 3. Design and implement the Plus 30-day pass and clearer optional-support paths.
 4. After user rollout begins, add an opt-in always-on mode only for the landscape graph.
 
@@ -2832,7 +2832,7 @@ Guardian 4、FreeStyle Libre 2、Dexcom G7を、
    - Phase 1Aとして、任意の表示名だけを端末内へ保存する準備画面を実装した。
    - Phase 1Bとして、収集項目と目的の説明、簡単な停止方法、90日保存、書き出し・削除、利用回数API、D1とWorkerを実装した。2026年8月12日JSTの実機確認では最初のprofile作成と日別記録に成功したが、成功後の再callbackで誤エラーを表示した。この時点でD1に試験用profile 2件と日別記録2件が残り、Workerとフロントは停止へ戻した。その後、既知の試験用profile 2件を削除し、cascade後の `profiles`、`usage_daily`、`event_receipts` が `0 / 0 / 0` であることを確認した。停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb` とdeployment `25be2258-b72a-4e2c-8bf1-ab47781c48dc` をclean stopped checkpoint兼rollback先として残し、active Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` へ通信の100%を向け、runtimeの `USAGE_COLLECTION_ENABLED=true` とフロントの開始画面を監督下一時受け入れのため有効にした。許可Originのpreflight `204`、無効ダミーTurnstileの `403 turnstile_failed`、不許可OriginとOriginなしの `403` を確認し、D1は引き続き `0 / 0 / 0` である。Gitに保存する `wrangler.jsonc` は `false` のまま維持する。接続開始への表示名・profile作成統合と再callback防止を使い、次は開始・停止・再開・削除、補助的な書き出しを監督下で確認する。
 2. その設計を前提にした管理者ダッシュボード
-   - 専用Workerはfail-closedのbootstrap Versionだけ本番に配置済み。Cloudflare Accessと実際の管理者identityは未設定で、全requestはD1を読む前に同じ`403`となるため、利用可能な管理者画面の受け入れは未完了。
+   - 専用Workerの本番反映と、Cloudflare Access・Worker内再検証を使った管理者1名での受け入れを完了した。公開サイトからはリンクしない。
 3. Plus 30日パスと、任意の開発支援への分かりやすい導線
 4. ユーザー展開開始後に、横向きグラフだけへ追加する任意の常時表示モード
 
@@ -3288,7 +3288,7 @@ GlucoScope独自の利用者識別IDを追加しません。
 The next product-design sequence is fixed as follows:
 
 1. User foundation and minimal usage analytics design
-2. Administrator dashboard — fail-closed Worker shell deployed; Access acceptance pending
+2. Administrator dashboard — accepted for one administrator with Access and Worker-side verification
 3. Plus 30-day pass and optional-support paths
 4. Landscape-graph-only always-on mode after user rollout begins
 
@@ -3452,21 +3452,32 @@ Gluroo URLs and credentials, treatment information, or device settings in produc
 analytics. The existing Usage Dashboard is an infrastructure-wide AI Worker view; it is
 not the dedicated per-device-profile administrator dashboard.
 
-As of 2026-08-14, the dedicated Worker hostname has only a fail-closed bootstrap Version.
-It has no public-site link; Access and the real administrator identity are not configured,
-so every request receives the same `403` before D1 is read. This is not an accepted live dashboard.
-Cloudflare Access must protect its whole hostname for one exact administrator email; after
-Access admits a request, the Worker independently revalidates the signed Access JWT,
-issuer, audience, time validity, and exact email against a Worker Secret before reading D1.
+On 2026-08-14 JST, dedicated administrator Worker Version
+`d17e89e9-bc15-40fb-90a0-2e85cb19cf42` was released through deployment
+`392fb7b5-792c-4990-b939-6ab97481beb1`. Cloudflare Access protects the whole
+dedicated hostname with a deny-by-default Allow policy for one exact administrator email,
+email one-time PIN, and a 15-minute session. After Access admits a request, the Worker
+independently revalidates the signed Access JWT, issuer, audience, expiry, required issued-at claim, and the
+same exact email held in a Worker Secret before reading D1. The public site has no link to it.
+
+One-administrator browser acceptance completed on 2026-08-15 JST. An unauthenticated
+request received a `302` to Access, the allowed administrator reached the server-rendered
+read-only empty state, query strings and unknown paths returned `404`, and the page loaded
+no scripts, images, or external links. Preview URLs, application logging, and invocation
+logging remain disabled. Production D1 verification is recorded only as the boundary result
+“row counts unchanged”; counts, row contents, and display names are not copied into Git.
+
 The server-rendered page uses one fixed, read-only `SELECT` from `admin_device_usage` and
 may show only display name, usage-recording state, active-day count within the retained
 maximum 90 days, newly completed AI-analysis count, and ordinary Gluco-memory count
 No. 1–50. It has no write, arbitrary query, public JSON, search, detail, or export route.
 It must not select, return, or render profile IDs, tokens or hashes, profile timestamps,
 daily rows, receipts, glucose values or graphs, AI inputs or letter contents, CGM type,
-connection details, IP addresses, or raw User-Agent values. The Access application,
-exact-email policy, team domain, audience, administrator-email Secret, deployment, and
-post-deploy boundary checks remain required before this dashboard is considered available.
+connection details, IP addresses, or raw User-Agent values. The actual administrator email,
+Access identifiers or configuration values, protected hostname, Secrets, tokens, display
+names, rows, and database contents are not recorded. Email one-time PIN is not MFA; keep
+MFA enabled on the administrator's email account and prefer an MFA-capable identity provider
+before adding administrators or broadening operational use.
 
 Optional development support remains a contribution without feature benefits. A Plus
 30-day pass is a separate paid product under design. Its included capabilities, price,
@@ -3485,7 +3496,7 @@ viewing convenience, not an alarm or a substitute for the original CGM applicati
 次のプロダクト設計・実装順は、次のとおりとします。
 
 1. ユーザー基盤・最小限の利用分析の設計
-2. 管理者ダッシュボード（fail-closedの専用Worker入口だけ配置済み。Accessと実際の管理者identityを設定した受け入れは未完了）
+2. 管理者ダッシュボード（AccessとWorker内再検証により、管理者1名で受け入れ完了）
 3. Plus 30日パスと任意の開発支援への導線
 4. ユーザー展開開始後の、横向きグラフ限定の常時表示モード
 
@@ -3670,19 +3681,29 @@ NightscoutやGlurooのURL・接続情報、治療情報、機器設定を利用�
 既存のUsage DashboardはAI Worker全体の利用状況を見るものであり、
 端末プロフィールごとの専用管理者ダッシュボードとは別です。
 
-2026年8月14日、その専用画面は別Cloudflare Workerとして実装し、fail-closedの
-bootstrap Versionだけを配置しました。公開サイトからはリンクせず、実際の管理者identityは
-まだ設定していません。placeholder状態では全requestがD1読取前に同じ`403`となります。専用hostname全体を
-Cloudflare Accessの正確な管理者メール1件で保護し、Access通過後もWorker内で
-Access JWTの署名、issuer、audience、有効期限と、Worker Secretに保存した管理者メールとの
-完全一致をD1読取前に再検証します。画面は `admin_device_usage` への固定された読取専用
+2026年8月14日JST、専用管理者WorkerのVersion
+`d17e89e9-bc15-40fb-90a0-2e85cb19cf42`をdeployment
+`392fb7b5-792c-4990-b939-6ab97481beb1`で本番へ反映しました。専用hostname全体を、
+正確な管理者メール1件だけを許可するCloudflare Accessで保護し、メールOne-time PINと
+15分sessionを使用します。Access通過後もWorker内でAccess JWTの署名、issuer、audience、
+有効期限と、Worker Secretに保存した同じ管理者メールとの完全一致をD1読取前に再検証します。
+公開サイトからはリンクしません。
+
+2026年8月15日JST、管理者1名の実browser acceptanceを完了しました。未認証requestは
+Accessへの`302`で停止し、許可された管理者の`GET /`はサーバー描画の読取専用empty stateを
+表示しました。query付きURLと未知pathは`404`となり、script、画像、外部linkは0件でした。
+preview URL、application log、invocation logは無効のままです。本番D1確認は実数を残さず、
+「行数不変」という境界結果だけを記録します。
+
+画面は `admin_device_usage` への固定された読取専用
 `SELECT` 1つからサーバー側で生成し、表示名、利用記録の状態、稼働D1に残る最大90日分の
 利用日数、新しく正常に完了したAI分析回数、通常のグルコの想い出No.1〜50の数だけを表示します。
 書き込み、任意query、公開JSON、検索、詳細、書き出しは設けません。profile ID、token・hash、
 プロフィールの日時、日別行、receipt、血糖値・グラフ、AIへ送った内容・AIお手紙本文、CGM種別、
-接続情報、IPアドレス、raw User-Agentは選択・返却・表示しません。Cloudflare Access application、
-exact-email policy、team domain、audience、管理者メールSecret、Access保護下の境界確認が
-完了するまでは、この管理者画面を利用可能とは扱いません。
+接続情報、IPアドレス、raw User-Agentは選択・返却・表示しません。実際の管理者メール、
+Accessの識別子・設定値、保護されたhostname、Secret、token、表示名、行、D1内容は記録しません。
+メールOne-time PINはMFAではないため、管理者のメールアカウント側で二段階認証を有効にし、
+管理者追加や運用範囲拡大の前にMFA対応IdPを優先して再検討します。
 
 任意の開発支援は、機能特典を付けない支援のままです。
 Plus 30日パスは、それとは別の設計中の有料サービスです。公開前に、

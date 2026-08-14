@@ -29,14 +29,15 @@ The current AI Worker production checkpoint is Version 29 (`235cdf03-31d7-40fd-a
 - AI-generation `POST /api/gluco-letter` requires an approved, present `Origin`. Originless `GET /api/gluco-letter/usage` remains available for existing operational checks.
 - AI Turnstile uses `action=glucoscope-ai-letter`; the Worker verifies that action and `hostname=afterglow21.github.io`. The Worker-first, Pages-second release is complete. Version 28 is now historical and must not be restored while user AI remains enabled because its spoofable `pageMode` boundary would reopen shared-KV writes. Keep AI fail-closed on Version 29 or later, or first publish and verify Pages with user AI disabled before Worker recovery. CGM display remains independent throughout.
 
-## Administrator dashboard — fail-closed shell only
+## Administrator dashboard — one-administrator production acceptance
 
-- `workers/gluco-admin-dashboard/` is a dedicated Cloudflare Worker, separate from the public GitHub Pages site and the existing public AI Usage Dashboard. Its fail-closed shell is deployed as Version `ecdf08e7-84d6-439a-83bd-96f03986f87b`, but it has no public-site link and is not yet usable.
-- The whole dedicated hostname must be protected by Cloudflare Access for one exact administrator email. After Access admits the request, the Worker independently verifies the signed Access JWT, issuer, audience, time validity, and exact email match against a Worker Secret.
+- `workers/gluco-admin-dashboard/` is a dedicated Cloudflare Worker, separate from the public GitHub Pages site and the existing public AI Usage Dashboard. Version `d17e89e9-bc15-40fb-90a0-2e85cb19cf42` was deployed through deployment `392fb7b5-792c-4990-b939-6ab97481beb1` on 2026-08-14 JST. It has no public-site link.
+- Cloudflare Access protects the whole dedicated hostname with a deny-by-default policy for one exact administrator email, email one-time PIN, and a 15-minute session. After Access admits the request, the Worker independently verifies the signed Access JWT, issuer, audience, expiry, required issued-at claim, and exact email match against a Worker Secret before any D1 read.
+- Authenticated browser acceptance completed on 2026-08-15 JST. An unauthenticated request received a `302` to Access; the allowed administrator reached the server-rendered read-only empty state; query strings and unknown paths returned `404`; and the page loaded no scripts, images, or external links.
 - The server renders read-only HTML from one fixed `SELECT` against `admin_device_usage`. There is no write route, arbitrary query, public JSON endpoint, search, export, or browser-side script.
 - The page may show only five per-device-profile fields: display name, usage-recording state, active-day count, newly completed AI-analysis count, and ordinary Gluco-memory count No. 1–50.
 - It does not select, return, or render profile IDs, tokens or hashes, profile dates or timestamps, daily rows, receipts, glucose values or graphs, AI inputs or letter contents, CGM type, connection details, IP addresses, or raw User-Agent values.
-- Cloudflare Access, the real exact-email policy, team domain, audience, and administrator-email Secret are not configured yet. Placeholder settings and a disabled dummy email make every request fail with the same `403`, before D1 is read; the verification left D1 counts unchanged at `0 / 0 / 0`.
+- Preview URLs, application logging, and invocation logging remain disabled. Email one-time PIN is not MFA; keep MFA enabled on the administrator's email account and prefer an MFA-capable identity provider before adding administrators or broadening operational use.
 
 ## User Foundation 0.4 / 1–3 person early access
 

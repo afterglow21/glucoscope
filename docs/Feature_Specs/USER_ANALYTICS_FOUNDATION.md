@@ -1,8 +1,8 @@
 # GlucoScope 利用者設定・利用分析基盤
 
-Status: Phase 1A implemented / core CGM handoff accepted / Phase 1B usage lifecycle device-accepted and enabled for 1–3 person early access / personal-user AI published for early access / administrator dashboard fail-closed shell deployed with Access acceptance pending
+Status: Phase 1A implemented / core CGM handoff accepted / Phase 1B usage lifecycle device-accepted and enabled for 1–3 person early access / personal-user AI published for early access / administrator dashboard accepted for one administrator
 
-Last reviewed: 2026-08-14
+Last reviewed: 2026-08-15
 
 Canonical product principles: `docs/Project_Bible/PROJECT_BIBLE_v1.0_DRAFT.md`
 
@@ -19,7 +19,7 @@ GlucoScopeを何人が、どの機能をどのくらい使っているかを、�
 3. Plus 30日パスと任意の開発支援への導線
 4. ユーザー展開開始後の、横向きグラフ限定の常時表示モード
 
-この文書は1番の設計から始まった。2番の管理者ダッシュボードは、その境界を変えない専用Workerとして実装し、fail-closedの停止用入口だけを配置した。Cloudflare Accessと実際の管理者identityを使う受け入れが未完了の状態を21節へ記録する。決済と常時表示は引き続き別工程とする。
+この文書は1番の設計から始まった。2番の管理者ダッシュボードは、その境界を変えない専用Workerとして実装し、Cloudflare AccessとWorker内の二重検証により管理者1名で受け入れを完了した。結果は21節へ記録する。決済と常時表示は引き続き別工程とする。
 
 ## 3. Phase 1A: 完了済みの端末内プレビュー（履歴）
 
@@ -102,7 +102,7 @@ Phase 1BのD1とAPIは、次を満たした後にだけ停止状態から有効�
 - 説明版と分析停止設定の記録
 - 分析停止中は新しい利用イベントを書き込まないゲート
 - 他人の情報を読めない所有者チェック
-- 監督下のPhase 1B受け入れではCloudflareアカウント認証済みD1 consoleとD1内viewだけを使い、HTTP管理APIを作らない。継続利用する専用管理画面はその後実装し、fail-closedの停止用入口だけを配置したが、Cloudflare Accessと実際の管理者identityを使う受け入れが完了するまでは利用しない
+- 監督下のPhase 1B受け入れではCloudflareアカウント認証済みD1 consoleとD1内viewだけを使い、HTTP管理APIを作らない。継続利用する専用管理画面はその後に別Workerとして実装し、Cloudflare AccessとWorker内の二重検証により管理者1名で受け入れを完了した。公開サイトからはリンクしない
 - 重複加算を防ぐ短期idempotency
 - 日別データの90日ローリング削除
 - 本人による表示名訂正、allowlist書き出し、端末プロフィール削除
@@ -114,7 +114,7 @@ Cloudflare公式仕様を2026-08-11に再確認した。D1 Time Travelは常時�
 
 ## 9. 管理者、任意支援、Plusの分離
 
-既存のUsage DashboardはAI Worker全体の運用カウンターであり、専用の利用者別管理者ダッシュボードではない。利用者別画面は認証必須・読取専用とし、運営と改善に必要な表示名、説明済みの最小限の回数、収集停止状態だけを見せる。fail-closedの停止用入口だけを配置したが、Access受け入れ完了までは利用せず、公開サイトからもリンクしない。
+既存のUsage DashboardはAI Worker全体の運用カウンターであり、専用の利用者別管理者ダッシュボードではない。利用者別画面はCloudflare AccessとWorker内検証を必須とする読取専用画面であり、運営と改善に必要な表示名、説明済みの最小限の回数、収集停止状態だけを見せる。管理者1名で受け入れ済みだが、公開サイトからはリンクしない。
 
 任意の開発支援は機能特典のない支援であり、利用分析へ自動的に結びつけない。本人が別途アカウント連携を明示しない限り、誰が支援したかをプロフィールと紐付けない。
 
@@ -148,7 +148,7 @@ Plus 30日パスの利用権は、購入した機能を提供するための別�
 - 支援との明示連携
 - Plus 30日パス
 
-Phase 1Bの端末プロフィール、D1、API、開始・停止、書き出し、サーバー削除は別設計として実装済みであり、この未完了一覧には含めない。利用者別管理者ダッシュボードも実装し、fail-closedの停止用入口だけを配置したが、Cloudflare Accessと実際の管理者identityを使う受け入れは未完了である。その他の残作業は別の実装判断と、必要な場合はCloudflare変更前の明示確認を挟む。
+Phase 1Bの端末プロフィール、D1、API、開始・停止、書き出し、サーバー削除は別設計として実装済みであり、この歴史的な未完了一覧には含めない。利用者別管理者ダッシュボードも、その後に専用Worker、Cloudflare Access、Worker内の二重検証を使って管理者1名で受け入れを完了した。その他の残作業は別の実装判断と、必要な場合はCloudflare変更前の明示確認を挟む。
 
 ## 12. Phase 1B: 端末プロフィールのopt-in実装
 
@@ -299,11 +299,11 @@ AI Worker deployment `a5b57a76-954b-4bb9-bbba-c23bfd0fa516` はVersion 29（`235
 - Turnstile、OpenAI、品質確認、budget、全体上限、AI利用記録のどこで失敗しても、AI欄だけで完結させ、検証済みCGM接続、通常の血糖表示、接続情報を止めたり削除したりしない。公開デモデータへもfallbackしない。
 - Worker先行、Pages後続の公開は完了した。偽装できる `pageMode` 境界から共有KV書き込みが再開し得るため、ユーザーAIがONのままVersion 28へ戻してはならない。Version 29以降でAIをfail-closedに保つか、先にPages側のユーザーAIを停止して公開確認してからWorkerを復旧する。
 
-## 21. 管理者ダッシュボード（fail-closed入口のみ配置済み・Access受け入れ待ち、2026-08-14 JST）
+## 21. 管理者ダッシュボード（管理者1名で受け入れ完了、2026-08-14〜15 JST）
 
-`workers/gluco-admin-dashboard/` に、利用者別の最小限の利用状況を見る専用Cloudflare Workerを実装した。既存の公開Usage Dashboardや公開Usage APIとは分離し、公開サイトにはリンクしない。2026年8月14日に専用hostnameを作るfail-closed bootstrap Version `ecdf08e7-84d6-439a-83bd-96f03986f87b` だけを配置した。placeholder設定のまま全requestがD1読取前に同じ`403`となり、前後のD1件数は`0 / 0 / 0`、書き込み0件だった。Cloudflare Accessのapplicationとexact-email Allow policy、team domain、audience、実際の管理者メールSecretは未設定であり、受け入れ完了までは利用可能と扱わない。外部IDや実際のメールアドレスはGitへ記録しない。
+`workers/gluco-admin-dashboard/` に、利用者別の最小限の利用状況を見る専用Cloudflare Workerを実装した。既存の公開Usage Dashboardや公開Usage APIとは分離し、公開サイトにはリンクしない。2026年8月14日、Version `d17e89e9-bc15-40fb-90a0-2e85cb19cf42` をdeployment `392fb7b5-792c-4990-b939-6ab97481beb1` で本番へ反映した。専用hostname全体を、正確な管理者メール1件だけを許可するCloudflare Accessで保護し、メールOne-time PINと15分sessionを使用する。実際のメールアドレス、Accessの識別子・設定値、保護されたhostnameはGitや運用記録へ残さない。
 
-専用hostname全体をCloudflare Accessで保護し、通過後もWorker内でAccess JWTの署名、issuer、audience、有効期限と、Secretに保存した管理者メールとの完全一致を再検証する。設定不足、token不足、検証失敗、別メールはD1を読む前に同じ`403`で安全に失敗する。
+Access通過後もWorker内でAccess JWTの署名、issuer、audience、有効期限と、Secretに保存した管理者メールとの完全一致を再検証する。設定不足、token不足、検証失敗、別メールはD1を読む前に同じ`403`で安全に失敗する。
 
 D1の既存view `admin_device_usage` に対する固定`SELECT` 1つだけを使い、サーバー側で読取専用HTMLを生成する。書き込み、任意SQL、検索、詳細、公開JSON、書き出し、ブラウザ側JavaScriptは設けない。表示してよいのは、端末プロフィールごとの次の5項目だけである。
 
@@ -313,4 +313,6 @@ D1の既存view `admin_device_usage` に対する固定`SELECT` 1つだけを使
 - 新しく正常に完了したAI分析の合計回数
 - 通常のグルコの想い出No.1〜50の現在数
 
-profile ID、token・token hash、作成・更新・最終利用日時、日別行、event receipt、血糖値・グラフ、AIへ送った内容・AIお手紙本文、CGM種別、接続先・合言葉・ticket、IPアドレス、raw User-Agentは選択・返却・表示しない。本番公開と認証後の境界確認が完了するまでは、管理者画面を利用可能とは記録しない。
+profile ID、token・token hash、作成・更新・最終利用日時、日別行、event receipt、血糖値・グラフ、AIへ送った内容・AIお手紙本文、CGM種別、接続先・合言葉・ticket、IPアドレス、raw User-Agentは選択・返却・表示しない。
+
+2026年8月15日、管理者1名の実browser acceptanceを完了した。未認証requestはAccessへの`302`で停止し、許可された管理者の`GET /`はサーバー描画の読取専用empty stateを表示した。query付きURLと未知pathは`404`となり、script、画像、外部linkは0件だった。preview URL、application log、invocation logは無効のままとする。本番D1確認は実数を記録せず、「行数不変」という境界結果だけを残す。メールOne-time PINはMFAではないため、メールアカウント側の二段階認証を有効にし、管理者追加や運用範囲拡大の前にMFA対応IdPを再検討する。
