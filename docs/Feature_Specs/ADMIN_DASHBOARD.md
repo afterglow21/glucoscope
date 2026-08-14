@@ -1,10 +1,10 @@
 # GlucoScope 認証付き管理者ダッシュボード
 
-Status: fail-closed bootstrap shell deployed / Cloudflare Access configuration and administrator acceptance still pending
+Status: production deployed 2026-08-14 JST / administrator 1名のbrowser acceptance completed 2026-08-15 JST
 
-Last reviewed: 2026-08-14
+Last reviewed: 2026-08-15
 
-2026年8月14日、専用hostnameを作るためのfail-closed bootstrap Version `ecdf08e7-84d6-439a-83bd-96f03986f87b` だけを反映した。`TEAM_DOMAIN` と `POLICY_AUD` はplaceholderのままで、実際の管理者メールもまだ登録していないため、全requestはD1を読む前に同じ一般的な `403` で停止する。前後の `profiles / usage_daily / event_receipts` は `0 / 0 / 0` のままで、書き込みは0件だった。Cloudflare Access未設定のため、これは利用可能な管理者画面の公開完了ではなく、認証設定前の停止用入口である。
+2026年8月14日、専用WorkerのVersion `d17e89e9-bc15-40fb-90a0-2e85cb19cf42` をdeployment `392fb7b5-792c-4990-b939-6ab97481beb1` で本番へ反映した。専用hostname全体を、正確な管理者メール1件だけを許可するCloudflare Accessで保護し、Access通過後もWorkerが署名付きJWTとSecretに保存した同じメールとの一致をD1読取前に再検証する。2026年8月15日、管理者1名のbrowser acceptanceを完了した。未認証requestはAccessへの `302` で停止し、許可された管理者の `GET /` はサーバー描画の読取専用empty stateを表示した。query付きURLと未知のpathは `404` となり、script、画像、外部linkは0件だった。公開サイトからはリンクせず、preview URL、application log、invocation logも無効のままとする。
 
 Canonical principles: `docs/Project_Bible/PROJECT_BIBLE_v1.0_DRAFT.md`
 
@@ -48,7 +48,7 @@ Workerでは `jose` を使い、`Cf-Access-Jwt-Assertion` について次を検�
 
 `TEAM_DOMAIN` と `POLICY_AUD` は秘密情報ではない設定値である。`ADMIN_ALLOWED_EMAIL` は個人情報をGitに残さないためCloudflare Secretにする。設定不足、placeholder、token不足、検証失敗、別メールはすべて同じ `403` で安全に失敗し、理由やtoken内容を画面・ログへ出さない。
 
-既存IdPでMFAを利用できる場合はそれを優先する。初期の管理者1名だけの運用では、正確なメールAllow policyとメールOne-time PINを利用できる。認証方式と許可メールは本番設定前に管理者が決める。
+初期の管理者1名運用では、正確なメールAllow policy、メールOne-time PIN、15分sessionを使用する。メールOne-time PINはMFAではないため、管理者のメールアカウント側で二段階認証を有効にする。管理者追加や運用範囲拡大の前には、MFA対応IdPを優先して再検討する。
 
 ## 4. 読み取ってよい項目
 
@@ -112,18 +112,18 @@ Workerソースでapplication logを作らず、Cloudflare observabilityとinvoc
 
 Secret値、Access JWT、管理者メール、表示名、profile行、D1の件数または内容をGit、command argument、CI output、運用メモへコピーしない。本番確認結果は「認証成功」「項目allowlist合格」「D1行数不変」のような境界結果だけを記録する。
 
-## 9. 本番前に必要な外部設定と判断
+## 9. 本番設定と運用境界（2026-08-14設定済み）
 
-ローカル実装だけでは公開しない。本番前に次を項目別に明示して承認する。
+初期の管理者1名運用では、次の設定と境界を固定する。実際のメールアドレス、Accessの識別子・設定値、保護されたhostnameは、Gitや運用記録へコピーしない。
 
-1. 許可する管理者メール1件
-2. 既存IdP + MFA、またはメールOne-time PINのどちらを使うか
-3. Cloudflare Access applicationとexact-email Allow policyの作成
-4. `TEAM_DOMAIN`、`POLICY_AUD`、`ADMIN_ALLOWED_EMAIL` Secretの設定
-5. 専用Workerの新規deploymentと既存D1 binding
-6. Access保護した `workers.dev` で始めるか、専用custom domainを使うか
+1. 許可する正確な管理者メール1件だけをAccess Allow policyと `ADMIN_ALLOWED_EMAIL` Secretへ設定する
+2. メールOne-time PINと15分sessionを使用し、メールアカウント側の二段階認証を有効にする
+3. `Everyone`、メールdomain全体、Login Methods、Bypass policyをAllow条件へ追加しない
+4. Access issuerとapplication audienceをWorker設定へ保持し、値そのものは文書や運用記録へコピーしない
+5. 専用Workerだけへ既存D1をbindし、既存Usage Worker、収集switch、relay、公開Pagesを変更しない
+6. `preview_urls=false`、observability無効、公開サイトからのlinkなしを維持する
 
-最小の初回はAccess保護した専用 `workers.dev` でよい。Cloudflare公式は重要な本番用途ではcustom domainを推奨しているため、運用範囲が広がる前に専用domainへ移す。
+初期はAccess保護した専用Worker production URLを使う。運用範囲が広がる前に、MFA対応IdPと専用custom domainへの移行を再検討する。
 
 ## 10. 受け入れ条件
 
@@ -139,6 +139,8 @@ Secret値、Access JWT、管理者メール、表示名、profile行、D1の件�
 - すべてのresponseがno-storeと安全headerを維持する
 - 本番smokeの前後で既存3 tableの件数が変わらない
 - 既存Usage Worker、収集switch、relay、公開Pagesの挙動を変えない
+
+2026年8月15日の実browser確認では、未認証requestのAccess redirect、許可された管理者の読取専用empty state、query付きURLと未知pathの `404`、script・画像・外部linkがないことを確認した。JWTの署名、issuer、audience、有効期限、issued-at claimの存在、email、method、安全header、HTML escape、write SQL不在はlocal acceptance suiteで確認する。本番D1確認は実数を記録せず、「行数不変」という境界結果だけを残す。
 
 ## 11. 比較して採用しない初期案
 
