@@ -923,11 +923,11 @@ Polish:
 
 ## 35. Shared Workers KV Cache
 
-v14 release-candidate state (pending deployment):
+v14 production state — 2026-08-14:
 
 Browser-local layer:
 
-- local release-candidate storage key: `glucoscope.aiLetterLocalCache.v14`
+- current local storage key: `glucoscope.aiLetterLocalCache.v14`
 - maximum saved entries: 30 generated letters
 - retired `glucoscope.aiLetterLocalCache.v13`, v12, and v11 data is removed when cache reading begins and when a saved data connection is deleted
 - deleting a saved data connection also clears the current local letter cache
@@ -948,13 +948,13 @@ AI_CACHE_FRESH_SECONDS=3600
 AI_CACHE_RETENTION_SECONDS=86400
 ```
 
-The local v14 release candidate uses shared-cache key schema `gluco-ai-letter-cache-v14`. It prevents v13 letters from overriding the emoji-ending punctuation rule and the other current letter rules. The candidate neither reads nor writes shared v13 keys; retained v13 entries expire naturally under the configured 24-hour retention period. Browser-local v13, v12, and v11 entries are removed when cache reading begins and when a saved data connection is deleted. This candidate is pending deployment; the verified production checkpoint remains v13 as recorded below.
+Production v14 uses shared-cache key schema `gluco-ai-letter-cache-v14`. It prevents v13 letters from overriding the emoji-ending punctuation rule and the other current letter rules. Production v14 neither reads nor writes shared v13 keys; retained v13 entries expire naturally under the configured 24-hour retention period. Browser-local v13, v12, and v11 entries are removed when cache reading begins and when a saved data connection is deleted. Git commit `66f9b207d65c17130287b555920c115a9a963e1f` was deployed through deployment `5b099641-a818-4d14-ba9d-18aebb7e7ec2`; 100% of traffic routes to Version 28 (`f2565bc3-1f49-4f3f-b119-6ec2683f0607`). Version 27 (`9f93a9df-f423-48c9-adbf-9de80e643712`) is the immediate rollback target. Binding and Secret names, model, limits, budgets, CORS, and Durable Object migration remain unchanged. The post-deploy boundary checks returned `204 / 403 / 200` for approved preflight, unapproved Usage `GET`, and approved Usage `GET`.
 
-ローカルのv14公開候補では、端末内キーを `glucoscope.aiLetterLocalCache.v14`、共有キーschemaを `gluco-ai-letter-cache-v14` とします。v13のお手紙が、絵文字で終わる文の句点ルールや、現在のお手紙ルールを上書きしないためです。
+本番v14では、端末内キーを `glucoscope.aiLetterLocalCache.v14`、共有キーschemaを `gluco-ai-letter-cache-v14` とします。v13のお手紙が、絵文字で終わる文の句点ルールや、現在のお手紙ルールを上書きしないためです。
 
-v14候補は共有v13キーを読み書きしません。保持中の共有v13は24時間以内の既存期限で自然に失効し、端末内v13、v12、v11はキャッシュ読み取り時と保存済み接続の削除時に消します。この候補はまだ本番へ反映しておらず、確認済みの本番状態は下のv13本番確認のとおりです。
+本番v14は共有v13キーを読み書きしません。保持中の共有v13は24時間以内の既存期限で自然に失効し、端末内v13、v12、v11はキャッシュ読み取り時と保存済み接続の削除時に消します。Git commit `66f9b207d65c17130287b555920c115a9a963e1f` をdeployment `5b099641-a818-4d14-ba9d-18aebb7e7ec2` で反映し、通信の100%をVersion 28（`f2565bc3-1f49-4f3f-b119-6ec2683f0607`）へ向けました。Version 27（`9f93a9df-f423-48c9-adbf-9de80e643712`）を即時復帰先として保持します。bindingとSecretの名前、model、上限、budget、CORS、Durable Object migrationは変更していません。公開後の境界確認は、許可preflight、不許可Usage `GET`、許可Usage `GET` の順に `204 / 403 / 200` でした。
 
-### v13 production verification — 2026-08-13 / v13本番確認 — 2026-08-13
+### Previous v13 production verification — 2026-08-13 / 直前のv13本番確認 — 2026-08-13
 
 Git commit `5ce79dc16f122def5bfd8ce40a15c0870a072b4c` was deployed as deployment `f2fbfb68-c87f-4f74-9ebf-231c8da029ee`. It routes 100% of traffic to Version 27 (`9f93a9df-f423-48c9-adbf-9de80e643712`). Version 26 (`1f4d0c91-808c-4600-8d63-e9207d06b7e0`) remains the immediate rollback target.
 

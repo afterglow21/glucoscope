@@ -14,29 +14,29 @@ GitHub Pages
 
 ## Current production behavior
 
-Production checkpoint — 2026-08-13:
+Production checkpoint — 2026-08-14:
 
-- Git commit `5ce79dc16f122def5bfd8ce40a15c0870a072b4c` was deployed through deployment `f2fbfb68-c87f-4f74-9ebf-231c8da029ee`
-- 100% of traffic routes to Version 27 (`9f93a9df-f423-48c9-adbf-9de80e643712`)
-- Version 26 (`1f4d0c91-808c-4600-8d63-e9207d06b7e0`) remains the immediate rollback target
-- cache schema v13 is active; production does not read shared v12 keys, and retained v12 entries expire naturally within their existing 24-hour lifetime
+- Git commit `66f9b207d65c17130287b555920c115a9a963e1f` was deployed through deployment `5b099641-a818-4d14-ba9d-18aebb7e7ec2`
+- 100% of traffic routes to Version 28 (`f2565bc3-1f49-4f3f-b119-6ec2683f0607`)
+- Version 27 (`9f93a9df-f423-48c9-adbf-9de80e643712`) is the immediate rollback target
+- cache schema v14 is active; production does not read shared v13 keys, and retained v13 entries expire naturally within their existing 24-hour lifetime
 - binding and Secret names, the OpenAI model, generation limits, budget settings, CORS policy, and Durable Object migration are unchanged
 - the approved-origin Content-Type preflight returned `204`, an unapproved-origin Usage `GET` returned `403`, and an approved-origin Usage `GET` returned `200`
 
-本番反映記録 — 2026-08-13：
+本番反映記録 — 2026-08-14：
 
-- Git commit `5ce79dc16f122def5bfd8ce40a15c0870a072b4c` をdeployment `f2fbfb68-c87f-4f74-9ebf-231c8da029ee` で反映
-- 通信の100%はVersion 27（`9f93a9df-f423-48c9-adbf-9de80e643712`）へ向ける
-- Version 26（`1f4d0c91-808c-4600-8d63-e9207d06b7e0`）を即時復帰先として保持
-- cache schema v13は本番で有効。共有v12は読み込まず、保持中のv12は既存の24時間以内の期限で自然に失効
+- Git commit `66f9b207d65c17130287b555920c115a9a963e1f` をdeployment `5b099641-a818-4d14-ba9d-18aebb7e7ec2` で反映
+- 通信の100%はVersion 28（`f2565bc3-1f49-4f3f-b119-6ec2683f0607`）へ向ける
+- Version 27（`9f93a9df-f423-48c9-adbf-9de80e643712`）を即時復帰先として保持
+- cache schema v14は本番で有効。共有v13は読み込まず、保持中のv13は既存の24時間以内の期限で自然に失効
 - bindingとSecretの名前、OpenAI model、生成上限、budget設定、CORS policy、Durable Object migrationは変更なし
 - 許可OriginのContent-Type preflightは `204`、不許可OriginのUsage `GET` は `403`、許可OriginのUsage `GET` は `200`
 
-## Local v14 release candidate / ローカルv14公開候補
+## Current v14 behavior / 現行v14動作
 
-The notes below describe the local v14 release candidate, which is pending deployment. The verified production state remains the v13 checkpoint recorded above.
+The notes below describe the deployed v14 behavior verified in the production checkpoint above.
 
-以下は、まだ本番へ反映していないローカルv14公開候補の説明です。確認済みの本番状態は、上のv13本番反映記録のままです。
+以下は、上の本番反映記録で確認した現行v14の動作です。
 
 - `AI_PROVIDER=openai`
 - OpenAI API key is stored as a Cloudflare secret.
@@ -64,9 +64,9 @@ The notes below describe the local v14 release candidate, which is pending deplo
 - The displayed letter must not turn TIR, TAR, TBR, CV, or GlucoScore into a next-day optimization target. Blocking phrases include `目標の時間を増やす`, `TBRを減らす`, and `これだけ意識して進めよう`.
 - Token and estimated-cost totals include both attempts when an automatic retry is needed.
 
-## v14 release candidate behavior / v14公開候補の動作
+## v14 production behavior / v14本番動作
 
-The local v14 release candidate includes the following behavior. It is not yet deployed.
+Production v14 includes the following behavior.
 
 - `today` and `yesterday` remove GMI and GMI-derived hints before prototype or OpenAI generation.
 - GlucoScore fields and score-derived hints are removed before generation when there is no comparison-period value, the score is equal or lower, or the increase is only one.
@@ -76,9 +76,9 @@ The local v14 release candidate includes the following behavior. It is not yet d
 - Normal Japanese prose ends naturally with `。`, `！`, or `？`. The opening `グルコだよ🍀`, short headings, and noun-only labels may omit punctuation. For a declarative sentence ending with an emoji, the emoji replaces only `。`: use `ぼくはここにいるよ🍀`, not `ぼくはここにいるよ。🍀` or `ぼくはここにいるよ🍀。`. Meaningful `！` and `？` are not removed by this rule.
 - A soft-only first response still gets one rewrite attempt. If that rewrite has a provider or transport error, is incomplete, or introduces a blocking issue, the safe first response is returned instead. A first response with any blocking issue is never a fallback candidate.
 - The browser-local key is `glucoscope.aiLetterLocalCache.v14`; retired v13, v12, and v11 local entries are removed during cache reading and saved-connection deletion.
-- The candidate shared schema is `gluco-ai-letter-cache-v14`. The v14 candidate does not read or write v13 shared keys; retained v13 entries expire under the existing 24-hour retention policy.
+- The current shared schema is `gluco-ai-letter-cache-v14`. Production v14 does not read or write v13 shared keys; retained v13 entries expire under the existing 24-hour retention policy.
 
-ローカルのv14公開候補には、以下の動作を含みます。まだ本番へは反映していません。
+本番のv14には、以下の動作を含みます。
 
 - `today` と `yesterday` では、GMIとGMIから作ったヒントを生成前に外します。
 - 比較期間のGlucoScoreがない、同じ、低下、または1だけ上昇した場合は、スコア項目とスコア由来のヒントを生成前に外します。
@@ -88,7 +88,7 @@ The local v14 release candidate includes the following behavior. It is not yet d
 - 通常の日本語本文は自然な `。`、`！`、`？` で終えます。`グルコだよ🍀`、短い見出し、名詞だけのラベルは句点なしでも構いません。通常の文末に絵文字を添える場合は、絵文字を `。` の代わりにして `ぼくはここにいるよ🍀` とします。`ぼくはここにいるよ。🍀` や `ぼくはここにいるよ🍀。` にはしません。意味のある `！` や `？` はこのルールで外しません。
 - 軽微な警告だけの初回文は1回書き直します。書き直しが通信エラー、途中終了、または重大な問題になった場合は、安全だった初回文を返します。重大な問題がある初回文はfallbackに使いません。
 - 端末内キーは `glucoscope.aiLetterLocalCache.v14` で、退役したv13、v12、v11はキャッシュ読み取り時と保存済み接続の削除時に消します。
-- 候補の共有schemaは `gluco-ai-letter-cache-v14` です。v14候補は共有v13を読み書きせず、保持中のv13は既存の24時間以内の期限で失効します。
+- 現行の共有schemaは `gluco-ai-letter-cache-v14` です。本番v14は共有v13を読み書きせず、保持中のv13は既存の24時間以内の期限で失効します。
 
 ## Companionship around the numbers
 
@@ -143,9 +143,9 @@ The prompt must praise the observed flow rather than the person's worth or presu
 - Concerning metrics are stated as facts. The letter avoids blame-weighted words such as `も`, `しか`, `まだ`, `残念ながら`, `高すぎる`, `低すぎる`, `悪い`, and `問題` around those values.
 - A metric is not left as a standalone exclamation line; the same sentence explains the gentle reflection clue.
 
-The local v14 release candidate uses shared-cache schema `gluco-ai-letter-cache-v14`, which prevents v13 cached wording from overriding the emoji-ending punctuation rule and the other current letter rules. The candidate does not read shared v13 keys; retained v13 entries and new v14 entries expire within 24 hours. The candidate is pending deployment, and production remains at the v13 checkpoint above.
+Production v14 uses shared-cache schema `gluco-ai-letter-cache-v14`, which prevents v13 cached wording from overriding the emoji-ending punctuation rule and the other current letter rules. It does not read shared v13 keys; retained v13 entries and new v14 entries expire within 24 hours. The previous v13 deployment `f2fbfb68-c87f-4f74-9ebf-231c8da029ee`, Version 27 (`9f93a9df-f423-48c9-adbf-9de80e643712`), is retained as the immediate rollback checkpoint.
 
-ローカルのv14公開候補では、共有キャッシュschemaを `gluco-ai-letter-cache-v14` とします。v13の保存文が、絵文字で終わる文の句点ルールや、現在のお手紙ルールを上書きしないためです。候補は共有v13を読み込まず、保持中のv13と新しいv14はいずれも24時間以内に失効します。v14は未公開で、本番は上のv13本番反映記録のままです。
+本番v14では、共有キャッシュschemaを `gluco-ai-letter-cache-v14` とします。v13の保存文が、絵文字で終わる文の句点ルールや、現在のお手紙ルールを上書きしないためです。本番v14は共有v13を読み込まず、保持中のv13と新しいv14はいずれも24時間以内に失効します。直前のv13 deployment `f2fbfb68-c87f-4f74-9ebf-231c8da029ee`、Version 27（`9f93a9df-f423-48c9-adbf-9de80e643712`）は即時復帰先として保持します。
 
 ## Production CORS policy
 
