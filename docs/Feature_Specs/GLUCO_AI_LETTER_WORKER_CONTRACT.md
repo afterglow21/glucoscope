@@ -155,7 +155,7 @@ Future fields may include:
     "status": "stored",
     "storage": "cloudflare-workers-kv",
     "bindingAvailable": true,
-    "key": "gluco-letter:gluco-ai-letter-cache-v13:<sha256>",
+    "key": "gluco-letter:gluco-ai-letter-cache-v14:<sha256>",
     "fresh": true,
     "ageSeconds": 0,
     "generatedAt": "2026-07-09T05:52:00.000Z",
@@ -641,7 +641,7 @@ The OpenAI prompt must preserve GlucoScope safety boundaries:
 - never frame GlucoScore as points, grading, success or failure, or proof of effort
 - normal Japanese prose ends naturally in `。`, `！`, or `？`
 - `グルコだよ🍀`, short headings, and noun-only labels may omit terminal punctuation
-- sentence-ending emoji follows punctuation, for example `ぼくはここにいるよ。🍀`
+- for a declarative sentence ending with an emoji, the emoji replaces only `。`: use `ぼくはここにいるよ🍀`, not `ぼくはここにいるよ。🍀` or `ぼくはここにいるよ🍀。`; meaningful `！` and `？` are not removed by this rule
 
 日本語出力では、次の表現ルールも守ります。
 
@@ -649,7 +649,7 @@ The OpenAI prompt must preserve GlucoScope safety boundaries:
 - GlucoScoreを「点」、採点、成功・失敗、努力の証明にしない
 - 通常の本文は自然な `。`、`！`、`？` で終える
 - `グルコだよ🍀`、短い見出し、名詞だけのラベルは句点なしでもよい
-- 絵文字を文末に添える場合は、`ぼくはここにいるよ。🍀` のように句読点を先に置く
+- 通常の文末に絵文字を添える場合は、絵文字を `。` の代わりにして `ぼくはここにいるよ🍀` とする。`ぼくはここにいるよ。🍀` や `ぼくはここにいるよ🍀。` にはしない。意味のある `！` や `？` はこのルールで外さない
 
 
 ---
@@ -923,11 +923,13 @@ Polish:
 
 ## 35. Shared Workers KV Cache
 
+v14 release-candidate state (pending deployment):
+
 Browser-local layer:
 
-- current production storage key: `glucoscope.aiLetterLocalCache.v13`
+- local release-candidate storage key: `glucoscope.aiLetterLocalCache.v14`
 - maximum saved entries: 30 generated letters
-- retired `glucoscope.aiLetterLocalCache.v12` and v11 data is removed when cache reading begins and when a saved data connection is deleted
+- retired `glucoscope.aiLetterLocalCache.v13`, v12, and v11 data is removed when cache reading begins and when a saved data connection is deleted
 - deleting a saved data connection also clears the current local letter cache
 
 Production binding:
@@ -946,11 +948,11 @@ AI_CACHE_FRESH_SECONDS=3600
 AI_CACHE_RETENTION_SECONDS=86400
 ```
 
-The current production shared-cache key schema is `gluco-ai-letter-cache-v13`. It prevents v12 letters from overriding the GlucoScore omission, Japanese punctuation, reduced generation-input, and safe-first-response fallback rules. Production v13 neither reads nor writes v12 shared keys; retained v12 entries expire naturally under the configured 24-hour retention period. Browser-local v12 and v11 entries are removed when cache reading begins and when a saved data connection is deleted.
+The local v14 release candidate uses shared-cache key schema `gluco-ai-letter-cache-v14`. It prevents v13 letters from overriding the emoji-ending punctuation rule and the other current letter rules. The candidate neither reads nor writes shared v13 keys; retained v13 entries expire naturally under the configured 24-hour retention period. Browser-local v13, v12, and v11 entries are removed when cache reading begins and when a saved data connection is deleted. This candidate is pending deployment; the verified production checkpoint remains v13 as recorded below.
 
-現在の本番では、端末内キーを `glucoscope.aiLetterLocalCache.v13`、共有キーschemaを `gluco-ai-letter-cache-v13` として稼働しています。v12のお手紙が、GlucoScore省略、自然な句読点、生成入力の整理、安全な初回文へのfallbackという新しいルールを上書きしないためです。
+ローカルのv14公開候補では、端末内キーを `glucoscope.aiLetterLocalCache.v14`、共有キーschemaを `gluco-ai-letter-cache-v14` とします。v13のお手紙が、絵文字で終わる文の句点ルールや、現在のお手紙ルールを上書きしないためです。
 
-本番v13は共有v12キーを読み書きしません。保持中の共有v12は24時間以内の既存期限で自然に失効し、端末内v12とv11はキャッシュ読み取り時と保存済み接続の削除時に消します。
+v14候補は共有v13キーを読み書きしません。保持中の共有v13は24時間以内の既存期限で自然に失効し、端末内v13、v12、v11はキャッシュ読み取り時と保存済み接続の削除時に消します。この候補はまだ本番へ反映しておらず、確認済みの本番状態は下のv13本番確認のとおりです。
 
 ### v13 production verification — 2026-08-13 / v13本番確認 — 2026-08-13
 

@@ -32,6 +32,12 @@ Production checkpoint — 2026-08-13:
 - bindingとSecretの名前、OpenAI model、生成上限、budget設定、CORS policy、Durable Object migrationは変更なし
 - 許可OriginのContent-Type preflightは `204`、不許可OriginのUsage `GET` は `403`、許可OriginのUsage `GET` は `200`
 
+## Local v14 release candidate / ローカルv14公開候補
+
+The notes below describe the local v14 release candidate, which is pending deployment. The verified production state remains the v13 checkpoint recorded above.
+
+以下は、まだ本番へ反映していないローカルv14公開候補の説明です。確認済みの本番状態は、上のv13本番反映記録のままです。
+
 - `AI_PROVIDER=openai`
 - OpenAI API key is stored as a Cloudflare secret.
 - Turnstile verification is required.
@@ -39,7 +45,7 @@ Production checkpoint — 2026-08-13:
 - Usage counters are persisted in a singleton SQLite-backed Durable Object.
 - The usage counter stores operational totals only. It does not store glucose values or AI letter text.
 - AI letters use a two-layer cache: browser-local cache plus a shared Cloudflare Workers KV cache.
-- The browser-local cache uses `glucoscope.aiLetterLocalCache.v13` and keeps at most 30 generated letters. The frontend removes retired v12 and v11 local caches when reading the cache and when a saved connection is deleted.
+- The browser-local cache uses `glucoscope.aiLetterLocalCache.v14` and keeps at most 30 generated letters. The frontend removes retired v13, v12, and v11 local caches when reading the cache and when a saved connection is deleted.
 - The shared key is an opaque SHA-256 hash of page mode, language, period, time slot, analysis mode, and displayed range. Raw glucose values are not part of the key.
 - A shared letter younger than one hour is returned without a new OpenAI call or generation-count consumption.
 - The KV value contains only the generated letter text and minimal metadata. The glucose summary is not stored in KV.
@@ -58,31 +64,31 @@ Production checkpoint — 2026-08-13:
 - The displayed letter must not turn TIR, TAR, TBR, CV, or GlucoScore into a next-day optimization target. Blocking phrases include `目標の時間を増やす`, `TBRを減らす`, and `これだけ意識して進めよう`.
 - Token and estimated-cost totals include both attempts when an automatic retry is needed.
 
-## v13 production behavior / v13本番動作
+## v14 release candidate behavior / v14公開候補の動作
 
-The current production release includes the following behavior.
+The local v14 release candidate includes the following behavior. It is not yet deployed.
 
 - `today` and `yesterday` remove GMI and GMI-derived hints before prototype or OpenAI generation.
 - GlucoScore fields and score-derived hints are removed before generation when there is no comparison-period value, the score is equal or lower, or the increase is only one.
 - The Worker filters legacy-client `patternHints` after validation, so suppressed GlucoScore hints and `today`/`yesterday` GMI hints cannot re-enter the prompt.
 - Only a rise of two or more may be mentioned, optionally, in one comparison sentence or bullet. That comparison may use the literal name `GlucoScore` at most twice to label both values. Extra score sentences or a third name occurrence are blocking output issues. The score is never described as points, grading, success or failure, or proof of effort.
 - A transport error or HTTP 408, 409, 429, or 5xx may retry once inside the Worker after a short delay for each logical OpenAI step. Other 4xx responses and Turnstile, incomplete-output, or quality decisions do not use this transport retry; the browser does not resend or reuse a Turnstile token.
-- Normal Japanese prose ends naturally with `。`, `！`, or `？`. The opening `グルコだよ🍀`, short headings, and noun-only labels may omit punctuation. When a sentence ends with an emoji, punctuation comes first: `ぼくはここにいるよ。🍀`.
+- Normal Japanese prose ends naturally with `。`, `！`, or `？`. The opening `グルコだよ🍀`, short headings, and noun-only labels may omit punctuation. For a declarative sentence ending with an emoji, the emoji replaces only `。`: use `ぼくはここにいるよ🍀`, not `ぼくはここにいるよ。🍀` or `ぼくはここにいるよ🍀。`. Meaningful `！` and `？` are not removed by this rule.
 - A soft-only first response still gets one rewrite attempt. If that rewrite has a provider or transport error, is incomplete, or introduces a blocking issue, the safe first response is returned instead. A first response with any blocking issue is never a fallback candidate.
-- The browser-local key is `glucoscope.aiLetterLocalCache.v13`; retired v12 and v11 local entries are removed during cache reading and saved-connection deletion.
-- The active shared schema is `gluco-ai-letter-cache-v13`. Production v13 does not read or write v12 shared keys; retained v12 entries expire under the existing 24-hour retention policy.
+- The browser-local key is `glucoscope.aiLetterLocalCache.v14`; retired v13, v12, and v11 local entries are removed during cache reading and saved-connection deletion.
+- The candidate shared schema is `gluco-ai-letter-cache-v14`. The v14 candidate does not read or write v13 shared keys; retained v13 entries expire under the existing 24-hour retention policy.
 
-現在の本番には、以下の動作を含みます。
+ローカルのv14公開候補には、以下の動作を含みます。まだ本番へは反映していません。
 
 - `today` と `yesterday` では、GMIとGMIから作ったヒントを生成前に外します。
 - 比較期間のGlucoScoreがない、同じ、低下、または1だけ上昇した場合は、スコア項目とスコア由来のヒントを生成前に外します。
 - Workerは検証後に古いクライアントの `patternHints` も整理するため、省略対象のGlucoScoreヒントや、`today`・`yesterday` のGMIヒントが生成入力へ戻ることはありません。
 - 比較期間より2以上高い場合だけ、必要なら比較する1文または1つの箇条書きで触れてよいものとします。その1文では現在値と比較値を区別するため `GlucoScore` という語を最大2回まで使えます。スコアの文が2つ以上、または語が3回以上なら重大な出力問題です。「点」、採点、成功・失敗、努力の証明にはしません。
 - 通信失敗またはHTTP 408、409、429、5xxでは、OpenAI処理の各段階につきWorker内で短く待って1回だけ再試行できます。それ以外の4xx、Turnstile失敗、途中終了判定、品質判定には使わず、ブラウザからの再送やTurnstile tokenの再利用もしません。
-- 通常の日本語本文は自然な `。`、`！`、`？` で終えます。`グルコだよ🍀`、短い見出し、名詞だけのラベルは句点なしでも構いません。絵文字を文末に添える場合は `ぼくはここにいるよ。🍀` の順にします。
+- 通常の日本語本文は自然な `。`、`！`、`？` で終えます。`グルコだよ🍀`、短い見出し、名詞だけのラベルは句点なしでも構いません。通常の文末に絵文字を添える場合は、絵文字を `。` の代わりにして `ぼくはここにいるよ🍀` とします。`ぼくはここにいるよ。🍀` や `ぼくはここにいるよ🍀。` にはしません。意味のある `！` や `？` はこのルールで外しません。
 - 軽微な警告だけの初回文は1回書き直します。書き直しが通信エラー、途中終了、または重大な問題になった場合は、安全だった初回文を返します。重大な問題がある初回文はfallbackに使いません。
-- 端末内キーは `glucoscope.aiLetterLocalCache.v13` で、退役したv12とv11はキャッシュ読み取り時と保存済み接続の削除時に消します。
-- 本番の共有schemaは `gluco-ai-letter-cache-v13` です。本番v13は共有v12を読み書きせず、保持中のv12は既存の24時間以内の期限で失効します。
+- 端末内キーは `glucoscope.aiLetterLocalCache.v14` で、退役したv13、v12、v11はキャッシュ読み取り時と保存済み接続の削除時に消します。
+- 候補の共有schemaは `gluco-ai-letter-cache-v14` です。v14候補は共有v13を読み書きせず、保持中のv13は既存の24時間以内の期限で失効します。
 
 ## Companionship around the numbers
 
@@ -93,7 +99,7 @@ Gluco's letter should feel like a small friend checking in, not a report that en
 - Do not invent the person's location, weather, season, time of day, symptoms, effort, or circumstances.
 - Keep any reflection invitation optional rather than turning it into homework.
 - Prefer a warm closing such as `ぼくはここにいるよ` while preserving the medical-safety boundary.
-- In Japanese prose, write the closing as a complete sentence such as `ぼくはここにいるよ。🍀`; punctuation comes before a trailing emoji.
+- With a trailing emoji, write the closing as `ぼくはここにいるよ🍀`; the emoji replaces `。`. Do not write `ぼくはここにいるよ。🍀` or `ぼくはここにいるよ🍀。`. Meaningful `！` and `？` are outside this rule.
 
 ## Positive recognition and Unicorn wording
 
@@ -137,9 +143,9 @@ The prompt must praise the observed flow rather than the person's worth or presu
 - Concerning metrics are stated as facts. The letter avoids blame-weighted words such as `も`, `しか`, `まだ`, `残念ながら`, `高すぎる`, `低すぎる`, `悪い`, and `問題` around those values.
 - A metric is not left as a standalone exclamation line; the same sentence explains the gentle reflection clue.
 
-The active shared-cache schema is `gluco-ai-letter-cache-v13`, which prevents older cached wording from overriding the current score-omission, punctuation, companionship, non-directive, safety, language-precision, and retry rules. Production does not read shared v12 keys; retained v12 entries and current v13 entries expire within 24 hours.
+The local v14 release candidate uses shared-cache schema `gluco-ai-letter-cache-v14`, which prevents v13 cached wording from overriding the emoji-ending punctuation rule and the other current letter rules. The candidate does not read shared v13 keys; retained v13 entries and new v14 entries expire within 24 hours. The candidate is pending deployment, and production remains at the v13 checkpoint above.
 
-本番で有効な共有キャッシュschemaは `gluco-ai-letter-cache-v13` です。古い保存文が、現在のスコア省略、句読点、寄り添い、非指示、安全性、言葉の精度、再試行ルールを上書きしないためです。本番は共有v12を読み込まず、保持中のv12と現在のv13はいずれも24時間以内に失効します。
+ローカルのv14公開候補では、共有キャッシュschemaを `gluco-ai-letter-cache-v14` とします。v13の保存文が、絵文字で終わる文の句点ルールや、現在のお手紙ルールを上書きしないためです。候補は共有v13を読み込まず、保持中のv13と新しいv14はいずれも24時間以内に失効します。v14は未公開で、本番は上のv13本番反映記録のままです。
 
 ## Production CORS policy
 

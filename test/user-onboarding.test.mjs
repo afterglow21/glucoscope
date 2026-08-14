@@ -55,9 +55,9 @@ test("rule-based Gluco messages always add one warm companion sentence in Japane
   assert.doesNotMatch(companionSource, /薬|投薬|インスリン|食事|運動|治療|改善|medication|insulin|meal|exercise|treatment|improve/i);
 });
 
-test("warmer AI-letter cache replaces and clears the previous local wording cache", () => {
-  assert.match(app, /AI_LETTER_LOCAL_CACHE_STORAGE_KEY = "glucoscope\.aiLetterLocalCache\.v13"/);
-  assert.match(app, /AI_LETTER_LEGACY_LOCAL_CACHE_STORAGE_KEYS = \[[\s\S]*"glucoscope\.aiLetterLocalCache\.v12",[\s\S]*"glucoscope\.aiLetterLocalCache\.v11"[\s\S]*\]/);
+test("emoji-punctuation AI-letter cache replaces and clears previous local wording caches", () => {
+  assert.match(app, /AI_LETTER_LOCAL_CACHE_STORAGE_KEY = "glucoscope\.aiLetterLocalCache\.v14"/);
+  assert.match(app, /AI_LETTER_LEGACY_LOCAL_CACHE_STORAGE_KEYS = \[[\s\S]*"glucoscope\.aiLetterLocalCache\.v13",[\s\S]*"glucoscope\.aiLetterLocalCache\.v12",[\s\S]*"glucoscope\.aiLetterLocalCache\.v11"[\s\S]*\]/);
   assert.match(app, /for \(const legacyKey of AI_LETTER_LEGACY_LOCAL_CACHE_STORAGE_KEYS\) \{\s*localStorage\.removeItem\(legacyKey\);/);
 });
 
@@ -84,7 +84,7 @@ test("GlucoScore is omitted from reflections unless it rises by at least two", (
 test("public data connection remains clickable and clearly marked as early access", () => {
   assert.match(index, /データ接続（先行体験）/);
   assert.match(index, /Gluroo接続は少人数で確認しながら提供しています/);
-  assert.match(index, /js\/app\.js\?v=20260813-score-kindness-1/);
+  assert.match(index, /js\/app\.js\?v=20260813-emoji-punctuation-1/);
   assert.match(app, /dataSourceButtonDemo: "データ接続（先行体験）"/);
   assert.match(app, /dataSourceDialogTitle: "Data connection \(early access\)"/);
   assert.doesNotMatch(index, /id="dataSourceButton"[^>]+disabled/);

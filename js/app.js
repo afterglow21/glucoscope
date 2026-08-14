@@ -33,8 +33,9 @@ const LIVE_PERIOD_STORAGE_KEY = "glucoscope.livePeriod.v1";
 const CUSTOM_RANGE_STORAGE_KEY = "glucoscope.customRange.v1";
 const AI_LETTER_WORKER_ENDPOINT_STORAGE_KEY = "glucoscope.aiLetterWorkerEndpoint.v1";
 const AI_LETTER_WORKER_ENABLED_STORAGE_KEY = "glucoscope.aiLetterWorkerEnabled.v1";
-const AI_LETTER_LOCAL_CACHE_STORAGE_KEY = "glucoscope.aiLetterLocalCache.v13";
+const AI_LETTER_LOCAL_CACHE_STORAGE_KEY = "glucoscope.aiLetterLocalCache.v14";
 const AI_LETTER_LEGACY_LOCAL_CACHE_STORAGE_KEYS = [
+  "glucoscope.aiLetterLocalCache.v13",
   "glucoscope.aiLetterLocalCache.v12",
   "glucoscope.aiLetterLocalCache.v11"
 ];

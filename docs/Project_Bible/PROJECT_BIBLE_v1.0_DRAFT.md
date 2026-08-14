@@ -4707,13 +4707,17 @@ time of day, symptoms, effort, or circumstances.
 Normal Japanese prose sentences should end naturally with `。`, `！`, or `？`.
 The opening line `グルコだよ🍀`, short headings, and noun-only labels
 may omit terminal punctuation.
-When a sentence ends with an emoji, punctuation comes before the emoji,
-for example `ぼくはここにいるよ。🍀`.
+When a declarative sentence ends with an emoji, the emoji replaces the Japanese
+full stop: `ぼくはここにいるよ🍀`. Do not write either
+`ぼくはここにいるよ。🍀` or `ぼくはここにいるよ🍀。`.
+This rule removes only `。`; a meaningful `！` or `？` is not its target.
 
 通常の日本語本文は、文の終わりを自然な `。`、`！`、`？` にします。
 冒頭の `グルコだよ🍀`、短い見出し、名詞だけのラベルには句点がなくても構いません。
-文末に絵文字を添える場合は、`ぼくはここにいるよ。🍀` のように、
-句読点を絵文字の前に置きます。
+通常の文末に絵文字を添える場合は、絵文字が句点の代わりになるため、
+`ぼくはここにいるよ🍀` とします。
+`ぼくはここにいるよ。🍀` や `ぼくはここにいるよ🍀。` にはしません。
+外すのは `。` だけで、意味のある `！` や `？` はこのルールの対象外です。
 
 ### Celebrate good flows clearly / 良い流れは、ちゃんと一緒に喜ぶ
 
@@ -4826,7 +4830,7 @@ Worker内で短く待ってから同じ呼び出しを1回だけ再試行でき�
 途中で切れたAI出力はこれまでどおり表示・保存せず、
 出力上限が理由のときに1回だけより長い上限で再試行します。
 
-### Generation input and cache v13 production / 生成入力とcache v13本番
+### Generation input and cache v14 release candidate / 生成入力とcache v14公開候補
 
 For `today` and `yesterday`, GMI and GMI-derived hints are removed
 before the prototype or OpenAI generation step.
@@ -4839,13 +4843,14 @@ and a `today` or `yesterday` hint containing GMI cannot reintroduce GMI.
 This reduces avoidable contradictions and output rejection;
 it does not weaken the medical-safety or factual checks.
 
-The current production release uses
-`glucoscope.aiLetterLocalCache.v13` for up to 30 browser entries and
-`gluco-ai-letter-cache-v13` for the shared cache with up to 24-hour retention.
-Browser cache v12 is retired and removed during cache reading
-and saved-connection deletion; shared v12 keys are no longer read or written
-by v13 production and expire naturally under their existing 24-hour
-retention policy. Cache v13 is active in production.
+The local v14 release candidate uses
+`glucoscope.aiLetterLocalCache.v14` for up to 30 browser entries and
+`gluco-ai-letter-cache-v14` for the shared cache with up to 24-hour retention.
+Browser cache v13, v12, and v11 data is retired and removed during cache reading
+and saved-connection deletion. The candidate does not read or write shared v13
+keys; retained v13 entries expire naturally under their existing 24-hour
+retention policy. This v14 candidate is pending deployment. The v13 production
+checkpoint below remains the currently verified production state.
 
 `today` と `yesterday` では、GMIとGMIから作ったヒントを、
 prototypeまたはOpenAIで文章を作る前に外します。
@@ -4858,12 +4863,12 @@ prototypeまたはOpenAIで文章を作る前に外します。
 これは不要な矛盾や出力失敗を減らすためであり、
 医療安全や事実確認の境界を弱める変更ではありません。
 
-現在の本番では、端末内のお手紙キャッシュを
-`glucoscope.aiLetterLocalCache.v13`（最大30件）、共有キャッシュを
-`gluco-ai-letter-cache-v13`（最大24時間保持）として稼働しています。
-端末内v12は退役し、キャッシュ読み取り時と保存済み接続の削除時に消します。
-本番v13は共有v12を読み書きせず、共有v12は既存の24時間以内の期限で自然に失効します。
-cache v13は本番で有効です。
+ローカルのv14公開候補では、端末内のお手紙キャッシュを
+`glucoscope.aiLetterLocalCache.v14`（最大30件）、共有キャッシュを
+`gluco-ai-letter-cache-v14`（最大24時間保持）とします。
+端末内v13、v12、v11は退役し、キャッシュ読み取り時と保存済み接続の削除時に消します。
+v14候補は共有v13を読み書きせず、保持中の共有v13は既存の24時間以内の期限で自然に失効します。
+v14はまだ本番へ反映していません。現在確認済みの本番状態は、下のv13本番反映記録です。
 
 ### AI Worker production checkpoint — 2026-08-13
 ### AI Worker本番反映記録 — 2026-08-13
