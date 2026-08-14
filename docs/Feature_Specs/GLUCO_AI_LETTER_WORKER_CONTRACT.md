@@ -155,7 +155,7 @@ Future fields may include:
     "status": "stored",
     "storage": "cloudflare-workers-kv",
     "bindingAvailable": true,
-    "key": "gluco-letter:gluco-ai-letter-cache-v13:<sha256>",
+    "key": "gluco-letter:gluco-ai-letter-cache-v14:<sha256>",
     "fresh": true,
     "ageSeconds": 0,
     "generatedAt": "2026-07-09T05:52:00.000Z",
@@ -641,7 +641,7 @@ The OpenAI prompt must preserve GlucoScope safety boundaries:
 - never frame GlucoScore as points, grading, success or failure, or proof of effort
 - normal Japanese prose ends naturally in `。`, `！`, or `？`
 - `グルコだよ🍀`, short headings, and noun-only labels may omit terminal punctuation
-- sentence-ending emoji follows punctuation, for example `ぼくはここにいるよ。🍀`
+- for a declarative sentence ending with an emoji, the emoji replaces only `。`: use `ぼくはここにいるよ🍀`, not `ぼくはここにいるよ。🍀` or `ぼくはここにいるよ🍀。`; meaningful `！` and `？` are not removed by this rule
 
 日本語出力では、次の表現ルールも守ります。
 
@@ -649,7 +649,7 @@ The OpenAI prompt must preserve GlucoScope safety boundaries:
 - GlucoScoreを「点」、採点、成功・失敗、努力の証明にしない
 - 通常の本文は自然な `。`、`！`、`？` で終える
 - `グルコだよ🍀`、短い見出し、名詞だけのラベルは句点なしでもよい
-- 絵文字を文末に添える場合は、`ぼくはここにいるよ。🍀` のように句読点を先に置く
+- 通常の文末に絵文字を添える場合は、絵文字を `。` の代わりにして `ぼくはここにいるよ🍀` とする。`ぼくはここにいるよ。🍀` や `ぼくはここにいるよ🍀。` にはしない。意味のある `！` や `？` はこのルールで外さない
 
 
 ---
@@ -923,11 +923,13 @@ Polish:
 
 ## 35. Shared Workers KV Cache
 
+v14 production state — 2026-08-14:
+
 Browser-local layer:
 
-- current production storage key: `glucoscope.aiLetterLocalCache.v13`
+- current local storage key: `glucoscope.aiLetterLocalCache.v14`
 - maximum saved entries: 30 generated letters
-- retired `glucoscope.aiLetterLocalCache.v12` and v11 data is removed when cache reading begins and when a saved data connection is deleted
+- retired `glucoscope.aiLetterLocalCache.v13`, v12, and v11 data is removed when cache reading begins and when a saved data connection is deleted
 - deleting a saved data connection also clears the current local letter cache
 
 Production binding:
@@ -946,13 +948,13 @@ AI_CACHE_FRESH_SECONDS=3600
 AI_CACHE_RETENTION_SECONDS=86400
 ```
 
-The current production shared-cache key schema is `gluco-ai-letter-cache-v13`. It prevents v12 letters from overriding the GlucoScore omission, Japanese punctuation, reduced generation-input, and safe-first-response fallback rules. Production v13 neither reads nor writes v12 shared keys; retained v12 entries expire naturally under the configured 24-hour retention period. Browser-local v12 and v11 entries are removed when cache reading begins and when a saved data connection is deleted.
+Production v14 uses shared-cache key schema `gluco-ai-letter-cache-v14`. It prevents v13 letters from overriding the emoji-ending punctuation rule and the other current letter rules. Production v14 neither reads nor writes shared v13 keys; retained v13 entries expire naturally under the configured 24-hour retention period. Browser-local v13, v12, and v11 entries are removed when cache reading begins and when a saved data connection is deleted. Git commit `66f9b207d65c17130287b555920c115a9a963e1f` was deployed through deployment `5b099641-a818-4d14-ba9d-18aebb7e7ec2`; 100% of traffic routes to Version 28 (`f2565bc3-1f49-4f3f-b119-6ec2683f0607`). Version 27 (`9f93a9df-f423-48c9-adbf-9de80e643712`) is the immediate rollback target. Binding and Secret names, model, limits, budgets, CORS, and Durable Object migration remain unchanged. The post-deploy boundary checks returned `204 / 403 / 200` for approved preflight, unapproved Usage `GET`, and approved Usage `GET`.
 
-現在の本番では、端末内キーを `glucoscope.aiLetterLocalCache.v13`、共有キーschemaを `gluco-ai-letter-cache-v13` として稼働しています。v12のお手紙が、GlucoScore省略、自然な句読点、生成入力の整理、安全な初回文へのfallbackという新しいルールを上書きしないためです。
+本番v14では、端末内キーを `glucoscope.aiLetterLocalCache.v14`、共有キーschemaを `gluco-ai-letter-cache-v14` とします。v13のお手紙が、絵文字で終わる文の句点ルールや、現在のお手紙ルールを上書きしないためです。
 
-本番v13は共有v12キーを読み書きしません。保持中の共有v12は24時間以内の既存期限で自然に失効し、端末内v12とv11はキャッシュ読み取り時と保存済み接続の削除時に消します。
+本番v14は共有v13キーを読み書きしません。保持中の共有v13は24時間以内の既存期限で自然に失効し、端末内v13、v12、v11はキャッシュ読み取り時と保存済み接続の削除時に消します。Git commit `66f9b207d65c17130287b555920c115a9a963e1f` をdeployment `5b099641-a818-4d14-ba9d-18aebb7e7ec2` で反映し、通信の100%をVersion 28（`f2565bc3-1f49-4f3f-b119-6ec2683f0607`）へ向けました。Version 27（`9f93a9df-f423-48c9-adbf-9de80e643712`）を即時復帰先として保持します。bindingとSecretの名前、model、上限、budget、CORS、Durable Object migrationは変更していません。公開後の境界確認は、許可preflight、不許可Usage `GET`、許可Usage `GET` の順に `204 / 403 / 200` でした。
 
-### v13 production verification — 2026-08-13 / v13本番確認 — 2026-08-13
+### Previous v13 production verification — 2026-08-13 / 直前のv13本番確認 — 2026-08-13
 
 Git commit `5ce79dc16f122def5bfd8ce40a15c0870a072b4c` was deployed as deployment `f2fbfb68-c87f-4f74-9ebf-231c8da029ee`. It routes 100% of traffic to Version 27 (`9f93a9df-f423-48c9-adbf-9de80e643712`). Version 26 (`1f4d0c91-808c-4600-8d63-e9207d06b7e0`) remains the immediate rollback target.
 

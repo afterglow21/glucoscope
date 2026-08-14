@@ -13,8 +13,8 @@ import {
 
 const workerSource = await readFile(new URL("../src/index.js", import.meta.url), "utf8");
 
-test("worker uses cache schema v13 for score and punctuation contract", () => {
-  assert.match(workerSource, /AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v13"/);
+test("worker uses cache schema v14 for trailing-emoji punctuation contract", () => {
+  assert.match(workerSource, /AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v14"/);
 });
 
 test("both retry paths block only hard quality issues after one rewrite", () => {
@@ -130,9 +130,31 @@ test("Japanese punctuation normalizer preserves openings and labels while comple
     "・落ち着いた時間",
     "来てくれてうれしいよ。",
     "今日の数字を急いで答えにしなくて大丈夫。",
-    "ぼくはここにいるよ。🍀",
+    "ぼくはここにいるよ🍀",
     "そのままで大丈夫だよ！"
   ].join("\n"));
+});
+
+test("Japanese punctuation normalizer removes a full stop around trailing emoji", () => {
+  for (const input of [
+    "ぼくはここにいるよ🍀",
+    "ぼくはここにいるよ。🍀",
+    "ぼくはここにいるよ🍀。",
+    "ぼくはここにいるよ．🍀",
+    "ぼくはここにいるよ🍀."
+  ]) {
+    assert.equal(normalizeGeneratedLetterPunctuation(input, "ja"), "ぼくはここにいるよ🍀");
+  }
+
+  assert.equal(normalizeGeneratedLetterPunctuation("ここにいるよ🫶💌。", "ja"), "ここにいるよ🫶💌");
+  assert.equal(normalizeGeneratedLetterPunctuation("大丈夫かな？🍀", "ja"), "大丈夫かな？🍀");
+  assert.equal(normalizeGeneratedLetterPunctuation("うれしいよ！🍀", "ja"), "うれしいよ！🍀");
+});
+
+test("worker prompt consistently uses no full stop with trailing emoji", () => {
+  assert.match(workerSource, /ぼくはここにいるよ🍀/);
+  assert.doesNotMatch(workerSource, /ぼくはここにいるよ。🍀/);
+  assert.doesNotMatch(workerSource, /🍀は句点の後/);
 });
 
 test("punctuation normalizer does not alter English output", () => {

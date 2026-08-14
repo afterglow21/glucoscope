@@ -4707,13 +4707,17 @@ time of day, symptoms, effort, or circumstances.
 Normal Japanese prose sentences should end naturally with `。`, `！`, or `？`.
 The opening line `グルコだよ🍀`, short headings, and noun-only labels
 may omit terminal punctuation.
-When a sentence ends with an emoji, punctuation comes before the emoji,
-for example `ぼくはここにいるよ。🍀`.
+When a declarative sentence ends with an emoji, the emoji replaces the Japanese
+full stop: `ぼくはここにいるよ🍀`. Do not write either
+`ぼくはここにいるよ。🍀` or `ぼくはここにいるよ🍀。`.
+This rule removes only `。`; a meaningful `！` or `？` is not its target.
 
 通常の日本語本文は、文の終わりを自然な `。`、`！`、`？` にします。
 冒頭の `グルコだよ🍀`、短い見出し、名詞だけのラベルには句点がなくても構いません。
-文末に絵文字を添える場合は、`ぼくはここにいるよ。🍀` のように、
-句読点を絵文字の前に置きます。
+通常の文末に絵文字を添える場合は、絵文字が句点の代わりになるため、
+`ぼくはここにいるよ🍀` とします。
+`ぼくはここにいるよ。🍀` や `ぼくはここにいるよ🍀。` にはしません。
+外すのは `。` だけで、意味のある `！` や `？` はこのルールの対象外です。
 
 ### Celebrate good flows clearly / 良い流れは、ちゃんと一緒に喜ぶ
 
@@ -4826,7 +4830,7 @@ Worker内で短く待ってから同じ呼び出しを1回だけ再試行でき�
 途中で切れたAI出力はこれまでどおり表示・保存せず、
 出力上限が理由のときに1回だけより長い上限で再試行します。
 
-### Generation input and cache v13 production / 生成入力とcache v13本番
+### Generation input and cache v14 production / 生成入力とcache v14本番
 
 For `today` and `yesterday`, GMI and GMI-derived hints are removed
 before the prototype or OpenAI generation step.
@@ -4839,13 +4843,21 @@ and a `today` or `yesterday` hint containing GMI cannot reintroduce GMI.
 This reduces avoidable contradictions and output rejection;
 it does not weaken the medical-safety or factual checks.
 
-The current production release uses
-`glucoscope.aiLetterLocalCache.v13` for up to 30 browser entries and
-`gluco-ai-letter-cache-v13` for the shared cache with up to 24-hour retention.
-Browser cache v12 is retired and removed during cache reading
-and saved-connection deletion; shared v12 keys are no longer read or written
-by v13 production and expire naturally under their existing 24-hour
-retention policy. Cache v13 is active in production.
+Production v14 uses
+`glucoscope.aiLetterLocalCache.v14` for up to 30 browser entries and
+`gluco-ai-letter-cache-v14` for the shared cache with up to 24-hour retention.
+Browser cache v13, v12, and v11 data is retired and removed during cache reading
+and saved-connection deletion. Production v14 does not read or write shared v13
+keys; retained v13 entries expire naturally under their existing 24-hour
+retention policy. Git commit `66f9b207d65c17130287b555920c115a9a963e1f`
+was deployed through deployment `5b099641-a818-4d14-ba9d-18aebb7e7ec2`;
+100% of traffic routes to Version 28
+(`f2565bc3-1f49-4f3f-b119-6ec2683f0607`). Version 27
+(`9f93a9df-f423-48c9-adbf-9de80e643712`) is the immediate rollback target.
+Binding and Secret names, the OpenAI model, generation limits, budget settings,
+CORS policy, and Durable Object migration are unchanged. The post-deploy
+boundary checks returned `204 / 403 / 200` for approved preflight,
+unapproved-origin Usage `GET`, and approved-origin Usage `GET`.
 
 `today` と `yesterday` では、GMIとGMIから作ったヒントを、
 prototypeまたはOpenAIで文章を作る前に外します。
@@ -4858,15 +4870,21 @@ prototypeまたはOpenAIで文章を作る前に外します。
 これは不要な矛盾や出力失敗を減らすためであり、
 医療安全や事実確認の境界を弱める変更ではありません。
 
-現在の本番では、端末内のお手紙キャッシュを
-`glucoscope.aiLetterLocalCache.v13`（最大30件）、共有キャッシュを
-`gluco-ai-letter-cache-v13`（最大24時間保持）として稼働しています。
-端末内v12は退役し、キャッシュ読み取り時と保存済み接続の削除時に消します。
-本番v13は共有v12を読み書きせず、共有v12は既存の24時間以内の期限で自然に失効します。
-cache v13は本番で有効です。
+本番v14では、端末内のお手紙キャッシュを
+`glucoscope.aiLetterLocalCache.v14`（最大30件）、共有キャッシュを
+`gluco-ai-letter-cache-v14`（最大24時間保持）とします。
+端末内v13、v12、v11は退役し、キャッシュ読み取り時と保存済み接続の削除時に消します。
+本番v14は共有v13を読み書きせず、保持中の共有v13は既存の24時間以内の期限で自然に失効します。
+Git commit `66f9b207d65c17130287b555920c115a9a963e1f` を、
+deployment `5b099641-a818-4d14-ba9d-18aebb7e7ec2` で本番へ反映し、
+通信の100%をVersion 28（`f2565bc3-1f49-4f3f-b119-6ec2683f0607`）へ向けました。
+Version 27（`9f93a9df-f423-48c9-adbf-9de80e643712`）を即時復帰先として保持します。
+bindingとSecretの名前、OpenAI model、生成上限、budget設定、CORS policy、
+Durable Object migrationは変更していません。公開後の境界確認は、許可preflight、
+不許可OriginのUsage `GET`、許可OriginのUsage `GET` の順に `204 / 403 / 200` でした。
 
-### AI Worker production checkpoint — 2026-08-13
-### AI Worker本番反映記録 — 2026-08-13
+### Previous AI Worker production checkpoint — 2026-08-13
+### 直前のAI Worker本番反映記録 — 2026-08-13
 
 Git commit `5ce79dc16f122def5bfd8ce40a15c0870a072b4c` is deployed through
 deployment `f2fbfb68-c87f-4f74-9ebf-231c8da029ee`.
@@ -4911,6 +4929,8 @@ After the supervised Usage lifecycle and general-user Dexcom G7 Limited Relay ac
 - Checked-in `USAGE_COLLECTION_ENABLED=false` and `RELAY_ENABLED=false` remain unchanged. Usage stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` and relay stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` remain immediate rollback targets.
 - The public 3CGM demo remains live through its separate Worker and is not coupled to either early-access Worker.
 
+On 2026-08-14 JST, two people were invited to try GlucoScope within this existing early-access scope. This records the invitation only; it does not yet confirm onboarding, CGM connection, use, feedback, or successful operation. No names or other identifying information are recorded.
+
 The early-access observation list is Safari restoration after a full quit, natural expiry of the approximately one-hour relay ticket, live limit exhaustion, abnormal traffic, provider-condition changes, and support questions. A problem in Usage recording must not block a verified CGM connection. Either Worker may be paused independently.
 
 ## 1〜3人向け先行体験の継続有効化 — 2026-08-12
@@ -4923,5 +4943,7 @@ Usage lifecycleと、一般利用者向け限定中継のDexcom G7実機受け�
 - 境界確認後もUsage D1は `profiles / usage_daily / event_receipts = 0 / 0 / 0` で、監査による利用者行の書き込みはありません。
 - Gitに保存する `USAGE_COLLECTION_ENABLED=false` と `RELAY_ENABLED=false` は変更しません。Usage停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb` と限定中継停止Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` を即時復帰先として保持します。
 - 公開3CGMデモは別Workerで独立してライブを継続し、先行体験用の2つのWorkerと連動させません。
+
+2026年8月14日JST、既存の先行体験の範囲で2名へGlucoScopeの利用をお願いしました。これは案内を行った事実だけを記録するもので、登録、CGM接続、利用、フィードバック、正常動作が確認済みという意味ではありません。氏名その他の識別情報は記録しません。
 
 先行体験中は、Safari完全終了後の復元、約1時間のリレーチケット自然失効、実通信での上限到達、異常通信、提供条件の変更、問い合わせを観察します。Usageの失敗で確認済みCGM接続を止めず、必要時は2つのWorkerを独立して停止します。

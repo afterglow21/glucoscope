@@ -28,7 +28,7 @@ const GLUCO_SCORE_NAME_GLOBAL_PATTERN = /(?:\bGlucoScore\b|グルコスコア)/g
 const GMI_NAME_PATTERN = /\bGMI\b/iu;
 const JAPANESE_TERMINAL_PUNCTUATION_PATTERN = /[。！？!?…]$/u;
 const JAPANESE_LABEL_ENDING_PATTERN = /(?:全体の流れ|数字の手がかり|見えている手がかり|気になった動き|振り返りの手がかり|小さな見返し|まとめ)$/u;
-const TRAILING_FRIENDLY_EMOJI_PATTERN = /\s*((?:🍀|🦄|🌱|✨|💚|☕️?)+)$/u;
+const TRAILING_EMOJI_SEQUENCE_PATTERN = /\s*((?:(?:\p{Regional_Indicator}{2}|[#*0-9]\uFE0F?\u20E3|\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?(?:\p{Emoji_Modifier})?(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?(?:\p{Emoji_Modifier})?)*)(?:\s*))+)[。．.]*$/u;
 
 // These issues are worth rewriting once, but they are not safety, medical,
 // factual-accuracy, or internal-data failures. After one quality retry, a
@@ -185,24 +185,34 @@ function isJapaneseLetterLabel(line = "", index = 0) {
   return /^(?:🍀|📊|🔎|🌱|💌|🫶)\s*[^。、！？!?]{1,24}$/u.test(normalized);
 }
 
+function normalizeJapaneseTrailingEmoji(line = "") {
+  const normalized = String(line ?? "").trimEnd();
+  const emojiMatch = normalized.match(TRAILING_EMOJI_SEQUENCE_PATTERN);
+  if (!emojiMatch) return null;
+
+  const body = normalized
+    .slice(0, emojiMatch.index)
+    .trimEnd()
+    .replace(/[。．.]+$/u, "")
+    .trimEnd();
+  const emoji = emojiMatch[1].trim();
+
+  return `${body}${emoji}`;
+}
+
 function shouldAddJapaneseFullStop(line = "", index = 0) {
   if (isJapaneseLetterLabel(line, index)) return false;
 
   const normalized = String(line ?? "").trim();
-  const emojiMatch = normalized.match(TRAILING_FRIENDLY_EMOJI_PATTERN);
-  const textWithoutEmoji = emojiMatch
-    ? normalized.slice(0, emojiMatch.index).trimEnd()
-    : normalized;
+  if (!normalized || JAPANESE_TERMINAL_PUNCTUATION_PATTERN.test(normalized)) return false;
+  if (/[：:]$/u.test(normalized)) return false;
+  if (/\d(?:%|％|mg\/dL)?$/iu.test(normalized)) return false;
 
-  if (!textWithoutEmoji || JAPANESE_TERMINAL_PUNCTUATION_PATTERN.test(textWithoutEmoji)) return false;
-  if (/[：:]$/u.test(textWithoutEmoji)) return false;
-  if (/\d(?:%|％|mg\/dL)?$/iu.test(textWithoutEmoji)) return false;
-
-  const hasSentenceEnding = /[ぁ-んァ-ヶ一-龠](?:だ|よ|ね|た|る|う|い|ない|たい|よう|そう|かも)(?:ね|よ)?$/u.test(textWithoutEmoji)
-    || /[、，]/u.test(textWithoutEmoji);
+  const hasSentenceEnding = /[ぁ-んァ-ヶ一-龠](?:だ|よ|ね|た|る|う|い|ない|たい|よう|そう|かも)(?:ね|よ)?$/u.test(normalized)
+    || /[、，]/u.test(normalized);
   if (/^[・*-]\s*/u.test(normalized)) return hasSentenceEnding;
 
-  return hasSentenceEnding || /[ぁ-んァ-ヶ一-龠]/u.test(textWithoutEmoji);
+  return hasSentenceEnding || /[ぁ-んァ-ヶ一-龠]/u.test(normalized);
 }
 
 export function normalizeGeneratedLetterPunctuation(text = "", language = "ja") {
@@ -214,13 +224,10 @@ export function normalizeGeneratedLetterPunctuation(text = "", language = "ja") 
     .split("\n")
     .map((line, index) => {
       const trimmed = line.trimEnd();
+      const emojiEnding = normalizeJapaneseTrailingEmoji(trimmed);
+      if (emojiEnding !== null) return emojiEnding;
       if (!shouldAddJapaneseFullStop(trimmed, index)) return trimmed;
-
-      const emojiMatch = trimmed.match(TRAILING_FRIENDLY_EMOJI_PATTERN);
-      if (!emojiMatch) return `${trimmed}。`;
-
-      const body = trimmed.slice(0, emojiMatch.index).trimEnd();
-      return `${body}。${emojiMatch[1]}`;
+      return `${trimmed}。`;
     })
     .join("\n")
     .trim();
