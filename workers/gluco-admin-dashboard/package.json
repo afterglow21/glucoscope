@@ -1,0 +1,21 @@
+{
+  "name": "glucoscope-admin-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check src/access-auth.js && node --check src/admin-store.js && node --check src/index.js && node --check test/access-auth.test.mjs && node --check test/admin-store.test.mjs && node --check test/admin-worker.test.mjs",
+    "test": "node --test test/*.test.mjs",
+    "verify": "npm run check && npm test",
+    "types": "wrangler types",
+    "types:check": "wrangler types --check",
+    "deploy:dry": "wrangler deploy --dry-run"
+  },
+  "dependencies": {
+    "jose": "6.2.4"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "wrangler": "^4.120.1"
+  }
+}

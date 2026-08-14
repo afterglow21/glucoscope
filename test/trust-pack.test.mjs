@@ -28,7 +28,11 @@ test("Usage Dashboard describes its AI-only scope without claiming page-view or 
   assert.match(index, /AIお手紙が作られた回数と、開発者が負担するAI利用料の目安/);
   assert.doesNotMatch(index, /ページ閲覧の傾向/);
   assert.match(dashboard, /この画面は、AIお手紙全体の利用状況です/);
+  assert.match(dashboard, /公開デモと、少人数で試しているユーザー版から新しく作ったAI分析を分けずに数えます/);
+  assert.match(dashboard, /利用者の人数や、だれが使ったかは分かりません/);
   assert.match(dashboard, /ユーザー版を開いた日数、血糖データの取得回数、利用記録に保存された日数やグルコの想い出数は含みません/);
+  assert.match(dashboard, /公開デモもユーザー版も、この端末に保存したお手紙だけを再表示します/);
+  assert.match(dashboard, /sharedCache\.enabled === false[\s\S]*?停止中（先行体験）/);
 });
 
 test("Trust Pack internal links and local assets resolve", async () => {
@@ -138,15 +142,20 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(privacy, /表示名、使った日、AI分析を使った回数、通常のグルコの想い出の数を記録します/);
   assert.match(privacy, /血糖値、接続情報、AIお手紙の本文は記録しません/);
   assert.match(privacy, /この端末を見分けるランダムな番号、記録のオン・オフ、記録を始めた日と最後に使った日/);
-  assert.match(privacy, /この端末に最大30件まで保存します。共有用の一時保存は最大24時間で消えます/);
+  assert.match(privacy, /画面にまとめた血糖情報をOpenAIへ送ります/);
+  assert.match(privacy, /氏名、接続先URL、合言葉、元の血糖データ一覧は送りません/);
+  assert.match(privacy, /最初のAI分析の前に、送る内容を画面で確認できます/);
+  assert.match(privacy, /AI分析を使わなくても、血糖表示や「いつものグルコのお話」は変わりません/);
+  assert.match(privacy, /公開デモもユーザー版も、ほかの人と共有する一時保存には入れません/);
+  assert.match(privacy, /安全のための確認記録に、入力と出力が最大30日残る場合があります/);
   assert.match(privacy, /利用状況の記録は、設定からいつでも停止・再開・削除できます/);
   assert.match(privacy, /使った日の記録は90日分まで保存し、90日使われていない端末の記録は削除します/);
   assert.match(privacy, /無料プランでは最大7日、有料プランでは最大30日/);
   assert.match(privacy, /up to 7 days on the Free plan or up to 30 days on a Paid plan/);
-  assert.match(privacy, /現在、自分のデータをつないだユーザー版からは、GlucoScopeのAIへ血糖のまとめを送りません/);
   assert.match(privacy, /血糖値、接続情報、GlucoScore、AIお手紙の本文はアクセス分析へ送りません/);
   assert.match(privacy, /GlucoScopeは医療機器ではなく、診断や治療、インスリン量の判断はしません/);
-  assert.match(privacy, /GlucoScope does not currently send glucose summaries from the personal user experience to its AI/);
+  assert.match(privacy, /neither public-demo nor personal-user letters are placed in a shared temporary cache/);
+  assert.match(privacy, /abuse-monitoring logs for up to 30 days/);
   assert.doesNotMatch(privacy, /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
   assert.doesNotMatch(privacy, /<code>|\b(?:D1|deployment|Version|CORS|Cron|sessionStorage|adapter|RELAY_ENABLED)\b|\b(?:200|204|401|403|503)\b/i);
   assert.match(safety, /接続失敗は、CGMやポンプが止まったことを意味しません/);

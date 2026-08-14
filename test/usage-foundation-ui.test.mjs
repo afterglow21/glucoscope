@@ -42,6 +42,272 @@ test("the public demo is clearly labelled and user mode hides the demo identity"
   assert.doesNotMatch(index, /テストデータ|サンプルデータ/);
 });
 
+test("personal-user AI consent is explicit, versioned, and precedes any request", () => {
+  const consentStart = app.indexOf("function hasAiLetterUserConsent");
+  const consentEnd = app.indexOf("async function handleAiLetterRequest", consentStart);
+  const consentSource = app.slice(consentStart, consentEnd);
+  const stored = new Map();
+  const calls = [];
+  const statuses = [];
+  const panel = { hidden: true };
+  const title = { focus: () => calls.push("focus-title") };
+  const aiButton = { focus: () => calls.push("focus-ai") };
+  const context = {
+    AI_LETTER_USER_CONSENT_STORAGE_KEY: "glucoscope.aiLetterUserConsent.v1",
+    AI_LETTER_USER_CONSENT_VERSION: "2026-08-14-user-ai-1",
+    aiLetterUserConsentGrantedThisSession: false,
+    pendingAiLetterModeAfterConsent: null,
+    currentAiLetterMode: "letter",
+    isUserDataSourceMode: () => true,
+    normalizeAiLetterMode: (mode) => mode === "deep" ? "deep" : "letter",
+    localStorage: {
+      getItem: (key) => stored.get(key) || null,
+      setItem: (key, value) => stored.set(key, value)
+    },
+    document: {
+      getElementById: (id) => ({
+        aiLetterUserConsent: panel,
+        aiLetterUserConsentTitle: title,
+        aiLetterButton: aiButton
+      })[id] || null
+    },
+    setAiLetterPanelStatus: (key) => statuses.push(key),
+    handleAiLetterRequest: (...args) => calls.push(args),
+    console: { warn: () => {} }
+  };
+  vm.runInNewContext(`${consentSource}\nthis.requestConsent=requestAiLetterUserConsent;this.acceptConsent=acceptAiLetterUserConsent;this.cancelConsent=cancelAiLetterUserConsent;`, context);
+
+  assert.equal(context.requestConsent("deep"), true);
+  assert.equal(panel.hidden, false);
+  assert.deepEqual(statuses, ["aiLetterStatusConsentWaiting"]);
+  assert.deepEqual(calls, ["focus-title"]);
+
+  context.acceptConsent();
+  assert.equal(panel.hidden, true);
+  const saved = JSON.parse(stored.get("glucoscope.aiLetterUserConsent.v1"));
+  assert.equal(saved.accepted, true);
+  assert.equal(saved.version, "2026-08-14-user-ai-1");
+  assert.equal(calls[1], "focus-ai");
+  assert.equal(calls[2][0], "deep");
+  assert.equal(calls[2][1].skipUserConsent, true);
+  assert.equal(context.requestConsent("letter"), false);
+
+  context.aiLetterUserConsentGrantedThisSession = false;
+  stored.delete("glucoscope.aiLetterUserConsent.v1");
+  assert.equal(context.requestConsent("letter"), true);
+  context.cancelConsent();
+  assert.equal(panel.hidden, true);
+  assert.equal(calls.at(-1), "focus-ai");
+  assert.equal(statuses.at(-1), "aiLetterStatusConsentCancelled");
+
+  context.localStorage.setItem = () => { throw new Error("storage unavailable"); };
+  assert.equal(context.requestConsent("deep"), true);
+  context.acceptConsent();
+  assert.equal(calls.at(-2), "focus-ai");
+  assert.equal(calls.at(-1)[0], "deep");
+  assert.equal(context.requestConsent("letter"), false, "storage failure keeps consent for this session only");
+
+  assert.match(index, /id="aiLetterUserConsent"[^>]*aria-labelledby="aiLetterUserConsentTitle"[^>]*hidden/);
+  assert.match(index, /href="pages\/trust\/privacy-notes\.html#ai-letters"/);
+  assert.match(css, /\.ai-letter-user-consent\[hidden\]\{\s*display:none;/);
+  assert.match(css, /\.ai-letter-consent-actions \.letter-primary-button,[\s\S]*min-height:44px;/);
+});
+
+test("stale AI responses cannot cross a summary, mode, or saved-connection boundary", async () => {
+  const clearStart = app.indexOf("function clearDataSourceSpecificBrowserState");
+  const clearEnd = app.indexOf("function buildUserModeUrl", clearStart);
+  const summaryStart = app.indexOf("function setAiLetterSummary");
+  const summaryEnd = app.indexOf("function updateAiLetterControls", summaryStart);
+  const requestStart = app.indexOf("function getAiLetterRequestSummaryIdentity");
+  const requestEnd = app.indexOf("function exposeLetterControlGlobals", requestStart);
+  assert.ok(clearStart >= 0 && clearEnd > clearStart);
+  assert.ok(summaryStart >= 0 && summaryEnd > summaryStart);
+  assert.ok(requestStart >= 0 && requestEnd > requestStart);
+
+  const initialSummary = {
+    pageMode: "glucoscope-user-foundation",
+    language: "ja",
+    period: "today",
+    slot: "morning",
+    cacheRangeKey: "source-a-range"
+  };
+  const nextSummary = {
+    ...initialSummary,
+    cacheRangeKey: "source-b-range"
+  };
+  const pendingFetches = [];
+  const calls = {
+    displayed: [],
+    saved: [],
+    usage: 0,
+    errors: [],
+    removed: [],
+    turnstileResets: 0
+  };
+  const consentPanel = { hidden: false };
+  const context = {
+    initialSummary,
+    AbortController,
+    AI_LETTER_LOCAL_CACHE_STORAGE_KEY: "ai-cache-v14",
+    AI_LETTER_USER_CONSENT_STORAGE_KEY: "ai-consent-v1",
+    AI_LETTER_LEGACY_LOCAL_CACHE_STORAGE_KEYS: ["ai-cache-v13", "ai-cache-v12"],
+    localStorage: {
+      removeItem: (key) => calls.removed.push(key)
+    },
+    document: {
+      getElementById: (id) => id === "aiLetterUserConsent" ? consentPanel : null
+    },
+    normalizeAiLetterMode: (mode) => mode === "deep" ? "deep" : "letter",
+    getAiLetterLocalCacheKey: (summary, mode) => `${summary?.cacheRangeKey || "none"}|${mode}`,
+    resetAiLetterTurnstile: () => { calls.turnstileResets += 1; },
+    setAiLetterMode: () => {},
+    isAiLetterWorkerEnabled: () => true,
+    requestAiLetterUserConsent: () => false,
+    getFreshCachedAiLetter: () => null,
+    showAiLetterResult: (text) => { if (text) calls.displayed.push(text); },
+    updateAiLetterControls: () => {},
+    forceEnableAiLetterButtonSoon: () => {},
+    prepareAiLetterTurnstile: () => false,
+    setAiLetterPanelStatus: (_key, type) => {
+      if (type === "error") calls.errors.push("status-error");
+    },
+    getAiLetterWorkerEndpoint: () => "https://example.invalid/ai",
+    getTurnstileTokenForAiLetter: () => "turnstile-token",
+    isUserDataSourceMode: () => true,
+    fetch: (_url, options) => new Promise((resolve) => {
+      // Deliberately ignore abort here. The runtime generation/identity guard
+      // must still reject a late response from a non-cooperative transport.
+      pendingFetches.push({ resolve, options });
+    }),
+    getAiLetterTextFromResponse: (data) => data?.letter?.text || "",
+    saveAiLetterLocalCache: (summary, _data, text) => calls.saved.push({ summary, text }),
+    getAiLetterStatusKeyFromResponse: () => "aiLetterStatusSuccess",
+    getAiLetterUsageDetailFromResponse: () => "",
+    recordUsageProfileAiGenerationIfEligible: () => { calls.usage += 1; },
+    getAiLetterErrorStatusKey: () => "aiLetterStatusError",
+    showCachedAiLetter: () => false,
+    setAiLetterPanelMessage: () => calls.errors.push("panel-error"),
+    hasVisibleAiLetterResult: () => false,
+    console: {
+      warn: () => {},
+      error: () => calls.errors.push("console-error")
+    }
+  };
+
+  const clearSource = app.slice(clearStart, clearEnd);
+  const summarySource = app.slice(summaryStart, summaryEnd);
+  const requestSource = app.slice(requestStart, requestEnd);
+  vm.runInNewContext(`
+    let currentAiLetterMode = "letter";
+    let latestAiLetterSummary = initialSummary;
+    let aiLetterSummaryState = "ready";
+    let aiLetterRequestGeneration = 0;
+    let aiLetterRequestAbortController = null;
+    let aiLetterRequestInFlight = false;
+    let aiLetterUserConsentGrantedThisSession = true;
+    let pendingAiLetterModeAfterConsent = "letter";
+    ${clearSource}
+    ${summarySource}
+    ${requestSource}
+    this.requestAi = handleAiLetterRequest;
+    this.replaceSummary = (summary) => setAiLetterSummary(summary, "ready");
+    this.forceCurrentModeForTest = (mode) => { currentAiLetterMode = mode; };
+    this.clearConnectionState = clearDataSourceSpecificBrowserState;
+    this.readRuntimeState = () => ({
+      latestAiLetterSummary,
+      aiLetterRequestInFlight,
+      aiLetterUserConsentGrantedThisSession,
+      pendingAiLetterModeAfterConsent
+    });
+  `, context);
+
+  const successResponse = (text) => ({
+    ok: true,
+    json: async () => ({
+      ok: true,
+      status: "success",
+      source: "openai",
+      generation: { complete: true },
+      cache: { status: "miss" },
+      letter: { text, cached: false }
+    })
+  });
+
+  const staleAfterReplacement = context.requestAi("letter", { skipUserConsent: true });
+  await Promise.resolve();
+  assert.equal(pendingFetches.length, 1);
+  assert.equal(JSON.parse(pendingFetches[0].options.body).summary.cacheRangeKey, "source-a-range");
+  context.replaceSummary(nextSummary);
+  assert.equal(pendingFetches[0].options.signal.aborted, true);
+  pendingFetches[0].resolve(successResponse("old source letter"));
+  await staleAfterReplacement;
+  assert.deepEqual(calls.displayed, []);
+  assert.deepEqual(calls.saved, []);
+  assert.equal(calls.usage, 0);
+  assert.deepEqual(calls.errors, []);
+
+  const staleAfterModeChange = context.requestAi("letter", { skipUserConsent: true });
+  await Promise.resolve();
+  assert.equal(pendingFetches.length, 2);
+  // This bypasses the real mode setter's abort on purpose, proving that the
+  // response-time current-mode guard independently rejects the old result.
+  context.forceCurrentModeForTest("deep");
+  assert.equal(pendingFetches[1].options.signal.aborted, false);
+  pendingFetches[1].resolve(successResponse("wrong mode letter"));
+  await staleAfterModeChange;
+  assert.deepEqual(calls.displayed, []);
+  assert.deepEqual(calls.saved, []);
+  assert.equal(calls.usage, 0);
+  assert.deepEqual(calls.errors, []);
+  context.forceCurrentModeForTest("letter");
+
+  const staleAfterDeletion = context.requestAi("letter", { skipUserConsent: true });
+  await Promise.resolve();
+  assert.equal(pendingFetches.length, 3);
+  context.clearConnectionState();
+  assert.equal(pendingFetches[2].options.signal.aborted, true);
+  pendingFetches[2].resolve(successResponse("deleted source letter"));
+  await staleAfterDeletion;
+  assert.deepEqual(calls.displayed, []);
+  assert.deepEqual(calls.saved, []);
+  assert.equal(calls.usage, 0);
+  assert.deepEqual(calls.errors, []);
+  assert.deepEqual(calls.removed, [
+    "ai-cache-v14",
+    "ai-consent-v1",
+    "ai-cache-v13",
+    "ai-cache-v12"
+  ]);
+  assert.equal(consentPanel.hidden, true);
+  assert.equal(context.readRuntimeState().aiLetterUserConsentGrantedThisSession, false);
+  assert.equal(context.readRuntimeState().pendingAiLetterModeAfterConsent, null);
+
+  const currentRequest = context.requestAi("letter", { skipUserConsent: true });
+  await Promise.resolve();
+  assert.equal(pendingFetches.length, 4);
+  pendingFetches[3].resolve(successResponse("current source letter"));
+  await currentRequest;
+  assert.deepEqual(calls.displayed, ["current source letter"]);
+  assert.equal(calls.saved.length, 1);
+  assert.equal(calls.saved[0].summary.cacheRangeKey, "source-b-range");
+  assert.equal(calls.usage, 1);
+  assert.deepEqual(calls.errors, []);
+  assert.equal(context.readRuntimeState().aiLetterRequestInFlight, false);
+
+  const partialFailureAttempts = [];
+  context.localStorage.removeItem = (key) => {
+    partialFailureAttempts.push(key);
+    if (key === "ai-cache-v14") throw new Error("one removal failed");
+  };
+  context.clearConnectionState();
+  assert.deepEqual(partialFailureAttempts, [
+    "ai-cache-v14",
+    "ai-consent-v1",
+    "ai-cache-v13",
+    "ai-cache-v12"
+  ]);
+});
+
 test("data connection asks for a required display name with one short usage note", () => {
   const start = index.indexOf('id="dataSourceForm"');
   const end = index.indexOf("</form>", start);
@@ -581,7 +847,7 @@ test("busy connection saves block destructive controls and stale callbacks", () 
   assert.match(app, /let dataSourceSaveGeneration = 0;/);
   assert.match(app, /let dataSourceTestGeneration = 0;/);
   assert.match(app, /function invalidatePendingDataSourceSave\(\) \{\s*nextDataSourceSaveGeneration\(\);\s*pendingDataSourceSave = null;/s);
-  assert.match(app, /function handleDataSourceDelete\(\) \{\s*if \(!dataSourceManager \|\| isDataSourceSaveBusy\(\)\) return;\s*invalidateDataSourceTest\(\);\s*invalidatePendingDataSourceSave\(\);/s);
+  assert.match(app, /function handleDataSourceDelete\(\) \{\s*if \(!dataSourceManager \|\| isDataSourceSaveBusy\(\)\) return;[\s\S]*?invalidateAiLetterRequest\(\);\s*invalidateDataSourceTest\(\);\s*invalidatePendingDataSourceSave\(\);/);
   for (const id of [
     "dataSourceDeleteButton",
     "dataSourceBackButton",
@@ -621,15 +887,15 @@ test("AI usage is recorded only for a completed new OpenAI generation", () => {
   const requestStart = app.indexOf("async function handleAiLetterRequest");
   const requestEnd = app.indexOf("function exposeLetterControlGlobals", requestStart);
   const requestHandler = app.slice(requestStart, requestEnd);
-  assert.ok(requestHandler.indexOf("saveAiLetterLocalCache(latestAiLetterSummary, data") < requestHandler.indexOf("recordUsageProfileAiGenerationIfEligible(data)"));
+  assert.ok(requestHandler.indexOf("saveAiLetterLocalCache(requestState.summary, data") < requestHandler.indexOf("recordUsageProfileAiGenerationIfEligible(data)"));
 });
 
 test("local display-name storage remains network-free and server sync is separate", () => {
   assert.doesNotMatch(localProfile, /\b(?:fetch|XMLHttpRequest|sendBeacon|WebSocket)\b/u);
   assert.match(index, /js\/local-profile\.js\?v=20260811-usage-profile-stage-1/);
   assert.match(index, /js\/usage-client\.js\?v=20260812-stale-profile-recovery-1/);
-  assert.match(index, /style\.css\?v=20260812-early-access-1/);
-  assert.match(index, /js\/app\.js\?v=20260813-emoji-punctuation-1/);
+  assert.match(index, /style\.css\?v=20260814-user-ai-1/);
+  assert.match(index, /js\/app\.js\?v=20260814-user-ai-1/);
   assert.match(app, /updateUsageProfileDisplayName\(result\.profile\.displayName\)/);
   assert.doesNotMatch(app, /handleLocalProfileDelete|localProfileDeleteButton/);
   assert.match(app, /if \(!state\.enabled \|\| !state\.registered\) return;/);

@@ -7,6 +7,11 @@ import {
   normalizeGeneratedLetterPunctuation,
   partitionGeneratedLetterQualityIssues
 } from "./letter-quality.js";
+import {
+  isAiGenerationRequest,
+  isExpectedTurnstileResult,
+  shouldUseSharedCacheForSummary
+} from "./request-policy.js";
 
 const CONTRACT_VERSION = "gluco-ai-letter-worker-response-v0.2";
 const AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v14";
@@ -47,7 +52,10 @@ function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body, null, 2), {
     status,
     headers: {
-      "Content-Type": "application/json; charset=utf-8"
+      "Cache-Control": "no-store",
+      "Content-Type": "application/json; charset=utf-8",
+      "Pragma": "no-cache",
+      "X-Content-Type-Options": "nosniff"
     }
   });
 }
@@ -436,6 +444,16 @@ function isValidSharedCacheEntry(entry = {}) {
 }
 
 async function readSharedCache({ env, config, summary }) {
+  if (!shouldUseSharedCacheForSummary(summary)) {
+    return {
+      available: false,
+      key: null,
+      status: "browser-local-only",
+      entry: null,
+      timing: null
+    };
+  }
+
   const available = getSharedCacheAvailability(env, config);
   const key = await buildSharedCacheKey(summary);
 
@@ -497,6 +515,16 @@ async function readSharedCache({ env, config, summary }) {
 }
 
 async function writeSharedCache({ env, config, summary, generationResult }) {
+  if (!shouldUseSharedCacheForSummary(summary)) {
+    return {
+      available: false,
+      key: null,
+      status: "browser-local-only",
+      entry: null,
+      timing: null
+    };
+  }
+
   const available = getSharedCacheAvailability(env, config);
   const key = await buildSharedCacheKey(summary);
 
@@ -2015,7 +2043,7 @@ async function verifyTurnstileToken({ payload, request, env, config }) {
     });
 
     const result = await response.json().catch(() => ({}));
-    if (!response.ok || result.success !== true) {
+    if (!response.ok || !isExpectedTurnstileResult(result, env)) {
       return {
         required: true,
         verified: false,
@@ -2477,12 +2505,16 @@ function buildUsageReport({ state, config, cacheAvailable = false }) {
       cache: {
         enabled: config.sharedCacheEnabled,
         bindingAvailable: cacheAvailable,
-        storage: cacheAvailable ? "cloudflare-workers-kv" : "unavailable",
+        storage: config.sharedCacheEnabled
+          ? (cacheAvailable ? "cloudflare-workers-kv" : "unavailable")
+          : "disabled",
         freshSeconds: config.sharedCacheFreshSeconds,
         retentionSeconds: config.sharedCacheRetentionSeconds,
-        note: cacheAvailable
-          ? "Generated AI letter text and minimal metadata are retained temporarily in Workers KV. Glucose summaries are not stored in the shared cache."
-          : "Shared cache is inactive until the AI_LETTER_CACHE KV binding is configured."
+        note: !config.sharedCacheEnabled
+          ? "Shared cache is intentionally disabled during personal-user early access. Every mode uses browser-local cache only."
+          : cacheAvailable
+            ? "Generated AI letter text and minimal metadata are retained temporarily in Workers KV. Glucose summaries are not stored in the shared cache."
+            : "Shared cache is inactive until the AI_LETTER_CACHE KV binding is configured."
       },
       storage: {
         kind: state.kind,
@@ -2835,6 +2867,14 @@ export default {
 
     if (request.method === "OPTIONS") {
       return handleCorsPreflight(request, corsDecision);
+    }
+
+    if (isAiGenerationRequest(request) && !corsDecision.origin) {
+      return buildCorsErrorResponse({
+        ...corsDecision,
+        allowed: false,
+        reason: "origin_header_required"
+      }, 403);
     }
 
     if (!corsDecision.allowed) {

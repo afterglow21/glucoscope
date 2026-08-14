@@ -84,7 +84,8 @@ test("GlucoScore is omitted from reflections unless it rises by at least two", (
 test("public data connection remains clickable and clearly marked as early access", () => {
   assert.match(index, /データ接続（先行体験）/);
   assert.match(index, /Gluroo接続は少人数で確認しながら提供しています/);
-  assert.match(index, /js\/app\.js\?v=20260813-emoji-punctuation-1/);
+  assert.match(index, /style\.css\?v=20260814-user-ai-1/);
+  assert.match(index, /js\/app\.js\?v=20260814-user-ai-1/);
   assert.match(app, /dataSourceButtonDemo: "データ接続（先行体験）"/);
   assert.match(app, /dataSourceDialogTitle: "Data connection \(early access\)"/);
   assert.doesNotMatch(index, /id="dataSourceButton"[^>]+disabled/);
@@ -515,9 +516,34 @@ test("user mode survives static-server canonical URLs and mobile tab changes", (
   assert.doesNotMatch(mobileHandler, /replaceState\(null, "", `#\$\{resolvedPage\}`\)/);
 });
 
-test("disabled AI analysis explains the actual local or user-foundation state", () => {
+test("personal-user AI is enabled only after a plain first-use consent", () => {
   assert.match(app, /aiLetterButtonLocalDisabled: "ローカル確認ではAI分析は停止中"/);
-  assert.match(app, /aiLetterButtonUserFoundation: "ユーザー版AI分析は準備中"/);
+  assert.doesNotMatch(app, /if \(isUserDataSourceMode\(\)\) return false;/);
+  assert.match(app, /AI_LETTER_USER_CONSENT_STORAGE_KEY = "glucoscope\.aiLetterUserConsent\.v1"/);
+  assert.match(app, /AI_LETTER_USER_CONSENT_VERSION = "2026-08-14-user-ai-1"/);
+  assert.match(index, /id="aiLetterUserConsent"[^>]*hidden/);
+  assert.match(index, /この画面にまとめた血糖情報をOpenAIへ送ります/);
+  assert.match(index, /氏名、接続先URL、合言葉、元の血糖データ一覧は送りません/);
+  assert.match(index, /id="aiLetterUserConsentAccept"/);
+  assert.match(index, /id="aiLetterUserConsentCancel"/);
+  assert.match(app, /action: "glucoscope-ai-letter"/);
+  const requestStart = app.indexOf("async function handleAiLetterRequest");
+  const requestEnd = app.indexOf("function exposeLetterControlGlobals", requestStart);
+  const request = app.slice(requestStart, requestEnd);
+  assert.ok(request.indexOf("requestAiLetterUserConsent(analysisMode)") < request.indexOf("prepareAiLetterTurnstile(analysisMode)"));
+  assert.ok(request.indexOf("prepareAiLetterTurnstile(analysisMode)") < request.indexOf("await fetch("));
+  assert.match(request, /mode: isUserDataSourceMode\(\) \? "user-early-access" : "public-demo"/);
+  assert.match(app, /requestState\.analysisMode === currentAiLetterMode/);
+  const modeStart = app.indexOf("function setAiLetterMode");
+  const modeEnd = app.indexOf("const livePeriodOptions", modeStart);
+  const modeSource = app.slice(modeStart, modeEnd);
+  assert.match(modeSource, /previousMode !== currentAiLetterMode[\s\S]*invalidateAiLetterRequest\(\)/);
+  assert.match(app, /button\.disabled = aiLetterRequestInFlight;/);
+  const clearStart = app.indexOf("function clearDataSourceSpecificBrowserState");
+  const clearEnd = app.indexOf("function buildUserModeUrl", clearStart);
+  const clear = app.slice(clearStart, clearEnd);
+  assert.match(clear, /AI_LETTER_USER_CONSENT_STORAGE_KEY/);
+  assert.match(clear, /for \(const storageKey of storageKeys\)[\s\S]*localStorage\.removeItem\(storageKey\)/);
   const controlsStart = app.indexOf("function updateAiLetterControls");
   const controlsEnd = app.indexOf("function forceEnableAiLetterButtonSoon", controlsStart);
   const controls = app.slice(controlsStart, controlsEnd);
