@@ -47,7 +47,7 @@ For User Foundation 0.4.0:
 - The Cloudflare Web Analytics beacon is not loaded in user mode or on any same-origin page while a user connection remains in local or session browser storage.
 - If browser storage cannot be checked safely, analytics stays disabled as the privacy-first fallback.
 - Chart.js is served from a reviewed local vendored file instead of a third-party runtime CDN on the page that handles connection details and glucose data.
-- The user can delete the saved connection from the setup screen. Deletion also clears the current relay ticket. In the unpublished user-AI candidate, this same saved-connection deletion also clears the browser-local AI-letter cache and the stored first-use AI confirmation; it does not claim to delete OpenAI's abuse-monitoring logs.
+- The user can delete the saved connection from the setup screen. Deletion also clears the current relay ticket, browser-local AI-letter cache, and stored first-use AI confirmation; it does not claim to delete OpenAI's abuse-monitoring logs.
 - A shared device should use session-only storage or remove the connection after use.
 - The usage-profile service receives the display name and allowlisted usage counts only. The data-source URL, credential, glucose values, and relay ticket are never sent to that service.
 
@@ -104,9 +104,9 @@ Guardian Monitor is an uploader into Gluroo, not another destination supported b
 
 ## AI boundary
 
-Deployment boundary as of 2026-08-14: production remains AI Worker cache schema v14 on Version 28 (`f2565bc3-1f49-4f3f-b119-6ec2683f0607`). Personal-user AI is implemented as a locally verified candidate but has not been published. Until the coordinated Worker-then-Pages release occurs, the production user route must still be described as not yet enabled.
+Deployment boundary as of 2026-08-14: deployment `a5b57a76-954b-4bb9-bbba-c23bfd0fa516` routes 100% of AI Worker traffic to Version 29 (`235cdf03-31d7-40fd-ab58-5c1c6aa2d923`), and the matching frontend is published through Pages merge `a4497ab1a5d303c8a16b7d0aad999bf0dc1bde5d`. Personal-user AI is enabled for the small early-access group.
 
-The unpublished candidate uses the following boundary in `mode=user`:
+Production uses the following boundary in `mode=user`:
 
 - Before the first AI request for the current notice version, show a short, explicit confirmation that the summarized glucose information on the page will be sent to OpenAI. Cancelling sends nothing. The rule-based local Gluco message and ChatGPT-copy path remain available.
 - Send the selected-period summary only. Do not send the display name, Nightscout or Gluroo URL, connection passphrase, relay ticket, raw glucose-entry list, treatment list, insulin, food, medication, or device settings.
@@ -120,7 +120,7 @@ The unpublished candidate uses the following boundary in `mode=user`:
 - AI generation `POST /api/gluco-letter` requires an approved, present `Origin`. Originless Usage `GET` remains available for the existing operational checks.
 - Turnstile must use action `glucoscope-ai-letter`, and the Worker must verify both that action and hostname `afterglow21.github.io` before calling OpenAI.
 
-The release order is the committed Worker first and Pages second. A brief AI-only unavailable window is accepted while the old page still sends an incompatible Turnstile token; CGM connection and ordinary glucose display must continue. Version 28 may be restored only before the new Pages is live or if the Pages release fails. Once Pages with user AI enabled is live, do not restore Version 28 while user AI remains enabled because its spoofable `pageMode` boundary would reopen shared-KV writes. Keep AI fail-closed on the new Worker line, or first publish and verify Pages with user AI disabled before Worker recovery. Production cache v14 / Version 28 remains the recorded current state until both deployments and their smoke checks are complete.
+The Worker-first, Pages-second release is complete. Version 28 is historical and must not be restored while user AI remains enabled because its spoofable `pageMode` boundary would reopen shared-KV writes. Keep AI fail-closed on Version 29 or later, or first publish and verify Pages with user AI disabled before Worker recovery. CGM connection and ordinary glucose display remain independent.
 
 ## Data scope
 
@@ -156,8 +156,8 @@ Connection errors, missing data, old data, and unsupported formats should be sho
 - The saved connection can be deleted.
 - The regular UI keeps only compact stop, resume, and delete controls for usage recording; allowlisted export is a small secondary link.
 - Mobile and desktop display switches preserve `mode=user`.
-- The deployed user route keeps AI Worker generation disabled until the unpublished frontend and Worker candidates are released together in the safe order; documentation must not describe the local candidate as already live.
-- Before user-mode AI release, accept first-use confirmation before any request, browser-local cache maximum 30, all-mode shared-KV exclusion including stale fallback, untrusted `pageMode`, retained-binding expiry behavior, deletion of local AI cache and confirmation with saved-connection deletion, global-not-personal limit wording, AI-failure independence from CGM, approved-Origin `POST`, Turnstile hostname/action verification, and the Worker-first/Pages-second rollback sequence.
+- The deployed user route enables AI only after first-use confirmation and keeps AI failures independent from the verified CGM connection and ordinary glucose display.
+- Production preserves browser-local cache maximum 30, all-mode shared-KV exclusion including stale fallback, untrusted `pageMode`, retained-binding expiry behavior, deletion of local AI cache and confirmation with saved-connection deletion, global-not-personal limit wording, approved-Origin `POST`, and Turnstile hostname/action verification.
 - No third-party runtime chart script is loaded on the user-data page.
 - Analytics remains disabled while either user connection storage key exists.
 - JavaScript syntax checks and adapter tests pass.

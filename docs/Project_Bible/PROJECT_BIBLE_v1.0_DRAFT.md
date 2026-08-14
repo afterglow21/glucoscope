@@ -1675,9 +1675,9 @@ Kazumaの公開デモを前提に設計されています。
 ブラウザ内の「いつものグルコのお話」と、
 自分でChatGPTへ渡すためのコピー機能は利用できる形を維持します。
 
-この記録は、後ろの **ユーザー版AI安全境界の未公開候補 — 2026-08-14** にある
-フロントとWorkerを安全な順で公開するまでは、本番の状態として有効です。
-後の候補は、全modeで共有KVを一時停止し、ブラウザから届く `pageMode` を認証として
+この記録は、後ろの **ユーザー版AI安全境界の本番反映 — 2026-08-14** にある
+フロントとWorkerを安全な順で公開するまで、本番の状態として有効だった過去の判断です。
+後の本番反映は、全modeで共有KVを一時停止し、ブラウザから届く `pageMode` を認証として
 信頼しない境界と、初回明示確認を追加するもので、
 この過去の判断を「すでに公開済み」だったかのように書き換えるものではありません。
 
@@ -2781,8 +2781,8 @@ Version.
 The implementation order chosen on 2026-08-08 is:
 
 1. Design the user foundation and minimal usage analytics.
-2. Build the administrator dashboard on that reviewed foundation. A local candidate is
-   now complete; Cloudflare Access setup and production deployment remain pending.
+2. Build the administrator dashboard on that reviewed foundation. A fail-closed bootstrap
+   Worker is deployed; Cloudflare Access and real-administrator acceptance remain pending.
 3. Design and implement the Plus 30-day pass and clearer optional-support paths.
 4. After user rollout begins, add an opt-in always-on mode only for the landscape graph.
 
@@ -2832,7 +2832,7 @@ Guardian 4、FreeStyle Libre 2、Dexcom G7を、
    - Phase 1Aとして、任意の表示名だけを端末内へ保存する準備画面を実装した。
    - Phase 1Bとして、収集項目と目的の説明、簡単な停止方法、90日保存、書き出し・削除、利用回数API、D1とWorkerを実装した。2026年8月12日JSTの実機確認では最初のprofile作成と日別記録に成功したが、成功後の再callbackで誤エラーを表示した。この時点でD1に試験用profile 2件と日別記録2件が残り、Workerとフロントは停止へ戻した。その後、既知の試験用profile 2件を削除し、cascade後の `profiles`、`usage_daily`、`event_receipts` が `0 / 0 / 0` であることを確認した。停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb` とdeployment `25be2258-b72a-4e2c-8bf1-ab47781c48dc` をclean stopped checkpoint兼rollback先として残し、active Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` へ通信の100%を向け、runtimeの `USAGE_COLLECTION_ENABLED=true` とフロントの開始画面を監督下一時受け入れのため有効にした。許可Originのpreflight `204`、無効ダミーTurnstileの `403 turnstile_failed`、不許可OriginとOriginなしの `403` を確認し、D1は引き続き `0 / 0 / 0` である。Gitに保存する `wrangler.jsonc` は `false` のまま維持する。接続開始への表示名・profile作成統合と再callback防止を使い、次は開始・停止・再開・削除、補助的な書き出しを監督下で確認する。
 2. その設計を前提にした管理者ダッシュボード
-   - 専用Worker候補はローカル実装済み。本番のCloudflare Access設定とデプロイは未完了。
+   - 専用Workerはfail-closedのbootstrap Versionだけ本番に配置済み。Cloudflare Accessと実際の管理者identityは未設定で、全requestはD1を読む前に同じ`403`となるため、利用可能な管理者画面の受け入れは未完了。
 3. Plus 30日パスと、任意の開発支援への分かりやすい導線
 4. ユーザー展開開始後に、横向きグラフだけへ追加する任意の常時表示モード
 
@@ -3288,7 +3288,7 @@ GlucoScope独自の利用者識別IDを追加しません。
 The next product-design sequence is fixed as follows:
 
 1. User foundation and minimal usage analytics design
-2. Administrator dashboard — local candidate implemented; production access and deployment pending
+2. Administrator dashboard — fail-closed Worker shell deployed; Access acceptance pending
 3. Plus 30-day pass and optional-support paths
 4. Landscape-graph-only always-on mode after user rollout begins
 
@@ -3452,8 +3452,9 @@ Gluroo URLs and credentials, treatment information, or device settings in produc
 analytics. The existing Usage Dashboard is an infrastructure-wide AI Worker view; it is
 not the dedicated per-device-profile administrator dashboard.
 
-As of 2026-08-14, that dedicated dashboard exists only as a locally implemented candidate
-in a separate Cloudflare Worker. It has no public-site link and has not been deployed.
+As of 2026-08-14, the dedicated Worker hostname has only a fail-closed bootstrap Version.
+It has no public-site link; Access and the real administrator identity are not configured,
+so every request receives the same `403` before D1 is read. This is not an accepted live dashboard.
 Cloudflare Access must protect its whole hostname for one exact administrator email; after
 Access admits a request, the Worker independently revalidates the signed Access JWT,
 issuer, audience, time validity, and exact email against a Worker Secret before reading D1.
@@ -3484,7 +3485,7 @@ viewing convenience, not an alarm or a substitute for the original CGM applicati
 次のプロダクト設計・実装順は、次のとおりとします。
 
 1. ユーザー基盤・最小限の利用分析の設計
-2. 管理者ダッシュボード（専用Worker候補はローカル実装済み。本番の認証設定・公開は未完了）
+2. 管理者ダッシュボード（fail-closedの専用Worker入口だけ配置済み。Accessと実際の管理者identityを設定した受け入れは未完了）
 3. Plus 30日パスと任意の開発支援への導線
 4. ユーザー展開開始後の、横向きグラフ限定の常時表示モード
 
@@ -3669,8 +3670,9 @@ NightscoutやGlurooのURL・接続情報、治療情報、機器設定を利用�
 既存のUsage DashboardはAI Worker全体の利用状況を見るものであり、
 端末プロフィールごとの専用管理者ダッシュボードとは別です。
 
-2026年8月14日、その専用画面は別Cloudflare Workerのローカル候補まで実装しました。
-公開サイトからはリンクせず、本番へはまだデプロイしていません。専用hostname全体を
+2026年8月14日、その専用画面は別Cloudflare Workerとして実装し、fail-closedの
+bootstrap Versionだけを配置しました。公開サイトからはリンクせず、実際の管理者identityは
+まだ設定していません。placeholder状態では全requestがD1読取前に同じ`403`となります。専用hostname全体を
 Cloudflare Accessの正確な管理者メール1件で保護し、Access通過後もWorker内で
 Access JWTの署名、issuer、audience、有効期限と、Worker Secretに保存した管理者メールとの
 完全一致をD1読取前に再検証します。画面は `admin_device_usage` への固定された読取専用
@@ -3679,7 +3681,7 @@ Access JWTの署名、issuer、audience、有効期限と、Worker Secretに保�
 書き込み、任意query、公開JSON、検索、詳細、書き出しは設けません。profile ID、token・hash、
 プロフィールの日時、日別行、receipt、血糖値・グラフ、AIへ送った内容・AIお手紙本文、CGM種別、
 接続情報、IPアドレス、raw User-Agentは選択・返却・表示しません。Cloudflare Access application、
-exact-email policy、team domain、audience、管理者メールSecret、本番デプロイ、公開後の境界確認が
+exact-email policy、team domain、audience、管理者メールSecret、Access保護下の境界確認が
 完了するまでは、この管理者画面を利用可能とは扱いません。
 
 任意の開発支援は、機能特典を付けない支援のままです。
@@ -4872,7 +4874,7 @@ Worker内で短く待ってから同じ呼び出しを1回だけ再試行でき�
 途中で切れたAI出力はこれまでどおり表示・保存せず、
 出力上限が理由のときに1回だけより長い上限で再試行します。
 
-### Generation input and cache v14 production / 生成入力とcache v14本番
+### Generation input and Version 28 cache history / 生成入力と旧Version 28 cache履歴
 
 For `today` and `yesterday`, GMI and GMI-derived hints are removed
 before the prototype or OpenAI generation step.
@@ -4885,17 +4887,17 @@ and a `today` or `yesterday` hint containing GMI cannot reintroduce GMI.
 This reduces avoidable contradictions and output rejection;
 it does not weaken the medical-safety or factual checks.
 
-Production v14 uses
-`glucoscope.aiLetterLocalCache.v14` for up to 30 browser entries and
-`gluco-ai-letter-cache-v14` for the shared cache with up to 24-hour retention.
-Browser cache v13, v12, and v11 data is retired and removed during cache reading
-and saved-connection deletion. Production v14 does not read or write shared v13
-keys; retained v13 entries expire naturally under their existing 24-hour
-retention policy. Git commit `66f9b207d65c17130287b555920c115a9a963e1f`
-was deployed through deployment `5b099641-a818-4d14-ba9d-18aebb7e7ec2`;
-100% of traffic routes to Version 28
-(`f2565bc3-1f49-4f3f-b119-6ec2683f0607`). Version 27
-(`9f93a9df-f423-48c9-adbf-9de80e643712`) is the immediate rollback target.
+Current Version 29 uses only `glucoscope.aiLetterLocalCache.v14`, with up to
+30 browser entries. Browser cache v13, v12, and v11 data is retired and removed
+during cache reading and saved-connection deletion. Historical Version 28 also
+used shared schema `gluco-ai-letter-cache-v14` with up to 24-hour retention and
+did not read or write shared v13 keys. Retained shared entries now expire under
+their existing 24-hour retention policy without being read. Git commit
+`66f9b207d65c17130287b555920c115a9a963e1f` was deployed through deployment
+`5b099641-a818-4d14-ba9d-18aebb7e7ec2`; at that historical checkpoint, 100% of
+traffic routed to Version 28 (`f2565bc3-1f49-4f3f-b119-6ec2683f0607`) and
+Version 27 (`9f93a9df-f423-48c9-adbf-9de80e643712`) was the immediate rollback
+target. Neither is a current direct rollback target while user AI remains enabled.
 Binding and Secret names, the OpenAI model, generation limits, budget settings,
 CORS policy, and Durable Object migration are unchanged. The post-deploy
 boundary checks returned `204 / 403 / 200` for approved preflight,
@@ -4912,27 +4914,27 @@ prototypeまたはOpenAIで文章を作る前に外します。
 これは不要な矛盾や出力失敗を減らすためであり、
 医療安全や事実確認の境界を弱める変更ではありません。
 
-本番v14では、端末内のお手紙キャッシュを
-`glucoscope.aiLetterLocalCache.v14`（最大30件）、共有キャッシュを
-`gluco-ai-letter-cache-v14`（最大24時間保持）とします。
+現在のVersion 29では、端末内のお手紙キャッシュ
+`glucoscope.aiLetterLocalCache.v14`だけを最大30件使います。
 端末内v13、v12、v11は退役し、キャッシュ読み取り時と保存済み接続の削除時に消します。
-本番v14は共有v13を読み書きせず、保持中の共有v13は既存の24時間以内の期限で自然に失効します。
+旧Version 28では共有cache `gluco-ai-letter-cache-v14` を最大24時間保持し、共有v13は読み書きしませんでした。保持中の共有entryは現在のVersion 29では読まず、既存の24時間以内の期限で自然に失効します。
 Git commit `66f9b207d65c17130287b555920c115a9a963e1f` を、
 deployment `5b099641-a818-4d14-ba9d-18aebb7e7ec2` で本番へ反映し、
-通信の100%をVersion 28（`f2565bc3-1f49-4f3f-b119-6ec2683f0607`）へ向けました。
-Version 27（`9f93a9df-f423-48c9-adbf-9de80e643712`）を即時復帰先として保持します。
+その履歴時点では通信の100%をVersion 28（`f2565bc3-1f49-4f3f-b119-6ec2683f0607`）へ向け、
+Version 27（`9f93a9df-f423-48c9-adbf-9de80e643712`）を即時復帰先として保持していました。
+ユーザーAIがONの現在は、どちらも直接rollback先ではありません。
 bindingとSecretの名前、OpenAI model、生成上限、budget設定、CORS policy、
 Durable Object migrationは変更していません。公開後の境界確認は、許可preflight、
 不許可OriginのUsage `GET`、許可OriginのUsage `GET` の順に `204 / 403 / 200` でした。
 
-### Unpublished personal-user AI boundary candidate — 2026-08-14
+### Production personal-user AI boundary — 2026-08-14
 
-This is a locally implemented and verified candidate, not a production record.
-Production remains cache schema v14 on Version 28
-(`f2565bc3-1f49-4f3f-b119-6ec2683f0607`) until the Worker and Pages
-are published in the required order and the post-deploy checks pass.
+Deployment `a5b57a76-954b-4bb9-bbba-c23bfd0fa516` routes 100% of AI Worker traffic to
+Version 29 (`235cdf03-31d7-40fd-ab58-5c1c6aa2d923`). The matching frontend was published
+through Pages merge `a4497ab1a5d303c8a16b7d0aad999bf0dc1bde5d`. Version 28 is historical
+and must not be restored while user AI remains enabled.
 
-The candidate fixes the following personal-user AI boundary:
+Current Version 29 and the published frontend enforce the following personal-user AI boundary:
 
 - In `mode=user`, the first AI request for the current notice version requires a short,
   explicit confirmation before Turnstile or any AI `POST`. Cancelling sends nothing.
@@ -4976,22 +4978,20 @@ The candidate fixes the following personal-user AI boundary:
 - Turnstile, provider, quality, budget, limit, cache, or Usage-recording failure stays inside
   the AI panel. It must not stop, clear, or replace an already verified CGM connection or
   ordinary glucose display, and it must never fall back to Kazuma's demo data.
-- Deploy the committed Worker first and Pages second. Accept a brief AI-only unavailable
-  window while the older page sends an incompatible Turnstile token; CGM connection and
-  ordinary glucose display must continue. Version 28 may be restored only before the new
-  Pages is live or if the Pages release fails. Once Pages with user AI enabled is live,
-  never restore Version 28 while user AI remains enabled because its spoofable `pageMode`
-  boundary would reopen shared-KV writes. Keep AI fail-closed on the new Worker line, or
-  first publish and verify Pages with user AI disabled before Worker recovery.
+- The Worker-first, Pages-second release is complete. Version 28 is historical and must not
+  be restored while user AI remains enabled because its spoofable `pageMode` boundary would
+  reopen shared-KV writes. Keep AI fail-closed on Version 29 or later, or first publish and
+  verify Pages with user AI disabled before Worker recovery. CGM connection and ordinary
+  glucose display remain independent.
 
-### ユーザー版AI安全境界の未公開候補 — 2026-08-14
+### ユーザー版AI安全境界の本番反映 — 2026-08-14
 
-これは、ローカルで実装・検証した候補であり、本番反映記録ではありません。
-WorkerとPagesを必要な順で公開し、公開後の境界確認に合格するまでは、
-本番はcache schema v14、Version 28
-（`f2565bc3-1f49-4f3f-b119-6ec2683f0607`）のままです。
+AI Worker deployment `a5b57a76-954b-4bb9-bbba-c23bfd0fa516` はVersion 29
+（`235cdf03-31d7-40fd-ab58-5c1c6aa2d923`）へ本番通信の100%を向けています。
+対応するフロントはPages merge `a4497ab1a5d303c8a16b7d0aad999bf0dc1bde5d` で公開しました。
+Version 28は履歴であり、ユーザーAIがONの間は直接戻してはいけません。
 
-候補では、ユーザー版AIの境界を次のように固定します。
+現在のVersion 29と公開フロントは、ユーザー版AIの境界を次のように固定します。
 
 - `mode=user`では、現在の案内Versionで初めてAI分析を使う時に、TurnstileとAIへの
   `POST` より先に、短く明示的な確認を求めます。「今はしない」なら何も送りません。
@@ -5030,12 +5030,10 @@ WorkerとPagesを必要な順で公開し、公開後の境界確認に合格す
 - Turnstile、provider、品質確認、budget、全体上限、cache、AI利用記録の失敗は、
   AI欄だけで完結させます。確認済みCGM接続や通常の血糖表示を停止、削除、置換せず、
   Kazumaの公開デモデータへfallbackしません。
-- 公開順は、commit済みWorkerが先、Pagesが後です。旧ページが互換性のないTurnstile tokenを
-  送る間の短いAIだけの利用不可は許容し、CGM接続と通常の血糖表示は継続します。
-  Version 28へ戻せるのは、新Pages公開前のWorker先行中、またはPages公開に失敗した時だけです。
-  ユーザーAIをONにした新Pagesの公開後は、偽装できる `pageMode` 境界から共有KV書き込みが
-  再開し得るため、ユーザーAIがONのままVersion 28へ戻してはいけません。新Worker系でAIを
-  fail-closedに保つか、先にPages側のユーザーAIを停止して公開確認してからWorkerを復旧します。
+- Worker先行、Pages後続の公開は完了しました。Version 28は履歴であり、偽装できる
+  `pageMode` 境界から共有KV書き込みが再開し得るため、ユーザーAIがONの間は直接戻しては
+  いけません。Version 29以降でAIをfail-closedに保つか、先にPages側のユーザーAIを停止して
+  公開確認してからWorkerを復旧します。CGM接続と通常の血糖表示は独立して継続します。
 
 ### Previous AI Worker production checkpoint — 2026-08-13
 ### 直前のAI Worker本番反映記録 — 2026-08-13

@@ -1,8 +1,10 @@
 # GlucoScope 認証付き管理者ダッシュボード
 
-Status: local implementation complete / Cloudflare Access configuration and production deployment pending explicit approval
+Status: fail-closed bootstrap shell deployed / Cloudflare Access configuration and administrator acceptance still pending
 
 Last reviewed: 2026-08-14
+
+2026年8月14日、専用hostnameを作るためのfail-closed bootstrap Version `ecdf08e7-84d6-439a-83bd-96f03986f87b` だけを反映した。`TEAM_DOMAIN` と `POLICY_AUD` はplaceholderのままで、実際の管理者メールもまだ登録していないため、全requestはD1を読む前に同じ一般的な `403` で停止する。前後の `profiles / usage_daily / event_receipts` は `0 / 0 / 0` のままで、書き込みは0件だった。Cloudflare Access未設定のため、これは利用可能な管理者画面の公開完了ではなく、認証設定前の停止用入口である。
 
 Canonical principles: `docs/Project_Bible/PROJECT_BIBLE_v1.0_DRAFT.md`
 
