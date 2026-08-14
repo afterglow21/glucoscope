@@ -1619,6 +1619,12 @@ and cost controls are complete,
 Worker-generated AI letters remain disabled in user mode.
 The local rule-based Gluco message and the copy-to-ChatGPT path may remain available.
 
+This remains the deployed production status until the coordinated release described in
+**Unpublished personal-user AI boundary candidate — 2026-08-14** below.
+That later candidate adds an all-mode temporary shared-KV shutdown, treats browser-provided
+`pageMode` as untrusted metadata, and adds explicit first-use confirmation;
+it does not rewrite this historical decision as though it had already been published.
+
 This decision is the current standard path for testing.
 Manual Azure and Nightscout construction may remain an advanced option,
 but it is not the default onboarding path for general users.
@@ -1668,6 +1674,12 @@ Kazumaの公開デモを前提に設計されています。
 ユーザー版からWorkerによるAIお手紙生成を行いません。
 ブラウザ内の「いつものグルコのお話」と、
 自分でChatGPTへ渡すためのコピー機能は利用できる形を維持します。
+
+この記録は、後ろの **ユーザー版AI安全境界の未公開候補 — 2026-08-14** にある
+フロントとWorkerを安全な順で公開するまでは、本番の状態として有効です。
+後の候補は、全modeで共有KVを一時停止し、ブラウザから届く `pageMode` を認証として
+信頼しない境界と、初回明示確認を追加するもので、
+この過去の判断を「すでに公開済み」だったかのように書き換えるものではありません。
 
 これを、現在の検証における標準ルートとします。
 AzureやNightscoutを自分で構築する方法は上級者向けの選択肢として残せますが、
@@ -2769,7 +2781,8 @@ Version.
 The implementation order chosen on 2026-08-08 is:
 
 1. Design the user foundation and minimal usage analytics.
-2. Build the administrator dashboard on that reviewed foundation.
+2. Build the administrator dashboard on that reviewed foundation. A local candidate is
+   now complete; Cloudflare Access setup and production deployment remain pending.
 3. Design and implement the Plus 30-day pass and clearer optional-support paths.
 4. After user rollout begins, add an opt-in always-on mode only for the landscape graph.
 
@@ -2819,6 +2832,7 @@ Guardian 4、FreeStyle Libre 2、Dexcom G7を、
    - Phase 1Aとして、任意の表示名だけを端末内へ保存する準備画面を実装した。
    - Phase 1Bとして、収集項目と目的の説明、簡単な停止方法、90日保存、書き出し・削除、利用回数API、D1とWorkerを実装した。2026年8月12日JSTの実機確認では最初のprofile作成と日別記録に成功したが、成功後の再callbackで誤エラーを表示した。この時点でD1に試験用profile 2件と日別記録2件が残り、Workerとフロントは停止へ戻した。その後、既知の試験用profile 2件を削除し、cascade後の `profiles`、`usage_daily`、`event_receipts` が `0 / 0 / 0` であることを確認した。停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb` とdeployment `25be2258-b72a-4e2c-8bf1-ab47781c48dc` をclean stopped checkpoint兼rollback先として残し、active Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` へ通信の100%を向け、runtimeの `USAGE_COLLECTION_ENABLED=true` とフロントの開始画面を監督下一時受け入れのため有効にした。許可Originのpreflight `204`、無効ダミーTurnstileの `403 turnstile_failed`、不許可OriginとOriginなしの `403` を確認し、D1は引き続き `0 / 0 / 0` である。Gitに保存する `wrangler.jsonc` は `false` のまま維持する。接続開始への表示名・profile作成統合と再callback防止を使い、次は開始・停止・再開・削除、補助的な書き出しを監督下で確認する。
 2. その設計を前提にした管理者ダッシュボード
+   - 専用Worker候補はローカル実装済み。本番のCloudflare Access設定とデプロイは未完了。
 3. Plus 30日パスと、任意の開発支援への分かりやすい導線
 4. ユーザー展開開始後に、横向きグラフだけへ追加する任意の常時表示モード
 
@@ -3274,7 +3288,7 @@ GlucoScope独自の利用者識別IDを追加しません。
 The next product-design sequence is fixed as follows:
 
 1. User foundation and minimal usage analytics design
-2. Administrator dashboard
+2. Administrator dashboard — local candidate implemented; production access and deployment pending
 3. Plus 30-day pass and optional-support paths
 4. Landscape-graph-only always-on mode after user rollout begins
 
@@ -3436,7 +3450,22 @@ Product analytics must remain separate from public Web Analytics, CGM transport,
 glucose storage. Do not place glucose values, graphs, AI-letter contents, Nightscout or
 Gluroo URLs and credentials, treatment information, or device settings in product
 analytics. The existing Usage Dashboard is an infrastructure-wide AI Worker view; it is
-not the future person-level administrator dashboard.
+not the dedicated per-device-profile administrator dashboard.
+
+As of 2026-08-14, that dedicated dashboard exists only as a locally implemented candidate
+in a separate Cloudflare Worker. It has no public-site link and has not been deployed.
+Cloudflare Access must protect its whole hostname for one exact administrator email; after
+Access admits a request, the Worker independently revalidates the signed Access JWT,
+issuer, audience, time validity, and exact email against a Worker Secret before reading D1.
+The server-rendered page uses one fixed, read-only `SELECT` from `admin_device_usage` and
+may show only display name, usage-recording state, active-day count within the retained
+maximum 90 days, newly completed AI-analysis count, and ordinary Gluco-memory count
+No. 1–50. It has no write, arbitrary query, public JSON, search, detail, or export route.
+It must not select, return, or render profile IDs, tokens or hashes, profile timestamps,
+daily rows, receipts, glucose values or graphs, AI inputs or letter contents, CGM type,
+connection details, IP addresses, or raw User-Agent values. The Access application,
+exact-email policy, team domain, audience, administrator-email Secret, deployment, and
+post-deploy boundary checks remain required before this dashboard is considered available.
 
 Optional development support remains a contribution without feature benefits. A Plus
 30-day pass is a separate paid product under design. Its included capabilities, price,
@@ -3455,7 +3484,7 @@ viewing convenience, not an alarm or a substitute for the original CGM applicati
 次のプロダクト設計・実装順は、次のとおりとします。
 
 1. ユーザー基盤・最小限の利用分析の設計
-2. 管理者ダッシュボード
+2. 管理者ダッシュボード（専用Worker候補はローカル実装済み。本番の認証設定・公開は未完了）
 3. Plus 30日パスと任意の開発支援への導線
 4. ユーザー展開開始後の、横向きグラフ限定の常時表示モード
 
@@ -3638,7 +3667,20 @@ iPhoneの通常SafariだけでG7用Gluroo URLとAPI Secretを入力し、接続�
 血糖データの保存とは分離します。血糖値、グラフ、AIお手紙本文、
 NightscoutやGlurooのURL・接続情報、治療情報、機器設定を利用分析へ入れません。
 既存のUsage DashboardはAI Worker全体の利用状況を見るものであり、
-今後つくる利用者別の管理者ダッシュボードとは別です。
+端末プロフィールごとの専用管理者ダッシュボードとは別です。
+
+2026年8月14日、その専用画面は別Cloudflare Workerのローカル候補まで実装しました。
+公開サイトからはリンクせず、本番へはまだデプロイしていません。専用hostname全体を
+Cloudflare Accessの正確な管理者メール1件で保護し、Access通過後もWorker内で
+Access JWTの署名、issuer、audience、有効期限と、Worker Secretに保存した管理者メールとの
+完全一致をD1読取前に再検証します。画面は `admin_device_usage` への固定された読取専用
+`SELECT` 1つからサーバー側で生成し、表示名、利用記録の状態、稼働D1に残る最大90日分の
+利用日数、新しく正常に完了したAI分析回数、通常のグルコの想い出No.1〜50の数だけを表示します。
+書き込み、任意query、公開JSON、検索、詳細、書き出しは設けません。profile ID、token・hash、
+プロフィールの日時、日別行、receipt、血糖値・グラフ、AIへ送った内容・AIお手紙本文、CGM種別、
+接続情報、IPアドレス、raw User-Agentは選択・返却・表示しません。Cloudflare Access application、
+exact-email policy、team domain、audience、管理者メールSecret、本番デプロイ、公開後の境界確認が
+完了するまでは、この管理者画面を利用可能とは扱いません。
 
 任意の開発支援は、機能特典を付けない支援のままです。
 Plus 30日パスは、それとは別の設計中の有料サービスです。公開前に、
@@ -4882,6 +4924,118 @@ Version 27（`9f93a9df-f423-48c9-adbf-9de80e643712`）を即時復帰先とし�
 bindingとSecretの名前、OpenAI model、生成上限、budget設定、CORS policy、
 Durable Object migrationは変更していません。公開後の境界確認は、許可preflight、
 不許可OriginのUsage `GET`、許可OriginのUsage `GET` の順に `204 / 403 / 200` でした。
+
+### Unpublished personal-user AI boundary candidate — 2026-08-14
+
+This is a locally implemented and verified candidate, not a production record.
+Production remains cache schema v14 on Version 28
+(`f2565bc3-1f49-4f3f-b119-6ec2683f0607`) until the Worker and Pages
+are published in the required order and the post-deploy checks pass.
+
+The candidate fixes the following personal-user AI boundary:
+
+- In `mode=user`, the first AI request for the current notice version requires a short,
+  explicit confirmation before Turnstile or any AI `POST`. Cancelling sends nothing.
+  The local rule-based Gluco message, ChatGPT-copy path, and ordinary CGM display remain available.
+- The request sends the selected-period glucose summary to the GlucoScope Worker and OpenAI.
+  It may contain range labels, the latest reading/time/direction/delta, aggregate
+  TIR/TAR/TBR/average/CV, eligible longer-range metrics, and derived reflection hints.
+  It must not contain the display name, connection URL, connection passphrase, relay ticket,
+  raw glucose-entry list, treatment list, insulin, food, medication, or device settings.
+- The confirmation is versioned and stored only in the browser as
+  `glucoscope.aiLetterUserConsent.v1`. User-mode letters use only
+  `glucoscope.aiLetterLocalCache.v14`, capped at 30 browser entries.
+- During personal-user early access, `SHARED_AI_CACHE_ENABLED=false` in code and
+  `AI_CACHE_ENABLED=false` in Worker configuration disable shared-KV reads, writes, and
+  stale fallback for every mode, including `kazuma-public-demo`. Browser-provided `pageMode`
+  is not authentication and cannot authorize shared-cache access. The KV binding remains for
+  the staged recovery rules below, not as permission to restore Version 28 while user AI
+  is enabled; existing entries are not read, no new entries are written, and
+  retained entries expire naturally within the configured maximum of 24 hours. Every mode
+  uses only `glucoscope.aiLetterLocalCache.v14`, capped at 30 browser entries.
+- Deleting the saved data connection clears the current and retired browser AI caches
+  and the stored AI confirmation. Deleting only the Usage profile does not clear them.
+  Browser deletion does not claim to delete OpenAI abuse-monitoring logs.
+- The Responses API call uses `store: false`. OpenAI states that API data is not used for
+  model training by default unless the customer opts in. Default abuse-monitoring logs
+  may contain prompts and responses and are normally retained for up to 30 days, with
+  possible longer legal or service-protection exceptions. The canonical external source is
+  [OpenAI API data controls](https://developers.openai.com/api/docs/guides/your-data).
+- The morning, afternoon, and night generation limits of 10 each and the daily maximum
+  of 30 remain one singleton infrastructure-wide guard shared by the public demo and all
+  users. These are not per-person allowances. A shared-limit or budget stop affects only
+  AI generation.
+- Only a newly completed OpenAI generation may be counted by the separate Usage profile.
+  Browser cache, any retained but unread shared cache, stale fallback, failed generation, button press,
+  and ChatGPT-copy actions are not AI-generation successes.
+- AI-generation `POST /api/gluco-letter` requires an approved, present `Origin` header.
+  Originless `GET /api/gluco-letter/usage` remains available for existing operational checks.
+- AI Turnstile uses `action=glucoscope-ai-letter`. The Worker must verify both that action
+  and `hostname=afterglow21.github.io`; a Usage-profile token from action
+  `glucoscope-usage-profile` is not interchangeable.
+- Turnstile, provider, quality, budget, limit, cache, or Usage-recording failure stays inside
+  the AI panel. It must not stop, clear, or replace an already verified CGM connection or
+  ordinary glucose display, and it must never fall back to Kazuma's demo data.
+- Deploy the committed Worker first and Pages second. Accept a brief AI-only unavailable
+  window while the older page sends an incompatible Turnstile token; CGM connection and
+  ordinary glucose display must continue. Version 28 may be restored only before the new
+  Pages is live or if the Pages release fails. Once Pages with user AI enabled is live,
+  never restore Version 28 while user AI remains enabled because its spoofable `pageMode`
+  boundary would reopen shared-KV writes. Keep AI fail-closed on the new Worker line, or
+  first publish and verify Pages with user AI disabled before Worker recovery.
+
+### ユーザー版AI安全境界の未公開候補 — 2026-08-14
+
+これは、ローカルで実装・検証した候補であり、本番反映記録ではありません。
+WorkerとPagesを必要な順で公開し、公開後の境界確認に合格するまでは、
+本番はcache schema v14、Version 28
+（`f2565bc3-1f49-4f3f-b119-6ec2683f0607`）のままです。
+
+候補では、ユーザー版AIの境界を次のように固定します。
+
+- `mode=user`では、現在の案内Versionで初めてAI分析を使う時に、TurnstileとAIへの
+  `POST` より先に、短く明示的な確認を求めます。「今はしない」なら何も送りません。
+  ブラウザ内のいつものグルコのお話、ChatGPTコピー、通常のCGM表示はそのまま使えます。
+- GlucoScope WorkerとOpenAIへ送るのは、選択期間の血糖サマリーです。期間と範囲、
+  最新値・時刻・方向・差分、TIR/TAR/TBR/平均/CV、条件を満たす長期指標、
+  振り返り用の集計ヒントを含む場合があります。表示名、接続先URL、接続用の合言葉、
+  relay ticket、元の血糖データ一覧、治療記録、インスリン、食事、薬、機器設定は送りません。
+- 確認はVersion付きで `glucoscope.aiLetterUserConsent.v1` へ端末内だけに保存します。
+  ユーザー版のお手紙は `glucoscope.aiLetterLocalCache.v14` だけに最大30件保存します。
+- 個人ユーザー早期公開中は、コードの `SHARED_AI_CACHE_ENABLED=false` とWorker設定の
+  `AI_CACHE_ENABLED=false` により、`kazuma-public-demo` を含む全modeで共有Workers KVの
+  読み取り、書き込み、shared stale fallbackを停止します。ブラウザから届く `pageMode` は
+  認証ではなく、共有cacheを許可する根拠にしません。KV bindingは下記の段階的な復旧手順のため
+  だけに残し、ユーザーAIがONのままVersion 28へ戻す許可にはしません。既存entryは読まず、
+  新規entryも書かず、保持中のentryは設定済みの最長24時間以内に
+  自然失効します。全modeで端末内 `glucoscope.aiLetterLocalCache.v14` だけを最大30件使います。
+- 保存したデータ接続を削除すると、現在と退役済みの端末内AI cache、保存済みAI確認を
+  削除します。Usageプロフィールだけの削除では連動削除しません。端末内削除によって、
+  OpenAIの不正利用監視ログまで削除できる、とは案内しません。
+- Responses APIは `store: false` で呼びます。OpenAIは、利用者側が明示的にopt-inしない限り、
+  APIデータをmodel学習へ使わないと説明しています。一方、標準の不正利用監視ログには
+  promptやresponseが含まれる場合があり、通常最長30日保持されます。法令またはサービス・
+  第三者保護のため、それより長い保持が必要となる例外があります。外部正本は
+  [OpenAI API data controls](https://developers.openai.com/api/docs/guides/your-data) とします。
+- 朝・昼・夜各10回、1日最大30回は、公開デモと全利用者で共有する1つの全体運用上限です。
+  個人別の利用回数ではありません。全体上限またはbudget停止はAI生成だけに影響します。
+- 別のUsageプロフィールへ加算してよいのは、OpenAIで新しく最後まで正常に生成された時だけです。
+  端末cache、保持中だが候補では読まない共有cache、stale fallback、失敗、ボタン押下、
+  ChatGPTコピーは数えません。
+- AI生成 `POST /api/gluco-letter` は、許可された `Origin` headerを必須にします。
+  Originなしの `GET /api/gluco-letter/usage` は既存運用確認のため維持します。
+- AI用Turnstileは `action=glucoscope-ai-letter` とします。Workerはこのactionと
+  `hostname=afterglow21.github.io` の両方を検証し、利用プロフィール用
+  `glucoscope-usage-profile` tokenを流用しません。
+- Turnstile、provider、品質確認、budget、全体上限、cache、AI利用記録の失敗は、
+  AI欄だけで完結させます。確認済みCGM接続や通常の血糖表示を停止、削除、置換せず、
+  Kazumaの公開デモデータへfallbackしません。
+- 公開順は、commit済みWorkerが先、Pagesが後です。旧ページが互換性のないTurnstile tokenを
+  送る間の短いAIだけの利用不可は許容し、CGM接続と通常の血糖表示は継続します。
+  Version 28へ戻せるのは、新Pages公開前のWorker先行中、またはPages公開に失敗した時だけです。
+  ユーザーAIをONにした新Pagesの公開後は、偽装できる `pageMode` 境界から共有KV書き込みが
+  再開し得るため、ユーザーAIがONのままVersion 28へ戻してはいけません。新Worker系でAIを
+  fail-closedに保つか、先にPages側のユーザーAIを停止して公開確認してからWorkerを復旧します。
 
 ### Previous AI Worker production checkpoint — 2026-08-13
 ### 直前のAI Worker本番反映記録 — 2026-08-13

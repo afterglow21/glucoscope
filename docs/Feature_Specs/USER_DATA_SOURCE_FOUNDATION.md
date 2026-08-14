@@ -47,7 +47,7 @@ For User Foundation 0.4.0:
 - The Cloudflare Web Analytics beacon is not loaded in user mode or on any same-origin page while a user connection remains in local or session browser storage.
 - If browser storage cannot be checked safely, analytics stays disabled as the privacy-first fallback.
 - Chart.js is served from a reviewed local vendored file instead of a third-party runtime CDN on the page that handles connection details and glucose data.
-- The user can delete the saved connection from the setup screen. Deletion also clears the current relay ticket.
+- The user can delete the saved connection from the setup screen. Deletion also clears the current relay ticket. In the unpublished user-AI candidate, this same saved-connection deletion also clears the browser-local AI-letter cache and the stored first-use AI confirmation; it does not claim to delete OpenAI's abuse-monitoring logs.
 - A shared device should use session-only storage or remove the connection after use.
 - The usage-profile service receives the display name and allowlisted usage counts only. The data-source URL, credential, glucose values, and relay ticket are never sent to that service.
 
@@ -104,16 +104,23 @@ Guardian Monitor is an uploader into Gluroo, not another destination supported b
 
 ## AI boundary
 
-The current AI Worker uses a shared cache designed for Kazuma's public demo. Its existing cache identity is not yet sufficient for independent user data.
+Deployment boundary as of 2026-08-14: production remains AI Worker cache schema v14 on Version 28 (`f2565bc3-1f49-4f3f-b119-6ec2683f0607`). Personal-user AI is implemented as a locally verified candidate but has not been published. Until the coordinated Worker-then-Pages release occurs, the production user route must still be described as not yet enabled.
 
-Therefore, in `mode=user`:
+The unpublished candidate uses the following boundary in `mode=user`:
 
-- Worker-generated AI letters are disabled;
-- the rule-based local Gluco message remains available;
-- the user may copy the generated summary prompt for their own ChatGPT use;
-- no user glucose summary is sent to the GlucoScope AI Worker.
+- Before the first AI request for the current notice version, show a short, explicit confirmation that the summarized glucose information on the page will be sent to OpenAI. Cancelling sends nothing. The rule-based local Gluco message and ChatGPT-copy path remain available.
+- Send the selected-period summary only. Do not send the display name, Nightscout or Gluroo URL, connection passphrase, relay ticket, raw glucose-entry list, treatment list, insulin, food, medication, or device settings.
+- Store confirmation only in the browser as `glucoscope.aiLetterUserConsent.v1`.
+- Keep at most 30 AI letters in the browser-local `glucoscope.aiLetterLocalCache.v14` cache.
+- During personal-user early access, `SHARED_AI_CACHE_ENABLED=false` in code and `AI_CACHE_ENABLED=false` in Worker configuration disable shared-KV reads, writes, and stale fallback for every mode, including `kazuma-public-demo`. Browser-provided `pageMode` is routing metadata, not trusted authentication, and cannot authorize shared-cache access. The KV binding remains only for the staged recovery rules below, not for a direct Version 28 restore while user AI is enabled; existing entries are not read, no new entries are written, and retained entries expire naturally within the configured maximum of 24 hours. Every mode uses browser-local cache only, with at most 30 entries.
+- The Worker calls OpenAI with `store: false`. OpenAI states that API data is not used for model training by default unless the customer opts in. Its default abuse-monitoring logs may contain prompts and responses and are normally retained for up to 30 days, with possible longer legal or service-protection exceptions. See [OpenAI API data controls](https://developers.openai.com/api/docs/guides/your-data).
+- The morning, afternoon, and night generation limits of 10 each and the daily maximum of 30 remain one infrastructure-wide counter shared by the public demo and all users. They are not per-person limits.
+- AI, Turnstile, provider, budget, or shared-limit failure affects only the AI panel. It must not stop or delete an already verified CGM connection, block ordinary glucose display, or silently fall back to Kazuma's demo data.
+- Deleting the saved data connection clears the browser-local AI cache, retired local AI cache keys, and saved AI confirmation. This is separate from deleting only the Usage-profile record.
+- AI generation `POST /api/gluco-letter` requires an approved, present `Origin`. Originless Usage `GET` remains available for the existing operational checks.
+- Turnstile must use action `glucoscope-ai-letter`, and the Worker must verify both that action and hostname `afterglow21.github.io` before calling OpenAI.
 
-AI letters may be enabled later only after per-user cache isolation, usage-limit isolation, privacy wording, budget controls, and deletion behavior are complete.
+The release order is the committed Worker first and Pages second. A brief AI-only unavailable window is accepted while the old page still sends an incompatible Turnstile token; CGM connection and ordinary glucose display must continue. Version 28 may be restored only before the new Pages is live or if the Pages release fails. Once Pages with user AI enabled is live, do not restore Version 28 while user AI remains enabled because its spoofable `pageMode` boundary would reopen shared-KV writes. Keep AI fail-closed on the new Worker line, or first publish and verify Pages with user AI disabled before Worker recovery. Production cache v14 / Version 28 remains the recorded current state until both deployments and their smoke checks are complete.
 
 ## Data scope
 
@@ -149,7 +156,8 @@ Connection errors, missing data, old data, and unsupported formats should be sho
 - The saved connection can be deleted.
 - The regular UI keeps only compact stop, resume, and delete controls for usage recording; allowlisted export is a small secondary link.
 - Mobile and desktop display switches preserve `mode=user`.
-- AI Worker generation remains disabled in user mode.
+- The deployed user route keeps AI Worker generation disabled until the unpublished frontend and Worker candidates are released together in the safe order; documentation must not describe the local candidate as already live.
+- Before user-mode AI release, accept first-use confirmation before any request, browser-local cache maximum 30, all-mode shared-KV exclusion including stale fallback, untrusted `pageMode`, retained-binding expiry behavior, deletion of local AI cache and confirmation with saved-connection deletion, global-not-personal limit wording, AI-failure independence from CGM, approved-Origin `POST`, Turnstile hostname/action verification, and the Worker-first/Pages-second rollback sequence.
 - No third-party runtime chart script is loaded on the user-data page.
 - Analytics remains disabled while either user connection storage key exists.
 - JavaScript syntax checks and adapter tests pass.

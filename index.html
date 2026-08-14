@@ -25,7 +25,7 @@
   <!-- GlucoScope Limited Data Relay: the public endpoint is configured for paused acceptance testing only. -->
   <meta name="glucoscope-data-relay-endpoint" content="https://glucoscope-data-relay.afterglow21.workers.dev">
   <meta name="glucoscope-usage-profile-enabled" content="true">
-  <link rel="stylesheet" href="style.css?v=20260812-early-access-1">
+  <link rel="stylesheet" href="style.css?v=20260814-user-ai-1">
 </head>
 <body>
 
@@ -530,6 +530,16 @@
             </div>
             <p class="letter-section-lead" data-i18n-key="aiLetterLead">選んだモードで、AIによる分析結果を表示します。</p>
             <button id="aiLetterButton" type="button" class="letter-primary-button" disabled data-i18n-key="aiLetterButtonPreparing">AI分析は準備中</button>
+            <section id="aiLetterUserConsent" class="ai-letter-user-consent" aria-labelledby="aiLetterUserConsentTitle" hidden>
+              <h3 id="aiLetterUserConsentTitle" tabindex="-1" data-i18n-key="aiLetterUserConsentTitle">AI分析を始める前に</h3>
+              <p data-i18n-key="aiLetterUserConsentData">この画面にまとめた血糖情報をOpenAIへ送ります。氏名、接続先URL、合言葉、元の血糖データ一覧は送りません。</p>
+              <p data-i18n-key="aiLetterUserConsentSafety">AIの言葉は振り返りの参考です。治療の判断やアラートは、いつものCGMアプリと医療機関からの案内を優先してください。</p>
+              <a class="ai-letter-consent-link" href="pages/trust/privacy-notes.html#ai-letters" target="_blank" rel="noopener noreferrer" data-i18n-key="aiLetterUserConsentDetails">詳しく見る</a>
+              <div class="ai-letter-consent-actions">
+                <button id="aiLetterUserConsentAccept" type="button" class="letter-primary-button" data-i18n-key="aiLetterUserConsentAccept">内容を確認してAI分析を始める</button>
+                <button id="aiLetterUserConsentCancel" type="button" class="letter-secondary-button" data-i18n-key="aiLetterUserConsentCancel">今はしない</button>
+              </div>
+            </section>
             <div id="aiLetterStatus" class="letter-panel-status" data-i18n-key="aiLetterStatusPreparing">AIお手紙の準備を確認しています。</div>
           </div>
 
@@ -837,7 +847,7 @@
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js?v=20260721-user-foundation-3"></script>
-<script src="js/app.js?v=20260813-emoji-punctuation-1"></script>
+<script src="js/app.js?v=20260814-user-ai-1"></script>
 <!-- Cloudflare Web Analytics: aggregate page-view and performance metrics only -->
 <script src="js/analytics-loader.js?v=20260811-usage-profile-stage-1"></script>
 <!-- End Cloudflare Web Analytics -->

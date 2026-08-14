@@ -10,11 +10,59 @@ import {
   normalizeGeneratedLetterPunctuation,
   partitionGeneratedLetterQualityIssues
 } from "../src/letter-quality.js";
+import {
+  DEFAULT_TURNSTILE_EXPECTED_ACTION,
+  DEFAULT_TURNSTILE_EXPECTED_HOSTNAME,
+  isAiGenerationRequest,
+  isExpectedTurnstileResult,
+  SHARED_AI_CACHE_ENABLED,
+  shouldUseSharedCacheForSummary,
+  USER_DATA_PAGE_MODE
+} from "../src/request-policy.js";
 
 const workerSource = await readFile(new URL("../src/index.js", import.meta.url), "utf8");
 
 test("worker uses cache schema v14 for trailing-emoji punctuation contract", () => {
   assert.match(workerSource, /AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v14"/);
+  assert.match(workerSource, /"Cache-Control": "no-store"/);
+  assert.match(workerSource, /"X-Content-Type-Options": "nosniff"/);
+});
+
+test("shared KV stays disabled for every browser-provided page mode", () => {
+  assert.equal(SHARED_AI_CACHE_ENABLED, false);
+  assert.equal(shouldUseSharedCacheForSummary({ pageMode: "kazuma-public-demo" }), false);
+  assert.equal(shouldUseSharedCacheForSummary({ pageMode: USER_DATA_PAGE_MODE }), false);
+  assert.equal(shouldUseSharedCacheForSummary({ pageMode: "unknown" }), false);
+  assert.equal(shouldUseSharedCacheForSummary({}), false);
+  assert.match(workerSource, /if \(!shouldUseSharedCacheForSummary\(summary\)\) \{[\s\S]*?status: "browser-local-only"/);
+  assert.equal((workerSource.match(/if \(!shouldUseSharedCacheForSummary\(summary\)\)/g) || []).length, 2);
+  assert.match(workerSource, /storage: config\.sharedCacheEnabled[\s\S]*?: "disabled"/);
+  assert.match(workerSource, /Shared cache is intentionally disabled during personal-user early access/);
+});
+
+test("AI generation POST requires an Origin while the usage GET remains operational", () => {
+  assert.equal(isAiGenerationRequest(new Request("https://worker.example/api/gluco-letter", {
+    method: "POST"
+  })), true);
+  assert.equal(isAiGenerationRequest(new Request("https://worker.example/api/gluco-letter/usage", {
+    method: "GET"
+  })), false);
+  assert.match(workerSource, /isAiGenerationRequest\(request\) && !corsDecision\.origin/);
+  assert.match(workerSource, /reason: "origin_header_required"/);
+});
+
+test("Turnstile success is bound to the expected production hostname and AI action", () => {
+  const expectedResult = {
+    success: true,
+    hostname: DEFAULT_TURNSTILE_EXPECTED_HOSTNAME,
+    action: DEFAULT_TURNSTILE_EXPECTED_ACTION
+  };
+
+  assert.equal(isExpectedTurnstileResult(expectedResult), true);
+  assert.equal(isExpectedTurnstileResult({ ...expectedResult, hostname: "example.com" }), false);
+  assert.equal(isExpectedTurnstileResult({ ...expectedResult, action: "glucoscope-usage-profile" }), false);
+  assert.equal(isExpectedTurnstileResult({ ...expectedResult, success: false }), false);
+  assert.match(workerSource, /!isExpectedTurnstileResult\(result, env\)/);
 });
 
 test("both retry paths block only hard quality issues after one rewrite", () => {

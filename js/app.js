@@ -34,6 +34,8 @@ const CUSTOM_RANGE_STORAGE_KEY = "glucoscope.customRange.v1";
 const AI_LETTER_WORKER_ENDPOINT_STORAGE_KEY = "glucoscope.aiLetterWorkerEndpoint.v1";
 const AI_LETTER_WORKER_ENABLED_STORAGE_KEY = "glucoscope.aiLetterWorkerEnabled.v1";
 const AI_LETTER_LOCAL_CACHE_STORAGE_KEY = "glucoscope.aiLetterLocalCache.v14";
+const AI_LETTER_USER_CONSENT_STORAGE_KEY = "glucoscope.aiLetterUserConsent.v1";
+const AI_LETTER_USER_CONSENT_VERSION = "2026-08-14-user-ai-1";
 const AI_LETTER_LEGACY_LOCAL_CACHE_STORAGE_KEYS = [
   "glucoscope.aiLetterLocalCache.v13",
   "glucoscope.aiLetterLocalCache.v12",
@@ -68,7 +70,11 @@ let aiLetterSummaryState = "loading";
 let aiLetterSummaryRangeIdentity = "";
 let latestRuleCommentMetrics = null;
 let aiLetterRequestInFlight = false;
+let aiLetterRequestGeneration = 0;
+let aiLetterRequestAbortController = null;
 let aiLetterCacheRefreshTimer = null;
+let aiLetterUserConsentGrantedThisSession = false;
+let pendingAiLetterModeAfterConsent = null;
 let liveStatsRequestSequence = 0;
 let lastUnicornEvaluatedMeasurementKey = null;
 let activeUnicornGlucoDecision = null;
@@ -357,7 +363,7 @@ const translations = {
     dataSourceSetupRequired: "最初にデータ接続を設定してね🍀",
     dataSourceConnectedLabel: "接続中",
     dataSourceDeleted: "保存した接続を削除しました。",
-    aiLetterStatusUserFoundation: "ユーザー版のAI分析は、利用者ごとのキャッシュ分離と利用上限を整えてから公開します。いつものグルコのお話とChatGPTコピーは使えます🍀",
+    aiLetterStatusUserFoundation: "ユーザー版のAI分析は一時停止しています。いつものグルコのお話とChatGPTコピーは使えます🍀",
     mobileSimpleModeButton: "🍀 やさしい表示",
     mobileDetailModeButton: "📊 詳しく見る",
     mobileSimpleCurrentEyebrow: "いまの血糖",
@@ -391,7 +397,15 @@ const translations = {
     aiLetterPanelChat: "ChatGPT",
     aiLetterButtonPreparing: "血糖データを確認中",
     aiLetterButtonLocalDisabled: "ローカル確認ではAI分析は停止中",
-    aiLetterButtonUserFoundation: "ユーザー版AI分析は準備中",
+    aiLetterButtonUserFoundation: "ユーザー版AI分析は一時停止中",
+    aiLetterUserConsentTitle: "AI分析を始める前に",
+    aiLetterUserConsentData: "この画面にまとめた血糖情報をOpenAIへ送ります。氏名、接続先URL、合言葉、元の血糖データ一覧は送りません。",
+    aiLetterUserConsentSafety: "AIの言葉は振り返りの参考です。治療の判断やアラートは、いつものCGMアプリと医療機関からの案内を優先してください。",
+    aiLetterUserConsentDetails: "詳しく見る",
+    aiLetterUserConsentAccept: "内容を確認してAI分析を始める",
+    aiLetterUserConsentCancel: "今はしない",
+    aiLetterStatusConsentWaiting: "送る内容を確認してから、AI分析を始められます。",
+    aiLetterStatusConsentCancelled: "血糖のまとめは送っていません。いつでも後から始められます🍀",
     aiLetterButtonNoData: "この期間はデータなし",
     aiLetterButtonUnavailable: "データを読み込めませんでした",
     aiLetterButtonReady: "AI分析を試す",
@@ -684,7 +698,7 @@ const translations = {
     dataSourceSetupRequired: "Connect a data source first 🍀",
     dataSourceConnectedLabel: "Connected",
     dataSourceDeleted: "The saved connection was deleted.",
-    aiLetterStatusUserFoundation: "AI analysis for the user version will open after per-user cache isolation and usage limits are ready. Gluco’s local story and ChatGPT copy are available 🍀",
+    aiLetterStatusUserFoundation: "AI analysis for the user version is temporarily paused. Gluco’s local story and ChatGPT copy remain available 🍀",
     mobileSimpleModeButton: "🍀 Simple view",
     mobileDetailModeButton: "📊 Details",
     mobileSimpleCurrentEyebrow: "Current glucose",
@@ -718,7 +732,15 @@ const translations = {
     aiLetterPanelChat: "ChatGPT",
     aiLetterButtonPreparing: "Checking glucose data",
     aiLetterButtonLocalDisabled: "AI analysis is off in local preview",
-    aiLetterButtonUserFoundation: "User AI analysis is coming later",
+    aiLetterButtonUserFoundation: "User AI analysis is temporarily paused",
+    aiLetterUserConsentTitle: "Before starting AI analysis",
+    aiLetterUserConsentData: "The glucose summary shown on this screen is sent to OpenAI. Your name, connection URL, passphrase, and original list of glucose readings are not sent.",
+    aiLetterUserConsentSafety: "AI words are only a reflection aid. For treatment decisions and alerts, follow your usual CGM app and guidance from your healthcare team.",
+    aiLetterUserConsentDetails: "Read more",
+    aiLetterUserConsentAccept: "I understand — start AI analysis",
+    aiLetterUserConsentCancel: "Not now",
+    aiLetterStatusConsentWaiting: "Review what is sent before starting AI analysis.",
+    aiLetterStatusConsentCancelled: "No glucose summary was sent. You can start later whenever you want 🍀",
     aiLetterButtonNoData: "No data for this range",
     aiLetterButtonUnavailable: "Could not load data",
     aiLetterButtonReady: "Try AI analysis",
@@ -1271,14 +1293,25 @@ async function handleDataSourceTest() {
 }
 
 function clearDataSourceSpecificBrowserState() {
-  try {
-    localStorage.removeItem(AI_LETTER_LOCAL_CACHE_STORAGE_KEY);
-    for (const legacyKey of AI_LETTER_LEGACY_LOCAL_CACHE_STORAGE_KEYS) {
-      localStorage.removeItem(legacyKey);
+  invalidateAiLetterRequest();
+  const storageKeys = [
+    AI_LETTER_LOCAL_CACHE_STORAGE_KEY,
+    AI_LETTER_USER_CONSENT_STORAGE_KEY,
+    ...AI_LETTER_LEGACY_LOCAL_CACHE_STORAGE_KEYS
+  ];
+  for (const storageKey of storageKeys) {
+    try {
+      localStorage.removeItem(storageKey);
+    } catch (error) {
+      // Continue through every key so one rejected browser-storage operation
+      // cannot prevent the other cache and consent cleanup attempts.
+      console.warn("Could not clear local AI state", error);
     }
-  } catch (error) {
-    console.warn("Could not clear local AI cache", error);
   }
+  aiLetterUserConsentGrantedThisSession = false;
+  pendingAiLetterModeAfterConsent = null;
+  const consentPanel = document.getElementById("aiLetterUserConsent");
+  if (consentPanel) consentPanel.hidden = true;
 }
 
 function buildUserModeUrl(hash = "glucose") {
@@ -1650,6 +1683,9 @@ function handleDataSourceSave(event) {
 
 function handleDataSourceDelete() {
   if (!dataSourceManager || isDataSourceSaveBusy()) return;
+  // Stop any personal-data analysis before storage cleanup. This stays safe
+  // even when the browser refuses a later storage operation.
+  invalidateAiLetterRequest();
   invalidateDataSourceTest();
   invalidatePendingDataSourceSave();
   if (getUsageProfileState().registered) {
@@ -2729,6 +2765,9 @@ function setLetterPanel(panel) {
 function setAiLetterMode(mode, options = {}) {
   const previousMode = currentAiLetterMode;
   currentAiLetterMode = normalizeAiLetterMode(mode);
+  if (previousMode !== currentAiLetterMode) {
+    invalidateAiLetterRequest();
+  }
   localStorage.setItem(AI_LETTER_MODE_STORAGE_KEY, currentAiLetterMode);
 
   updateAiModeSwitcher();
@@ -4053,7 +4092,6 @@ function getAiLetterWorkerEndpoint() {
 function isAiLetterWorkerEnabled() {
   const params = new URLSearchParams(window.location.search);
 
-  if (isUserDataSourceMode()) return false;
   if (params.has("disableAiWorker")) return false;
   if (!isLocalAiLetterDevelopmentHost()) return true;
 
@@ -4541,6 +4579,7 @@ function updateAiModeSwitcher() {
     button.textContent = label;
     button.classList.toggle("is-active", mode === currentAiLetterMode);
     button.setAttribute("aria-pressed", mode === currentAiLetterMode ? "true" : "false");
+    button.disabled = aiLetterRequestInFlight;
   });
 }
 
@@ -4658,6 +4697,7 @@ function renderAiLetterTurnstileWidget() {
 
   const widgetId = window.turnstile.render(container, {
     sitekey: TURNSTILE_SITE_KEY,
+    action: "glucoscope-ai-letter",
     theme: "auto",
     callback: (token) => {
       window.glucoTurnstileToken = token;
@@ -4777,6 +4817,10 @@ function setAiLetterSummary(summary, state = summary ? "ready" : "loading") {
 
   latestAiLetterSummary = summary;
   aiLetterSummaryState = state;
+
+  if (summaryChanged) {
+    invalidateAiLetterRequest();
+  }
 
   if (summaryChanged) {
     showAiLetterResult("");
@@ -5262,6 +5306,100 @@ async function handleChatGptCopy() {
   }
 }
 
+function hasAiLetterUserConsent() {
+  if (!isUserDataSourceMode()) return true;
+  if (aiLetterUserConsentGrantedThisSession) return true;
+
+  try {
+    const stored = JSON.parse(localStorage.getItem(AI_LETTER_USER_CONSENT_STORAGE_KEY) || "null");
+    return Boolean(stored?.accepted === true && stored.version === AI_LETTER_USER_CONSENT_VERSION);
+  } catch (error) {
+    console.warn("Could not read AI analysis consent", error);
+    return false;
+  }
+}
+
+function hideAiLetterUserConsent({ restoreFocus = false } = {}) {
+  const panel = document.getElementById("aiLetterUserConsent");
+  if (panel) panel.hidden = true;
+  pendingAiLetterModeAfterConsent = null;
+  if (restoreFocus) document.getElementById("aiLetterButton")?.focus?.();
+}
+
+function requestAiLetterUserConsent(analysisMode) {
+  if (hasAiLetterUserConsent()) return false;
+
+  pendingAiLetterModeAfterConsent = normalizeAiLetterMode(analysisMode);
+  const panel = document.getElementById("aiLetterUserConsent");
+  if (panel) {
+    panel.hidden = false;
+    document.getElementById("aiLetterUserConsentTitle")?.focus?.();
+  }
+  setAiLetterPanelStatus("aiLetterStatusConsentWaiting");
+  return true;
+}
+
+function acceptAiLetterUserConsent() {
+  const analysisMode = pendingAiLetterModeAfterConsent || currentAiLetterMode;
+  aiLetterUserConsentGrantedThisSession = true;
+  try {
+    localStorage.setItem(AI_LETTER_USER_CONSENT_STORAGE_KEY, JSON.stringify({
+      accepted: true,
+      version: AI_LETTER_USER_CONSENT_VERSION,
+      acceptedAt: new Date().toISOString()
+    }));
+  } catch (error) {
+    console.warn("Could not save AI analysis consent", error);
+  }
+  hideAiLetterUserConsent({ restoreFocus: true });
+  handleAiLetterRequest(analysisMode, { skipUserConsent: true });
+}
+
+function cancelAiLetterUserConsent() {
+  hideAiLetterUserConsent({ restoreFocus: true });
+  setAiLetterPanelStatus("aiLetterStatusConsentCancelled");
+}
+
+function getAiLetterRequestSummaryIdentity(summary, analysisMode = currentAiLetterMode) {
+  if (!summary || typeof summary !== "object") return "";
+  return getAiLetterLocalCacheKey(summary, analysisMode);
+}
+
+function invalidateAiLetterRequest() {
+  aiLetterRequestGeneration += 1;
+  aiLetterRequestAbortController?.abort?.();
+  aiLetterRequestAbortController = null;
+  aiLetterRequestInFlight = false;
+  resetAiLetterTurnstile();
+}
+
+function beginAiLetterRequest(summary, analysisMode) {
+  aiLetterRequestGeneration += 1;
+  aiLetterRequestAbortController?.abort?.();
+  const abortController = new AbortController();
+  aiLetterRequestAbortController = abortController;
+
+  return {
+    generation: aiLetterRequestGeneration,
+    abortController,
+    summary,
+    summaryIdentity: getAiLetterRequestSummaryIdentity(summary, analysisMode),
+    analysisMode: normalizeAiLetterMode(analysisMode)
+  };
+}
+
+function isCurrentAiLetterRequest(requestState) {
+  if (!requestState) return false;
+  return requestState.generation === aiLetterRequestGeneration
+    && requestState.abortController === aiLetterRequestAbortController
+    && requestState.abortController.signal.aborted !== true
+    && requestState.analysisMode === currentAiLetterMode
+    && requestState.summaryIdentity === getAiLetterRequestSummaryIdentity(
+      latestAiLetterSummary,
+      currentAiLetterMode
+    );
+}
+
 async function handleAiLetterRequest(mode = currentAiLetterMode, options = {}) {
   const analysisMode = normalizeAiLetterMode(mode);
   setAiLetterMode(analysisMode);
@@ -5273,6 +5411,10 @@ async function handleAiLetterRequest(mode = currentAiLetterMode, options = {}) {
 
   if (!isAiLetterWorkerEnabled()) {
     setAiLetterPanelStatus(isUserDataSourceMode() ? "aiLetterStatusUserFoundation" : "aiLetterStatusLocalOnly", "error");
+    return;
+  }
+
+  if (!options.skipUserConsent && requestAiLetterUserConsent(analysisMode)) {
     return;
   }
 
@@ -5289,6 +5431,7 @@ async function handleAiLetterRequest(mode = currentAiLetterMode, options = {}) {
     return;
   }
 
+  const requestState = beginAiLetterRequest(latestAiLetterSummary, analysisMode);
   aiLetterRequestInFlight = true;
   updateAiLetterControls();
   setAiLetterPanelStatus(
@@ -5298,21 +5441,25 @@ async function handleAiLetterRequest(mode = currentAiLetterMode, options = {}) {
   try {
     const response = await fetch(getAiLetterWorkerEndpoint(), {
       method: "POST",
+      signal: requestState.abortController.signal,
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        summary: latestAiLetterSummary,
+        summary: requestState.summary,
         analysisMode,
         turnstileToken: getTurnstileTokenForAiLetter(),
         client: {
           app: "GlucoScope",
-          mode: "worker-prototype"
+          mode: isUserDataSourceMode() ? "user-early-access" : "public-demo"
         }
       })
     });
 
+    if (!isCurrentAiLetterRequest(requestState)) return;
+
     const data = await response.json().catch(() => ({}));
+    if (!isCurrentAiLetterRequest(requestState)) return;
     const letterText = getAiLetterTextFromResponse(data);
 
     if (!response.ok || data.ok === false || !letterText) {
@@ -5322,7 +5469,7 @@ async function handleAiLetterRequest(mode = currentAiLetterMode, options = {}) {
     }
 
     showAiLetterResult(letterText);
-    saveAiLetterLocalCache(latestAiLetterSummary, data, letterText, analysisMode);
+    saveAiLetterLocalCache(requestState.summary, data, letterText, analysisMode);
     setAiLetterPanelStatus(
       getAiLetterStatusKeyFromResponse(data),
       "success",
@@ -5330,6 +5477,7 @@ async function handleAiLetterRequest(mode = currentAiLetterMode, options = {}) {
     );
     recordUsageProfileAiGenerationIfEligible(data);
   } catch (error) {
+    if (error?.name === "AbortError" || !isCurrentAiLetterRequest(requestState)) return;
     console.error("AI letter prototype call failed", error);
     const workerMessage = error.aiLetterData?.userMessage;
     const errorStatusKey = getAiLetterErrorStatusKey(error.aiLetterData);
@@ -5348,7 +5496,9 @@ async function handleAiLetterRequest(mode = currentAiLetterMode, options = {}) {
       setAiLetterPanelStatus(errorStatusKey, "error");
     }
   } finally {
+    if (requestState.generation !== aiLetterRequestGeneration) return;
     aiLetterRequestInFlight = false;
+    aiLetterRequestAbortController = null;
     resetAiLetterTurnstile();
     updateAiLetterControls(null, "", { preserveAiStatus: true });
     forceEnableAiLetterButtonSoon();
@@ -5403,6 +5553,11 @@ function setupAiLetterPrototype() {
   if (aiButton) {
     aiButton.addEventListener("click", () => handleAiLetterRequest(currentAiLetterMode));
   }
+
+  document.getElementById("aiLetterUserConsentAccept")
+    ?.addEventListener("click", acceptAiLetterUserConsent);
+  document.getElementById("aiLetterUserConsentCancel")
+    ?.addEventListener("click", cancelAiLetterUserConsent);
 
   setupAiLetterTurnstile();
 }
