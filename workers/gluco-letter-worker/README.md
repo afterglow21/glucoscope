@@ -191,6 +191,8 @@ Behavior:
 - approved browser origins receive their exact origin in `Access-Control-Allow-Origin`,
 - responses include `Vary: Origin`,
 - valid `OPTIONS` preflight requests receive `204`,
+- while quota enforcement is off, preflight keeps the existing `Content-Type`-only
+  allowlist; `Authorization` is added only when the AI Worker quota flag is enabled,
 - unapproved or malformed browser origins receive `403`,
 - AI-generation `POST` requires an approved, present Origin, while originless Usage `GET` remains available for operational checks, and
 - `Access-Control-Allow-Origin: *` is not used.
@@ -259,6 +261,36 @@ AI_CACHE_ENABLED=false         # Worker configuration
 ```
 
 Workers KV is eventually consistent across Cloudflare locations. A newly written value is normally visible immediately where it was written, but another location may briefly see an older value while its edge cache expires.
+
+## Staged per-user quota integration (checked in disabled)
+
+The AI Worker is wired to the Usage Worker's named `AiQuotaService` entrypoint, but the
+checked-in `AI_PER_USER_QUOTA_ENABLED=false` keeps current production behavior. While
+the frontend flag is also false, the browser sends neither an `Authorization` header nor
+a quota `requestId`.
+
+When all quota switches are deliberately enabled later, a new OpenAI call validates
+input and Turnstile, finishes the infrastructure-wide guards, reserves through the
+service binding, generates and passes every final output check, then completes the
+reservation. Provider/network errors, incomplete or rejected output, and request aborts
+release the reservation. A completion or release RPC failure fails closed and returns no
+generated text. A fresh cache display bypasses reservation. Client `debug` and
+`forceStatus` fields are ignored on this path.
+
+The body may add only a UUID `requestId` and allowlisted `quotaCredentialKind`
+(`device_profile` or `account`). The kind is only a routing hint: Usage verifies the
+Bearer token against the matching trusted source and decides Free/Plus and the 1/5 limit
+server-side. The client cannot submit tier, entitlement dates, limits, or counters.
+
+Release in this order: Usage migration and disabled internal services, this Worker with
+its flag off, then Pages with its flag off. After end-to-end acceptance, enable Usage
+first, this Worker second, and Pages last. Never send the custom header while the Pages
+flag is false.
+
+Before enabling, finish a short dedicated quota explanation/consent and Privacy update,
+and a server-verifiable public-demo identity that cannot be forged with `pageMode`.
+Until then, the public demo has no quota bypass and would fail closed if this Worker flag
+were enabled; CGM display and the ordinary Gluco message remain independent.
 
 ## Local development
 
@@ -332,6 +364,7 @@ Non-secret values are defined in `wrangler.toml`:
 ```text
 AI_PROVIDER=openai
 AI_ENABLED=true
+AI_PER_USER_QUOTA_ENABLED=false
 OPENAI_MODEL=gpt-5.4-nano
 OPENAI_MAX_OUTPUT_TOKENS_LETTER=700
 OPENAI_MAX_OUTPUT_TOKENS_DEEP=1500

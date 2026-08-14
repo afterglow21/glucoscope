@@ -1,0 +1,40 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "glucoscope-plus-entitlement",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-15",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": {
+    "enabled": false
+  },
+  "vars": {
+    "PLUS_ENTITLEMENT_RPC_ENABLED": "false",
+    "PLUS_PURCHASES_ENABLED": "false",
+    "PLUS_CHECKOUT_HTTP_ENABLED": "false",
+    "PLUS_STRIPE_WEBHOOK_ENABLED": "false",
+    "PLUS_ALLOWED_ORIGIN": "https://afterglow21.github.io",
+    "PLUS_CHECKOUT_SUCCESS_PATH": "/glucoscope/?mode=user&checkout=success#settings",
+    "PLUS_CHECKOUT_CANCEL_PATH": "/glucoscope/?mode=user&checkout=cancelled#settings",
+    "PLUS_CHECKOUT_RESERVATION_TTL_SECONDS": "600",
+    "PLUS_ACCOUNT_AUTH_HTTP_ENABLED": "false",
+    "ACCOUNT_AUTH_ALLOWED_ORIGIN": "https://afterglow21.github.io",
+    "ACCOUNT_AUTH_EXPECTED_HOSTNAME": "afterglow21.github.io",
+    "ACCOUNT_AUTH_REQUEST_CODE_ACTION": "glucoscope-plus-request-code",
+    "ACCOUNT_AUTH_DELETE_ACTION": "glucoscope-plus-delete-account",
+    "ACCOUNT_AUTH_BODY_LIMIT_BYTES": "8192",
+    "ACCOUNT_AUTH_CODE_TTL_SECONDS": "600",
+    "ACCOUNT_AUTH_CODE_ATTEMPTS": "5",
+    "ACCOUNT_AUTH_RESEND_SECONDS": "60",
+    "ACCOUNT_AUTH_MAX_SENDS_PER_HOUR": "5",
+    "ACCOUNT_AUTH_SESSION_TTL_DAYS": "90",
+    "ACCOUNT_EMAIL_HMAC_KEY_VERSION": "1",
+    "ACCOUNT_EMAIL_PREVIOUS_HMAC_KEY_VERSION": "0",
+    "PLUS_PRICE_JPY": "300",
+    "PLUS_DURATION_DAYS": "30",
+    "SHARE_TRIAL_RESERVATION_TTL_SECONDS": "600"
+  }
+}

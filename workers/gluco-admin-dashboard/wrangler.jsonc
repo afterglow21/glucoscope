@@ -26,6 +26,13 @@
       "database_id": "31db1c25-65a3-44e2-b878-73b18477d4a5"
     }
   ],
+  "services": [
+    {
+      "binding": "PLUS_ADMIN_SUMMARY",
+      "service": "glucoscope-plus-entitlement",
+      "entrypoint": "AdminPlusAggregateEntrypoint"
+    }
+  ],
   "vars": {
     "TEAM_DOMAIN": "https://glucoscope-share-studio-pages.cloudflareaccess.com",
     "POLICY_AUD": "ba5b3341ee1407ab73f549b6fe308d0d43714f1237102b7ceabf412d429a678a"

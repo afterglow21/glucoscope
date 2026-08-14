@@ -54,8 +54,18 @@
         <p>GlucoScopeをよくするため、表示名、使った日、AI分析を使った回数、通常のグルコの想い出の数を記録します。血糖値、接続情報、AIお手紙の本文は記録しません。</p>
         <p>運営のため、この端末を見分けるランダムな番号、記録のオン・オフ、記録を始めた日と最後に使った日も保存します。IPアドレスを利用状況の記録として保存しません。通信や安全確認に必要な情報は、Cloudflareが同社の方針に沿って扱う場合があります。</p>
         <p>利用状況の記録は、設定からいつでも停止・再開・削除できます。使った日の記録は90日分まで保存し、90日使われていない端末の記録は削除します。</p>
+        <p>公開する利用状況の合計には、名前や一人ずつの記録を出しません。少人数の行動を推測しにくくするため、前日までの30日間に活動した端末プロフィールが10件以上になった時だけ、全体の数を表示します。</p>
         <p>削除した後も、Cloudflareの復旧用バックアップには、無料プランでは最大7日、有料プランでは最大30日残る場合があります。通常の画面や集計には表示されません。</p>
         <p>これはアカウントではありません。別の端末とのまとめ直しや、ブラウザの保存を消した後の復旧はできません。</p>
+      </section>
+
+      <section class="trust-section">
+        <h2>Plus 30日パス（まだ販売していません）</h2>
+        <p>Plusは、300円を1回だけ支払い、購入できた時から30日間使う追加機能です。自動では更新されません。Plusを購入しなくても、血糖値を見る基本機能は使えます。Plusは医療サービスではなく、診断や治療の判断、優先医療相談は行いません。</p>
+        <p>販売を始める場合は、Plusを別の端末へ戻せるように、購入前にメールアドレスを確認します。このメールは、Plusの本人確認、復旧、購入に必要な連絡だけに使います。表示名や、この端末の利用状況の記録とは別に扱います。</p>
+        <p>確認コードを送り、入力されたコードを確かめる間だけメールアドレスを使います。Plusのデータベースには、メールアドレスそのものや元に戻せる形では保存しません。同じメールかを確かめるための元に戻せない照合用情報、ランダムなアカウント番号、利用開始・終了日時、利用中かどうか、Stripeの決済を見分ける番号、Share Studioの無料体験を使ったかを保存する予定です。安全のため、確認コードを送った時刻や試した回数、端末を確認するためのランダムな情報も短期間だけ保存します。血糖値、グラフ、AIお手紙、接続先URL、合言葉はPlusの購入情報へ入れず、Stripeへも送りません。</p>
+        <p>カード番号などはStripeの支払い画面だけで扱い、GlucoScopeは受け取りません。Stripeには、支払いを同じPlusアカウントへ結びつけるランダムな番号を送ります。Stripeの画面で入力したメールや請求情報は、Stripeが同社の方針に沿って扱います。子どもや、メールと支払いの管理がむずかしい人が安全に使う方法、保護者の確認、共用メールのルールを決めるまで販売しません。メールやカードのパスワードを子どもへ渡すよう案内しません。</p>
+        <p>返金、税、問い合わせ、照合用情報と購入記録を保存する期間はまだ決まっていません。分かりやすい案内と安全な復旧方法を公開し、テストを終えるまで購入できません。</p>
       </section>
 
       <section id="ai-letters" class="trust-section">
@@ -63,6 +73,7 @@
         <p>AI分析を使うと、画面にまとめた血糖情報をOpenAIへ送ります。現在の値と変化、選んだ期間のTIR、平均、ばらつきなどが含まれます。氏名、接続先URL、合言葉、元の血糖データ一覧は送りません。</p>
         <p>自分のデータをつないだユーザー版では、最初のAI分析の前に、送る内容を画面で確認できます。AI分析を使わなくても、血糖表示や「いつものグルコのお話」は変わりません。</p>
         <p>生成したお手紙は、この端末に最大30件まで保存します。少人数の先行体験中は、公開デモもユーザー版も、ほかの人と共有する一時保存には入れません。接続を削除すると、この端末のお手紙と確認記録も削除します。</p>
+        <p>将来、1日のAI利用上限を始める場合は、上限確認のため、AI分析が成功した日と回数だけを最大90日保存します。これは、設定から停止できる利用状況の記録とは別です。始める前に画面で説明し、確認を求めます。現在、この個人上限はまだ有効にしていません。</p>
         <p>OpenAI APIへ送った内容は、通常はAIの学習には使われません。安全のための確認記録に、入力と出力が最大30日残る場合があります。詳しくは<a href="https://platform.openai.com/docs/models/default-usage-policies-by-endpoint" target="_blank" rel="noopener noreferrer">OpenAIのデータ管理の説明</a>をご覧ください。</p>
       </section>
 
@@ -105,8 +116,18 @@
         <p>To improve GlucoScope, we record your display name, days used, completed AI analyses, and the number of regular Gluco memories. We do not record glucose values, connection details, or AI letter text.</p>
         <p>We also keep a random number for this device, whether recording is on or off, and when recording began and was last used. We do not store your IP address as part of the usage record. Cloudflare may handle information needed for communication and security under its own policies.</p>
         <p>You can stop, resume, or delete basic usage recording at any time in Settings. Days used are kept for up to 90 days, and records for a device that has not been used for 90 days are deleted.</p>
+        <p>Public usage totals never show names or individual records. To reduce the chance of guessing what a small group did, overall totals appear only after at least 10 device profiles were active during the 30 completed days through yesterday.</p>
         <p>After deletion, recovery backups may still keep the data for up to 7 days on the Free plan or up to 30 days on a Paid plan. It does not appear in the normal screen or usage totals.</p>
         <p>This is not an account. Records cannot be combined across devices or recovered after browser storage is erased.</p>
+      </section>
+
+      <section class="trust-section">
+        <h2>Plus 30-day pass (not yet for sale)</h2>
+        <p>Plus is a proposed JPY 300 one-time purchase for 30 days starting when payment is confirmed. It never renews automatically. Core glucose viewing remains available without Plus. Plus is not medical care and does not provide diagnosis, treatment decisions, or priority medical advice.</p>
+        <p>Before sales begin, an email address will be verified so the same Plus access can be restored on another device. The email will be used only for Plus identity, recovery, and necessary purchase messages. It will remain separate from your display name and optional device usage record.</p>
+        <p>The email address is used only while sending a verification code and checking the code you enter. The Plus database will not keep the full email or any reversible form of it. The planned record includes a one-way lookup value, a random account number, start and end times, entitlement status, a Stripe payment reference, and whether the Share Studio trial was used. For safety, it also keeps short-lived code timing and attempt counts plus random device-verification information. Glucose values, graphs, AI letters, connection URLs, and passphrases will not enter the Plus purchase record or be sent to Stripe.</p>
+        <p>Card details stay on Stripe's hosted payment page and are not received by GlucoScope. A random identifier is sent to Stripe to connect the payment to the same Plus account. Email or billing details entered on Stripe's page are handled by Stripe under its policies. Sales will not begin until safe rules are decided for children, people who need help managing email or payment, guardian confirmation, and shared email. GlucoScope will not tell a child to use an adult's email or card password.</p>
+        <p>Refunds, tax, support, and retention of lookup and purchase records are not yet decided. Plus will remain unavailable until clear notices, safe recovery, and test-mode acceptance are complete.</p>
       </section>
 
       <section class="trust-section">
@@ -114,6 +135,7 @@
         <p>When you use AI analysis, the glucose summary shown on the screen is sent to OpenAI. It can include the current value and change, TIR, average, and variability for the selected range. Your name, connection URL, passphrase, and original list of glucose readings are not sent.</p>
         <p>In the personal user experience, you can review what is sent before the first AI analysis. Glucose display and Gluco's everyday story work even if you do not use AI analysis.</p>
         <p>Up to 30 generated letters are kept on this device. During the small early-access period, neither public-demo nor personal-user letters are placed in a shared temporary cache. Deleting the connection also removes these letters and the consent record from this device.</p>
+        <p>If a daily personal AI limit is introduced later, only the day and count of successful analyses will be kept for up to 90 days to enforce that limit. This is separate from the optional basic usage record. The screen will explain it and ask for confirmation before it begins. The personal limit is not enabled today.</p>
         <p>OpenAI API data is not used to train models by default. Inputs and outputs may remain in abuse-monitoring logs for up to 30 days. See <a href="https://platform.openai.com/docs/models/default-usage-policies-by-endpoint" target="_blank" rel="noopener noreferrer">OpenAI's data controls</a> for details.</p>
       </section>
 

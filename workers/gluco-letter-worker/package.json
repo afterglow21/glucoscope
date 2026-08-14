@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "check": "node --check src/index.js && node --check src/letter-quality.js && node --check src/request-policy.js",
+    "check": "node --check src/index.js && node --check src/ai-quota-client.js && node --check src/letter-quality.js && node --check src/request-policy.js && node --check src/user-usage-summary.js",
     "deploy:dry": "wrangler deploy --dry-run",
-    "test:quality": "node --test test/letter-quality.test.mjs"
+    "test:quality": "node --test test/*.test.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.112.0"

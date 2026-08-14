@@ -1,6 +1,6 @@
 # GlucoScope administrator dashboard Worker
 
-Status: production deployed on 2026-08-14 JST / one-administrator browser acceptance completed on 2026-08-15 JST / not linked from the public site
+Status: production deployed on 2026-08-14 JST / one-administrator browser acceptance completed on 2026-08-15 JST / local Plus aggregate receiver prepared but not deployed / not linked from the public site
 
 This dedicated Cloudflare Worker renders the first read-only administrator view for the minimal device-profile usage foundation. It is deliberately separate from the public GitHub Pages site, the existing public AI Usage Dashboard, and the public Usage Worker API.
 
@@ -16,6 +16,8 @@ Version `d17e89e9-bc15-40fb-90a0-2e85cb19cf42` was deployed through deployment `
 - The HTML is rendered on the server. There is no browser-side data API, script, analytics beacon, export, search, profile action, or write route.
 - The only production SQL statement is a fixed `SELECT` from `admin_device_usage`.
 - The response includes only display name, collection state, active-day count, new successful AI-generation count, and ordinary Gluco-memory count.
+- A separately bound Plus entitlement service may return one allowlisted aggregate, `activePlusCount`. The page never requests or renders a purchaser row, email address, Stripe identifier, purchase history, or a link between Plus and a device profile.
+- The optional Plus aggregate is requested only after Worker-side Access verification and only for `GET /`. Missing bindings, malformed results, and service failures render `--` with `確認できません`; they are never converted to a false zero. `HEAD`, invalid paths, query strings, write methods, and authentication failures do not call the Plus service.
 - Profile IDs, bearer tokens and hashes, created/last-seen times, daily rows, glucose data, AI-letter contents, CGM details, and connection information are not selected or rendered.
 - Every response is `no-store`, disallows framing and referrers, uses a restrictive Content Security Policy, and sends `X-Robots-Tag: noindex, nofollow, noarchive`.
 - Device profiles are presented as responsive cards that remain readable in one column at 320px. The page has a manual refresh link and shows only the server-render time in JST; no profile timestamp is selected or returned.
@@ -47,7 +49,8 @@ The accepted initial deployment uses the following baseline. Keep every item in 
 4. The Access issuer and immutable application audience are set in Worker configuration. They are configuration values, not credentials, but their live values and Access identifiers are not copied into documentation or operational records.
 5. Keep `preview_urls=false`. The initial deployment uses the protected dedicated Worker production URL; prefer a dedicated custom domain before broader operational use.
 6. The existing `glucoscope-usage` D1 database is bound as `USAGE_DB`. Do not create or apply a migration from this Worker.
-7. Keep Cloudflare Access enabled. Because the Worker also validates the JWT, an unprotected or misrouted request still receives `403` and no data.
+7. The planned `PLUS_ADMIN_SUMMARY` Service Binding targets `glucoscope-plus-entitlement` and its named `AdminPlusAggregateEntrypoint`. The entitlement Worker must be deployed first. This administrator Worker must not receive a direct Plus D1 binding.
+8. Keep Cloudflare Access enabled. Because the Worker also validates the JWT, an unprotected or misrouted request still receives `403` and no data.
 
 The current Access session duration is 15 minutes. Retain browser-only cookie hardening and consider the optional Access binding cookie only if no incompatible product is enabled on the dedicated hostname.
 
@@ -58,10 +61,12 @@ The current Access session duration is 15 minutes. Retain browser-only cookie ha
 - A different valid Access identity receives `403` from the Worker.
 - A missing, expired, wrong-issuer, wrong-audience, or forged assertion receives `403`.
 - `GET /` is the only request that reads D1. Authenticated `HEAD /` returns the same headers with an empty body and does not read D1. Query strings, other paths, and write methods do not read it.
+- `GET /` is also the only route allowed to call the optional Plus aggregate service. A true zero may be rendered only when the service successfully returns integer `activePlusCount: 0`; an unavailable or invalid result must remain `--`.
 - All responses retain `Cache-Control: no-store`, `Pragma: no-cache`, no-referrer, no-frame, `X-Robots-Tag: noindex, nofollow, noarchive`, and the restrictive CSP.
 - The page source and network panel contain no JSON endpoint, profile ID, timestamp, daily row, script, analytics request, or external asset.
 - Before and after the smoke check, the counts in `profiles`, `usage_daily`, and `event_receipts` are unchanged.
 - No Secret value, Access token, email address, display name, profile row, or database content is copied into the deployment record.
+- No Plus account row, purchaser email, Stripe identifier, payment history, or device-profile-to-Plus relationship appears in HTML, logs, fixtures, screenshots, or deployment records.
 
 The 2026-08-15 browser acceptance directly confirmed the unauthenticated Access redirect, the allowed administrator's read-only empty state, `404` handling for a query string and an unknown path, and the absence of scripts, images, and external links. JWT signature, issuer, audience, expiry, required issued-at claim, email, method, header, escaping, and no-write boundaries remain covered by the local acceptance suite. Record the production D1 check only as “row counts unchanged”; never copy the counts or row contents into Git.
 

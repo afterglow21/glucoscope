@@ -25,7 +25,10 @@
   <!-- GlucoScope Limited Data Relay: the public endpoint is configured for paused acceptance testing only. -->
   <meta name="glucoscope-data-relay-endpoint" content="https://glucoscope-data-relay.afterglow21.workers.dev">
   <meta name="glucoscope-usage-profile-enabled" content="true">
-  <link rel="stylesheet" href="style.css?v=20260814-user-ai-1">
+  <meta name="glucoscope-plus-account-enabled" content="false">
+  <meta name="glucoscope-plus-purchases-enabled" content="false">
+  <meta name="glucoscope-plus-entitlement-endpoint" content="">
+  <link rel="stylesheet" href="style.css?v=20260815-plus-account-foundation-1">
 </head>
 <body>
 
@@ -269,6 +272,63 @@
 
       </section>
 
+      <section id="plusAccountCard" class="plus-account-card" aria-labelledby="plusAccountCardTitle" hidden>
+        <div class="plus-account-card-head">
+          <div>
+            <span class="plus-account-badge" data-i18n-key="plusAccountBadge">準備中</span>
+            <strong id="plusAccountCardTitle" data-i18n-key="plusAccountCardTitle">Plus 30日パス</strong>
+          </div>
+          <span id="plusAccountStateBadge" class="plus-account-state-badge"></span>
+        </div>
+
+        <p class="plus-account-price" data-i18n-key="plusAccountPrice">300円・30日間・1回払い・自動更新なし</p>
+        <p class="plus-account-lead" data-i18n-key="plusAccountLead">メールで本人確認すると、機種変更やブラウザの保存を消した後もPlusを確認できます。</p>
+        <ul class="plus-account-benefits">
+          <li data-i18n-key="plusAccountBenefitFree">基本の血糖表示は、Plusを買わなくても使えます。</li>
+          <li data-i18n-key="plusAccountBenefitAi">Plusでは、成功したAI分析を1日最大5回まで使えます。</li>
+          <li data-i18n-key="plusAccountBenefitRange">グラフの日付を自由に選べます。</li>
+          <li data-i18n-key="plusAccountBenefitShare">Share Studioを使えます。購入前にも1回だけ試せます。</li>
+        </ul>
+
+        <div id="plusAccountSignedOut" class="plus-account-panel">
+          <label class="local-profile-field" for="plusAccountEmail">
+            <span data-i18n-key="plusAccountEmailLabel">確認に使うメール</span>
+            <input id="plusAccountEmail" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" aria-describedby="plusAccountEmailHelp" required>
+            <small id="plusAccountEmailHelp" data-i18n-key="plusAccountEmailHelp">パスワードは入力しません。子どもの利用方法は、販売開始前に保護者向けの案内を用意します。</small>
+          </label>
+
+          <div id="plusAccountTurnstile" class="plus-account-turnstile" aria-label="Plusのメール確認の安全確認"></div>
+          <button id="plusAccountSendCodeButton" class="usage-profile-primary-button" type="button" data-i18n-key="plusAccountSendCodeButton">確認コードを送る</button>
+
+          <div id="plusAccountCodePanel" class="plus-account-code-panel" hidden>
+            <label class="local-profile-field" for="plusAccountCode">
+              <span data-i18n-key="plusAccountCodeLabel">メールに届いた6桁の確認コード</span>
+              <input id="plusAccountCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" aria-describedby="plusAccountCodeHelp" required>
+              <small id="plusAccountCodeHelp" data-i18n-key="plusAccountCodeHelp">10分以内に入力してください。この画面を閉じたり更新した時は、もう一度コードを送ってください。届かない時は迷惑メールも確認できます。</small>
+            </label>
+            <button id="plusAccountVerifyButton" class="usage-profile-primary-button" type="button" data-i18n-key="plusAccountVerifyButton">確認する</button>
+          </div>
+        </div>
+
+        <div id="plusAccountSignedIn" class="plus-account-panel" hidden>
+          <p id="plusAccountSummary" tabindex="-1"></p>
+          <div class="usage-profile-actions">
+            <button id="plusAccountPurchaseButton" class="usage-profile-primary-button" type="button" data-i18n-key="plusAccountPurchaseButton" hidden>300円で30日間使う（支払い画面へ）</button>
+            <button id="plusAccountRefreshButton" class="usage-profile-secondary-button" type="button" data-i18n-key="plusAccountRefreshButton">状態を更新する</button>
+            <button id="plusAccountLogoutButton" class="usage-profile-secondary-button" type="button" data-i18n-key="plusAccountLogoutButton">この端末からログアウト</button>
+          </div>
+          <details id="plusAccountDeleteDetails" class="usage-profile-details">
+            <summary data-i18n-key="plusAccountDeleteDetails">詳しい管理</summary>
+            <p data-i18n-key="plusAccountDeleteLead">Plusアカウントを削除しても、血糖の接続や利用記録は別に残ります。購入記録がある場合は、この画面では削除できません。</p>
+            <div id="plusAccountDeleteTurnstile" class="plus-account-turnstile" aria-label="Plusアカウント削除の安全確認"></div>
+            <button id="plusAccountDeleteButton" class="usage-profile-delete-button" type="button" data-i18n-key="plusAccountDeleteButton">Plusアカウントを削除する</button>
+          </details>
+        </div>
+
+        <p class="plus-account-safety" data-i18n-key="plusAccountSafety">カード番号はStripeの画面だけで入力します。Stripeへ血糖値や接続情報を送ることはありません。</p>
+        <div id="plusAccountStatus" class="usage-profile-status" role="status" aria-live="polite"></div>
+      </section>
+
       <div id="usageProfileStatus" class="usage-profile-status" role="status" aria-live="polite"></div>
       <div id="localProfileStatus" class="local-profile-status" role="status" aria-live="polite"></div>
 
@@ -483,6 +543,7 @@
           <label><span data-i18n-key="customToLabel">終了</span><span class="date-input-wrap"><input id="customRangeEnd" type="date"><button type="button" class="date-input-icon" data-date-target="customRangeEnd" aria-label="終了日のカレンダーを開く">📅</button></span></label>
           <button id="customRangeApply" type="button" data-i18n-key="customApplyLabel">表示</button>
         </div>
+        <p id="plusFeatureNotice" class="plus-feature-notice" role="status" aria-live="polite" hidden></p>
         <div id="chartRange" class="chart-range">--</div>
       </div>
     </div>
@@ -843,11 +904,13 @@
 <script src="js/data-source.js?v=20260812-safari-save-1"></script>
 <script src="js/data-relay-client.js?v=20260812-connection-lifecycle-1"></script>
 <script src="js/local-profile.js?v=20260811-usage-profile-stage-1"></script>
-<script src="js/usage-client.js?v=20260812-stale-profile-recovery-1"></script>
+<script src="js/usage-client.js?v=20260815-plus-account-foundation-1"></script>
+<script src="js/plus-entitlement-client.js?v=20260815-plus-account-foundation-1"></script>
+<script src="js/plus-feature-access.js?v=20260815-plus-account-foundation-1"></script>
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js?v=20260721-user-foundation-3"></script>
-<script src="js/app.js?v=20260814-user-ai-1"></script>
+<script src="js/app.js?v=20260815-plus-account-foundation-1"></script>
 <!-- Cloudflare Web Analytics: aggregate page-view and performance metrics only -->
 <script src="js/analytics-loader.js?v=20260811-usage-profile-stage-1"></script>
 <!-- End Cloudflare Web Analytics -->

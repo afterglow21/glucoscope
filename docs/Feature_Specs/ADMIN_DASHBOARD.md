@@ -1,6 +1,6 @@
 # GlucoScope 認証付き管理者ダッシュボード
 
-Status: production deployed 2026-08-14 JST / administrator 1名のbrowser acceptance completed 2026-08-15 JST
+Status: production deployed 2026-08-14 JST / administrator 1名のbrowser acceptance completed 2026-08-15 JST / Plus合計の受け口をローカル実装済み・未デプロイ
 
 Last reviewed: 2026-08-15
 
@@ -26,12 +26,15 @@ Implementation: `workers/gluco-admin-dashboard/`
 - Access通過後も、WorkerでAccess JWTを必ず再検証する
 - 既存D1 `glucoscope-usage` を `USAGE_DB` として直接bindする
 - 既存view `admin_device_usage` へ固定した1つの `SELECT` だけを実行する
+- PlusはD1を直接bindせず、`PLUS_ADMIN_SUMMARY` Service Bindingから有効な30日パスの合計1項目だけを受け取る
 - HTMLはWorkerでサーバー描画し、ブラウザから呼ぶJSON APIを作らない
 - 公開サイトからリンクせず、検索エンジンにも登録させない
 
 専用WorkerへD1を直接bindするのは、既存Usage Workerを再デプロイせずに初期画面を追加するための最小構成である。D1 bindingには読取専用ACLの設定項目がないため、初期版では、別Workerへの分離、書込経路の不在、固定SELECT、ソース検査テストを最小権限の境界とする。
 
 将来、管理機能が増える場合は、D1を持つ非公開の読取serviceとService Bindingへ分離する。それまでは操作・削除・変更・CSV出力・自由SQLを追加しない。
+
+Plus合計の受け口は、target service `glucoscope-plus-entitlement` のnamed entrypoint `AdminPlusAggregateEntrypoint` を呼ぶ。許可するmethodは引数なしの `getActivePlusSummary()` だけとし、返却値から非負の安全な整数 `activePlusCount` だけを採用する。binding未接続、呼出失敗、欠損、文字列、負数、小数、過大値はすべて「確認できません」とし、0へ変換しない。Plus側が正常に実数0を返した時だけ0と表示してよい。
 
 ## 3. 強い認証
 
@@ -59,8 +62,10 @@ Workerでは `jose` を使い、`Cf-Access-Jwt-Assertion` について次を検�
 - 最大90日分の利用日数
 - 新しく正常に完了したAI分析の合計回数
 - 通常のグルコの想い出 No.1〜50 の現在数
+- 有効なPlus 30日パスを持つアカウントの合計数
 
 「1行=1人」ではなく「1行=1端末プロフィール」と明記する。同じ人が別の端末またはブラウザで使うと別々に表示される。
+Plusは上段の合計だけであり、端末プロフィールカードへPlus状態を付けない。Plusアカウントと端末プロフィールを結び付けない。
 
 ## 5. 選択・返却・表示してはいけない項目
 
@@ -75,7 +80,7 @@ Workerでは `jose` を使い、`Cf-Access-Jwt-Assertion` について次を検�
 - CGM種類、Nightscout / Gluroo URL、Secret、relay ticket、接続情報
 - 治療、薬、食事、症状、機器設定
 - IPアドレス、raw User-Agent、referrer、query、fingerprint
-- 決済、支援、Plusの情報
+- 購入者ごとのPlus状態、メールアドレス、Stripe ID、決済額、購入・返金・支援履歴
 
 並び順のためにD1内の `last_seen_at` を固定SELECTの `ORDER BY` だけで使えるが、値は返さない。
 
@@ -83,6 +88,7 @@ Workerでは `jose` を使い、`Cf-Access-Jwt-Assertion` について次を検�
 
 - 利用できるrouteは認証後の `GET /` と `HEAD /` だけ
 - D1を読むのは `GET /` だけ。`HEAD /` は認証後、同じ安全headerを空bodyで返す
+- Plus合計serviceを呼ぶのも、Access認証に成功した正確な `GET /` だけ。`HEAD /`、query string、別path、write method、認証失敗では呼ばない
 - query string、別path、POST、PATCH、PUT、DELETEを受け付けない
 - 検索、filter、profile詳細、任意SQLを受け付けない
 - D1へ `INSERT`、`UPDATE`、`DELETE`、`REPLACE`、DDL、migrationを実行しない
@@ -94,11 +100,14 @@ Workerでは `jose` を使い、`Cf-Access-Jwt-Assertion` について次を検�
 
 ## 7. 画面とプライバシー
 
-ITに詳しくなくても読める日本語を優先し、次の3つの概要だけを最初に表示する。
+ITに詳しくなくても読める日本語を優先し、次の4つの概要だけを最初に表示する。
 
 1. 端末プロフィール数
 2. 利用記録中
 3. 停止中
+4. Plus利用中
+
+Plus合計を取得できた時は正確な `activePlusCount` と「有効な30日パス」を表示する。取得できない時は `--` と「確認できません」を表示し、障害や未接続を0人と誤解させない。
 
 その下に許可した5項目だけの端末プロフィールカードを表示する。横スクロール前提のtableを使わず、320px幅でも1列で自然に読めること。血糖値等を表示しないこと、端末プロフィール単位であること、AIは新しく正常に完了したものだけを数えることを短く説明する。
 
@@ -110,7 +119,7 @@ ITに詳しくなくても読める日本語を優先し、次の3つの概要�
 
 Workerソースでapplication logを作らず、Cloudflare observabilityとinvocation logsを無効のままにする。
 
-Secret値、Access JWT、管理者メール、表示名、profile行、D1の件数または内容をGit、command argument、CI output、運用メモへコピーしない。本番確認結果は「認証成功」「項目allowlist合格」「D1行数不変」のような境界結果だけを記録する。
+Secret値、Access JWT、管理者メール、表示名、profile行、D1の件数または内容、Plusアカウント情報、購入者メール、Stripe ID、購入履歴をGit、command argument、CI output、運用メモへコピーしない。本番確認結果は「認証成功」「項目allowlist合格」「D1行数不変」のような境界結果だけを記録する。
 
 ## 9. 本番設定と運用境界（2026-08-14設定済み）
 
@@ -121,7 +130,8 @@ Secret値、Access JWT、管理者メール、表示名、profile行、D1の件�
 3. `Everyone`、メールdomain全体、Login Methods、Bypass policyをAllow条件へ追加しない
 4. Access issuerとapplication audienceをWorker設定へ保持し、値そのものは文書や運用記録へコピーしない
 5. 専用Workerだけへ既存D1をbindし、既存Usage Worker、収集switch、relay、公開Pagesを変更しない
-6. `preview_urls=false`、observability無効、公開サイトからのlinkなしを維持する
+6. `PLUS_ADMIN_SUMMARY` は `glucoscope-plus-entitlement` の `AdminPlusAggregateEntrypoint` だけへbindし、Plus D1を管理者Workerへ直接bindしない
+7. `preview_urls=false`、observability無効、公開サイトからのlinkなしを維持する
 
 初期はAccess保護した専用Worker production URLを使う。運用範囲が広がる前に、MFA対応IdPと専用custom domainへの移行を再検討する。
 
@@ -131,11 +141,15 @@ Secret値、Access JWT、管理者メール、表示名、profile行、D1の件�
 - 実際のRSA署名でissuer、audience、time、email検証をテストする
 - 未認証、別メール、期限切れ、wrong issuer、wrong audience、偽造tokenがすべて拒否される
 - 認証失敗時にD1を読まない
+- 認証失敗、HEAD、query付きURL、別path、write methodでPlus serviceを呼ばない
 - D1を読むproduction SQLが固定SELECT 1つだけ
 - sourceにwrite SQLとapplication loggingがない
 - 返却オブジェクトとHTMLにprofile ID、日時、日別行がない
 - 表示名がHTML escapeされる
 - GET `/` 以外がD1を読まない。HEAD `/` は認証だけ行い、空bodyを返す
+- Plus serviceの成功時は正確な合計だけを表示し、余分な返却項目を捨てる
+- Plus serviceの未binding・失敗・不正値は `--` とし、0を偽装しない
+- HTML、ログ、fixtureに購入者、メールアドレス、Stripe ID、購入履歴を含めない
 - すべてのresponseがno-storeと安全headerを維持する
 - 本番smokeの前後で既存3 tableの件数が変わらない
 - 既存Usage Worker、収集switch、relay、公開Pagesの挙動を変えない

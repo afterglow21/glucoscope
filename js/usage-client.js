@@ -644,6 +644,28 @@
     };
   }
 
+  function createAiQuotaRequestContext() {
+    const readResult = readStoredState();
+    if (!configuration.enabled) {
+      return { ok: false, error: "usage_not_enabled" };
+    }
+    if (!readResult.ok || !readResult.state.profileId || !readResult.state.profileToken) {
+      return { ok: false, error: readResult.error || "profile_not_found" };
+    }
+
+    const requestId = createEventId();
+    if (!EVENT_ID_PATTERN.test(requestId)) {
+      return { ok: false, error: "secure_id_unavailable" };
+    }
+
+    return Object.freeze({
+      ok: true,
+      requestId,
+      quotaCredentialKind: "device_profile",
+      authorization: `Bearer ${readResult.state.profileToken}`
+    });
+  }
+
   async function syncOrdinaryMemoryCount(value) {
     const count = Number(value);
     if (!Number.isInteger(count) || count < 0 || count > 50) {
@@ -868,6 +890,7 @@
     start,
     recordVisit,
     recordAiGeneration,
+    createAiQuotaRequestContext,
     syncOrdinaryMemoryCount,
     updateProfile,
     exportData,

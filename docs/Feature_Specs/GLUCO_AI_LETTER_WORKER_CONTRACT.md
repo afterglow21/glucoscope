@@ -962,3 +962,36 @@ This section is active for the personal-user early-access release published on 2
 - AI errors, Turnstile errors, global-limit exhaustion, and provider errors affect only the AI panel. They do not stop or delete the verified CGM connection, block ordinary glucose display, or substitute public-demo data.
 - Only a newly and successfully completed OpenAI generation is eligible for the separate Usage-profile AI count. Browser cache, any retained but unread shared cache, stale fallback, failed generation, button press, and ChatGPT-copy actions are not counted.
 - Version 28 is historical and must not be restored while user AI remains enabled. Keep Version 29 or later fail-closed, or first publish and verify Pages with user AI disabled before Worker recovery. Do not interrupt CGM connection or ordinary glucose display.
+
+## 38. Disabled server-authoritative per-user quota candidate (2026-08-15)
+
+This is checked in as an inactive release candidate. `AI_PER_USER_QUOTA_ENABLED=false`
+in both the AI and Usage Workers, and the separate frontend flag is false. Therefore the
+current Pages request sends no `Authorization`, `requestId`, or credential-kind field and
+the current public behavior is unchanged.
+
+When all flags are later enabled, the browser may send only `Authorization: Bearer
+<token>`, a UUID `requestId`, and `quotaCredentialKind=device_profile|account`. The kind
+is an untrusted routing hint. Usage validates the token against the corresponding
+profile or account service and derives the tier and daily limit; the client cannot send
+or override `tier`, entitlement dates, limits, or counters.
+
+After JSON/summary validation, Turnstile, a real shared-cache miss, and every global
+generation/budget guard, the AI Worker reserves through the `AiQuotaService` binding.
+Only final non-empty text that has passed the existing output checks can be completed.
+Quality/document rejection, incomplete output, provider/network error, and request abort
+release without consuming. A release or completion RPC failure returns no AI text.
+`debug` and `forceStatus` are ignored in this authoritative path. Cache displays do not
+reserve and responses identify whether quota was authoritative and consumed.
+
+Free is one successful new analysis per JST day; an account whose entitlement service
+confirms active Plus is five. Stopping optional Usage analytics does not revoke Free AI,
+but sends no legacy analytics event. Deleting the profile invalidates that credential
+and cascades its device-profile quota rows. The public aggregate remains on consented
+`usage_daily` telemetry; protected quota totals are never mixed into that cohort.
+
+Do not enable this candidate until a short dedicated quota-record explanation/consent
+and Privacy update are accepted, and until public-demo requests have a server-verifiable
+identity that cannot be forged through `pageMode`. Release Workers before Pages, keep
+all flags aligned, and enable Usage, then AI Worker, then Pages. A quota failure affects
+only AI; CGM connection, glucose display, and the ordinary Gluco message continue.

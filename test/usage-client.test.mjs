@@ -384,6 +384,63 @@ test("AI success uses an opaque id, drops caller metadata, and queues a failed r
   assert.equal(retried.type, "ai_generation_success");
 });
 
+test("AI quota request context returns one ephemeral credential without exposing or persisting it", () => {
+  const storage = createStorage({ [STORAGE_KEY]: stored() });
+  const { api, calls } = loadModule({ storage });
+  configure(api);
+  const writesBefore = storage.calls.set;
+
+  assert.deepEqual({ ...api.createAiQuotaRequestContext() }, {
+    ok: true,
+    requestId: "123e4567-e89b-42d3-a456-426614174111",
+    quotaCredentialKind: "device_profile",
+    authorization: `Bearer ${PROFILE_TOKEN}`
+  });
+  assert.equal(api.getState().profileToken, undefined);
+  assert.equal(storage.calls.set, writesBefore);
+  assert.equal(calls.length, 0);
+  assert.equal(storage.getItem(STORAGE_KEY).includes("123e4567-e89b-42d3-a456-426614174111"), false);
+});
+
+test("stopping optional usage recording keeps quota authentication but sends no analytics event", async () => {
+  const storage = createStorage({
+    [STORAGE_KEY]: stored({ collectionEnabled: false })
+  });
+  const { api, calls } = loadModule({ storage });
+  configure(api);
+
+  assert.equal(api.createAiQuotaRequestContext().ok, true);
+  assert.equal((await api.recordAiGeneration()).skipped, true);
+  assert.equal(calls.length, 0);
+});
+
+test("missing, deleted, malformed, or insecure profile state cannot create quota authentication", async () => {
+  const empty = loadModule();
+  configure(empty.api);
+  assert.equal(empty.api.createAiQuotaRequestContext().error, "profile_not_found");
+
+  const malformed = loadModule({
+    storage: createStorage({ [STORAGE_KEY]: "not-json" })
+  });
+  configure(malformed.api);
+  assert.equal(malformed.api.createAiQuotaRequestContext().error, "invalid_profile");
+
+  const insecure = loadModule({
+    storage: createStorage({ [STORAGE_KEY]: stored() }),
+    cryptoImpl: { randomUUID: () => "predictable" }
+  });
+  configure(insecure.api);
+  assert.equal(insecure.api.createAiQuotaRequestContext().error, "secure_id_unavailable");
+
+  const deleted = loadModule({
+    storage: createStorage({ [STORAGE_KEY]: stored() }),
+    fetchImpl: async () => Response.json({ ok: true, deleted: true })
+  });
+  configure(deleted.api);
+  assert.equal((await deleted.api.deleteData()).ok, true);
+  assert.equal(deleted.api.createAiQuotaRequestContext().error, "profile_not_found");
+});
+
 test("ordinary memory snapshots are monotonic and bounded to 0 through 50", async () => {
   const storage = createStorage({ [STORAGE_KEY]: stored() });
   const seen = [];

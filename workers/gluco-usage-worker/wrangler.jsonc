@@ -27,6 +27,13 @@
       "migrations_dir": "migrations"
     }
   ],
+  "services": [
+    {
+      "binding": "PLUS_ENTITLEMENT",
+      "service": "glucoscope-plus-entitlement",
+      "entrypoint": "PlusEntitlementRpc"
+    }
+  ],
   "triggers": {
     "crons": [
       "17 18 * * *"
@@ -34,6 +41,12 @@
   },
   "vars": {
     "USAGE_COLLECTION_ENABLED": "false",
+    "AI_PER_USER_QUOTA_ENABLED": "false",
+    "AI_QUOTA_TIMEZONE_OFFSET_HOURS": "9",
+    "AI_FREE_DAILY_LIMIT": "1",
+    "AI_PLUS_DAILY_LIMIT": "5",
+    "AI_QUOTA_RESERVATION_TTL_SECONDS": "600",
+    "AI_QUOTA_RETENTION_DAYS": "90",
     "USAGE_NOTICE_VERSION": "2026-08-12-simple-connection-1",
     "USAGE_TIMEZONE_OFFSET_HOURS": "9",
     "CORS_ALLOWED_ORIGIN": "https://afterglow21.github.io",

@@ -3485,6 +3485,35 @@ renewal behavior, expiry, refund handling, payment-provider boundary, taxes, and
 expectations must be clear before release. Do not present Plus as medical care or better
 medical guidance.
 
+On 2026-08-15, the owner approved the initial product boundary in
+`docs/Feature_Specs/PLUS_30_DAY_PASS.md`: JPY 300 as a one-time payment for 30 consecutive
+days, with no automatic renewal. Free keeps core glucose viewing, the Today/Yesterday/7-day/
+30-day graph ranges, one successful new personal-user AI analysis per JST day, and one
+successful Share Studio trial per verified account. Active Plus provides up to five
+successful new AI analyses per JST day, custom graph dates, and continued Share Studio use.
+Quality/document-check failures, provider or network errors, Turnstile failures, aborted
+work, global-limit failures, and browser-local cache hits do not consume an AI use. These
+decisions authorize local implementation and test-mode preparation only, not sales or live
+payment infrastructure. Entitlement identity and recovery, refunds, tax, and support still
+require completion. The entitlement remains separate from the browser Usage profile;
+the administrator dashboard may show only an aggregate active-Plus count, never individual
+payment or account details.
+
+The expanded local implementation foundation now exists but remains disabled and unpublished.
+It includes an atomic AI-quota reservation ledger, a separate non-public Plus entitlement
+Worker, server-side Share Studio trial reservation, a disabled custom-range gate, an optional
+administrator aggregate for active Plus accounts, short-code email account/recovery and safe
+no-purchase account deletion, a test-mode Stripe Checkout/Webhook adapter, and a per-account
+unfinished-Checkout guard that prevents a second payable Session. The matching settings UI is
+checked in but hidden. There is no Plus D1 binding, email adapter, Stripe key, Webhook Secret,
+Price/Product identifier, or live entitlement, and every related flag remains false. The
+existing AI and custom-range experience therefore remains unchanged. The public Usage
+Dashboard candidate adds only aggregate totals for the 30 completed days through yesterday;
+it omits exact totals until at least 10 consenting device profiles contributed, and never
+returns names or device-level rows. Do not enable individual quota or Plus feature gates
+until identity and recovery, refunds, tax and support, public-demo anti-bypass handling,
+migrations, deployment order, and production acceptance are complete.
+
 The always-on mode comes after user rollout begins. It is opt-in, limited to the graph in
 landscape orientation, and must clearly explain battery and screen-on behavior. It is a
 viewing convenience, not an alarm or a substitute for the original CGM application.
@@ -3710,6 +3739,29 @@ Plus 30日パスは、それとは別の設計中の有料サービスです。�
 利用できる機能、価格、自動更新の有無、期限、返金、決済事業者、税、
 サポート範囲を分かりやすく定めます。Plusを医療サービスや、
 より良い医療判断が得られる仕組みとして案内しません。
+
+2026年8月15日、`docs/Feature_Specs/PLUS_30_DAY_PASS.md` の初期商品境界を決定しました。
+価格は300円、1回払いで決済成功から連続30日、自動更新は行いません。Freeでは現在血糖などの
+基本機能、今日・昨日・7日・30日のグラフ、成功した新規ユーザー版AI分析を日本時間で1日1回、
+認証済みアカウントごとのShare Studio無料体験1回を残します。Plusでは成功した新規AI分析を
+日本時間で1日5回まで、グラフのカスタム期間、Share Studioの継続利用を提供します。文書・品質
+チェック、提供元・通信・Turnstile・全体上限のエラー、中断、端末内保存済みお手紙の再表示は
+AI回数を消費しません。この決定はローカル実装とStripeテストモード準備の承認であり、販売や
+本番決済の開始承認ではありません。利用権の本人確認と復旧、返金、税、サポートは完了が必要です。
+Plus利用権はブラウザの利用記録プロフィールから分離し、管理者画面には有効なPlus合計だけを表示し、
+個別の購入・アカウント情報を表示しません。
+
+ローカル実装基盤を拡張しましたが、すべて停止状態で未公開です。AI回数の原子的な予約台帳、
+公開しないPlus利用権Worker、Share Studio無料体験のサーバー側予約、停止中のカスタム期間ゲート、
+管理者画面の有効Plus合計受け口、短い確認コードによるメール確認・復旧、購入記録がない場合の
+アカウント削除、StripeテストモードのCheckout/Webhook adapter、未完了の支払い画面をアカウントごとに
+再利用または停止して二重の支払い画面を作らない仕組みを含みます。対応する設定画面も追加しましたが
+非表示です。Plus用D1 binding、メール送信adapter、Stripe key、Webhook Secret、Price/Product識別子、
+実利用権は接続せず、関連flagはすべてfalseです。そのため、現在のAIとカスタム期間の動作は変えません。
+公開Usage Dashboard候補は、前日までの完了した30日間について、利用記録に同意した端末プロフィールが
+10件以上集まった時だけ全体の実数を表示し、名前や端末別の行は返しません。本人確認と復旧、返金、
+税とサポート、公開デモからの上限回避防止、migration、公開順、本番受け入れが完了するまで、個人上限と
+Plus特典の制限を有効にしません。
 
 常時表示モードは、ユーザー展開を始めた後に実装します。
 本人が選んだ時だけ、横向きのグラフ画面に限定して動かし、

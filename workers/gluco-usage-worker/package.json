@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check src/index.js && node --check src/usage-core.js && node --check src/d1-store.js && node --check src/credentials.js && node --check src/turnstile.js && node --check test/usage-core.test.mjs",
+    "check": "node --check src/index.js && node --check src/usage-core.js && node --check src/d1-store.js && node --check src/credentials.js && node --check src/turnstile.js && node --check src/ai-quota-core.js && node --check src/ai-quota-store.js && node --check src/public-aggregate.js && node --check test/usage-core.test.mjs && node --check test/ai-quota-core.test.mjs && node --check test/ai-quota-store.test.mjs && node --check test/public-aggregate.test.mjs",
     "test": "node --test test/*.test.mjs",
     "verify": "npm run check && npm test",
     "types": "wrangler types",

@@ -1,0 +1,14 @@
+{
+  "name": "glucoscope-plus-entitlement-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check src/index.js && node --check src/constants.js && node --check src/credentials.js && node --check src/entitlement-core.js && node --check src/d1-store.js && node --check src/account-auth-crypto.js && node --check src/account-auth-store.js && node --check src/account-auth-core.js && node --check src/account-auth-turnstile.js && node --check src/account-auth-http.js && node --check src/stripe-client.js && node --check src/stripe-webhook.js && node --check src/stripe-http.js && node --check test/entitlement-core.test.mjs && node --check test/account-auth.test.mjs && node --check test/stripe-adapter.test.mjs",
+    "test": "node --test test/*.test.mjs",
+    "verify": "npm run check && npm test"
+  },
+  "devDependencies": {
+    "wrangler": "^4.120.1"
+  }
+}

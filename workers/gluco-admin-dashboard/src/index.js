@@ -1,5 +1,6 @@
 import { AdminAccessError, verifyAccessRequest } from "./access-auth.js";
 import { readAdminUsage } from "./admin-store.js";
+import { readAdminPlusSummary } from "./plus-summary.js";
 
 const SECURITY_HEADERS = Object.freeze({
   "Cache-Control": "no-store, private, max-age=0",
@@ -38,10 +39,10 @@ const STYLE = `
   .eyebrow{margin:0 0 .45rem;color:#467557;font-size:.82rem;font-weight:750;letter-spacing:.08em}h1{margin:0;font-size:clamp(1.65rem,5vw,2.4rem);line-height:1.25}h2{margin:0 0 .45rem;font-size:1.12rem}p{line-height:1.75}.lead{max-width:48rem;margin:.8rem 0 0;color:#53675b}
   .card{margin-top:1rem;border:1px solid #dbe9df;border-radius:1rem;background:#fff;box-shadow:0 .45rem 1.4rem rgba(31,77,48,.06)}.notice,.message{padding:1rem 1.1rem}.notice p{margin:.25rem 0 0;color:#53675b}
   .header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}.refresh{display:inline-flex;min-height:44px;align-items:center;border:1px solid #bfd7c7;border-radius:999px;padding:.55rem .85rem;background:#fff;color:#28643b;font-weight:700;text-decoration:none;white-space:nowrap}.refresh:focus-visible{outline:3px solid #2563eb;outline-offset:3px}.updated{margin:.5rem 0 0;color:#617568;font-size:.85rem}
-  .summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;margin-top:1rem}.metric{padding:1rem}.metric span{display:block;color:#617568;font-size:.82rem}.metric strong{display:block;margin-top:.2rem;font-size:1.65rem;font-variant-numeric:tabular-nums}
+  .summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.75rem;margin-top:1rem}.metric{padding:1rem}.metric span{display:block;color:#617568;font-size:.82rem}.metric strong{display:block;margin-top:.2rem;font-size:1.65rem;font-variant-numeric:tabular-nums}.metric-note{display:block;margin-top:.3rem;color:#617568;font-size:.76rem;line-height:1.45}
   .list-card{padding:1rem}.list-head p{margin:.2rem 0 .5rem;color:#617568;font-size:.9rem}.profiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr));gap:.75rem;margin-top:1rem}.profile{border:1px solid #e0ebe3;border-radius:.85rem;padding:.9rem;background:#fbfdfb}.profile h3{margin:0 0 .75rem;font-size:1rem;overflow-wrap:anywhere}.profile dl{margin:0}.profile dl div{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.48rem 0;border-top:1px solid #e8efe9}.profile dt{color:#5a6d60;font-size:.82rem}.profile dd{margin:0;font-weight:750;font-variant-numeric:tabular-nums}
   .badge{display:inline-block;border-radius:999px;padding:.28rem .62rem;font-size:.78rem;font-weight:750;white-space:nowrap}.on{background:#e3f5e8;color:#23653a}.off{background:#f1f3f1;color:#5d6860}.empty{padding:1rem 0;color:#5d6f63}.footnote{margin-top:1rem;color:#5d6f63;font-size:.88rem}
-  @media(max-width:42rem){main{width:min(100% - 1rem,72rem)}.summary{grid-template-columns:1fr;gap:.5rem}.metric{display:flex;align-items:center;justify-content:space-between;padding:.8rem 1rem}.metric strong{margin:0;font-size:1.35rem}}
+  @media(max-width:42rem){main{width:min(100% - 1rem,72rem)}.summary{grid-template-columns:1fr;gap:.5rem}.metric{display:flex;align-items:center;justify-content:space-between;padding:.8rem 1rem}.metric strong{margin:0;font-size:1.35rem}.plus-metric{display:grid;grid-template-columns:1fr auto}.plus-metric .metric-note{grid-column:1/-1}}
 `;
 
 function shell(title, body) {
@@ -67,9 +68,14 @@ function formatJst(nowMs) {
   }).format(date)} JST`;
 }
 
-function renderDashboard(report, nowMs = Date.now()) {
+function renderDashboard(report, plusSummary = {}, nowMs = Date.now()) {
   const profiles = Array.isArray(report?.profiles) ? report.profiles : [];
   const enabledCount = profiles.filter((profile) => profile.collectionEnabled).length;
+  const plusAvailable = plusSummary?.available === true
+    && Number.isSafeInteger(plusSummary.activePlusCount)
+    && plusSummary.activePlusCount >= 0;
+  const plusCount = plusAvailable ? plusSummary.activePlusCount : "--";
+  const plusNote = plusAvailable ? "有効な30日パス" : "確認できません";
   const cards = profiles.map((profile) => `<article class="profile">
     <h3>${escapeHtml(profile.displayName)}</h3>
     <dl>
@@ -89,20 +95,23 @@ function renderDashboard(report, nowMs = Date.now()) {
   return shell("利用者の利用状況", `
     <header><p class="eyebrow">ADMIN ONLY · GLUCOSCOPE 🍀</p><div class="header-row"><div><h1>利用者の利用状況</h1><p class="updated">取得: ${escapeHtml(formatJst(nowMs))}</p></div><a class="refresh" href="/">更新</a></div><p class="lead">GlucoScopeを安心して続け、少しずつよくするために、説明済みの最小限の回数だけを確認します。</p></header>
     <section class="card notice"><h2>1行は「1人」ではなく「1つの端末プロフィール」です</h2><p>同じ人が別の端末やブラウザで使うと、別々に表示されます。</p></section>
-    <section class="summary" aria-label="端末プロフィールの概要">
+    <section class="summary" aria-label="利用状況の概要">
       <article class="card metric"><span>端末プロフィール</span><strong>${profiles.length}</strong></article>
       <article class="card metric"><span>利用記録中</span><strong>${enabledCount}</strong></article>
       <article class="card metric"><span>停止中</span><strong>${profiles.length - enabledCount}</strong></article>
+      <article class="card metric plus-metric"><span>Plus利用中</span><strong>${escapeHtml(plusCount)}</strong><small class="metric-note">${plusNote}</small></article>
     </section>
     <section class="card list-card"><div class="list-head"><h2>端末プロフィール</h2><p>利用日数は最大90日分です。AI分析は、新しく正常に完了したものだけを数えます。</p></div>${list}</section>
     ${truncated}
     <p class="footnote">血糖値、グラフ、AIお手紙の本文、接続情報、プロフィールID、プロフィールに関する日時、日別の記録は、この画面に表示しません。</p>
+    <p class="footnote">Plusは利用中の合計だけを表示します。購入者ごとの情報、メールアドレス、Stripe ID、購入履歴は表示しません。</p>
   `);
 }
 
 export async function handleAdminRequest(request, env = {}, services = {}) {
   const verifyAccess = services.verifyAccess || verifyAccessRequest;
   const loadUsage = services.readAdminUsage || readAdminUsage;
+  const loadPlusSummary = services.readAdminPlusSummary || readAdminPlusSummary;
   try {
     await verifyAccess(request, env);
   } catch (error) {
@@ -122,7 +131,13 @@ export async function handleAdminRequest(request, env = {}, services = {}) {
   if (request.method === "HEAD") return respond("");
   try {
     const nowMs = Number(services.now?.() ?? Date.now());
-    return respond(renderDashboard(await loadUsage(env.USAGE_DB), nowMs));
+    const [usageReport, plusSummary] = await Promise.all([
+      loadUsage(env.USAGE_DB),
+      Promise.resolve()
+        .then(() => loadPlusSummary(env.PLUS_ADMIN_SUMMARY))
+        .catch(() => ({ available: false, activePlusCount: null })),
+    ]);
+    return respond(renderDashboard(usageReport, plusSummary, nowMs));
   } catch {
     return respond(renderMessage("利用状況を読み込めません", "少し時間をおいて、もう一度お試しください。"), 503);
   }

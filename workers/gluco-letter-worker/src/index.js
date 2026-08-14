@@ -1,5 +1,12 @@
 import { DurableObject } from "cloudflare:workers";
 import {
+  buildAuthoritativeQuotaPayload,
+  readAiQuotaCorsConfig,
+  readAiQuotaClientConfig,
+  readAiQuotaRequest,
+  runAiQuotaGeneration
+} from "./ai-quota-client.js";
+import {
   filterGeneratedLetterPatternHints,
   getGlucoScoreMentionPolicy,
   getGeneratedLetterQualityIssues,
@@ -12,6 +19,7 @@ import {
   isExpectedTurnstileResult,
   shouldUseSharedCacheForSummary
 } from "./request-policy.js";
+import { loadPublicUsageAggregate } from "./user-usage-summary.js";
 
 const CONTRACT_VERSION = "gluco-ai-letter-worker-response-v0.2";
 const AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v14";
@@ -44,8 +52,6 @@ let fallbackUsageState = null;
 
 const DEFAULT_CORS_ALLOWED_ORIGINS = ["https://afterglow21.github.io"];
 const CORS_ALLOWED_METHODS = ["GET", "POST", "OPTIONS"];
-const CORS_ALLOWED_REQUEST_HEADERS = ["content-type"];
-const CORS_ALLOWED_REQUEST_HEADERS_DISPLAY = "Content-Type";
 const CORS_MAX_AGE_SECONDS = 86400;
 
 function jsonResponse(body, status = 200) {
@@ -210,7 +216,7 @@ function getRequestedCorsHeaders(request) {
     .filter(Boolean);
 }
 
-function handleCorsPreflight(request, corsDecision) {
+function handleCorsPreflight(request, corsDecision, env = {}) {
   if (!corsDecision.origin) {
     return buildCorsErrorResponse({
       ...corsDecision,
@@ -232,8 +238,11 @@ function handleCorsPreflight(request, corsDecision) {
     }, 403);
   }
 
+  const corsHeaders = readAiQuotaCorsConfig(env);
   const requestedHeaders = getRequestedCorsHeaders(request);
-  const unsupportedHeader = requestedHeaders.find((header) => !CORS_ALLOWED_REQUEST_HEADERS.includes(header));
+  const unsupportedHeader = requestedHeaders.find(
+    (header) => !corsHeaders.allowedRequestHeaders.includes(header)
+  );
   if (unsupportedHeader) {
     return buildCorsErrorResponse({
       ...corsDecision,
@@ -245,7 +254,7 @@ function handleCorsPreflight(request, corsDecision) {
   const headers = new Headers({
     "Access-Control-Allow-Origin": corsDecision.origin,
     "Access-Control-Allow-Methods": CORS_ALLOWED_METHODS.join(", "),
-    "Access-Control-Allow-Headers": CORS_ALLOWED_REQUEST_HEADERS_DISPLAY,
+    "Access-Control-Allow-Headers": corsHeaders.allowedRequestHeadersDisplay,
     "Access-Control-Max-Age": String(CORS_MAX_AGE_SECONDS)
   });
   appendVaryHeader(headers, "Origin");
@@ -1524,7 +1533,36 @@ function isRetryableOpenAiAttemptError(error) {
     || status >= 500;
 }
 
-async function callOpenAiAttemptOnce({ summary, env, config, mode, maxOutputTokens, retryKind = "" }) {
+function createRequestAbortError() {
+  const error = new Error("AI letter request was aborted.");
+  error.name = "AbortError";
+  error.code = "request_aborted";
+  return error;
+}
+
+function throwIfRequestAborted(signal) {
+  if (signal?.aborted) throw createRequestAbortError();
+}
+
+async function waitForOpenAiRetry(signal, milliseconds = 250) {
+  throwIfRequestAborted(signal);
+  await new Promise((resolve, reject) => {
+    let timeoutId;
+    const onAbort = () => {
+      clearTimeout(timeoutId);
+      reject(createRequestAbortError());
+    };
+    timeoutId = setTimeout(() => {
+      signal?.removeEventListener?.("abort", onAbort);
+      resolve();
+    }, milliseconds);
+    signal?.addEventListener?.("abort", onAbort, { once: true });
+  });
+  throwIfRequestAborted(signal);
+}
+
+async function callOpenAiAttemptOnce({ summary, env, config, mode, maxOutputTokens, retryKind = "", signal }) {
+  throwIfRequestAborted(signal);
   const model = config.openAiModel;
   const language = summary.language === "en" ? "en" : "ja";
   const input = retryKind
@@ -1546,9 +1584,13 @@ async function callOpenAiAttemptOnce({ summary, env, config, mode, maxOutputToke
         max_output_tokens: maxOutputTokens,
         tool_choice: "none",
         store: false
-      })
+      }),
+      ...(signal ? { signal } : {})
     });
   } catch (cause) {
+    if (cause?.name === "AbortError" || cause?.code === "request_aborted" || signal?.aborted) {
+      throw createRequestAbortError();
+    }
     const error = new Error("OpenAI request could not be completed.", { cause });
     error.code = "openai_transport_error";
     throw error;
@@ -1599,7 +1641,7 @@ async function callOpenAiAttempt(input) {
     }
   }
 
-  await new Promise((resolve) => setTimeout(resolve, 250));
+  await waitForOpenAiRetry(input.signal, 250);
   try {
     const result = await callOpenAiAttemptOnce(input);
     result.usage = addRequestUsage(...attemptUsage, result.usage);
@@ -1653,7 +1695,8 @@ function buildAcceptedOpenAiResult({
   };
 }
 
-async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
+async function callOpenAiLetter({ summary, env, config, mode = "letter", signal }) {
+  throwIfRequestAborted(signal);
   if (!env.OPENAI_API_KEY) {
     const error = new Error("Missing OPENAI_API_KEY");
     error.code = "missing_openai_api_key";
@@ -1679,6 +1722,7 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
     summary,
     env,
     config,
+    signal,
     mode: analysisMode,
     maxOutputTokens: limits.initial
   });
@@ -1700,6 +1744,7 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
         summary,
         env,
         config,
+        signal,
         mode: analysisMode,
         maxOutputTokens: limits.retry,
         retryKind: "incomplete"
@@ -1755,6 +1800,7 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
         summary,
         env,
         config,
+        signal,
         mode: analysisMode,
         maxOutputTokens: limits.retry,
         retryKind: "incomplete"
@@ -1827,6 +1873,7 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
       summary,
       env,
       config,
+      signal,
       mode: analysisMode,
       maxOutputTokens: limits.retry,
       retryKind: "quality"
@@ -1911,7 +1958,7 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter" }) {
   });
 }
 
-async function generateLetter({ summary, payload, env, config, status }) {
+async function generateLetter({ summary, payload, env, config, status, signal }) {
   const analysisMode = getAnalysisMode(payload, summary);
 
   if (status === "cached" || config.provider !== "openai") {
@@ -1941,7 +1988,8 @@ async function generateLetter({ summary, payload, env, config, status }) {
     summary,
     env,
     config,
-    mode: analysisMode
+    mode: analysisMode,
+    signal
   });
 }
 
@@ -2203,7 +2251,8 @@ function buildSuccessPayload({
   generationResult,
   turnstileVerification = {},
   cacheResult = {},
-  cacheFallbackReason = null
+  cacheFallbackReason = null,
+  quotaPayload = null
 }) {
   const cached = status === "cached";
   const servedFromSharedCache = cached && Boolean(cacheResult?.entry);
@@ -2220,6 +2269,7 @@ function buildSuccessPayload({
     status,
     source,
     clientMode: getClientMode(payload),
+    ...(quotaPayload ? { quota: quotaPayload } : {}),
     letter: {
       text: generationResult.text,
       language,
@@ -2434,7 +2484,7 @@ function recordSuccess({ usageState, status, requestUsage, summary = {} }) {
   usageState.updatedAt = new Date().toISOString();
 }
 
-function buildUsageReport({ state, config, cacheAvailable = false }) {
+function buildUsageReport({ state, config, cacheAvailable = false, publicUserUsage }) {
   ensureSlotCounters(state);
 
   return {
@@ -2521,7 +2571,8 @@ function buildUsageReport({ state, config, cacheAvailable = false }) {
         note: state.note,
         startedAt: state.startedAt,
         updatedAt: state.updatedAt
-      }
+      },
+      personalUserUsage: publicUserUsage || { status: "unavailable" }
     }
   };
 }
@@ -2551,6 +2602,44 @@ export class GlucoUsageCounter extends DurableObject {
   }
 }
 
+function buildAiQuotaErrorResponse(result, summary = {}) {
+  const code = String(result?.error || "quota_service_unavailable");
+  const language = summary.language === "en" ? "en" : "ja";
+  const quota = result?.quota
+    ? buildAuthoritativeQuotaPayload(result.quota, { consumed: false })
+    : buildAuthoritativeQuotaPayload(null, { consumed: false });
+  const status = code === "authentication_required"
+    ? 401
+    : code === "invalid_quota_request"
+      ? 400
+      : code === "daily_limit_reached"
+        ? 429
+        : code === "request_in_progress" || code === "request_already_succeeded"
+          ? 409
+          : code === "request_aborted"
+            ? 408
+            : 503;
+  const userMessage = language === "en"
+    ? code === "daily_limit_reached"
+      ? "Today's successful AI analyses have reached your current limit. Your glucose display is still available, so please try again tomorrow 🍀"
+      : code === "authentication_required"
+        ? "Gluco could not confirm the usage profile for AI analysis. Your glucose display is still available 🍀"
+        : "Gluco could not safely confirm the AI usage count. Your glucose display is still available, so please try again a little later 🍀"
+    : code === "daily_limit_reached"
+      ? "きょう使えるAI分析の回数に達したよ。血糖表示はそのまま見られるから、また明日試してね🍀"
+      : code === "authentication_required"
+        ? "AI分析に使う利用プロフィールを確認できなかったよ。血糖表示はそのまま見られるよ🍀"
+        : "AI分析の利用回数を安全に確認できなかったよ。血糖表示はそのまま使えるから、少し時間をおいて試してね🍀";
+
+  return errorResponse({
+    code,
+    message: "The server-authoritative AI quota request could not be completed.",
+    userMessage,
+    retryable: status >= 500 || code === "request_aborted",
+    details: { quota }
+  }, status);
+}
+
 
 async function serveSharedCachedLetter({
   cacheRead,
@@ -2560,7 +2649,8 @@ async function serveSharedCachedLetter({
   config,
   summary,
   payload,
-  turnstileVerification
+  turnstileVerification,
+  quotaPayload = null
 }) {
   const responseCacheResult = {
     ...cacheRead,
@@ -2588,20 +2678,24 @@ async function serveSharedCachedLetter({
     generationResult,
     turnstileVerification,
     cacheResult: responseCacheResult,
-    cacheFallbackReason: fallbackReason
+    cacheFallbackReason: fallbackReason,
+    quotaPayload
   }));
 }
 
 async function handleApiRequest(request, env = {}) {
     const config = readGuardConfig(env);
+    const quotaConfig = readAiQuotaClientConfig(env);
     const usageState = await loadUsageState(env, config);
 
     const url = new URL(request.url);
     if (url.pathname === "/api/gluco-letter/usage" && request.method === "GET") {
+      const publicUserUsage = await loadPublicUsageAggregate(env.USER_USAGE_SUMMARY);
       return okResponse(buildUsageReport({
         state: usageState,
         config,
-        cacheAvailable: getSharedCacheAvailability(env, config)
+        cacheAvailable: getSharedCacheAvailability(env, config),
+        publicUserUsage
       }));
     }
 
@@ -2646,6 +2740,20 @@ async function handleApiRequest(request, env = {}) {
       analysisMode: getAnalysisMode(payload, summary)
     };
 
+    let quotaRequest = null;
+    if (quotaConfig.enabled) {
+      if (config.provider !== "openai") {
+        return buildAiQuotaErrorResponse({
+          error: "quota_requires_openai_provider",
+          retryable: true
+        }, summary);
+      }
+      quotaRequest = readAiQuotaRequest(request, payload, summary.analysisMode);
+      if (!quotaRequest.ok) {
+        return buildAiQuotaErrorResponse(quotaRequest, summary);
+      }
+    }
+
     const turnstileVerification = await verifyTurnstileToken({
       payload,
       request,
@@ -2687,13 +2795,18 @@ async function handleApiRequest(request, env = {}) {
         config,
         summary,
         payload,
-        turnstileVerification
+        turnstileVerification,
+        quotaPayload: quotaConfig.enabled
+          ? buildAuthoritativeQuotaPayload(null, { consumed: false })
+          : null
       });
     }
 
     const staleCacheAvailable = cacheRead.status === "stale" && Boolean(cacheRead.entry);
-    const prototypeStatus = getPrototypeStatus(payload);
-    const effectiveUsageState = applyDebugUsageOverrides(usageState, payload);
+    const prototypeStatus = quotaConfig.enabled ? "success" : getPrototypeStatus(payload);
+    const effectiveUsageState = quotaConfig.enabled
+      ? usageState
+      : applyDebugUsageOverrides(usageState, payload);
     const forcedGuardError = buildGuardError(prototypeStatus, {
       usageState,
       config,
@@ -2713,7 +2826,10 @@ async function handleApiRequest(request, env = {}) {
           config,
           summary,
           payload,
-          turnstileVerification
+          turnstileVerification,
+          quotaPayload: quotaConfig.enabled
+            ? buildAuthoritativeQuotaPayload(null, { consumed: false })
+            : null
         });
       }
 
@@ -2748,7 +2864,10 @@ async function handleApiRequest(request, env = {}) {
           config,
           summary,
           payload,
-          turnstileVerification
+          turnstileVerification,
+          quotaPayload: quotaConfig.enabled
+            ? buildAuthoritativeQuotaPayload(null, { consumed: false })
+            : null
         });
       }
 
@@ -2758,14 +2877,36 @@ async function handleApiRequest(request, env = {}) {
     }
 
     let generationResult;
+    let quotaPayload = null;
     try {
-      generationResult = await generateLetter({
-        summary,
-        payload,
-        env,
-        config,
-        status: prototypeStatus
+      const generationSignal = quotaConfig.enabled ? request.signal : undefined;
+      const quotaOutcome = await runAiQuotaGeneration({
+        enabled: quotaConfig.enabled,
+        service: env.AI_QUOTA,
+        reserveInput: quotaRequest?.reserveInput,
+        signal: generationSignal,
+        generate: () => generateLetter({
+          summary,
+          payload,
+          env,
+          config,
+          status: prototypeStatus,
+          signal: generationSignal
+        })
       });
+
+      if (!quotaOutcome.ok) {
+        if (quotaOutcome.stage === "generation" && quotaOutcome.generationError) {
+          quotaOutcome.generationError.aiQuota = quotaOutcome.quota || null;
+          throw quotaOutcome.generationError;
+        }
+        return buildAiQuotaErrorResponse(quotaOutcome, summary);
+      }
+
+      generationResult = quotaOutcome.result;
+      quotaPayload = quotaConfig.enabled
+        ? buildAuthoritativeQuotaPayload(quotaOutcome.quota, { consumed: true })
+        : null;
     } catch (error) {
       console.error("AI letter provider failed", error);
 
@@ -2788,7 +2929,10 @@ async function handleApiRequest(request, env = {}) {
           config,
           summary,
           payload,
-          turnstileVerification
+          turnstileVerification,
+          quotaPayload: quotaConfig.enabled
+            ? buildAuthoritativeQuotaPayload(error.aiQuota, { consumed: false })
+            : null
         });
       }
 
@@ -2857,7 +3001,8 @@ async function handleApiRequest(request, env = {}) {
       config,
       generationResult,
       turnstileVerification,
-      cacheResult: cacheWrite
+      cacheResult: cacheWrite,
+      quotaPayload
     }));
 }
 
@@ -2866,7 +3011,7 @@ export default {
     const corsDecision = evaluateCorsRequest(request, env);
 
     if (request.method === "OPTIONS") {
-      return handleCorsPreflight(request, corsDecision);
+      return handleCorsPreflight(request, corsDecision, env);
     }
 
     if (isAiGenerationRequest(request) && !corsDecision.origin) {

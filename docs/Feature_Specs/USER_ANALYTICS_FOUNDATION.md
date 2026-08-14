@@ -316,3 +316,13 @@ D1の既存view `admin_device_usage` に対する固定`SELECT` 1つだけを使
 profile ID、token・token hash、作成・更新・最終利用日時、日別行、event receipt、血糖値・グラフ、AIへ送った内容・AIお手紙本文、CGM種別、接続先・合言葉・ticket、IPアドレス、raw User-Agentは選択・返却・表示しない。
 
 2026年8月15日、管理者1名の実browser acceptanceを完了した。未認証requestはAccessへの`302`で停止し、許可された管理者の`GET /`はサーバー描画の読取専用empty stateを表示した。query付きURLと未知pathは`404`となり、script、画像、外部linkは0件だった。preview URL、application log、invocation logは無効のままとする。本番D1確認は実数を記録せず、「行数不変」という境界結果だけを残す。メールOne-time PINはMFAではないため、メールアカウント側の二段階認証を有効にし、管理者追加や運用範囲拡大の前にMFA対応IdPを再検討する。
+
+## 22. AI利用上限の無効状態での連携候補（2026-08-15）
+
+FreeはJST基準で正常完了した新しいAI分析を1日1回、Plusは1日5回とするためのサーバー側基盤を追加した。ただし、Usage Worker、AI Worker、フロントの保存済みflagはすべて`false`であり、現時点の公開動作と送信内容は変えない。フロントがOFFの間は`Authorization`とquota用`requestId`を送らない。
+
+AI回数は機能提供に必要な別記録であり、任意の利用記録とは分ける。利用記録を停止してもFree AIのcredentialは使えるが、`usage_daily`のAIイベントは送らない。利用プロフィールを削除するとcredentialは無効になり、その端末プロフィールに紐づくquota行もcascade削除する。account/Plusのtierと上限はPlus正本を内部RPCで確認し、ブラウザから届くtier・期限・上限値を信用しない。
+
+公開Usage集計のAI合計は、利用記録に同意した端末プロフィールの`usage_daily.ai_generation_success_count`を維持する。account subjectを含み得る`ai_quota_days`は同意と母数が異なるため公開集計へ混ぜない。権威quota合計は保護された運用・管理者経路だけで扱う。
+
+有効化前には、quotaとして成功日・回数を保存することの専用の短い説明と同意、Privacy文面の更新、公開デモを`pageMode`偽装で迂回できないサーバー検証済みidentity、両WorkerとPagesのflag一致が必要である。公開順はPlus正本、Usage migration/Worker、AI Worker、Pagesとし、すべてOFFで確認した後にUsage、AI Worker、Pagesの順でONにする。未解決のままONにしない。quota失敗はAI欄だけで完結し、CGM接続、通常の血糖表示、いつものグルコの話を止めない。

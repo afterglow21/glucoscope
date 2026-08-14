@@ -113,6 +113,53 @@ test("personal-user AI consent is explicit, versioned, and precedes any request"
   assert.match(css, /\.ai-letter-consent-actions \.letter-primary-button,[\s\S]*min-height:44px;/);
 });
 
+test("quota request context is inert while off and fail-closed for unresolved identities when on", () => {
+  const start = app.indexOf("function createAiLetterQuotaRequestContext");
+  const end = app.indexOf("function getAiLetterUsageDetailFromResponse", start);
+  const helperSource = app.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+
+  function runHelper({ enabled, userMode, manager }) {
+    const context = { manager };
+    vm.runInNewContext(`
+      const AI_PER_USER_QUOTA_ENABLED = ${enabled};
+      const usageProfileManager = this.manager;
+      const isUserDataSourceMode = () => ${userMode};
+      ${helperSource}
+      this.result = createAiLetterQuotaRequestContext();
+    `, context);
+    return context.result;
+  }
+
+  const forbiddenManager = new Proxy({}, {
+    get() { throw new Error("quota manager must not be read while disabled"); }
+  });
+  assert.deepEqual({ ...runHelper({ enabled: false, userMode: true, manager: forbiddenManager }) }, {
+    ok: true,
+    enabled: false
+  });
+  assert.equal(runHelper({ enabled: true, userMode: false, manager: forbiddenManager }).error, "quota_identity_required");
+  assert.equal(runHelper({ enabled: true, userMode: true, manager: null }).error, "quota_identity_required");
+
+  const enabled = runHelper({
+    enabled: true,
+    userMode: true,
+    manager: {
+      createAiQuotaRequestContext() {
+        return {
+          ok: true,
+          requestId: "123e4567-e89b-42d3-a456-426614174111",
+          quotaCredentialKind: "account",
+          authorization: `Bearer ${"B".repeat(43)}`
+        };
+      }
+    }
+  });
+  assert.equal(enabled.enabled, true);
+  assert.equal(enabled.quotaCredentialKind, "account");
+  assert.equal(enabled.authorization, `Bearer ${"B".repeat(43)}`);
+});
+
 test("stale AI responses cannot cross a summary, mode, or saved-connection boundary", async () => {
   const clearStart = app.indexOf("function clearDataSourceSpecificBrowserState");
   const clearEnd = app.indexOf("function buildUserModeUrl", clearStart);
@@ -145,6 +192,7 @@ test("stale AI responses cannot cross a summary, mode, or saved-connection bound
     turnstileResets: 0
   };
   const consentPanel = { hidden: false };
+  let quotaRequestContext = { ok: true, enabled: false };
   const context = {
     initialSummary,
     AbortController,
@@ -168,6 +216,7 @@ test("stale AI responses cannot cross a summary, mode, or saved-connection bound
     updateAiLetterControls: () => {},
     forceEnableAiLetterButtonSoon: () => {},
     prepareAiLetterTurnstile: () => false,
+    createAiLetterQuotaRequestContext: () => quotaRequestContext,
     setAiLetterPanelStatus: (_key, type) => {
       if (type === "error") calls.errors.push("status-error");
     },
@@ -236,7 +285,16 @@ test("stale AI responses cannot cross a summary, mode, or saved-connection bound
   const staleAfterReplacement = context.requestAi("letter", { skipUserConsent: true });
   await Promise.resolve();
   assert.equal(pendingFetches.length, 1);
-  assert.equal(JSON.parse(pendingFetches[0].options.body).summary.cacheRangeKey, "source-a-range");
+  const legacyRequestBody = JSON.parse(pendingFetches[0].options.body);
+  assert.equal(legacyRequestBody.summary.cacheRangeKey, "source-a-range");
+  assert.deepEqual(Object.keys(legacyRequestBody), [
+    "summary",
+    "analysisMode",
+    "turnstileToken",
+    "client"
+  ]);
+  assert.deepEqual(Object.keys(pendingFetches[0].options.headers), ["Content-Type"]);
+  assert.equal("Authorization" in pendingFetches[0].options.headers, false);
   context.replaceSummary(nextSummary);
   assert.equal(pendingFetches[0].options.signal.aborted, true);
   pendingFetches[0].resolve(successResponse("old source letter"));
@@ -282,9 +340,21 @@ test("stale AI responses cannot cross a summary, mode, or saved-connection bound
   assert.equal(context.readRuntimeState().aiLetterUserConsentGrantedThisSession, false);
   assert.equal(context.readRuntimeState().pendingAiLetterModeAfterConsent, null);
 
+  quotaRequestContext = {
+    ok: true,
+    enabled: true,
+    requestId: "123e4567-e89b-42d3-a456-426614174111",
+    quotaCredentialKind: "device_profile",
+    authorization: `Bearer ${"A".repeat(43)}`
+  };
   const currentRequest = context.requestAi("letter", { skipUserConsent: true });
   await Promise.resolve();
   assert.equal(pendingFetches.length, 4);
+  const quotaRequestBody = JSON.parse(pendingFetches[3].options.body);
+  assert.equal(pendingFetches[3].options.headers.Authorization, `Bearer ${"A".repeat(43)}`);
+  assert.equal(quotaRequestBody.requestId, "123e4567-e89b-42d3-a456-426614174111");
+  assert.equal(quotaRequestBody.quotaCredentialKind, "device_profile");
+  assert.equal(JSON.stringify(quotaRequestBody).includes("Bearer"), false);
   pendingFetches[3].resolve(successResponse("current source letter"));
   await currentRequest;
   assert.deepEqual(calls.displayed, ["current source letter"]);
@@ -888,14 +958,51 @@ test("AI usage is recorded only for a completed new OpenAI generation", () => {
   const requestEnd = app.indexOf("function exposeLetterControlGlobals", requestStart);
   const requestHandler = app.slice(requestStart, requestEnd);
   assert.ok(requestHandler.indexOf("saveAiLetterLocalCache(requestState.summary, data") < requestHandler.indexOf("recordUsageProfileAiGenerationIfEligible(data)"));
+
+  const recordStart = app.indexOf("function recordUsageProfileAiGenerationIfEligible");
+  const recordEnd = app.indexOf("function createAiLetterQuotaRequestContext", recordStart);
+  function loadRecorder(enabled) {
+    const context = {
+      calls: 0,
+      getUsageProfileState: () => ({ enabled: true, registered: true, collectionEnabled: true }),
+      Promise
+    };
+    context.usageProfileManager = {
+      recordAiGeneration: () => { context.calls += 1; }
+    };
+    vm.runInNewContext(`
+      const AI_PER_USER_QUOTA_ENABLED = ${enabled};
+      ${app.slice(recordStart, recordEnd)}
+      this.record=recordUsageProfileAiGenerationIfEligible;
+    `, context);
+    return context;
+  }
+  const success = {
+    status: "success",
+    source: "openai",
+    generation: { complete: true },
+    letter: { cached: false },
+    cache: { status: "miss" }
+  };
+  const authoritative = loadRecorder(true);
+  authoritative.record(success);
+  authoritative.record({ ...success, quota: { authoritative: true, consumed: false } });
+  authoritative.record({ ...success, quota: { authoritative: true, consumed: true } });
+  authoritative.record({ ...success, cache: { status: "fresh" }, quota: { authoritative: true, consumed: true } });
+  assert.equal(authoritative.calls, 1);
+
+  const legacy = loadRecorder(false);
+  legacy.record(success);
+  assert.equal(legacy.calls, 1);
 });
 
 test("local display-name storage remains network-free and server sync is separate", () => {
   assert.doesNotMatch(localProfile, /\b(?:fetch|XMLHttpRequest|sendBeacon|WebSocket)\b/u);
   assert.match(index, /js\/local-profile\.js\?v=20260811-usage-profile-stage-1/);
-  assert.match(index, /js\/usage-client\.js\?v=20260812-stale-profile-recovery-1/);
-  assert.match(index, /style\.css\?v=20260814-user-ai-1/);
-  assert.match(index, /js\/app\.js\?v=20260814-user-ai-1/);
+  assert.match(index, /js\/usage-client\.js\?v=20260815-plus-account-foundation-1/);
+  assert.match(index, /js\/plus-feature-access\.js\?v=20260815-plus-account-foundation-1/);
+  assert.match(index, /style\.css\?v=20260815-plus-account-foundation-1/);
+  assert.match(index, /js\/app\.js\?v=20260815-plus-account-foundation-1/);
   assert.match(app, /updateUsageProfileDisplayName\(result\.profile\.displayName\)/);
   assert.doesNotMatch(app, /handleLocalProfileDelete|localProfileDeleteButton/);
   assert.match(app, /if \(!state\.enabled \|\| !state\.registered\) return;/);

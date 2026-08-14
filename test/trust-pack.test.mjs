@@ -6,6 +6,7 @@ const indexUrl = new URL("../index.html", import.meta.url);
 const trustPackUrl = new URL("../pages/about/trust-pack.html", import.meta.url);
 const usageDashboardUrl = new URL("../pages/about/usage-dashboard.html", import.meta.url);
 const trustDirUrl = new URL("../pages/trust/", import.meta.url);
+const plusSpecUrl = new URL("../docs/Feature_Specs/PLUS_30_DAY_PASS.md", import.meta.url);
 
 async function read(url) {
   return readFile(url, "utf8");
@@ -23,16 +24,36 @@ function decodeHtmlText(value) {
     .replaceAll("&#39;", "'");
 }
 
-test("Usage Dashboard describes its AI-only scope without claiming page-view or user-profile counts", async () => {
+test("Usage Dashboard separates AI operations from privacy-protected personal-user totals", async () => {
   const [index, dashboard] = await Promise.all([read(indexUrl), read(usageDashboardUrl)]);
   assert.match(index, /AIお手紙が作られた回数と、開発者が負担するAI利用料の目安/);
   assert.doesNotMatch(index, /ページ閲覧の傾向/);
-  assert.match(dashboard, /この画面は、AIお手紙全体の利用状況です/);
-  assert.match(dashboard, /公開デモと、少人数で試しているユーザー版から新しく作ったAI分析を分けずに数えます/);
-  assert.match(dashboard, /利用者の人数や、だれが使ったかは分かりません/);
-  assert.match(dashboard, /ユーザー版を開いた日数、血糖データの取得回数、利用記録に保存された日数やグルコの想い出数は含みません/);
+  assert.match(dashboard, /ユーザー版の合計/);
+  assert.match(dashboard, /公開デモとユーザー版から新しく作ったAI分析を分けずに数えます/);
+  assert.match(dashboard, /前日まで30日間の端末プロフィール、利用日、新しく成功したAI分析、通常のグルコの想い出/);
+  assert.match(dashboard, /10件未満では実数を表示しません/);
+  assert.match(dashboard, /personalUserUsage\.status === "suppressed"/);
+  assert.match(dashboard, /personalUserUsage\.status === "available"/);
   assert.match(dashboard, /公開デモもユーザー版も、この端末に保存したお手紙だけを再表示します/);
   assert.match(dashboard, /sharedCache\.enabled === false[\s\S]*?停止中（先行体験）/);
+});
+
+test("Plus 30-day pass records the approved one-time boundary without claiming sale", async () => {
+  const spec = await read(plusSpecUrl);
+  assert.match(spec, /not available for purchase/);
+  assert.match(spec, /価格 \| 300円/);
+  assert.match(spec, /自動更新 \| なし/);
+  assert.match(spec, /成功した新規AI分析を1日1回/);
+  assert.match(spec, /成功した新規AI分析を1日5回まで/);
+  assert.match(spec, /文書・品質チェックで止まった/);
+  assert.match(spec, /グラフのカスタム期間/);
+  assert.match(spec, /認証済みアカウントごとに1回だけ無料体験/);
+  assert.match(spec, /利用記録の端末プロフィール、profile ID、token、表示名を、購入者の本人確認やPlus利用権に流用しない/);
+  assert.match(spec, /Stripeへ血糖値、グラフ、TIR\/TAR\/TBR/);
+  assert.match(spec, /利用権の付与は、成功ページを開いたことではなく、Stripeの署名付きWebhook/);
+  assert.match(spec, /Plusは医療サービスではない/);
+  assert.doesNotMatch(spec, /販売中|購入できます|自動更新あり/);
+  assert.match(spec, /Subscriptionや自動更新を使わない/);
 });
 
 test("Trust Pack internal links and local assets resolve", async () => {
@@ -150,6 +171,8 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(privacy, /安全のための確認記録に、入力と出力が最大30日残る場合があります/);
   assert.match(privacy, /利用状況の記録は、設定からいつでも停止・再開・削除できます/);
   assert.match(privacy, /使った日の記録は90日分まで保存し、90日使われていない端末の記録は削除します/);
+  assert.match(privacy, /前日までの30日間に活動した端末プロフィールが10件以上になった時だけ、全体の数を表示します/);
+  assert.match(privacy, /overall totals appear only after at least 10 device profiles were active during the 30 completed days through yesterday/);
   assert.match(privacy, /無料プランでは最大7日、有料プランでは最大30日/);
   assert.match(privacy, /up to 7 days on the Free plan or up to 30 days on a Paid plan/);
   assert.match(privacy, /血糖値、接続情報、GlucoScore、AIお手紙の本文はアクセス分析へ送りません/);
@@ -180,19 +203,29 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.doesNotMatch(developerStatus, /href="\.\.\/trust\/roadmap\.html"/);
   assert.doesNotMatch(developerStatus, /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
   assert.doesNotMatch(developerStatus, /<code>|\b(?:D1|deployment|Version|CORS|Cron|sessionStorage|adapter|RELAY_ENABLED)\b|\b(?:200|204|401|403|503)\b/i);
-  assert.match(roadmap, /管理者ダッシュボードをつくります/);
-  assert.match(roadmap, /Plus 30日パスと、任意の開発支援への分かりやすい導線/);
+  assert.match(roadmap, /管理者ダッシュボードは、管理者1名だけが使える認証付きの読取専用画面として受け入れを完了しました/);
+  assert.match(roadmap, /300円の1回払い・30日間・自動更新なし/);
+  assert.match(roadmap, /FreeのAIは成功時だけ1日1回、Plusは1日5回まで/);
+  assert.match(roadmap, /まだ販売していません/);
+  assert.match(roadmap, /機能特典を付けない1回ごとの任意の開発支援とは別/);
+  assert.doesNotMatch(roadmap, /管理者ダッシュボードをつくります|今後の利用者別管理者ダッシュボード/);
   assert.match(roadmap, /ユーザー展開を始めた後、横向きグラフだけで本人が選べる常時表示モード/);
   assert.match(roadmap, /現時点の3CGM比較ページは継続公開ライブデモです/);
   assert.match(roadmap, /約3時間の継続稼働を確認/);
   assert.match(roadmap, /これまでの確認は合計2回/);
   assert.match(roadmap, /一般利用者向け限定中継は現在、1〜3人の先行体験に限って有効です/);
-  assert.match(roadmap, /1〜3人の先行体験を開始しました。次は利用状況と安全境界を観察します/);
+  assert.match(roadmap, /1〜3人の先行体験を開始しました。利用状況と安全境界の観察は、次の設計と並行して続けます/);
   assert.match(roadmap, /Safari完全終了後の復元、約1時間後の自然失効、上限到達時の挙動は運用確認として残します/);
   assert.match(roadmap, /今回確認できたのは1回の公開ページ受け入れです。継続運用、複数回のブラウザ表示更新、古いデータ表示・自然失効は未確認/);
   assert.match(roadmap, /21:25 JSTの停止中Cron後も両KVキーの期限は停止後の基準から変わらず、想定した2キーだけでmetadataもありませんでした/);
   assert.match(roadmap, /The public 3CGM Comparison Lab began continuous live publication/);
   assert.match(roadmap, /Live CGM handoff, the usage-profile lifecycle, the general-user G7 basic route, and the small pre-rollout UX corrections are complete/);
+  assert.match(roadmap, /The administrator dashboard has completed one-administrator acceptance as an authenticated read-only view/);
+  assert.match(roadmap, /JPY 300 as a one-time payment for 30 days, with no automatic renewal/);
+  assert.match(roadmap, /Free receives one successful new AI analysis per day/);
+  assert.match(roadmap, /Plus is not yet available for purchase/);
+  assert.match(roadmap, /Observation of real usage and safety boundaries continues in parallel with the next design task/);
+  assert.doesNotMatch(roadmap, /Build the administrator dashboard|future person-level administrator dashboard/);
   assert.match(roadmap, /After user rollout begins, add an opt-in always-on mode only for the landscape graph/);
   assert.match(roadmap, /After the 21:25 JST stopped Cron, both KV expirations were unchanged from the post-stop baseline/);
   assert.match(roadmap, /Libreだけを一時有効にしたVersion `2e72847d-5011-47c5-80e6-8cb931a1b141`/);

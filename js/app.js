@@ -1,6 +1,8 @@
 const dataSourceManager = window.GlucoScopeDataSource || null;
 const localProfileManager = window.GlucoScopeLocalProfile || null;
 const usageProfileManager = window.GlucoScopeUsage || null;
+const plusEntitlementClient = window.GlucoScopePlusEntitlement || null;
+const plusFeatureAccessManager = window.GlucoScopePlusFeatures || null;
 let activeDataSourceConfig = dataSourceManager?.getActiveConfig?.() || null;
 let activeDataSourceAdapter = activeDataSourceConfig && dataSourceManager
   ? dataSourceManager.createAdapter(activeDataSourceConfig)
@@ -18,6 +20,12 @@ let dataSourceTestGeneration = 0;
 let dataSourceTestAbortController = null;
 let usageProfileTurnstileTimeoutId = null;
 let usageProfileTurnstileTimeoutGeneration = 0;
+let plusAccountTurnstileWidgetId = null;
+let plusAccountDeleteTurnstileWidgetId = null;
+let plusAccountActionInFlight = false;
+let plusCheckoutConfirmationPending = false;
+let plusCheckoutCancelledReturn = false;
+let plusCheckoutPollGeneration = 0;
 
 let glucoseChart = null;
 let currentLanguage = localStorage.getItem("glucoscope.language.v1") || "ja";
@@ -60,6 +68,18 @@ const TURNSTILE_SCRIPT_ID = "glucoscope-turnstile-script";
 const USAGE_PROFILE_TURNSTILE_TIMEOUT_MS = 15_000;
 const USAGE_PROFILE_ENABLED = true;
 const USAGE_PROFILE_ENDPOINT = "https://glucoscope-usage.afterglow21.workers.dev";
+// Keep this false until the Usage and AI Workers are released first, the dedicated
+// quota notice is accepted, and the public-demo identity boundary is resolved.
+// False sends no Authorization header and preserves the current request contract.
+const AI_PER_USER_QUOTA_ENABLED = false;
+// Keep this false until verified-account recovery, purchase support, and server-side
+// entitlement checks have passed production acceptance. False preserves today's UI.
+const PLUS_FEATURE_GATING_ENABLED = false;
+// The account and purchase UI stay absent until the email and Stripe adapters have
+// passed test-mode acceptance. These flags are independent so login can be tested
+// before any purchase button is ever shown.
+const PLUS_ACCOUNT_UI_ENABLED = false;
+const PLUS_PURCHASE_UI_ENABLED = false;
 const PRODUCTION_AI_LETTER_WORKER_ENDPOINT = "https://gluco-letter-worker.afterglow21.workers.dev/api/gluco-letter";
 const LOCAL_AI_LETTER_WORKER_ENDPOINT = "http://127.0.0.1:8787/api/gluco-letter";
 
@@ -283,6 +303,27 @@ const translations = {
     usageProfileActionError: "操作を完了できませんでした。少し時間をおいて、もう一度試してください。",
     usageProfileDeleteConfirm: "この端末の利用記録を削除しますか？ 血糖の接続や表示名、グルコの想い出は消えません。",
     usageProfileTurnstileLabel: "利用記録の安全確認",
+    plusAccountBadge: "準備中",
+    plusAccountCardTitle: "Plus 30日パス",
+    plusAccountPrice: "300円・30日間・1回払い・自動更新なし",
+    plusAccountLead: "メールで本人確認すると、機種変更やブラウザの保存を消した後もPlusを確認できます。",
+    plusAccountBenefitFree: "基本の血糖表示は、Plusを買わなくても使えます。",
+    plusAccountBenefitAi: "Plusでは、成功したAI分析を1日最大5回まで使えます。",
+    plusAccountBenefitRange: "グラフの日付を自由に選べます。",
+    plusAccountBenefitShare: "Share Studioを使えます。購入前にも1回だけ試せます。",
+    plusAccountEmailLabel: "確認に使うメール",
+    plusAccountEmailHelp: "パスワードは入力しません。子どもの利用方法は、販売開始前に保護者向けの案内を用意します。",
+    plusAccountSendCodeButton: "確認コードを送る",
+    plusAccountCodeLabel: "メールに届いた6桁の確認コード",
+    plusAccountCodeHelp: "10分以内に入力してください。この画面を閉じたり更新した時は、もう一度コードを送ってください。届かない時は迷惑メールも確認できます。",
+    plusAccountVerifyButton: "確認する",
+    plusAccountPurchaseButton: "300円で30日間使う（支払い画面へ）",
+    plusAccountRefreshButton: "状態を更新する",
+    plusAccountLogoutButton: "この端末からログアウト",
+    plusAccountDeleteDetails: "詳しい管理",
+    plusAccountDeleteLead: "Plusアカウントを削除しても、血糖の接続や利用記録は別に残ります。購入記録がある場合は、この画面では削除できません。",
+    plusAccountDeleteButton: "Plusアカウントを削除する",
+    plusAccountSafety: "カード番号はStripeの画面だけで入力します。Stripeへ血糖値や接続情報を送ることはありません。",
     dataSourceDialogTitle: "データ接続（先行体験）",
     dataSourceDialogLead: "自分の血糖データをGlucoScopeで表示できます。Gluroo接続は少人数で確認しながら提供しています。",
     dataSourceChooseLead: "血糖データのつなぎ方を、どちらか1つ選びます。",
@@ -501,6 +542,8 @@ const translations = {
     customFromLabel: "開始",
     customToLabel: "終了",
     customApplyLabel: "表示",
+    plusCustomRangeRequired: "カスタム期間はPlus 30日パスで使えます。今日・昨日・7日・30日は、これまでどおり使えます。",
+    plusAccessUnavailable: "Plusの利用状況を確認できませんでした。少し待って、もう一度お試しください。",
     selectedRangeLabel: "表示中の期間",
     periodPreviousDay: "前日",
     periodPreviousRange: "前期間",
@@ -618,6 +661,27 @@ const translations = {
     usageProfileActionError: "The action could not be completed. Please try again later.",
     usageProfileDeleteConfirm: "Delete this device’s usage record? Your glucose connection, display name, and Gluco memories will remain on this device.",
     usageProfileTurnstileLabel: "Usage-recording safety check",
+    plusAccountBadge: "In preparation",
+    plusAccountCardTitle: "Plus 30-day pass",
+    plusAccountPrice: "JPY 300 · 30 days · one payment · no automatic renewal",
+    plusAccountLead: "Email verification lets you recover Plus after changing devices or clearing browser storage.",
+    plusAccountBenefitFree: "Basic glucose viewing stays available without buying Plus.",
+    plusAccountBenefitAi: "Plus allows up to five successful AI analyses per day.",
+    plusAccountBenefitRange: "Choose custom dates for the graph.",
+    plusAccountBenefitShare: "Use Share Studio, with one trial before purchase.",
+    plusAccountEmailLabel: "Email for verification",
+    plusAccountEmailHelp: "No password is needed. Guidance for parents and guardians will be ready before sales begin.",
+    plusAccountSendCodeButton: "Send verification code",
+    plusAccountCodeLabel: "Six-digit code from the email",
+    plusAccountCodeHelp: "Enter it within 10 minutes. If you close or reload this page, send a new code. If it does not arrive, check the junk folder too.",
+    plusAccountVerifyButton: "Verify",
+    plusAccountPurchaseButton: "Use Plus for 30 days for JPY 300 (payment page)",
+    plusAccountRefreshButton: "Refresh status",
+    plusAccountLogoutButton: "Sign out on this device",
+    plusAccountDeleteDetails: "More account options",
+    plusAccountDeleteLead: "Deleting the Plus account does not remove the glucose connection or the separate usage record. An account with a purchase record cannot be deleted here.",
+    plusAccountDeleteButton: "Delete Plus account",
+    plusAccountSafety: "Card details are entered only on Stripe’s page. GlucoScope does not send glucose values or connection details to Stripe.",
     dataSourceDialogTitle: "Data connection (early access)",
     dataSourceDialogLead: "You can display your own glucose data in GlucoScope. Gluroo connections are available to a small group while we confirm everything works.",
     dataSourceChooseLead: "Choose one way to connect your glucose data.",
@@ -836,6 +900,8 @@ const translations = {
     customFromLabel: "From",
     customToLabel: "To",
     customApplyLabel: "Show",
+    plusCustomRangeRequired: "Custom dates are included with the Plus 30-day pass. Today, yesterday, 7 days, and 30 days remain available as before.",
+    plusAccessUnavailable: "We could not confirm your Plus access. Please wait a moment and try again.",
     selectedRangeLabel: "Selected range",
     periodPreviousDay: "Previous day",
     periodPreviousRange: "Previous range",
@@ -2236,7 +2302,11 @@ function getLocalProfileDialogFocusableElements() {
   const dialog = document.getElementById("localProfileDialog");
   if (!dialog) return [];
   return [...dialog.querySelectorAll('button:not([disabled]), input:not([disabled])')]
-    .filter((element) => !element.hidden && element.getAttribute("aria-hidden") !== "true");
+    .filter((element) => (
+      !element.hidden
+      && element.closest("[hidden]") === null
+      && element.getAttribute("aria-hidden") !== "true"
+    ));
 }
 
 function openLocalProfileDialog(opener = null) {
@@ -2247,6 +2317,8 @@ function openLocalProfileDialog(opener = null) {
   populateLocalProfileForm();
   dialog.hidden = false;
   document.body.classList.add("local-profile-dialog-open");
+  updatePlusAccountUi();
+  renderPlusAccountTurnstile();
   window.requestAnimationFrame(() => document.getElementById("localProfileDisplayName")?.focus());
 }
 
@@ -2802,6 +2874,664 @@ const livePeriodOptions = {
 
 let mobileCustomRangeDialogOpen = false;
 
+function readEnabledMeta(name) {
+  return document.querySelector(`meta[name="${name}"]`)?.content === "true";
+}
+
+function readPlusEndpointMeta() {
+  return document.querySelector('meta[name="glucoscope-plus-entitlement-endpoint"]')?.content || "";
+}
+
+function getPlusAccountRolloutConfig() {
+  const accountEnabled = PLUS_ACCOUNT_UI_ENABLED
+    && readEnabledMeta("glucoscope-plus-account-enabled")
+    && isUserDataSourceMode();
+  return Object.freeze({
+    accountEnabled,
+    purchasesEnabled: accountEnabled
+      && PLUS_PURCHASE_UI_ENABLED
+      && readEnabledMeta("glucoscope-plus-purchases-enabled"),
+    endpoint: accountEnabled ? readPlusEndpointMeta() : ""
+  });
+}
+
+function setPlusAccountStatus(message = "") {
+  const status = document.getElementById("plusAccountStatus");
+  if (status) status.textContent = message;
+}
+
+function getPlusAccountFriendlyError(error, action = "account") {
+  const code = String(error || "");
+  if (code === "please_wait") {
+    return currentLanguage === "en"
+      ? "Please wait about a minute before sending another code."
+      : "次の確認コードを送るまで、1分ほど待ってください。";
+  }
+  if (["network_error", "network_unavailable", "request_timeout"].includes(code)) {
+    return currentLanguage === "en"
+      ? "The internet connection was interrupted. Nothing was purchased. Please try again later."
+      : "通信が途中で止まりました。購入は行われていません。少し時間をおいて試してください。";
+  }
+  if (code === "turnstile_failed" || code === "turnstile_required") {
+    return currentLanguage === "en"
+      ? "The safety check could not be confirmed. Please complete it again."
+      : "安全確認を確かめられませんでした。もう一度確認してください。";
+  }
+  if (code === "invalid_or_expired_code" || code === "verification_grant_required") {
+    return currentLanguage === "en"
+      ? "The code is different or has expired. Send a new code and try again."
+      : "確認コードが違うか、期限が切れています。新しいコードを送って、もう一度試してください。";
+  }
+  if (code === "plus_already_active") {
+    return currentLanguage === "en"
+      ? "Plus is already active. No new payment is needed."
+      : "Plusはすでに利用できます。もう一度支払う必要はありません。";
+  }
+  if (["checkout_pending", "checkout_confirmation_pending", "checkout_creation_in_progress"].includes(code)) {
+    return currentLanguage === "en"
+      ? "A payment is already being confirmed. Please do not pay again."
+      : "すでに支払いを確認しています。もう一度支払わないでください。";
+  }
+  if (action === "code") {
+    return currentLanguage === "en"
+      ? "The code could not be sent. Check the email and try again later."
+      : "確認コードを送れませんでした。メールを確認して、少し時間をおいて試してください。";
+  }
+  if (action === "checkout") {
+    return currentLanguage === "en"
+      ? "The payment page could not be opened. No payment was made."
+      : "支払い画面を開けませんでした。支払いは行われていません。";
+  }
+  return currentLanguage === "en"
+    ? "The account status could not be checked. Please try again later."
+    : "アカウントの状態を確認できませんでした。少し時間をおいて試してください。";
+}
+
+function setPlusAccountControlsDisabled(disabled) {
+  plusAccountActionInFlight = Boolean(disabled);
+  [
+    "plusAccountEmail",
+    "plusAccountCode",
+    "plusAccountSendCodeButton",
+    "plusAccountVerifyButton",
+    "plusAccountPurchaseButton",
+    "plusAccountRefreshButton",
+    "plusAccountLogoutButton",
+    "plusAccountDeleteButton"
+  ].forEach((id) => {
+    const control = document.getElementById(id);
+    if (control) {
+      control.disabled = plusAccountActionInFlight
+        || (id === "plusAccountPurchaseButton" && plusCheckoutConfirmationPending);
+    }
+  });
+}
+
+function formatPlusEndDate(value) {
+  const timestamp = Number(value);
+  if (!Number.isSafeInteger(timestamp) || timestamp < 0) return "";
+  return new Intl.DateTimeFormat(currentLanguage === "en" ? "en" : "ja-JP", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Tokyo"
+  }).format(new Date(timestamp));
+}
+
+function updatePlusAccountUi() {
+  const config = getPlusAccountRolloutConfig();
+  const card = document.getElementById("plusAccountCard");
+  if (!card) return;
+  card.hidden = !config.accountEnabled;
+  if (!config.accountEnabled) return;
+
+  const accountState = plusEntitlementClient?.getState?.() || { status: "unavailable" };
+  const hasStoredSession = plusEntitlementClient?.hasStoredSession?.() === true;
+  const signedIn = accountState.status === "ready" || hasStoredSession;
+  const signedOutPanel = document.getElementById("plusAccountSignedOut");
+  const signedInPanel = document.getElementById("plusAccountSignedIn");
+  const rolloutBadge = card.querySelector(".plus-account-badge");
+  const badge = document.getElementById("plusAccountStateBadge");
+  const summary = document.getElementById("plusAccountSummary");
+  const purchaseButton = document.getElementById("plusAccountPurchaseButton");
+  if (signedOutPanel) signedOutPanel.hidden = signedIn;
+  if (signedInPanel) signedInPanel.hidden = !signedIn;
+  if (rolloutBadge) {
+    rolloutBadge.textContent = config.purchasesEnabled
+      ? (currentLanguage === "en" ? "Available" : "利用できます")
+      : (currentLanguage === "en" ? "In preparation" : "準備中");
+  }
+
+  if (badge) {
+    badge.className = "plus-account-state-badge";
+    if (accountState.status === "loading") {
+      badge.textContent = currentLanguage === "en" ? "Checking" : "確認中";
+    } else if (accountState.plusActive) {
+      badge.textContent = "Plus";
+      badge.classList.add("is-active");
+    } else if (plusCheckoutCancelledReturn && accountState.purchasePending) {
+      summary.textContent = currentLanguage === "en"
+        ? "The purchase was not completed. You can reopen the same payment page if you choose."
+        : "購入は完了していません。希望する場合だけ、同じ支払い画面をもう一度開けます。";
+    } else if (accountState.purchasePending || plusCheckoutConfirmationPending) {
+      summary.textContent = currentLanguage === "en"
+        ? "Payment is being confirmed. Please do not pay again."
+        : "支払いを確認しています。もう一度支払わず、そのままお待ちください。";
+    } else if (accountState.status === "ready") {
+      badge.textContent = currentLanguage === "en" ? "Verified" : "確認済み";
+    } else {
+      badge.textContent = signedIn
+        ? (currentLanguage === "en" ? "Check again" : "再確認が必要")
+        : (currentLanguage === "en" ? "Not signed in" : "未確認");
+    }
+  }
+
+  if (summary) {
+    if (accountState.plusActive) {
+      const endsAt = formatPlusEndDate(accountState.endsAt);
+      summary.textContent = currentLanguage === "en"
+        ? `Plus is active until ${endsAt}. It will not renew automatically.`
+        : `Plusは${endsAt}まで利用できます。自動更新はありません。`;
+    } else if (accountState.status === "ready") {
+      summary.textContent = config.purchasesEnabled
+        ? (currentLanguage === "en"
+          ? "Your email is verified. You can continue to Stripe when you are ready."
+          : "メール確認ができました。準備ができたらStripeの購入画面へ進めます。")
+        : (currentLanguage === "en"
+          ? "Your email is verified. Plus sales are still being prepared."
+          : "メール確認ができました。Plusの販売はまだ準備中です。");
+    } else {
+      summary.textContent = currentLanguage === "en"
+        ? "Your saved session could not be checked. Refresh the status or sign out on this device."
+        : "保存した確認状態を取得できませんでした。状態を更新するか、この端末からログアウトしてください。";
+    }
+  }
+
+  if (purchaseButton) {
+    const canOpenFreshCheckout = !accountState.purchasePending
+      && !plusCheckoutConfirmationPending;
+    const canReopenCancelledCheckout = plusCheckoutCancelledReturn
+      && accountState.purchasePending
+      && !plusCheckoutConfirmationPending;
+    purchaseButton.hidden = !(
+      config.purchasesEnabled
+      && accountState.status === "ready"
+      && !accountState.plusActive
+      && (canOpenFreshCheckout || canReopenCancelledCheckout)
+    );
+    purchaseButton.textContent = canReopenCancelledCheckout
+      ? (currentLanguage === "en"
+        ? "Open the same payment page again"
+        : "同じ支払い画面をもう一度開く")
+      : t("plusAccountPurchaseButton");
+  }
+  setPlusAccountControlsDisabled(plusAccountActionInFlight);
+}
+
+function resetPlusAccountTurnstile() {
+  if (plusAccountTurnstileWidgetId === null) return;
+  try {
+    window.turnstile?.reset?.(plusAccountTurnstileWidgetId);
+  } catch (error) {
+    // A fresh render is safer than reusing an uncertain verification token.
+    plusAccountTurnstileWidgetId = null;
+  }
+}
+
+function renderPlusAccountTurnstile(attempt = 0) {
+  const config = getPlusAccountRolloutConfig();
+  const container = document.getElementById("plusAccountTurnstile");
+  const signedOutPanel = document.getElementById("plusAccountSignedOut");
+  if (
+    !config.accountEnabled
+    || !container
+    || signedOutPanel?.hidden
+    || plusAccountTurnstileWidgetId !== null
+  ) return;
+  ensureTurnstileScript();
+  if (!window.turnstile || typeof window.turnstile.render !== "function") {
+    if (attempt < 20) {
+      window.setTimeout(() => renderPlusAccountTurnstile(attempt + 1), 250);
+    } else {
+      setPlusAccountStatus(currentLanguage === "en"
+        ? "The safety check could not be loaded. Please try again later."
+        : "安全確認を読み込めませんでした。少し時間をおいて試してください。");
+    }
+    return;
+  }
+
+  try {
+    plusAccountTurnstileWidgetId = window.turnstile.render(container, {
+      sitekey: TURNSTILE_SITE_KEY,
+      action: "glucoscope-plus-request-code",
+      theme: "dark",
+      size: "flexible",
+      callback: () => setPlusAccountStatus(""),
+      "expired-callback": () => setPlusAccountStatus(currentLanguage === "en"
+        ? "The safety check expired. Please complete it again."
+        : "安全確認の期限が切れました。もう一度確認してください。"),
+      "error-callback": () => setPlusAccountStatus(currentLanguage === "en"
+        ? "The safety check could not be completed. Please try again."
+        : "安全確認を完了できませんでした。もう一度試してください。")
+    });
+  } catch (error) {
+    plusAccountTurnstileWidgetId = null;
+    setPlusAccountStatus(currentLanguage === "en"
+      ? "The safety check could not be loaded. Please try again later."
+      : "安全確認を読み込めませんでした。少し時間をおいて試してください。");
+  }
+}
+
+function readPlusAccountTurnstileToken() {
+  return String(
+    document.querySelector("#plusAccountTurnstile [name='cf-turnstile-response']")?.value || ""
+  );
+}
+
+function resetPlusAccountDeleteTurnstile() {
+  if (plusAccountDeleteTurnstileWidgetId === null) return;
+  try {
+    window.turnstile?.reset?.(plusAccountDeleteTurnstileWidgetId);
+  } catch (error) {
+    plusAccountDeleteTurnstileWidgetId = null;
+  }
+}
+
+function renderPlusAccountDeleteTurnstile(attempt = 0) {
+  const config = getPlusAccountRolloutConfig();
+  const details = document.getElementById("plusAccountDeleteDetails");
+  const container = document.getElementById("plusAccountDeleteTurnstile");
+  const signedInPanel = document.getElementById("plusAccountSignedIn");
+  if (
+    !config.accountEnabled
+    || !details?.open
+    || signedInPanel?.hidden
+    || !container
+    || plusAccountDeleteTurnstileWidgetId !== null
+  ) return;
+  ensureTurnstileScript();
+  if (!window.turnstile || typeof window.turnstile.render !== "function") {
+    if (attempt < 20) {
+      window.setTimeout(() => renderPlusAccountDeleteTurnstile(attempt + 1), 250);
+    } else {
+      setPlusAccountStatus(currentLanguage === "en"
+        ? "The deletion safety check could not be loaded. Please try again later."
+        : "削除の安全確認を読み込めませんでした。少し時間をおいて試してください。");
+    }
+    return;
+  }
+  try {
+    plusAccountDeleteTurnstileWidgetId = window.turnstile.render(container, {
+      sitekey: TURNSTILE_SITE_KEY,
+      action: "glucoscope-plus-delete-account",
+      theme: "dark",
+      size: "flexible",
+      callback: () => setPlusAccountStatus(""),
+      "expired-callback": () => setPlusAccountStatus(currentLanguage === "en"
+        ? "The deletion safety check expired. Please complete it again."
+        : "削除の安全確認の期限が切れました。もう一度確認してください。"),
+      "error-callback": () => setPlusAccountStatus(currentLanguage === "en"
+        ? "The deletion safety check could not be completed."
+        : "削除の安全確認を完了できませんでした。")
+    });
+  } catch (error) {
+    plusAccountDeleteTurnstileWidgetId = null;
+    setPlusAccountStatus(currentLanguage === "en"
+      ? "The deletion safety check could not be loaded. Please try again later."
+      : "削除の安全確認を読み込めませんでした。少し時間をおいて試してください。");
+  }
+}
+
+function readPlusAccountDeleteTurnstileToken() {
+  return String(
+    document.querySelector("#plusAccountDeleteTurnstile [name='cf-turnstile-response']")?.value || ""
+  );
+}
+
+function openPlusAccountAfterCheckoutReturn() {
+  const dataSourceDialog = document.getElementById("dataSourceDialog");
+  if (dataSourceDialog && !dataSourceDialog.hidden) return;
+  window.setTimeout(() => {
+    const opener = document.getElementById("localProfileButton");
+    openLocalProfileDialog(opener);
+    document.getElementById("plusAccountSummary")?.focus?.();
+  }, 0);
+}
+
+async function pollPlusCheckoutConfirmation(generation, attempt = 0) {
+  if (!plusCheckoutConfirmationPending || generation !== plusCheckoutPollGeneration) return;
+  const delays = [1_000, 2_000, 4_000, 8_000];
+  if (attempt >= delays.length) {
+    setPlusAccountStatus(currentLanguage === "en"
+      ? "Payment is still being confirmed. Please wait before trying to pay again, then refresh the status."
+      : "支払いの確認に時間がかかっています。もう一度支払わず、少し待ってから状態を更新してください。");
+    return;
+  }
+  await new Promise((resolve) => window.setTimeout(resolve, delays[attempt]));
+  if (!plusCheckoutConfirmationPending || generation !== plusCheckoutPollGeneration) return;
+  const result = await plusEntitlementClient?.refresh?.();
+  if (!plusCheckoutConfirmationPending || generation !== plusCheckoutPollGeneration) return;
+  updatePlusAccountUi();
+  configurePlusFeatureGating();
+  const state = plusEntitlementClient?.getState?.();
+  if (result?.ok && state?.plusActive) {
+    plusCheckoutConfirmationPending = false;
+    updatePlusAccountUi();
+    setPlusAccountStatus(currentLanguage === "en"
+      ? "Payment was confirmed. Plus is now active."
+      : "支払いを確認できました。Plusを利用できます。");
+    return;
+  }
+  if (
+    result?.ok
+    && state?.status === "ready"
+    && state?.plusActive !== true
+    && state?.purchasePending !== true
+  ) {
+    plusCheckoutConfirmationPending = false;
+    updatePlusAccountUi();
+    setPlusAccountStatus(currentLanguage === "en"
+      ? "The payment was not completed or the payment page expired. You can open a new payment page when you are ready."
+      : "支払いが完了しなかったか、支払い画面の期限が切れました。準備ができた時に、新しい支払い画面を開けます。");
+    return;
+  }
+  if (plusEntitlementClient?.hasStoredSession?.() !== true) {
+    plusCheckoutConfirmationPending = false;
+    updatePlusAccountUi();
+    setPlusAccountStatus(currentLanguage === "en"
+      ? "Payment status could not be checked. Sign in again before taking any other action."
+      : "支払いの状態を確認できませんでした。ほかの操作をせず、もう一度メール確認をしてください。");
+    return;
+  }
+  await pollPlusCheckoutConfirmation(generation, attempt + 1);
+}
+
+async function initializePlusEntitlementFoundation() {
+  const config = getPlusAccountRolloutConfig();
+  const currentUrl = new URL(window.location.href);
+  const checkoutReturn = currentUrl.searchParams.get("checkout");
+  if (checkoutReturn === "success" || checkoutReturn === "cancelled") {
+    currentUrl.searchParams.delete("checkout");
+    currentUrl.hash = "more";
+    window.history.replaceState(null, "", `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`);
+  }
+  await plusEntitlementClient?.configure?.({
+    enabled: config.accountEnabled,
+    endpoint: config.endpoint
+  });
+  updatePlusAccountUi();
+  configurePlusFeatureGating();
+  if (!config.accountEnabled) return;
+  if (plusEntitlementClient?.hasStoredSession?.()) {
+    await plusEntitlementClient.refresh();
+    updatePlusAccountUi();
+    configurePlusFeatureGating();
+  }
+  if (checkoutReturn === "success") {
+    plusCheckoutCancelledReturn = false;
+    const state = plusEntitlementClient?.getState?.();
+    plusCheckoutConfirmationPending = !state?.plusActive;
+    updatePlusAccountUi();
+    if (state?.plusActive) {
+      setPlusAccountStatus(currentLanguage === "en"
+        ? "Payment was confirmed. Plus is now active."
+        : "支払いを確認できました。Plusを利用できます。");
+    } else {
+      setPlusAccountStatus(currentLanguage === "en"
+        ? "Payment is being confirmed. Please do not pay again."
+        : "支払いを確認しています。もう一度支払わず、そのままお待ちください。");
+      const generation = ++plusCheckoutPollGeneration;
+      void pollPlusCheckoutConfirmation(generation);
+    }
+    openPlusAccountAfterCheckoutReturn();
+  } else if (checkoutReturn === "cancelled") {
+    plusCheckoutConfirmationPending = false;
+    plusCheckoutCancelledReturn = true;
+    updatePlusAccountUi();
+    setPlusAccountStatus(currentLanguage === "en"
+      ? "The purchase was not completed. No Plus pass was added."
+      : "購入は完了していません。Plusは追加されていません。");
+    openPlusAccountAfterCheckoutReturn();
+  }
+}
+
+function setupPlusAccountFoundation() {
+  const emailInput = document.getElementById("plusAccountEmail");
+  const codeInput = document.getElementById("plusAccountCode");
+  const deleteDetails = document.getElementById("plusAccountDeleteDetails");
+  emailInput?.addEventListener("input", () => emailInput.removeAttribute("aria-invalid"));
+  codeInput?.addEventListener("input", () => codeInput.removeAttribute("aria-invalid"));
+  emailInput?.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    document.getElementById("plusAccountSendCodeButton")?.click();
+  });
+  codeInput?.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    document.getElementById("plusAccountVerifyButton")?.click();
+  });
+  deleteDetails?.addEventListener("toggle", () => {
+    if (deleteDetails.open) renderPlusAccountDeleteTurnstile();
+  });
+
+  document.getElementById("plusAccountSendCodeButton")?.addEventListener("click", async () => {
+    if (plusAccountActionInFlight) return;
+    if (!emailInput?.checkValidity?.()) {
+      emailInput?.setAttribute("aria-invalid", "true");
+      emailInput?.reportValidity?.();
+      setPlusAccountStatus(currentLanguage === "en"
+        ? "Enter the email address you can check."
+        : "確認できるメールを入力してください。");
+      return;
+    }
+    const email = emailInput?.value || "";
+    const turnstileToken = readPlusAccountTurnstileToken();
+    if (!turnstileToken) {
+      setPlusAccountStatus(currentLanguage === "en"
+        ? "Complete the safety check first."
+        : "先に安全確認を完了してください。");
+      return;
+    }
+    setPlusAccountControlsDisabled(true);
+    setPlusAccountStatus(currentLanguage === "en" ? "Sending the code…" : "確認コードを送っています…");
+    const result = await plusEntitlementClient?.requestCode?.({ email, turnstileToken });
+    resetPlusAccountTurnstile();
+    setPlusAccountControlsDisabled(false);
+    if (!result?.ok) {
+      setPlusAccountStatus(getPlusAccountFriendlyError(result?.error, "code"));
+      return;
+    }
+    const codePanel = document.getElementById("plusAccountCodePanel");
+    if (codePanel) codePanel.hidden = false;
+    setPlusAccountStatus(currentLanguage === "en"
+      ? "If the email can be used, a six-digit code will arrive shortly. Keep this page open until you enter it."
+      : "入力したメールを使える場合は、まもなく6桁の確認コードが届きます。入力するまで、この画面を開いたままにしてください。");
+    document.getElementById("plusAccountCode")?.focus();
+  });
+
+  document.getElementById("plusAccountVerifyButton")?.addEventListener("click", async () => {
+    if (plusAccountActionInFlight) return;
+    if (!codeInput?.checkValidity?.()) {
+      codeInput?.setAttribute("aria-invalid", "true");
+      codeInput?.reportValidity?.();
+      setPlusAccountStatus(currentLanguage === "en"
+        ? "Enter the six-digit code from the email."
+        : "メールに届いた6桁の確認コードを入力してください。");
+      return;
+    }
+    const email = emailInput?.value || "";
+    const code = codeInput?.value || "";
+    setPlusAccountControlsDisabled(true);
+    setPlusAccountStatus(currentLanguage === "en" ? "Checking the code…" : "確認コードを確かめています…");
+    const result = await plusEntitlementClient?.verifyCode?.({ email, code });
+    setPlusAccountControlsDisabled(false);
+    if (!result?.ok) {
+      setPlusAccountStatus(getPlusAccountFriendlyError(result?.error, "verify"));
+      return;
+    }
+    if (codeInput) codeInput.value = "";
+    updatePlusAccountUi();
+    configurePlusFeatureGating();
+    setPlusAccountStatus(currentLanguage === "en"
+      ? "Email verification is complete."
+      : "メール確認ができました。"
+    );
+    const purchaseButton = document.getElementById("plusAccountPurchaseButton");
+    const nextFocus = purchaseButton && !purchaseButton.hidden
+      ? purchaseButton
+      : document.getElementById("plusAccountRefreshButton");
+    nextFocus?.focus?.();
+  });
+
+  document.getElementById("plusAccountRefreshButton")?.addEventListener("click", async () => {
+    if (plusAccountActionInFlight) return;
+    setPlusAccountControlsDisabled(true);
+    setPlusAccountStatus(currentLanguage === "en" ? "Refreshing…" : "状態を更新しています…");
+    const result = await plusEntitlementClient?.refresh?.();
+    setPlusAccountControlsDisabled(false);
+    updatePlusAccountUi();
+    configurePlusFeatureGating();
+    setPlusAccountStatus(result?.ok
+      ? (currentLanguage === "en" ? "The latest status is shown." : "最新の状態に更新しました。")
+      : (currentLanguage === "en" ? "The status could not be refreshed." : "状態を更新できませんでした。"));
+  });
+
+  document.getElementById("plusAccountLogoutButton")?.addEventListener("click", async () => {
+    if (plusAccountActionInFlight) return;
+    setPlusAccountControlsDisabled(true);
+    await plusEntitlementClient?.logout?.();
+    plusCheckoutConfirmationPending = false;
+    plusCheckoutCancelledReturn = false;
+    plusCheckoutPollGeneration += 1;
+    if (deleteDetails) deleteDetails.open = false;
+    setPlusAccountControlsDisabled(false);
+    updatePlusAccountUi();
+    configurePlusFeatureGating();
+    renderPlusAccountTurnstile();
+    setPlusAccountStatus(currentLanguage === "en"
+      ? "Signed out on this device."
+      : "この端末からログアウトしました。"
+    );
+    emailInput?.focus?.();
+  });
+
+  document.getElementById("plusAccountDeleteButton")?.addEventListener("click", async () => {
+    if (plusAccountActionInFlight) return;
+    const turnstileToken = readPlusAccountDeleteTurnstileToken();
+    if (!turnstileToken) {
+      setPlusAccountStatus(currentLanguage === "en"
+        ? "Complete the deletion safety check first."
+        : "先に削除の安全確認を完了してください。");
+      return;
+    }
+    const confirmed = window.confirm(currentLanguage === "en"
+      ? "Delete this Plus account? The glucose connection and the separate usage record will not be deleted."
+      : "Plusアカウントを削除しますか？ 血糖の接続と、別の利用記録は削除されません。");
+    if (!confirmed) return;
+    setPlusAccountControlsDisabled(true);
+    setPlusAccountStatus(currentLanguage === "en"
+      ? "Deleting the Plus account…"
+      : "Plusアカウントを削除しています…");
+    const result = await plusEntitlementClient?.deleteAccount?.({ turnstileToken });
+    resetPlusAccountDeleteTurnstile();
+    setPlusAccountControlsDisabled(false);
+    if (!result?.ok) {
+      setPlusAccountStatus(result?.error === "account_deletion_requires_support"
+        ? (currentLanguage === "en"
+          ? "This account has a purchase record and cannot be deleted here. The support contact will be shown before sales begin."
+          : "このアカウントには購入記録があるため、ここでは削除できません。販売開始前に問い合わせ先を案内します。")
+        : (currentLanguage === "en"
+          ? "The Plus account could not be deleted. Nothing else was changed."
+          : "Plusアカウントを削除できませんでした。ほかの設定は変わっていません。"));
+      return;
+    }
+    plusCheckoutConfirmationPending = false;
+    plusCheckoutCancelledReturn = false;
+    plusCheckoutPollGeneration += 1;
+    if (deleteDetails) deleteDetails.open = false;
+    updatePlusAccountUi();
+    configurePlusFeatureGating();
+    renderPlusAccountTurnstile();
+    setPlusAccountStatus(currentLanguage === "en"
+      ? "The Plus account was deleted. The glucose connection and usage record were not changed."
+      : "Plusアカウントを削除しました。血糖の接続と利用記録は変わっていません。");
+    emailInput?.focus?.();
+  });
+
+  document.getElementById("plusAccountPurchaseButton")?.addEventListener("click", async () => {
+    if (plusAccountActionInFlight || !getPlusAccountRolloutConfig().purchasesEnabled) return;
+    const confirmed = window.confirm(currentLanguage === "en"
+      ? "Plus costs JPY 300 for 30 days as a one-time payment. It will not renew automatically. Continue to Stripe?"
+      : "Plusは300円の1回払いで30日間使えます。自動更新はありません。Stripeの購入画面へ進みますか？");
+    if (!confirmed) return;
+    plusCheckoutCancelledReturn = false;
+    setPlusAccountControlsDisabled(true);
+    setPlusAccountStatus(currentLanguage === "en" ? "Opening Stripe Checkout…" : "Stripeの購入画面を準備しています…");
+    const result = await plusEntitlementClient?.createCheckout?.();
+    if (!result?.ok) {
+      setPlusAccountControlsDisabled(false);
+      setPlusAccountStatus(getPlusAccountFriendlyError(result?.error, "checkout"));
+      return;
+    }
+    window.location.assign(result.url);
+  });
+}
+
+function readPlusEntitlementStateSnapshot() {
+  const entitlementClient = window.GlucoScopePlusEntitlement;
+  if (typeof entitlementClient?.getState !== "function") return { status: "unavailable" };
+
+  try {
+    return entitlementClient.getState();
+  } catch (error) {
+    return { status: "unavailable" };
+  }
+}
+
+function configurePlusFeatureGating() {
+  plusFeatureAccessManager?.configure?.({
+    enforcementEnabled: PLUS_FEATURE_GATING_ENABLED,
+    entitlementStateProvider: readPlusEntitlementStateSnapshot
+  });
+}
+
+function getPlusFeatureAccess(feature) {
+  if (typeof plusFeatureAccessManager?.getAccess === "function") {
+    return plusFeatureAccessManager.getAccess(feature);
+  }
+
+  return PLUS_FEATURE_GATING_ENABLED
+    ? { allowed: false, reason: "entitlement_unavailable", accessMode: "none" }
+    : { allowed: true, reason: "enforcement_disabled", accessMode: "legacy" };
+}
+
+function setPlusFeatureNotice(messageKey = "") {
+  const notice = document.getElementById("plusFeatureNotice");
+  if (!notice) return;
+
+  notice.dataset.messageKey = messageKey;
+  notice.textContent = messageKey ? t(messageKey) : "";
+  notice.hidden = !messageKey;
+}
+
+function canUseCustomRange({ announce = false } = {}) {
+  const feature = plusFeatureAccessManager?.FEATURE_CUSTOM_RANGE || "custom_range";
+  const decision = getPlusFeatureAccess(feature);
+  if (decision.allowed) {
+    if (announce) setPlusFeatureNotice("");
+    return true;
+  }
+
+  if (announce) {
+    setPlusFeatureNotice(
+      decision.reason === "entitlement_unavailable"
+        ? "plusAccessUnavailable"
+        : "plusCustomRangeRequired"
+    );
+  }
+  return false;
+}
+
 function isMobileUiLayout() {
   if (document.documentElement.classList.contains("force-desktop-view")) return false;
   return Boolean(window.matchMedia?.("(max-width: 720px), (max-width: 960px) and (orientation: landscape) and (hover: none) and (pointer: coarse)").matches);
@@ -2930,7 +3660,9 @@ function getLivePeriodConfig(periodKey = currentLivePeriod) {
 }
 
 function getLivePeriodRange(periodKey = currentLivePeriod, now = Date.now()) {
-  if (periodKey === "custom") return getCustomPeriodRange(now);
+  if (periodKey === "custom") {
+    return canUseCustomRange() ? getCustomPeriodRange(now) : getLivePeriodRange("today", now);
+  }
 
   const config = getLivePeriodConfig(periodKey);
   const oneDayMs = 24 * 60 * 60 * 1000;
@@ -2987,12 +3719,19 @@ function updatePeriodButtons() {
 
 function setupPeriodSwitch() {
   if (!livePeriodOptions[currentLivePeriod]) currentLivePeriod = "today";
+  if (currentLivePeriod === "custom" && !canUseCustomRange()) {
+    currentLivePeriod = "today";
+    localStorage.setItem(LIVE_PERIOD_STORAGE_KEY, currentLivePeriod);
+  }
   syncCustomRangeInputs();
 
   document.querySelectorAll(".period-button").forEach((button) => {
     button.addEventListener("click", () => {
       const nextPeriod = button.dataset.period;
       if (!livePeriodOptions[nextPeriod]) return;
+
+      if (nextPeriod === "custom" && !canUseCustomRange({ announce: true })) return;
+      if (nextPeriod !== "custom") setPlusFeatureNotice("");
 
       if (nextPeriod === "custom" && isMobileUiLayout()) {
         setMobileCustomRangeDialog(true);
@@ -3011,6 +3750,7 @@ function setupPeriodSwitch() {
   const applyButton = document.getElementById("customRangeApply");
   if (applyButton) {
     applyButton.addEventListener("click", () => {
+      if (!canUseCustomRange({ announce: true })) return;
       saveCustomRangeFromInputs();
       currentLivePeriod = "custom";
       localStorage.setItem(LIVE_PERIOD_STORAGE_KEY, currentLivePeriod);
@@ -3824,6 +4564,11 @@ function applyLanguage() {
   if (usageProfileStatus?.dataset.messageKey) {
     usageProfileStatus.textContent = t(usageProfileStatus.dataset.messageKey);
   }
+  const plusFeatureNotice = document.getElementById("plusFeatureNotice");
+  if (plusFeatureNotice?.dataset.messageKey) {
+    plusFeatureNotice.textContent = t(plusFeatureNotice.dataset.messageKey);
+  }
+  updatePlusAccountUi();
   syncMobileApp();
 }
 
@@ -4352,17 +5097,50 @@ function getAiLetterStatusKeyFromResponse(data) {
 
 function recordUsageProfileAiGenerationIfEligible(data) {
   const cacheStatus = String(data?.cache?.status || "");
+  const authoritativeQuotaAccepted = !AI_PER_USER_QUOTA_ENABLED
+    || (
+      data?.quota?.authoritative === true
+      && data?.quota?.consumed === true
+    );
   const isNewOpenAiGeneration = data?.status === "success"
     && data?.generation?.complete === true
     && data?.source === "openai"
     && data?.letter?.cached !== true
     && cacheStatus !== "fresh"
-    && cacheStatus !== "stale-fallback";
+    && cacheStatus !== "stale-fallback"
+    && authoritativeQuotaAccepted;
 
   if (!isNewOpenAiGeneration) return;
   const state = getUsageProfileState();
   if (!state.enabled || !state.registered || !state.collectionEnabled) return;
   void Promise.resolve(usageProfileManager?.recordAiGeneration?.({})).catch(() => {});
+}
+
+function createAiLetterQuotaRequestContext() {
+  if (!AI_PER_USER_QUOTA_ENABLED) {
+    return Object.freeze({ ok: true, enabled: false });
+  }
+  if (!isUserDataSourceMode()) {
+    return Object.freeze({ ok: false, error: "quota_identity_required" });
+  }
+
+  const context = usageProfileManager?.createAiQuotaRequestContext?.();
+  if (
+    context?.ok !== true
+    || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(String(context.requestId || ""))
+    || !/^Bearer [A-Za-z0-9_-]{43}$/u.test(String(context.authorization || ""))
+    || !["device_profile", "account"].includes(context.quotaCredentialKind)
+  ) {
+    return Object.freeze({ ok: false, error: String(context?.error || "quota_identity_required") });
+  }
+
+  return Object.freeze({
+    ok: true,
+    enabled: true,
+    requestId: context.requestId,
+    quotaCredentialKind: context.quotaCredentialKind,
+    authorization: context.authorization
+  });
 }
 
 function getAiLetterUsageDetailFromResponse(data) {
@@ -4387,7 +5165,7 @@ function getAiLetterUsageDetailFromResponse(data) {
 function getAiLetterErrorStatusKey(data) {
   const code = data?.code || data?.errorCode || data?.error;
 
-  if (code === "rate_limited") return "aiLetterStatusRateLimited";
+  if (code === "rate_limited" || code === "daily_limit_reached") return "aiLetterStatusRateLimited";
   if (code === "budget_stopped") return "aiLetterStatusBudgetStopped";
   if (code === "ai_disabled") return "aiLetterStatusDisabled";
   if (code === "turnstile_failed") return "aiLetterStatusTurnstileFailed";
@@ -5431,6 +6209,14 @@ async function handleAiLetterRequest(mode = currentAiLetterMode, options = {}) {
     return;
   }
 
+  const quotaRequestContext = createAiLetterQuotaRequestContext();
+  if (!quotaRequestContext.ok) {
+    resetAiLetterTurnstile();
+    setAiLetterPanelStatus("aiLetterStatusError", "error");
+    forceEnableAiLetterButtonSoon();
+    return;
+  }
+
   const requestState = beginAiLetterRequest(latestAiLetterSummary, analysisMode);
   aiLetterRequestInFlight = true;
   updateAiLetterControls();
@@ -5443,7 +6229,10 @@ async function handleAiLetterRequest(mode = currentAiLetterMode, options = {}) {
       method: "POST",
       signal: requestState.abortController.signal,
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        ...(quotaRequestContext.enabled
+          ? { "Authorization": quotaRequestContext.authorization }
+          : {})
       },
       body: JSON.stringify({
         summary: requestState.summary,
@@ -5452,7 +6241,13 @@ async function handleAiLetterRequest(mode = currentAiLetterMode, options = {}) {
         client: {
           app: "GlucoScope",
           mode: isUserDataSourceMode() ? "user-early-access" : "public-demo"
-        }
+        },
+        ...(quotaRequestContext.enabled
+          ? {
+              requestId: quotaRequestContext.requestId,
+              quotaCredentialKind: quotaRequestContext.quotaCredentialKind
+            }
+          : {})
       })
     });
 
@@ -7202,9 +7997,12 @@ function setupViewTabs() {
 
 // Set up top-level navigation first so tabs keep working even if a later
 // data/AI initialization step has a temporary error.
+configurePlusFeatureGating();
 setupViewTabs();
 setupLanguageSwitch();
 setupLocalProfileFoundation();
+setupPlusAccountFoundation();
+void initializePlusEntitlementFoundation();
 void initializeUsageProfileFoundation();
 setupMobileDisplayMode();
 setupUnicornVisualDebugPreview();

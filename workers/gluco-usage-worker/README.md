@@ -180,6 +180,90 @@ Possible result statuses are `accepted`, `duplicate`, and `daily_limit`. A `visi
 
 D1 Time Travel is always on and may retain recoverable pre-deletion history for up to 7 days on the Workers Free plan or up to 30 days on a Workers Paid plan. The public privacy wording states both plan-dependent periods. A Time Travel restore is never a routine user-data recovery path: pause collection first, then ensure previously deleted records stay out of normal operation before resuming.
 
+## Staged per-user AI quota RPC (checked in disabled)
+
+Migration `0002_ai_quota.sql` and the named `AiQuotaService` entrypoint prepare the
+server-authoritative AI limit. They do not add a public HTTP route and do not change any
+existing profile or event response. The checked-in switch is deliberately
+`AI_PER_USER_QUOTA_ENABLED=false`; applying the migration or deploying this code alone
+must not turn enforcement on.
+
+The fixed policy is:
+
+- a free subject may complete 1 newly generated AI analysis per JST day;
+- an account with an active Plus entitlement may complete 5 per JST day;
+- cached results do not reserve or consume quota;
+- provider errors, document/quality-check failures, incomplete output, aborted requests,
+  and internal failures release the reservation and do not consume quota;
+- a successful completion consumes quota exactly once, including when completion is
+  retried;
+- active, unexpired reservations count against capacity, so concurrent requests cannot
+  exceed the limit;
+- an abandoned reservation expires after 600 seconds and stops blocking capacity.
+
+The internal RPC contract is:
+
+- `reserveAiGeneration({ credential, requestId, analysisMode })` runs immediately before
+  contacting the AI provider;
+- `completeAiGeneration({ reservationId })` runs only after the final response has passed
+  all required checks and is safe to show;
+- `releaseAiGeneration({ reservationId, reasonCode })` runs for every non-success exit;
+- `getAggregateAiUsage()` returns only aggregate successful-use counts for the
+  administrator dashboard.
+
+`requestId` and `reservationId` are UUIDs. `analysisMode` is `letter` or `deep`.
+`credential` contains only `{ kind, token }`; extra fields are rejected. In particular,
+the caller cannot submit `tier`, a daily limit, an entitlement date, or a success count.
+
+The existing device-profile bearer token is accepted only as a temporary free subject.
+A device profile is not a verified person account and can never grant Plus. Its quota
+rows keep a foreign-key link to the existing profile solely so `DELETE /v1/me` also
+deletes those rows. The raw profile token is not stored in the quota tables.
+
+Account credentials require a separate trusted `PLUS_ENTITLEMENT` service binding. The
+stub calls `resolveAiSubject(sessionToken)` and accepts only `status`, an opaque
+`subjectId`, and `plusActive === true`; it ignores any client claim and any returned
+daily-limit value. Until that binding is configured and enabled, account resolution
+fails closed as temporarily unavailable. Session tokens and raw account identifiers are
+not stored in quota tables; the subject key is a domain-separated SHA-256 digest.
+The checked-in binding targets `glucoscope-plus-entitlement#PlusEntitlementRpc`; deploy
+and validate that disabled target before deploying this configuration. A configured
+binding is not permission to enable either quota switch.
+
+The two D1 tables retain only the derived subject key, subject kind, JST day, mode,
+free/Plus status at reservation time, bounded counters, UUID idempotency keys, state,
+and lifecycle timestamps. They do not contain glucose data, AI text, email, payment
+identifiers, connection details, or session tokens. The scheduled cleanup keeps quota
+days and attempts for at most 90 days.
+
+`PublicUsageAggregateEntrypoint.getPublicUsageAggregate()` is also service-binding only.
+It preserves the public aggregate's minimum-contributor suppression and does not accept
+an option that can lower that privacy threshold.
+Its AI total deliberately remains consented device-profile telemetry from
+`usage_daily.ai_generation_success_count`. It never reads `ai_quota_days`, whose account
+subjects can have a different consent and contributor cohort. Authoritative quota totals
+remain protected behind `AiQuotaService.getAggregateAiUsage()` for operational/admin use.
+
+Before enforcement can be enabled, release in this order:
+
+1. Apply `0002_ai_quota.sql` without changing either quota switch.
+2. Deploy and validate the Plus entitlement named entrypoint, initially disabled.
+3. Deploy this Usage Worker with `PLUS_ENTITLEMENT` bound and quota still off.
+4. Deploy the AI-generation Worker with `AiQuotaService` bound and its quota flag off.
+5. Publish Pages with its quota flag off; it must send no `Authorization` header.
+6. Test Free, Plus, stopped optional analytics, deleted profile, duplicate, concurrent,
+   expired, provider-error, quality-failure, abort, completion-failure, and cached cases.
+7. Only after the dedicated quota notice/Privacy update and server-verified public-demo
+   identity are accepted, enable Usage first, the AI Worker second, and Pages last.
+
+The legacy `POST /v1/events` `ai_generation_success` counter remains unchanged for
+backward-compatible telemetry. It is not an authorization source and must not be used to
+decide whether an AI request is allowed.
+A successful authoritative completion may still send that event once as best-effort
+analytics when optional collection is on; it changes only `usage_daily`, never quota.
+Stopping collection sends no analytics event but does not revoke the Free quota
+credential. Deleting the profile invalidates the credential and cascades its quota rows.
+
 ## Retention and cleanup
 
 The scheduled handler runs daily and applies these maximum application-level periods:
@@ -187,6 +271,8 @@ The scheduled handler runs daily and applies these maximum application-level per
 - daily counts: 90 days;
 - event receipts: 7 days;
 - inactive device profiles: 90 days.
+- AI quota attempts and daily counters: 90 days; deleting a device profile cascades its
+  quota rows immediately.
 
 Migration `0001_initial_usage_schema.sql` also creates the D1-only `admin_device_usage` view. It provides profile ID, display name, collection state, created/last-seen timestamps, active days, total successful AI generations, and current ordinary memory count. There is no HTTP admin API in this phase. The view is for the authenticated Cloudflare D1 console only; an authenticated administrator dashboard remains a separate phase.
 

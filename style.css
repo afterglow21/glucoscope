@@ -572,6 +572,19 @@ body{
   cursor:pointer;
 }
 
+.plus-feature-notice{
+  max-width:520px;
+  margin:0;
+  color:#dbeafe;
+  font-size:12px;
+  line-height:1.6;
+  text-align:right;
+}
+
+.plus-feature-notice[hidden]{
+  display:none;
+}
+
 .chart-range{
   color:#c3d0e4;
   font-size:14px;
@@ -7278,6 +7291,100 @@ body.local-profile-dialog-open {
 
 .usage-profile-card[hidden] {
   display:none !important;
+}
+
+.plus-account-card {
+  display:grid;
+  gap:13px;
+  padding:16px;
+  border:1px solid rgba(147,197,253,.24);
+  border-radius:16px;
+  background:linear-gradient(180deg,rgba(37,99,235,.11),rgba(15,23,42,.24));
+}
+
+.plus-account-card[hidden],
+.plus-account-panel[hidden],
+.plus-account-code-panel[hidden] {
+  display:none !important;
+}
+
+.plus-account-card-head {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.plus-account-card-head > div {
+  display:grid;
+  gap:7px;
+}
+
+.plus-account-card-head strong {
+  color:#eff6ff;
+  font-size:17px;
+}
+
+.plus-account-badge,
+.plus-account-state-badge {
+  width:max-content;
+  border:1px solid rgba(147,197,253,.34);
+  border-radius:999px;
+  padding:4px 9px;
+  background:rgba(30,64,175,.22);
+  color:#dbeafe;
+  font-size:11px;
+  font-weight:900;
+}
+
+.plus-account-state-badge.is-active {
+  border-color:rgba(74,222,128,.34);
+  background:rgba(22,101,52,.25);
+  color:#bbf7d0;
+}
+
+.plus-account-price {
+  margin:0;
+  color:#fff;
+  font-size:15px;
+  font-weight:900;
+  line-height:1.6;
+}
+
+.plus-account-lead,
+.plus-account-safety,
+#plusAccountSummary {
+  margin:0;
+  color:#c7d7ea;
+  font-size:13px;
+  line-height:1.75;
+}
+
+.plus-account-benefits {
+  display:grid;
+  gap:7px;
+  margin:0;
+  padding-left:1.25em;
+  color:#dbeafe;
+  font-size:13px;
+  line-height:1.65;
+}
+
+.plus-account-panel,
+.plus-account-code-panel {
+  display:grid;
+  gap:12px;
+}
+
+.plus-account-turnstile {
+  min-height:65px;
+}
+
+.plus-account-safety {
+  padding:10px 11px;
+  border-radius:12px;
+  background:rgba(15,23,42,.42);
+  color:#dbeafe;
 }
 
 .usage-profile-card-head {

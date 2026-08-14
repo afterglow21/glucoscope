@@ -76,6 +76,40 @@
       <p id="usageBudgetHelp">AIお手紙を無理なく続けるため、警告・停止しきい値を設定しています。</p>
     </section>
 
+    <section class="card usage-budget-card" aria-labelledby="personalUsageTitle">
+      <div class="usage-section-heading">
+        <div>
+          <span class="usage-section-kicker">Personal-user aggregate</span>
+          <h2 id="personalUsageTitle">ユーザー版の合計</h2>
+        </div>
+        <strong id="personalUsagePeriod">前日まで30日</strong>
+      </div>
+      <p id="personalUsageStatus">利用記録に同意した端末プロフィールの合計を確認しています。</p>
+      <div class="usage-dashboard-grid" aria-label="ユーザー版の合計利用状況">
+        <article class="usage-metric-card">
+          <span class="usage-metric-kicker">DEVICES</span>
+          <span id="personalUsageProfiles" class="usage-metric-value">--</span>
+          <span class="usage-metric-label">活動した端末プロフィール</span>
+        </article>
+        <article class="usage-metric-card">
+          <span class="usage-metric-kicker">ACTIVE DAYS</span>
+          <span id="personalUsageDays" class="usage-metric-value">--</span>
+          <span class="usage-metric-label">利用日数の合計</span>
+        </article>
+        <article class="usage-metric-card">
+          <span class="usage-metric-kicker">AI</span>
+          <span id="personalUsageAi" class="usage-metric-value">--</span>
+          <span class="usage-metric-label">成功した新規AI分析</span>
+        </article>
+        <article class="usage-metric-card">
+          <span class="usage-metric-kicker">MEMORIES</span>
+          <span id="personalUsageMemories" class="usage-metric-value">--</span>
+          <span class="usage-metric-label">通常のグルコの想い出合計</span>
+        </article>
+      </div>
+      <p class="usage-detail-note">これは人数ではなく端末プロフィールの集計です。少人数の行動を推測できないよう、前日までの30日間に活動した端末プロフィールが10件以上になった時だけ実数を表示します。</p>
+    </section>
+
     <section class="usage-detail-grid">
       <article class="card usage-detail-card">
         <div class="usage-detail-head"><span>🍀</span><h2>分析モード</h2></div>
@@ -127,8 +161,8 @@
     <section class="about-detail-grid about-detail-language-stack usage-explainer">
       <div class="card about-detail-card about-copy-jp" lang="ja">
         <h2>この数字が表すもの</h2>
-        <p>この画面は、AIお手紙全体の利用状況です。公開デモと、少人数で試しているユーザー版から新しく作ったAI分析を分けずに数えます。利用者の人数や、だれが使ったかは分かりません。</p>
-        <p>ユーザー版を開いた日数、血糖データの取得回数、利用記録に保存された日数やグルコの想い出数は含みません。</p>
+        <p>上のAI運用カウンターは、公開デモとユーザー版から新しく作ったAI分析を分けずに数えます。だれが使ったかは分かりません。</p>
+        <p>「ユーザー版の合計」は別の利用記録から、前日まで30日間の端末プロフィール、利用日、新しく成功したAI分析、通常のグルコの想い出だけをまとめます。血糖値、接続情報、表示名、AIお手紙本文は含みません。10件未満では実数を表示しません。</p>
         <p>利用カウンターに保存するのは、生成回数、トークン数、推定利用額、Turnstile確認、上限到達などの運用情報です。血糖値やAIお手紙本文を、利用カウンターとして保存するものではありません。</p>
         <p>少人数の先行体験中は、AIお手紙をほかの人と共有する一時保存を使いません。公開デモもユーザー版も、この端末に保存したお手紙だけを再表示します。以前の一時保存は読み取らず、最大24時間で自動的に消えます。</p>
         <p>推定利用額はOpenAIの利用状況から計算する開発者向けの目安です。閲覧者への請求ではありません。</p>
@@ -136,8 +170,8 @@
       </div>
       <div class="card about-detail-card about-copy-en" lang="en">
         <h2>What these numbers mean</h2>
-        <p>This page shows overall use of AI letters. New AI analyses from the public demo and the small personal-user early access are counted together. It does not identify how many people used them or who used them.</p>
-        <p>It does not include days spent in the personal user experience, glucose-data requests, or days and Gluco memories stored in basic usage records.</p>
+        <p>The AI operations counter combines new analyses from the public demo and personal-user experience. It does not identify who used them.</p>
+        <p>The separate personal-user aggregate covers the 30 completed days through yesterday and includes only consenting device profiles, active days, successful new AI analyses, and ordinary Gluco memories. It never includes glucose values, connection details, display names, or AI-letter text. Exact totals are suppressed until at least 10 device profiles contributed.</p>
         <p>The counter stores operational totals such as generations, tokens, estimated developer cost, Turnstile results, and limit events. It does not store glucose values or AI letter text.</p>
         <p>During the small early-access period, AI letters are not placed in a temporary cache shared between people. Both the public demo and personal-user experience only redisplay letters saved on that device. Earlier temporary entries are not read and disappear automatically within 24 hours.</p>
         <p>Estimated cost is an operational estimate paid by the developer, not a charge to visitors.</p>
@@ -197,6 +231,7 @@
           const guard = report.guard || {};
           const storage = report.storage || {};
           const sharedCache = report.cache || {};
+          const personalUserUsage = report.personalUserUsage || { status: "unavailable" };
           const dailyLimit = Number(guard.dailyGenerationLimit || 0);
           const todayCount = Number(today.aiGenerationCount || 0);
           const remaining = Number(guard.dailyGenerationRemaining ?? Math.max(0, dailyLimit - todayCount));
@@ -232,6 +267,20 @@
           setText("usageDayKey", today.dayKey || "--");
           setText("usageMonthKey", month.monthKey || "--");
           setText("usageUpdatedAt", formatDateTime(storage.updatedAt));
+          if (personalUserUsage.period?.fromDay && personalUserUsage.period?.throughDay) {
+            setText("personalUsagePeriod", `${personalUserUsage.period.fromDay}〜${personalUserUsage.period.throughDay}`);
+          }
+          if (personalUserUsage.status === "available") {
+            setText("personalUsageStatus", "利用記録に同意した端末プロフィールの合計です。");
+            setText("personalUsageProfiles", `${Number(personalUserUsage.totals?.contributingDeviceProfiles || 0)}`);
+            setText("personalUsageDays", `${Number(personalUserUsage.totals?.activeDays || 0)}`);
+            setText("personalUsageAi", `${Number(personalUserUsage.totals?.successfulAiAnalyses || 0)}`);
+            setText("personalUsageMemories", `${Number(personalUserUsage.totals?.ordinaryGlucoMemories || 0)}`);
+          } else if (personalUserUsage.status === "suppressed") {
+            setText("personalUsageStatus", `プライバシーを守るため、活動した端末プロフィールが${Number(personalUserUsage.minimumContributors || 10)}件集まるまで実数を表示しません。`);
+          } else {
+            setText("personalUsageStatus", "ユーザー版の合計は現在確認できません。AIお手紙や血糖表示には影響しません。");
+          }
           document.getElementById("usageBudgetBar").style.width = `${budgetRate}%`;
           document.getElementById("usageRawJson").textContent = JSON.stringify(data, null, 2);
 

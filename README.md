@@ -39,6 +39,16 @@ The current AI Worker production checkpoint is Version 29 (`235cdf03-31d7-40fd-a
 - It does not select, return, or render profile IDs, tokens or hashes, profile dates or timestamps, daily rows, receipts, glucose values or graphs, AI inputs or letter contents, CGM type, connection details, IP addresses, or raw User-Agent values.
 - Preview URLs, application logging, and invocation logging remain disabled. Email one-time PIN is not MFA; keep MFA enabled on the administrator's email account and prefer an MFA-capable identity provider before adding administrators or broadening operational use.
 
+## Plus 30-day pass — local foundation only
+
+- The approved initial product is JPY 300 as a one-time payment for 30 consecutive days, with no subscription or automatic renewal. It is not available for purchase yet.
+- Free keeps the core glucose experience and one successful new personal-user AI analysis per JST day. Active Plus is designed for up to five successful new analyses per day, custom graph dates, and Share Studio. One successful Share Studio trial is reserved for each verified account.
+- Quality/document-check failures, provider or network failures, Turnstile failures, aborts, global-limit failures, and browser-local cache hits do not consume an AI use. A short server-side reservation is completed only after a safe final result and is otherwise released.
+- `workers/gluco-plus-entitlement/` is a non-public, disabled local foundation. It now includes short-code email-account and recovery routes, account deletion for accounts without purchase records, a test-mode Stripe Checkout/Webhook adapter, and a server-side guard that reuses or blocks an unfinished Checkout instead of creating a second payable session. The matching settings UI is also checked in but hidden.
+- No Plus D1 binding, email adapter, Stripe key, Webhook Secret, Price/Product identifier, or live purchase path is configured. Every account, purchase, quota, and feature switch remains `false`, so the public routes fail closed and no email or payment request can start.
+- AI quota and Plus feature-gating code are also checked in disabled. Existing AI and custom-range behavior therefore remain unchanged until identity, recovery, refunds, tax, support, public-demo anti-bypass handling, migrations, and production acceptance are complete.
+- The public Usage Dashboard may show only privacy-protected totals for the 30 completed days through yesterday. Exact totals are omitted until at least 10 consenting device profiles contributed. The Access-protected administrator dashboard may request only the aggregate number of currently active Plus accounts; it never links Plus to a display name or device profile.
+
 ## User Foundation 0.4 / 1–3 person early access
 
 The root page remains Kazuma's public demo. The user-data route is:
