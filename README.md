@@ -13,30 +13,30 @@ Cloudflare Pages may be considered later, but the current priority is to publish
 The AI letter API continues to run through Cloudflare Worker.
 Provider API keys must stay server-side in the Worker environment and must never be committed to GitHub or placed in frontend JavaScript.
 
-The current AI Worker production checkpoint is cache schema v14 on Version 28 (`f2565bc3-1f49-4f3f-b119-6ec2683f0607`). The personal-user AI changes described below are implemented and locally verified candidates only; they have not yet been published to GitHub Pages or deployed to the Worker.
+The current AI Worker production checkpoint is Version 29 (`235cdf03-31d7-40fd-ab58-5c1c6aa2d923`), routed at 100% through deployment `a5b57a76-954b-4bb9-bbba-c23bfd0fa516`. The matching frontend was published through Pages merge `a4497ab1a5d303c8a16b7d0aad999bf0dc1bde5d`. Personal-user AI is enabled for the small early-access group under the boundary below.
 
-## Personal-user AI candidate — local and unpublished
+## Personal-user AI — production early access
 
 - In `mode=user`, the first AI request for the current notice version requires a short, explicit confirmation before Turnstile and before any AI request. Cancelling sends nothing; the browser-only Gluco message, ChatGPT-copy path, and ordinary CGM display remain available.
 - The selected-period summary is sent to the GlucoScope Worker and OpenAI. It may include the range, latest reading/time/direction/delta, aggregate TIR/TAR/TBR/average/CV, eligible longer-range metrics, and derived reflection hints. It does not include the display name, connection URL, connection passphrase, relay ticket, raw glucose-entry list, treatment list, insulin, food, medication, or device settings.
 - The confirmation is versioned in browser storage as `glucoscope.aiLetterUserConsent.v1`. User-mode letters use only `glucoscope.aiLetterLocalCache.v14`, capped at 30 browser entries.
-- During personal-user early access, the candidate disables shared Workers KV read, write, and stale fallback for every page mode, including the public demo. `SHARED_AI_CACHE_ENABLED=false` is the code-level fail-closed rule and `AI_CACHE_ENABLED=false` is the Worker configuration. Browser-supplied `pageMode` is routing metadata, not trusted authentication or proof that data belongs to the public demo.
-- The existing KV binding is retained for the staged recovery rules below, not as permission to restore Version 28 while user AI is enabled. The candidate does not read existing entries or write new ones. Retained entries expire naturally within their existing maximum 24-hour lifetime. Every mode uses only the browser-local v14 cache, capped at 30 entries.
+- During personal-user early access, production disables shared Workers KV read, write, and stale fallback for every page mode, including the public demo. `SHARED_AI_CACHE_ENABLED=false` is the code-level fail-closed rule and `AI_CACHE_ENABLED=false` is the Worker configuration. Browser-supplied `pageMode` is routing metadata, not trusted authentication or proof that data belongs to the public demo.
+- The existing KV binding is retained for staged recovery, not as permission to restore Version 28 while user AI is enabled. Version 29 does not read existing entries or write new ones. Retained entries expire naturally within their existing maximum 24-hour lifetime. Every mode uses only the browser-local v14 cache, capped at 30 entries.
 - Deleting the saved data connection clears the current and retired browser AI caches and the saved AI confirmation. Deleting only a Usage profile does not. Browser deletion does not claim to delete OpenAI abuse-monitoring logs.
 - The Worker sends `store: false` to the OpenAI Responses API. OpenAI states that API data is not used for model training by default unless the customer opts in. Default abuse-monitoring logs may contain prompts and responses and are normally retained for up to 30 days, with possible longer legal or service-protection exceptions. See [OpenAI API data controls](https://developers.openai.com/api/docs/guides/your-data).
 - The morning, afternoon, and night limits of 10 each and the daily maximum of 30 are one infrastructure-wide counter shared by the public demo and all users. They are not individual allowances.
 - AI, Turnstile, provider, quality, budget, limit, cache, or AI-usage-recording failures affect only the AI panel. They do not stop or delete a verified CGM connection, block ordinary glucose display, or substitute public-demo data.
-- AI-generation `POST /api/gluco-letter` requires an approved, present `Origin` in the candidate. Originless `GET /api/gluco-letter/usage` remains available for existing operational checks.
-- AI Turnstile uses `action=glucoscope-ai-letter`; the Worker verifies that action and `hostname=afterglow21.github.io`. Release order is the committed Worker first and Pages second, accepting a brief AI-only unavailable window while the older page still produces tokens without the new action. Version 28 may be restored only during that Worker-first window, before the new Pages is live, or when the Pages release fails. Once Pages with user AI enabled is live, do not restore Version 28 while user AI remains enabled because its spoofable `pageMode` boundary would reopen shared-KV writes. Keep AI fail-closed on the new Worker line, or first publish and verify Pages with user AI disabled before Worker recovery. CGM display remains independent throughout.
+- AI-generation `POST /api/gluco-letter` requires an approved, present `Origin`. Originless `GET /api/gluco-letter/usage` remains available for existing operational checks.
+- AI Turnstile uses `action=glucoscope-ai-letter`; the Worker verifies that action and `hostname=afterglow21.github.io`. The Worker-first, Pages-second release is complete. Version 28 is now historical and must not be restored while user AI remains enabled because its spoofable `pageMode` boundary would reopen shared-KV writes. Keep AI fail-closed on Version 29 or later, or first publish and verify Pages with user AI disabled before Worker recovery. CGM display remains independent throughout.
 
-## Administrator dashboard candidate — local and unpublished
+## Administrator dashboard — fail-closed shell only
 
-- `workers/gluco-admin-dashboard/` is a dedicated Cloudflare Worker candidate, separate from the public GitHub Pages site and the existing public AI Usage Dashboard. It has no public-site link and has not been deployed.
+- `workers/gluco-admin-dashboard/` is a dedicated Cloudflare Worker, separate from the public GitHub Pages site and the existing public AI Usage Dashboard. Its fail-closed shell is deployed as Version `ecdf08e7-84d6-439a-83bd-96f03986f87b`, but it has no public-site link and is not yet usable.
 - The whole dedicated hostname must be protected by Cloudflare Access for one exact administrator email. After Access admits the request, the Worker independently verifies the signed Access JWT, issuer, audience, time validity, and exact email match against a Worker Secret.
 - The server renders read-only HTML from one fixed `SELECT` against `admin_device_usage`. There is no write route, arbitrary query, public JSON endpoint, search, export, or browser-side script.
 - The page may show only five per-device-profile fields: display name, usage-recording state, active-day count, newly completed AI-analysis count, and ordinary Gluco-memory count No. 1–50.
 - It does not select, return, or render profile IDs, tokens or hashes, profile dates or timestamps, daily rows, receipts, glucose values or graphs, AI inputs or letter contents, CGM type, connection details, IP addresses, or raw User-Agent values.
-- Production remains unavailable until the Cloudflare Access application and exact-email policy, team domain, audience, administrator-email Secret, deployment, and post-deploy boundary checks are completed.
+- Cloudflare Access, the real exact-email policy, team domain, audience, and administrator-email Secret are not configured yet. Placeholder settings and a disabled dummy email make every request fail with the same `403`, before D1 is read; the verification left D1 counts unchanged at `0 / 0 / 0`.
 
 ## User Foundation 0.4 / 1–3 person early access
 
@@ -193,15 +193,14 @@ https://gluco-letter-worker.afterglow21.workers.dev/api/gluco-letter
 ```
 
 The currently published public demo enables AI letters by default. It does not require
-`debugAiWorker`, `aiWorkerEndpoint`, or browser-local configuration. The worktree also
-enables the personal-user candidate after its first-use confirmation, but that candidate
-must not be described as live until the coordinated frontend and Worker release completes.
+`debugAiWorker`, `aiWorkerEndpoint`, or browser-local configuration. The published
+personal-user route also enables AI after its first-use confirmation.
 
 The following protections remain active:
 
 - Cloudflare Turnstile
 - Worker-side time-slot and daily generation limits
-- browser-local cache behavior, plus the public-demo-only shared one-hour cache
+- browser-local cache behavior only; shared KV is disabled for every mode during early access
 - Usage Dashboard and estimated-cost recording
 - budget stops and safe error fallbacks
 - medical and AI safety wording
@@ -231,11 +230,11 @@ localStorage.setItem("glucoscope.aiLetterWorkerEnabled.v1", "true");
 On a local host only, `aiWorkerEndpoint` or
 `glucoscope.aiLetterWorkerEndpoint.v1` may override the local endpoint.
 
-## Shared AI letter cache: deployed Version 28 history and unpublished candidate
+## Shared AI letter cache: Version 28 history and current Version 29
 
-The currently deployed Version 28 still lets the public demo use a browser-local cache first and a shared Cloudflare Workers KV cache. This is a production-history description only; it is not the behavior of the unpublished candidate. The candidate temporarily disables shared-KV read, write, and stale fallback for every mode, including the public demo. It keeps the KV binding only for the staged recovery rules above, not for a direct Version 28 restore while user AI is enabled. It does not read retained entries and lets them expire naturally within their existing maximum 24-hour lifetime. After the candidate is deployed, all modes use only the browser-local v14 cache, capped at 30 entries. A browser-provided `pageMode` is not an authentication boundary.
+Historical Version 28 let the public demo use a browser-local cache first and a shared Cloudflare Workers KV cache. Current Version 29 disables shared-KV read, write, and stale fallback for every mode, including the public demo. It keeps the KV binding only for staged recovery, not for a direct Version 28 restore while user AI is enabled. It does not read retained entries and lets them expire naturally within their existing maximum 24-hour lifetime. All modes use only the browser-local v14 cache, capped at 30 entries. A browser-provided `pageMode` is not an authentication boundary.
 
-Only while Version 28 remains deployed, its public-demo shared cache uses the same page mode, language, period, morning/afternoon/night slot, analysis mode, and displayed range for the behavior below:
+The historical Version 28 public-demo shared cache used the same page mode, language, period, morning/afternoon/night slot, analysis mode, and displayed range for the behavior below:
 
 - a letter younger than one hour is reused without a new OpenAI request,
 - cache displays do not consume a new-generation count,
@@ -250,7 +249,7 @@ Production KV setup is documented in:
 workers/gluco-letter-worker/README.md
 ```
 
-The local candidate instead fixes both `SHARED_AI_CACHE_ENABLED=false` and `AI_CACHE_ENABLED=false`. None of the Version 28 shared-cache bullets above apply after the candidate is deployed. Do not interpret the retained binding or old KV entries as an active cache.
+Current Version 29 fixes both `SHARED_AI_CACHE_ENABLED=false` and `AI_CACHE_ENABLED=false`. None of the Version 28 shared-cache bullets above describe current production. Do not interpret the retained binding or old KV entries as an active cache.
 
 ## Worker CORS policy
 
@@ -261,7 +260,7 @@ The current public origin is:
 https://afterglow21.github.io
 ```
 
-A browser `Origin` contains only the scheme, host, and optional port, so the repository path is not included. Allowed browser responses echo the exact approved origin and include `Vary: Origin`. Disallowed browser origins receive `403`. In currently deployed Version 28, command-line and operational requests without an `Origin` header remain available for verification. The unpublished candidate requires a present, approved Origin only for AI-generation `POST`; originless Usage `GET` remains available.
+A browser `Origin` contains only the scheme, host, and optional port, so the repository path is not included. Allowed browser responses echo the exact approved origin and include `Vary: Origin`. Disallowed browser origins receive `403`. Current production requires a present, approved Origin for AI-generation `POST`; originless Usage `GET` remains available for operational checks.
 
 For local frontend development, add a non-committed Worker variable such as the following to `workers/gluco-letter-worker/.dev.vars`:
 
@@ -318,5 +317,5 @@ The user-mode onboarding is designed for people with little technical knowledge,
 - Separate preparation pages explain Dexcom Share, LibreLinkUp, and Guardian Monitor.
 - The beginner guides now incorporate all 27 supplied LibreLink / LibreLinkUp captures and all 10 supplied Dexcom Share captures as one-screen-per-step walkthroughs. Personal fields in the supplied captures are masked, each guide warns that app updates may change screens, and both the return and completion actions resume the common Gluroo guide at STEP 22 (`#screen-22`).
 - The screenshots and instructions are connection guidance only. Example glucose values or graph settings are not targets or medical advice; treatment decisions, alerts, and current sensor state remain with the original CGM app and the person's medical guidance.
-- General-user Gluroo connection details may stay in the selected browser and pass transiently through the limited relay. The URL, connection passphrase, relay ticket, and raw relay glucose response are not stored in Azure, KV, Durable Objects, relay logs, shared AI cache, or sent to AI. In the unpublished user-AI candidate, only after separate first-use confirmation, the frontend may send the derived selected-period summary described above; this does not send the connection details or raw entry list. The separate public demo feed now continuously publishes only Kazuma's explicitly consented Libre and G7 demo values and never receives a general user's connection details or glucose data. The frontend keeps `dexcomRouteVerified=true` as a record of the verified G7 display path, while the deployed demo-Worker Version independently controls publication. The general-user relay is currently enabled only for the approved 1–3 person early-access group.
+- General-user Gluroo connection details may stay in the selected browser and pass transiently through the limited relay. The URL, connection passphrase, relay ticket, and raw relay glucose response are not stored in Azure, KV, Durable Objects, relay logs, shared AI cache, or sent to AI. Only after separate first-use confirmation, the published user-AI route may send the derived selected-period summary described above; this does not send the connection details or raw entry list. The separate public demo feed now continuously publishes only Kazuma's explicitly consented Libre and G7 demo values and never receives a general user's connection details or glucose data. The frontend keeps `dexcomRouteVerified=true` as a record of the verified G7 display path, while the deployed demo-Worker Version independently controls publication. The general-user relay is currently enabled only for the approved 1–3 person early-access group.
 - Existing Nightscout remains a direct browser route and does not use the limited relay.

@@ -1,6 +1,6 @@
 # GlucoScope 利用者設定・利用分析基盤
 
-Status: Phase 1A implemented / core CGM handoff accepted / Phase 1B usage lifecycle device-accepted and enabled for 1–3 person early access / personal-user AI candidate implemented locally but not published / administrator dashboard candidate implemented locally but not deployed
+Status: Phase 1A implemented / core CGM handoff accepted / Phase 1B usage lifecycle device-accepted and enabled for 1–3 person early access / personal-user AI published for early access / administrator dashboard fail-closed shell deployed with Access acceptance pending
 
 Last reviewed: 2026-08-14
 
@@ -19,7 +19,7 @@ GlucoScopeを何人が、どの機能をどのくらい使っているかを、�
 3. Plus 30日パスと任意の開発支援への導線
 4. ユーザー展開開始後の、横向きグラフ限定の常時表示モード
 
-この文書は1番の設計から始まった。2番の管理者ダッシュボードは、その境界を変えない専用Worker候補としてローカル実装済みであり、本番未公開の状態を21節へ記録する。決済と常時表示は引き続き別工程とする。
+この文書は1番の設計から始まった。2番の管理者ダッシュボードは、その境界を変えない専用Workerとして実装し、fail-closedの停止用入口だけを配置した。Cloudflare Accessと実際の管理者identityを使う受け入れが未完了の状態を21節へ記録する。決済と常時表示は引き続き別工程とする。
 
 ## 3. Phase 1A: 完了済みの端末内プレビュー（履歴）
 
@@ -51,7 +51,7 @@ Phase 1Aでは利用者IDを生成しなかった。既存の `glucoscope.visito
 
 設定からいつでも収集を止められ、停止しても血糖表示などの基本機能は変わらないようにする。血糖・健康データの取得や保存、本人データの公開共有、その他の機微な用途には、別途明示的な同意を求める。
 
-2026年8月14日の未公開ユーザー版AI候補では、この別境界を、現在の案内Versionで初めてAI分析を使う直前の短い明示確認として実装する。利用プロフィール作成の案内やGluroo限定中継の確認とは統合しない。「今はしない」を選んだ場合はAIへ送らず、通常のCGM表示、ブラウザ内のいつものグルコのお話、ChatGPTコピーを止めない。
+2026年8月14日に公開したユーザー版AIでは、この別境界を、現在の案内Versionで初めてAI分析を使う直前の短い明示確認として実装する。利用プロフィール作成の案内やGluroo限定中継の確認とは統合しない。「今はしない」を選んだ場合はAIへ送らず、通常のCGM表示、ブラウザ内のいつものグルコのお話、ChatGPTコピーを止めない。
 
 ## 5. Phase 1Aの通信境界
 
@@ -102,7 +102,7 @@ Phase 1BのD1とAPIは、次を満たした後にだけ停止状態から有効�
 - 説明版と分析停止設定の記録
 - 分析停止中は新しい利用イベントを書き込まないゲート
 - 他人の情報を読めない所有者チェック
-- 監督下のPhase 1B受け入れではCloudflareアカウント認証済みD1 consoleとD1内viewだけを使い、HTTP管理APIを作らない。継続利用する専用管理画面の候補は、その後ローカル実装したが、Cloudflare Access設定と本番デプロイが完了するまでは利用しない
+- 監督下のPhase 1B受け入れではCloudflareアカウント認証済みD1 consoleとD1内viewだけを使い、HTTP管理APIを作らない。継続利用する専用管理画面はその後実装し、fail-closedの停止用入口だけを配置したが、Cloudflare Accessと実際の管理者identityを使う受け入れが完了するまでは利用しない
 - 重複加算を防ぐ短期idempotency
 - 日別データの90日ローリング削除
 - 本人による表示名訂正、allowlist書き出し、端末プロフィール削除
@@ -114,7 +114,7 @@ Cloudflare公式仕様を2026-08-11に再確認した。D1 Time Travelは常時�
 
 ## 9. 管理者、任意支援、Plusの分離
 
-既存のUsage DashboardはAI Worker全体の運用カウンターであり、専用の利用者別管理者ダッシュボードではない。利用者別画面のローカル候補は認証必須・読取専用とし、運営と改善に必要な表示名、説明済みの最小限の回数、収集停止状態だけを見せる。本番にはまだデプロイせず、公開サイトからもリンクしない。
+既存のUsage DashboardはAI Worker全体の運用カウンターであり、専用の利用者別管理者ダッシュボードではない。利用者別画面は認証必須・読取専用とし、運営と改善に必要な表示名、説明済みの最小限の回数、収集停止状態だけを見せる。fail-closedの停止用入口だけを配置したが、Access受け入れ完了までは利用せず、公開サイトからもリンクしない。
 
 任意の開発支援は機能特典のない支援であり、利用分析へ自動的に結びつけない。本人が別途アカウント連携を明示しない限り、誰が支援したかをプロフィールと紐付けない。
 
@@ -148,7 +148,7 @@ Plus 30日パスの利用権は、購入した機能を提供するための別�
 - 支援との明示連携
 - Plus 30日パス
 
-Phase 1Bの端末プロフィール、D1、API、開始・停止、書き出し、サーバー削除は別設計として実装済みであり、この未完了一覧には含めない。利用者別管理者ダッシュボードも後にローカル候補まで実装したが、Cloudflare Access設定と本番デプロイは未完了である。その他の残作業は別の実装判断と、必要な場合はCloudflare変更前の明示確認を挟む。
+Phase 1Bの端末プロフィール、D1、API、開始・停止、書き出し、サーバー削除は別設計として実装済みであり、この未完了一覧には含めない。利用者別管理者ダッシュボードも実装し、fail-closedの停止用入口だけを配置したが、Cloudflare Accessと実際の管理者identityを使う受け入れは未完了である。その他の残作業は別の実装判断と、必要な場合はCloudflare変更前の明示確認を挟む。
 
 ## 12. Phase 1B: 端末プロフィールのopt-in実装
 
@@ -171,13 +171,13 @@ Phase 1Bで扱ってよいのは次だけとする。
 - 新しく正常に完了したAI分析の回数
 - 通常のグルコの想い出 No.1〜50 の現在数
 
-AI分析は、OpenAIから新しく正常に生成され、`generation.complete=true` で、共有・端末キャッシュ・stale fallbackではない応答だけを候補とする。現在の公開済みユーザーモードではAI分析はまだ有効化されていない。ローカル候補ではこの条件を満たす新規成功だけを利用回数へ送るが、公開と実機確認が完了するまでは本番で増えるとは記録しない。
+AI分析は、OpenAIから新しく正常に生成され、`generation.complete=true` で、共有・端末キャッシュ・stale fallbackではない応答だけを候補とする。公開済みユーザーモードでは、この条件を満たす新規成功だけを利用回数へ送る。
 
 グルコの想い出は、血糖状態から影響を受け得るLucky Gluco No.51〜70と、最新値100 mg/dLをきっかけにするUnicorn Glucoを必ず除外する。ID、初めて出会った日、出会った回数も送らず、No.1〜50の異なる件数を0〜50の整数で送る。
 
 端末内の識別情報は `glucoscope.usageProfile.v1` へ分離する。既存の `glucoscope.localProfile.v1` と `local-profile.js` はネットワークを使わないPhase 1A境界を維持する。サーバーが作る不透明なprofile IDとbearer tokenはURL、query、hash、ログへ入れず、サーバーではtokenのhashだけを保存する。`glucoscope.usageProfile.v1` が存在するページでは公開Cloudflare Web Analyticsを読み込まず、任意表示名だけの `glucoscope.localProfile.v1` は停止条件にしない。
 
-通常UIには、利用記録の停止・再開と、サーバー上の端末プロフィール・利用記録の削除だけを小さな管理導線として置く。allowlist JSON書き出しは同じ場所の小さな補助リンクとする。停止または削除を押した時は、通信結果を待たず端末側を先に停止し、pending AI eventも消して新しい利用イベントを送らない。サーバー削除が成功するまでは端末tokenを残し、成功後だけ利用プロフィール用キーを削除する。端末内の表示名、データ接続、血糖データ、AIキャッシュ、グルコの想い出は連動して削除しない。一方、これとは別の「保存したデータ接続を削除」操作では、未公開ユーザー版AI候補の端末内AIキャッシュと保存済みAI確認も削除する。利用プロフィールだけの削除と、データ接続削除の範囲を混同しない。
+通常UIには、利用記録の停止・再開と、サーバー上の端末プロフィール・利用記録の削除だけを小さな管理導線として置く。allowlist JSON書き出しは同じ場所の小さな補助リンクとする。停止または削除を押した時は、通信結果を待たず端末側を先に停止し、pending AI eventも消して新しい利用イベントを送らない。サーバー削除が成功するまでは端末tokenを残し、成功後だけ利用プロフィール用キーを削除する。端末内の表示名、データ接続、血糖データ、AIキャッシュ、グルコの想い出は連動して削除しない。一方、これとは別の「保存したデータ接続を削除」操作では、公開済みユーザー版AIの端末内AIキャッシュと保存済みAI確認も削除する。利用プロフィールだけの削除と、データ接続削除の範囲を混同しない。
 
 日別集計は90日ローリングとし、90日利用のない端末プロフィールも削除候補とする。稼働DBから削除した後もCloudflare D1のTime Travel復旧履歴に、Freeプランでは最長7日、Paidプランでは最長30日残る場合があることをPrivacy Notesへ日英で明記する。
 
@@ -283,9 +283,9 @@ Phase 1BのUsage lifecycleは監督下実機受け入れ合格とする。この
 
 Gitに保存する `USAGE_COLLECTION_ENABLED=false` と `RELAY_ENABLED=false` は変更しない。Usage停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb`、限定中継停止Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` を即時復帰先として保持する。先行体験中は、Safari完全終了後の復元、約1時間のチケット自然失効、実通信での上限到達、異常通信、提供条件の変更、問い合わせを運用観察し、必要時は該当Workerだけを停止する。
 
-## 20. ユーザー版AI候補（ローカル・未公開、2026-08-14 JST）
+## 20. ユーザー版AI本番反映（2026-08-14 JST）
 
-現在のAI Worker本番はcache schema v14、Version 28（`f2565bc3-1f49-4f3f-b119-6ec2683f0607`）のままである。次はworktree内で実装・ローカル検証した候補であり、まだGitHub PagesにもWorkerにも公開していない。
+AI Worker deployment `a5b57a76-954b-4bb9-bbba-c23bfd0fa516` はVersion 29（`235cdf03-31d7-40fd-ab58-5c1c6aa2d923`）へ本番通信の100%を向け、対応するフロントはPages merge `a4497ab1a5d303c8a16b7d0aad999bf0dc1bde5d` で公開した。Version 28は履歴であり、ユーザーAIがONの間は直接戻してはならない。
 
 - `mode=user`では、現在の案内Versionで初めてAI分析を使う時だけ、TurnstileとAI送信より先に短く明示確認する。確認は `glucoscope.aiLetterUserConsent.v1` へVersion付きで端末内保存し、取り消した場合は何も送らない。
 - AIへ送るのは選択期間の集計サマリーである。表示名、接続先URL、接続用の合言葉、relay ticket、元の血糖データ一覧、治療、インスリン、食事、薬、機器設定は送らない。
@@ -297,11 +297,11 @@ Gitに保存する `USAGE_COLLECTION_ENABLED=false` と `RELAY_ENABLED=false` �
 - AI生成 `POST /api/gluco-letter` は許可された `Origin` headerを必須にする。OriginなしのUsage `GET` は既存の運用確認のため維持する。
 - AI用Turnstile actionは `glucoscope-ai-letter` とし、WorkerはSiteverifyの `action` と `hostname=afterglow21.github.io` の両方を検証する。利用プロフィール用 `glucoscope-usage-profile` tokenをAIへ流用しない。
 - Turnstile、OpenAI、品質確認、budget、全体上限、AI利用記録のどこで失敗しても、AI欄だけで完結させ、検証済みCGM接続、通常の血糖表示、接続情報を止めたり削除したりしない。公開デモデータへもfallbackしない。
-- 公開順は、commit済みWorkerを先、その後Pagesとする。旧ページが互換性のないTurnstile tokenを送る間の短いAIだけの利用不可は許容し、CGM接続と通常の血糖表示は継続する。Version 28へ戻せるのは、新Pages公開前のWorker先行中、またはPages公開に失敗した時だけである。ユーザーAIをONにした新Pagesの公開後は、偽装できる `pageMode` 境界から共有KV書き込みが再開し得るため、ユーザーAIがONのままVersion 28へ戻してはならない。新Worker系でAIをfail-closedに保つか、先にPages側のユーザーAIを停止して公開確認してからWorkerを復旧する。両方の公開と境界smoke testが完了するまで「ユーザー版AI公開済み」と記録しない。
+- Worker先行、Pages後続の公開は完了した。偽装できる `pageMode` 境界から共有KV書き込みが再開し得るため、ユーザーAIがONのままVersion 28へ戻してはならない。Version 29以降でAIをfail-closedに保つか、先にPages側のユーザーAIを停止して公開確認してからWorkerを復旧する。
 
-## 21. 管理者ダッシュボード候補（ローカル実装済み・本番未公開、2026-08-14 JST）
+## 21. 管理者ダッシュボード（fail-closed入口のみ配置済み・Access受け入れ待ち、2026-08-14 JST）
 
-`workers/gluco-admin-dashboard/` に、利用者別の最小限の利用状況を見る専用Cloudflare Worker候補を実装した。既存の公開Usage Dashboardや公開Usage APIとは分離し、公開サイトにはリンクしない。まだ本番へデプロイしておらず、Cloudflare Accessのapplicationとexact-email Allow policy、team domain、audience、管理者メールSecretの設定待ちである。外部IDや実際のメールアドレスはGitへ記録しない。
+`workers/gluco-admin-dashboard/` に、利用者別の最小限の利用状況を見る専用Cloudflare Workerを実装した。既存の公開Usage Dashboardや公開Usage APIとは分離し、公開サイトにはリンクしない。2026年8月14日に専用hostnameを作るfail-closed bootstrap Version `ecdf08e7-84d6-439a-83bd-96f03986f87b` だけを配置した。placeholder設定のまま全requestがD1読取前に同じ`403`となり、前後のD1件数は`0 / 0 / 0`、書き込み0件だった。Cloudflare Accessのapplicationとexact-email Allow policy、team domain、audience、実際の管理者メールSecretは未設定であり、受け入れ完了までは利用可能と扱わない。外部IDや実際のメールアドレスはGitへ記録しない。
 
 専用hostname全体をCloudflare Accessで保護し、通過後もWorker内でAccess JWTの署名、issuer、audience、有効期限と、Secretに保存した管理者メールとの完全一致を再検証する。設定不足、token不足、検証失敗、別メールはD1を読む前に同じ`403`で安全に失敗する。
 

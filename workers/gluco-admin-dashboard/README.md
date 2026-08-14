@@ -1,8 +1,12 @@
 # GlucoScope administrator dashboard Worker
 
-Status: local implementation only; not deployed and not linked from the public site.
+Status: a fail-closed bootstrap shell is deployed, but Cloudflare Access and the real administrator identity are not configured. The dashboard remains unavailable and is not linked from the public site.
 
 This dedicated Cloudflare Worker renders the first read-only administrator view for the minimal device-profile usage foundation. It is deliberately separate from the public GitHub Pages site, the existing public AI Usage Dashboard, and the public Usage Worker API.
+
+## Fail-closed bootstrap checkpoint — 2026-08-14
+
+Version `ecdf08e7-84d6-439a-83bd-96f03986f87b` created the dedicated Worker hostname only. The checked-in team-domain and audience placeholders remain in that Version, and its temporary bootstrap identity does not match any real administrator. Every request therefore returns the same generic `403` before D1 is read. The before/after count check remained `0 / 0 / 0` for `profiles`, `usage_daily`, and `event_receipts`, with no rows written. Cloudflare Access is not yet configured, so this Version is not an accepted administrator dashboard and must not be treated as available.
 
 ## Fixed safety boundary
 
@@ -33,9 +37,9 @@ The test suite uses a local RSA key and a local JWKS to exercise real `jose` sig
 
 There is intentionally no `deploy` script.
 
-## External configuration required before deployment
+## External configuration required before acceptance
 
-Deployment is a separate approval gate. Do not deploy until the administrator has approved every item below.
+The bootstrap shell above is intentionally unusable. Do not accept or use the dashboard until the administrator has approved and completed every item below.
 
 1. Choose one exact administrator email. Register it interactively as the `ADMIN_ALLOWED_EMAIL` Worker Secret; never put the address in Git or a command argument.
 2. Create or select a Cloudflare Access organization and identity method. Prefer an existing identity provider with MFA. Email one-time PIN may be used for the initial single-administrator rollout.

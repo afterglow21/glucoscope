@@ -16,57 +16,57 @@ GitHub Pages
 
 Production checkpoint — 2026-08-14:
 
-- Git commit `66f9b207d65c17130287b555920c115a9a963e1f` was deployed through deployment `5b099641-a818-4d14-ba9d-18aebb7e7ec2`
-- 100% of traffic routes to Version 28 (`f2565bc3-1f49-4f3f-b119-6ec2683f0607`)
-- Version 27 (`9f93a9df-f423-48c9-adbf-9de80e643712`) is the immediate rollback target
-- cache schema v14 is active; production does not read shared v13 keys, and retained v13 entries expire naturally within their existing 24-hour lifetime
-- binding and Secret names, the OpenAI model, generation limits, budget settings, CORS policy, and Durable Object migration are unchanged
-- the approved-origin Content-Type preflight returned `204`, an unapproved-origin Usage `GET` returned `403`, and an approved-origin Usage `GET` returned `200`
+- Commit `e7621d1e3325b4f5305f4bb04355167c39eeef19` was deployed through deployment `a5b57a76-954b-4bb9-bbba-c23bfd0fa516`
+- 100% of traffic routes to Version 29 (`235cdf03-31d7-40fd-ab58-5c1c6aa2d923`)
+- the matching frontend was published through Pages merge `a4497ab1a5d303c8a16b7d0aad999bf0dc1bde5d`
+- shared-KV read, write, and stale fallback are disabled for every mode; retained entries are not read and expire naturally within their existing maximum 24-hour lifetime
+- approved-origin preflight returned `204`; originless Usage `GET` returned `200`; wrong-origin Usage `GET`, originless generation `POST`, and allowed-origin generation with an invalid Turnstile token returned `403`
+- AI JSON responses retain `Cache-Control: no-store`, `Pragma: no-cache`, and `X-Content-Type-Options: nosniff`
 
 本番反映記録 — 2026-08-14：
 
-- Git commit `66f9b207d65c17130287b555920c115a9a963e1f` をdeployment `5b099641-a818-4d14-ba9d-18aebb7e7ec2` で反映
-- 通信の100%はVersion 28（`f2565bc3-1f49-4f3f-b119-6ec2683f0607`）へ向ける
-- Version 27（`9f93a9df-f423-48c9-adbf-9de80e643712`）を即時復帰先として保持
-- cache schema v14は本番で有効。共有v13は読み込まず、保持中のv13は既存の24時間以内の期限で自然に失効
-- bindingとSecretの名前、OpenAI model、生成上限、budget設定、CORS policy、Durable Object migrationは変更なし
-- 許可OriginのContent-Type preflightは `204`、不許可OriginのUsage `GET` は `403`、許可OriginのUsage `GET` は `200`
+- commit `e7621d1e3325b4f5305f4bb04355167c39eeef19` をdeployment `a5b57a76-954b-4bb9-bbba-c23bfd0fa516` で反映
+- 通信の100%はVersion 29（`235cdf03-31d7-40fd-ab58-5c1c6aa2d923`）へ向ける
+- 対応するフロントをPages merge `a4497ab1a5d303c8a16b7d0aad999bf0dc1bde5d` で公開
+- 全modeで共有KVの読み取り、書き込み、stale fallbackを停止。残っているentryは読まず、既存の最長24時間以内に自然失効
+- 許可Originのpreflightは `204`、OriginなしUsage `GET` は `200`。不許可OriginのUsage `GET`、Originなし生成 `POST`、許可Originからの不正Turnstile生成は `403`
+- AIのJSON応答は `Cache-Control: no-store`、`Pragma: no-cache`、`X-Content-Type-Options: nosniff` を維持
 
-## Local user-mode AI candidate — not published / ユーザー版AIのローカル候補 — 未公開
+## Production user-mode AI boundary / ユーザー版AIの本番境界
 
-This section describes the current worktree candidate only. It has passed local checks and a Wrangler dry run, but it has not been deployed. Production remains cache schema v14 on Version 28 (`f2565bc3-1f49-4f3f-b119-6ec2683f0607`) with the production behavior recorded above.
+This section describes the Version 29 and Pages behavior now used for personal-user early access.
 
-この節は、現在のworktreeにある候補だけを記録します。ローカル検証とWrangler dry runには合格していますが、まだ公開していません。本番は上記のcache schema v14、Version 28（`f2565bc3-1f49-4f3f-b119-6ec2683f0607`）のままです。
+この節は、個人ユーザー先行利用で現在使うVersion 29とPagesの本番境界を記録します。
 
 - In `mode=user`, the first AI request for the current notice version requires a plain, explicit confirmation before Turnstile or any AI `POST`. The confirmation says that the summarized glucose information shown on the page is sent to OpenAI. Display name, connection URL, connection passphrase, and the raw glucose-entry list are not included.
 - The confirmation is versioned and stored only in the browser as `glucoscope.aiLetterUserConsent.v1`. Refusing or cancelling it sends nothing and leaves the rule-based Gluco message and CGM display available.
-- During personal-user early access, every mode uses only the browser-local `glucoscope.aiLetterLocalCache.v14` cache, with at most 30 entries. The candidate fixes `SHARED_AI_CACHE_ENABLED=false` in code and `AI_CACHE_ENABLED=false` in Worker configuration, so no mode—including `kazuma-public-demo`—can read, write, or use stale fallback from shared KV.
+- During personal-user early access, every mode uses only the browser-local `glucoscope.aiLetterLocalCache.v14` cache, with at most 30 entries. Production fixes `SHARED_AI_CACHE_ENABLED=false` in code and `AI_CACHE_ENABLED=false` in Worker configuration, so no mode—including `kazuma-public-demo`—can read, write, or use stale fallback from shared KV.
 - The browser-provided `pageMode` is not trusted as authentication or proof that a summary belongs to the public demo. The KV binding is retained for the staged recovery rules below, not as permission to restore Version 28 while user AI is enabled. Existing entries are not read, no new entries are written, and retained entries expire naturally within their existing maximum 24-hour lifetime.
 - Deleting the saved data connection clears the current browser AI-letter cache, retired local cache keys, and the stored AI confirmation. It does not claim to delete OpenAI abuse-monitoring logs.
 - The Worker calls the OpenAI Responses API with `store: false`. OpenAI states that API data is not used to train its models by default unless the customer opts in. Under the default abuse-monitoring setting, logs may contain prompts and responses and are normally retained for up to 30 days; legal or service-protection exceptions may require longer retention. See [OpenAI API data controls](https://developers.openai.com/api/docs/guides/your-data).
-- The generation guard is still one singleton, infrastructure-wide guard shared by the public demo and every user. `AI_SLOT_GENERATION_LIMIT=10` and `AI_DAILY_GENERATION_LIMIT=30` are not per-person allowances. Browser-local displays do not consume a new-generation count; the candidate has no shared-cache display path.
+- The generation guard is still one singleton, infrastructure-wide guard shared by the public demo and every user. `AI_SLOT_GENERATION_LIMIT=10` and `AI_DAILY_GENERATION_LIMIT=30` are not per-person allowances. Browser-local displays do not consume a new-generation count; current production has no shared-cache display path.
 - AI failure affects only the AI panel. It must not stop, clear, or replace an already verified CGM connection or the normal glucose display.
 - AI generation `POST /api/gluco-letter` requires an `Origin` header that passes the existing allowlist. Originless `GET /api/gluco-letter/usage` remains available for existing operational checks.
-- A successful Turnstile Siteverify response must match both `hostname=afterglow21.github.io` and `action=glucoscope-ai-letter`. The candidate variables are `TURNSTILE_EXPECTED_HOSTNAME` and `TURNSTILE_EXPECTED_ACTION`.
-- Release order is the committed Worker first and Pages second. The older page will briefly receive AI-only failures because its Turnstile token lacks the new action; this short unavailable window is accepted so no personal summary can reach shared KV. Version 28 may be restored only in this Worker-first window before the new Pages is live, or if the Pages release fails. Once Pages with user AI enabled is live, never restore Version 28 while user AI remains enabled because its spoofable `pageMode` boundary would reopen shared-KV writes. Keep AI fail-closed on the new Worker line, or first publish and verify Pages with user AI disabled before Worker recovery. CGM display remains independent.
+- A successful Turnstile Siteverify response must match both `hostname=afterglow21.github.io` and `action=glucoscope-ai-letter`. The production variables are `TURNSTILE_EXPECTED_HOSTNAME` and `TURNSTILE_EXPECTED_ACTION`.
+- The Worker-first, Pages-second release is complete. Version 28 is historical and must never be restored while user AI remains enabled because its spoofable `pageMode` boundary would reopen shared-KV writes. Keep AI fail-closed on Version 29 or later, or first publish and verify Pages with user AI disabled before Worker recovery. CGM display remains independent.
 
 - `mode=user`では、現在の案内Versionで初めてAI分析を使う前に、TurnstileやAIへの `POST` より先に、短く明示的な確認を求めます。画面で集計した血糖情報をOpenAIへ送ることを伝えます。表示名、接続先URL、接続用の合言葉、元の血糖データ一覧は送りません。
 - 確認はVersion付きで `glucoscope.aiLetterUserConsent.v1` としてブラウザ内だけに保存します。「今はしない」を選んだ場合は何も送らず、ブラウザ内のいつものグルコのお話とCGM表示はそのまま使えます。
-- 先行利用中は、すべてのmodeが `glucoscope.aiLetterLocalCache.v14` の端末内キャッシュだけを使い、最大30件です。候補はcode-levelで `SHARED_AI_CACHE_ENABLED=false`、Worker設定で `AI_CACHE_ENABLED=false` とし、`kazuma-public-demo` を含む全modeで共有KVの読み取り、書き込み、stale fallbackを停止します。
+- 先行利用中は、すべてのmodeが `glucoscope.aiLetterLocalCache.v14` の端末内キャッシュだけを使い、最大30件です。本番はcode-levelで `SHARED_AI_CACHE_ENABLED=false`、Worker設定で `AI_CACHE_ENABLED=false` とし、`kazuma-public-demo` を含む全modeで共有KVの読み取り、書き込み、stale fallbackを停止します。
 - ブラウザから届く `pageMode` は、認証や公開デモ由来であることの証明として信頼しません。KV bindingは下記の段階的な復旧手順のため残しますが、ユーザーAIがONのままVersion 28へ戻す許可ではありません。既存entryは読み込まず、新規entryも書きません。残っているentryは既存の最長24時間以内に自然失効します。
 - 保存済みデータ接続の削除時は、現在の端末内AIキャッシュ、退役済みの端末内キャッシュ、保存したAI確認も削除します。OpenAIの不正利用監視ログまで削除できる、とは案内しません。
 - WorkerはOpenAI Responses APIへ `store: false` で送信します。OpenAIは、利用者側が明示的にopt-inしない限りAPIデータをmodel学習へ使わないと説明しています。一方、標準の不正利用監視ではpromptやresponseを含み得るログが通常最長30日保持され、法令またはサービス・第三者保護のため、それより長い保持が必要となる例外があります。根拠は [OpenAI API data controls](https://developers.openai.com/api/docs/guides/your-data) です。
-- 生成上限は、公開デモとすべての利用者で共用する1つの全体カウンターのままです。`AI_SLOT_GENERATION_LIMIT=10` と `AI_DAILY_GENERATION_LIMIT=30` は個人別の上限ではありません。端末内の保存済み表示は新しい生成回数を使わず、候補には共有キャッシュ表示経路がありません。
+- 生成上限は、公開デモとすべての利用者で共用する1つの全体カウンターのままです。`AI_SLOT_GENERATION_LIMIT=10` と `AI_DAILY_GENERATION_LIMIT=30` は個人別の上限ではありません。端末内の保存済み表示は新しい生成回数を使わず、現在の本番には共有キャッシュ表示経路がありません。
 - AI分析の失敗はAI欄だけで完結させます。確認済みCGM接続や通常の血糖表示を停止、削除、デモデータへ置換しません。
 - AI生成の `POST /api/gluco-letter` は、既存allowlistを通る `Origin` headerを必須にします。既存運用確認用のOriginなし `GET /api/gluco-letter/usage` は維持します。
-- Turnstile Siteverifyの成功時は、`hostname=afterglow21.github.io` と `action=glucoscope-ai-letter` の両方の一致を必須にします。候補の変数名は `TURNSTILE_EXPECTED_HOSTNAME` と `TURNSTILE_EXPECTED_ACTION` です。
-- 公開順は、commit済みWorkerを先、Pagesを後とします。旧PagesのTurnstile tokenには新actionがないため、間はAIだけ短く利用できなくなりますが、個人サマリーを共有KVへ到達させない安全側の窓として受け入れます。Version 28へ戻せるのは、新Pages公開前のこのWorker先行中、またはPages公開に失敗した時だけです。ユーザーAIをONにした新Pagesの公開後は、偽装できる `pageMode` 境界から共有KV書き込みが再開し得るため、ユーザーAIがONのままVersion 28へ戻してはいけません。新Worker系でAIをfail-closedに保つか、先にPages側のユーザーAIを停止して公開確認してからWorkerを復旧します。CGM表示は継続します。
+- Turnstile Siteverifyの成功時は、`hostname=afterglow21.github.io` と `action=glucoscope-ai-letter` の両方の一致を必須にします。本番の変数名は `TURNSTILE_EXPECTED_HOSTNAME` と `TURNSTILE_EXPECTED_ACTION` です。
+- Worker先行、Pages後続の公開は完了しました。Version 28は履歴であり、ユーザーAIがONのまま戻してはいけません。偽装できる `pageMode` 境界から共有KV書き込みが再開し得るためです。Version 29以降でAIをfail-closedに保つか、先にPages側のユーザーAIを停止して公開確認してからWorkerを復旧します。CGM表示は継続します。
 
-## Deployed Version 28 v14 behavior / 本番Version 28のv14動作
+## Historical Version 28 v14 behavior / 旧Version 28のv14動作
 
-The notes below describe only the deployed Version 28 behavior verified in the production checkpoint above. Once the unpublished candidate is deployed, its all-mode browser-local-only rule supersedes the shared-cache bullets in this section.
+The notes below describe only historical Version 28 behavior. Current Version 29 uses the all-mode browser-local-only rule above.
 
-以下は、上の本番反映記録で確認したVersion 28だけの動作です。未公開候補を反映した後は、全modeを端末内cacheだけにする候補の規則が、この節の共有cache説明より優先されます。
+以下は、旧Version 28だけの動作です。現在のVersion 29では、上の全modeを端末内cacheだけにする規則が優先されます。
 
 - `AI_PROVIDER=openai`
 - OpenAI API key is stored as a Cloudflare secret.
@@ -74,13 +74,13 @@ The notes below describe only the deployed Version 28 behavior verified in the p
 - Daily, time-slot, and monthly budget guards are enabled.
 - Usage counters are persisted in a singleton SQLite-backed Durable Object.
 - The usage counter stores operational totals only. It does not store glucose values or AI letter text.
-- The deployed public demo uses a two-layer cache: browser-local cache plus a shared Cloudflare Workers KV cache. The unpublished personal-user early-access candidate temporarily uses the browser-local layer only for every mode, including the public demo.
+- Historical Version 28 used a two-layer public-demo cache: browser-local cache plus a shared Cloudflare Workers KV cache. Current Version 29 uses the browser-local layer only for every mode, including the public demo.
 - The browser-local cache uses `glucoscope.aiLetterLocalCache.v14` and keeps at most 30 generated letters. The frontend removes retired v13, v12, and v11 local caches when reading the cache and when a saved connection is deleted.
-- For the deployed public demo, the shared key is an opaque SHA-256 hash of page mode, language, period, time slot, analysis mode, and displayed range. Raw glucose values are not part of the key. The unpublished candidate does not construct or use this shared key for any mode because browser-provided page mode is not an authentication boundary.
-- In deployed Version 28, a public-demo shared letter younger than one hour is returned without a new OpenAI call or generation-count consumption.
-- In deployed Version 28, the KV value contains only the generated letter text and minimal metadata. The glucose summary is not stored in KV.
-- In deployed Version 28, public-demo entries remain available for stale fallback for up to 24 hours, then expire automatically. The unpublished candidate does not read them.
-- If a new public-demo generation is blocked or the provider fails after the one-hour window, deployed Version 28 can return the older shared letter gently as a fallback. The unpublished candidate never reads this shared fallback in any mode.
+- In historical Version 28, the public-demo shared key was an opaque SHA-256 hash of page mode, language, period, time slot, analysis mode, and displayed range. Raw glucose values were not part of the key. Current Version 29 does not construct or use this shared key for any mode because browser-provided page mode is not an authentication boundary.
+- In historical Version 28, a public-demo shared letter younger than one hour was returned without a new OpenAI call or generation-count consumption.
+- In historical Version 28, the KV value contained only the generated letter text and minimal metadata. The glucose summary was not stored in KV.
+- In Version 28, public-demo entries remained available for stale fallback for up to 24 hours, then expired automatically. Version 29 does not read them.
+- If a new public-demo generation was blocked or the provider failed after the one-hour window, Version 28 could return the older shared letter gently as a fallback. Version 29 never reads this shared fallback in any mode.
 - Browser CORS access is restricted to the configured GitHub Pages origin.
 - Gentle and detailed modes use separate OpenAI output limits.
 - If OpenAI reports `status: incomplete` because `max_output_tokens` was reached, the Worker retries once with a larger mode-specific limit.
@@ -106,7 +106,7 @@ Production v14 includes the following behavior.
 - Normal Japanese prose ends naturally with `。`, `！`, or `？`. The opening `グルコだよ🍀`, short headings, and noun-only labels may omit punctuation. For a declarative sentence ending with an emoji, the emoji replaces only `。`: use `ぼくはここにいるよ🍀`, not `ぼくはここにいるよ。🍀` or `ぼくはここにいるよ🍀。`. Meaningful `！` and `？` are not removed by this rule.
 - A soft-only first response still gets one rewrite attempt. If that rewrite has a provider or transport error, is incomplete, or introduces a blocking issue, the safe first response is returned instead. A first response with any blocking issue is never a fallback candidate.
 - The browser-local key is `glucoscope.aiLetterLocalCache.v14`; retired v13, v12, and v11 local entries are removed during cache reading and saved-connection deletion.
-- The current shared schema is `gluco-ai-letter-cache-v14`. Production v14 does not read or write v13 shared keys; retained v13 entries expire under the existing 24-hour retention policy.
+- The retained historical Version 28 shared schema was `gluco-ai-letter-cache-v14`. Current Version 29 does not read or write any shared schema; retained entries expire under the existing 24-hour retention policy.
 
 本番のv14には、以下の動作を含みます。
 
@@ -118,7 +118,7 @@ Production v14 includes the following behavior.
 - 通常の日本語本文は自然な `。`、`！`、`？` で終えます。`グルコだよ🍀`、短い見出し、名詞だけのラベルは句点なしでも構いません。通常の文末に絵文字を添える場合は、絵文字を `。` の代わりにして `ぼくはここにいるよ🍀` とします。`ぼくはここにいるよ。🍀` や `ぼくはここにいるよ🍀。` にはしません。意味のある `！` や `？` はこのルールで外しません。
 - 軽微な警告だけの初回文は1回書き直します。書き直しが通信エラー、途中終了、または重大な問題になった場合は、安全だった初回文を返します。重大な問題がある初回文はfallbackに使いません。
 - 端末内キーは `glucoscope.aiLetterLocalCache.v14` で、退役したv13、v12、v11はキャッシュ読み取り時と保存済み接続の削除時に消します。
-- 現行の共有schemaは `gluco-ai-letter-cache-v14` です。本番v14は共有v13を読み書きせず、保持中のv13は既存の24時間以内の期限で失効します。
+- 保持中の旧Version 28共有schemaは `gluco-ai-letter-cache-v14` でした。現在のVersion 29は共有schemaを読み書きせず、保持中のentryは既存の24時間以内の期限で失効します。
 
 ## Companionship around the numbers
 
@@ -173,9 +173,9 @@ The prompt must praise the observed flow rather than the person's worth or presu
 - Concerning metrics are stated as facts. The letter avoids blame-weighted words such as `も`, `しか`, `まだ`, `残念ながら`, `高すぎる`, `低すぎる`, `悪い`, and `問題` around those values.
 - A metric is not left as a standalone exclamation line; the same sentence explains the gentle reflection clue.
 
-Production v14 uses shared-cache schema `gluco-ai-letter-cache-v14`, which prevents v13 cached wording from overriding the emoji-ending punctuation rule and the other current letter rules. It does not read shared v13 keys; retained v13 entries and new v14 entries expire within 24 hours. The previous v13 deployment `f2fbfb68-c87f-4f74-9ebf-231c8da029ee`, Version 27 (`9f93a9df-f423-48c9-adbf-9de80e643712`), is retained as the immediate rollback checkpoint.
+Version 28 historically used shared-cache schema `gluco-ai-letter-cache-v14`. Current Version 29 does not read or write that shared cache. Version 27 and Version 28 are historical checkpoints, not direct rollback targets while user AI remains enabled.
 
-本番v14では、共有キャッシュschemaを `gluco-ai-letter-cache-v14` とします。v13の保存文が、絵文字で終わる文の句点ルールや、現在のお手紙ルールを上書きしないためです。本番v14は共有v13を読み込まず、保持中のv13と新しいv14はいずれも24時間以内に失効します。直前のv13 deployment `f2fbfb68-c87f-4f74-9ebf-231c8da029ee`、Version 27（`9f93a9df-f423-48c9-adbf-9de80e643712`）は即時復帰先として保持します。
+Version 28は共有キャッシュschema `gluco-ai-letter-cache-v14` を使っていました。現在のVersion 29はその共有cacheを読み書きしません。Version 27とVersion 28は履歴であり、ユーザーAIがONの間の直接rollback先ではありません。
 
 ## Production CORS policy
 
@@ -192,7 +192,7 @@ Behavior:
 - responses include `Vary: Origin`,
 - valid `OPTIONS` preflight requests receive `204`,
 - unapproved or malformed browser origins receive `403`,
-- in the currently deployed Version 28, requests without an `Origin` header remain available for Wrangler, PowerShell, monitoring, and direct operational checks; the unpublished candidate above narrows this so AI-generation `POST` requires an approved Origin while the Usage `GET` remains available without one, and
+- AI-generation `POST` requires an approved, present Origin, while originless Usage `GET` remains available for operational checks, and
 - `Access-Control-Allow-Origin: *` is not used.
 
 The GitHub Pages repository path is not part of an Origin. For example, pages under `https://afterglow21.github.io/glucoscope/` send the Origin `https://afterglow21.github.io`.
@@ -213,9 +213,9 @@ After deployment, run:
 
 ## Shared Workers KV cache setup
 
-This setup records the deployed Version 28 shared-cache infrastructure. During personal-user early access, the unpublished candidate retains the binding but fixes `SHARED_AI_CACHE_ENABLED=false` and `AI_CACHE_ENABLED=false`; it does not read retained entries or write new ones, and existing entries expire within their current maximum 24-hour lifetime.
+This setup records the historical Version 28 shared-cache infrastructure. Current Version 29 retains the binding but fixes `SHARED_AI_CACHE_ENABLED=false` and `AI_CACHE_ENABLED=false`; it does not read retained entries or write new ones, and existing entries expire within their current maximum 24-hour lifetime.
 
-The Worker code treats the KV binding as optional, so the existing API keeps working before setup. To enable the historical/current Version 28 production shared cache on Windows PowerShell:
+The Worker code treats the KV binding as optional. The command below is retained only as Version 28 history and must not be used to re-enable shared cache while personal-user AI is enabled:
 
 ```powershell
 cd workers/gluco-letter-worker
@@ -243,7 +243,7 @@ binding = "AI_LETTER_CACHE"
 id = "<generated namespace id>"
 ```
 
-Deployed Version 28 cache controls are non-secret variables:
+Historical Version 28 cache controls were:
 
 ```text
 AI_CACHE_ENABLED=true
@@ -251,7 +251,7 @@ AI_CACHE_FRESH_SECONDS=3600
 AI_CACHE_RETENTION_SECONDS=86400
 ```
 
-The unpublished candidate changes the effective cache boundary for every mode while retaining the binding and lifetime configuration only for the staged recovery rules above:
+Current Version 29 changes the effective cache boundary for every mode while retaining the binding and lifetime configuration only for staged recovery:
 
 ```text
 SHARED_AI_CACHE_ENABLED=false  # code-level, fail-closed constant
@@ -353,7 +353,7 @@ The production generation guard allows up to 10 new generations in each time slo
 
 The first OpenAI attempt uses the normal limit for the selected mode. Within the incomplete-output path, only an API response explicitly marked incomplete due to `max_output_tokens` triggers one retry with the larger limit. A successful retry still counts as one user-requested generation, while usage and developer-cost estimates include both OpenAI attempts. If the retry is also incomplete, the partial text is discarded and is not cached.
 
-The wording-quality path distinguishes a blocking first response from a soft-only first response. A soft-only first response gets one clean rewrite; if that rewrite fails at the provider or transport layer, is incomplete, or introduces a blocking issue, the safe first response is returned through the normal success path instead. A first response with any blocking issue is never used as fallback. It may be rewritten once, but if no safe complete rewrite is produced, deployed Version 28 follows the normal generation failure or retained shared-cache fallback path; the unpublished candidate has no shared fallback and follows the normal failure path. Partial and unsafe retry text is never returned or cached.
+The wording-quality path distinguishes a blocking first response from a soft-only first response. A soft-only first response gets one clean rewrite; if that rewrite fails at the provider or transport layer, is incomplete, or introduces a blocking issue, the safe first response is returned through the normal success path instead. A first response with any blocking issue is never used as fallback. It may be rewritten once, but if no safe complete rewrite is produced, current Version 29 follows the normal failure path because shared stale fallback is disabled. Partial and unsafe retry text is never returned or cached.
 
 Each logical OpenAI step may internally retry its HTTP call once after a short delay only for a transport failure or HTTP 408, 409, 429, or 5xx. Other HTTP 4xx responses do not retry. Turnstile verification has already completed before this call and is neither repeated nor bypassed; the browser does not resend the request or reuse its Turnstile token. Any provider-reported token usage and estimated developer cost from the two HTTP calls is aggregated, and the ordinary final safety/cache boundary still applies.
 
@@ -368,7 +368,7 @@ docs/Feature_Specs/GLUCO_AI_LETTER_WORKER_CONTRACT.md
 The Worker returns:
 
 - letter text and mode
-- cache state (`stored`, `fresh`, and `stale-fallback` only for the deployed Version 28 public-demo shared cache; `browser-local-only` for every mode in the unpublished candidate, with no shared stale fallback; or unavailable)
+- cache state (`browser-local-only` for every mode in current production, with no shared stale fallback; historical Version 28 also returned `stored`, `fresh`, or `stale-fallback`)
 - original generation time and cache freshness/retention timestamps
 - request and monthly token usage
 - estimated developer cost
