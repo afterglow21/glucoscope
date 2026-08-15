@@ -69,9 +69,15 @@ test("Plus buyer policy stays complete internally while public pages remain simp
   assert.match(spec, /子どもの氏名、生年月日、血糖値、表示名、CGMの種類を保護者確認で集めない/);
   assert.match(spec, /体験を成功した日から90日間だけ/);
   assert.match(spec, /販売前の保持候補は7年/);
+  assert.match(spec, /確認メールの送信候補はResend Free/);
+  assert.match(spec, /通常の送信記録とメール本文は最長30日保持される/);
+  assert.match(spec, /運営者が手動で削除するまで、30日を超えて残る場合がある/);
+  assert.match(spec, /毎時cleanupで削除する/);
+  assert.match(spec, /request-codeは5回\/60秒、verifyは30回\/60秒/);
   assert.match(bible, /子どものPlusを18歳以上の保護者が管理できる方針/);
   assert.match(bible, /子どもの氏名、生年月日、血糖値、表示名、CGMの種類は集めず/);
   assert.match(bible, /最後の支払いまたは最終解決の遅い方から180日以内/);
+  assert.match(bible, /原因を確認・解決した後に運営者が手動で削除するまで、30日を超えて残る場合があります/);
 
   for (const publicPage of [privacy, roadmap]) {
     assert.doesNotMatch(publicPage, /最小会計記録は7年|会計記録の候補は7年/u);
@@ -82,6 +88,21 @@ test("Plus buyer policy stays complete internally while public pages remain simp
   assert.match(privacy, /本人利用か保護者管理かを確認した日/);
   assert.match(privacy, /二重決済やPlusが始まらない問題/);
   assert.match(privacy, /GlucoScope側の大きな障害/);
+  assert.match(privacy, /Resendというメール送信サービス/);
+  assert.match(privacy, /10分で使えなくなる6桁の確認コード、コードの入力方法を伝える短い案内/);
+  assert.match(privacy, /通常の送信記録とメール本文が最長30日保存されます/);
+  assert.match(privacy, /それより長く送信停止リストに残ることがあります/);
+  assert.match(privacy, /ordinary sending records and the message body for up to 30 days/);
+  assert.match(privacy, /may remain longer on a send-block list/);
+  assert.match(privacy, /コードが使えなくなってからおおむね1日で削除します/);
+  assert.match(privacy, /メールを送ろうとした回数の記録も、おおむね1日で削除します/);
+  assert.match(privacy, /この確認に使うIPアドレスを、GlucoScopeのデータベースやログへ保存しません/);
+  assert.match(privacy, /temporary verification-code records are deleted about one day/);
+  assert.match(privacy, /does not save the IP address used for this check in its database or logs/);
+  assert.match(privacy, /通常の画面からは消えますが、Cloudflareの復旧用バックアップには、無料プランで最大7日、有料プランで最大30日/);
+  assert.match(privacy, /They disappear from normal screens, but Cloudflare recovery backups may retain them for up to 7 days on the Free plan or up to 30 days on a Paid plan/);
+  assert.doesNotMatch(privacy, /宛先と内容が最長30日保存されます|keep the destination and message content for up to 30 days/u);
+  assert.match(privacy, /メールを開いたか、リンクを押したかを調べる追跡は使いません/);
   assert.match(privacy, /If GlucoScope cannot correct a duplicate charge/);
   assert.match(roadmap, /18歳以上の保護者が、購入、別の端末で使うための確認、問い合わせを管理/);
   assert.match(roadmap, /This is not a refund-for-any-reason policy/);
@@ -105,6 +126,9 @@ test("Roadmap stays simple for users while technical evidence stays internal", a
   assert.match(roadmap, /グラフのカスタム期間とShare StudioはPlus特典/);
   assert.match(roadmap, /確認済みの利用者ごとに1回だけ無料で試せる/);
   assert.match(roadmap, /この保護者確認のために、子どもの名前や血糖値は集めません/);
+  assert.match(roadmap, /確認メールは、Resendというメール送信サービスで準備します/);
+  assert.match(roadmap, /10分で使えなくなる6桁の確認コード、コードの入力方法を伝える短い案内/);
+  assert.match(roadmap, /少人数で実際に届くこととプライバシーの説明を確認するまで、販売は始めません/);
   assert.match(roadmap, /GlucoScopeをよくするため、表示名、利用した日/);
   assert.match(roadmap, /血糖値、接続情報、AIお手紙の内容は記録しません/);
   assert.match(roadmap, /GlucoScopeは医療機器ではなく、診断、治療、インスリン量の判断をしません/);

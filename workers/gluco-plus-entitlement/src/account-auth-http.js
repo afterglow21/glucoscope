@@ -4,6 +4,7 @@ import {
   readAccountAuthConfig,
 } from "./account-auth-core.js";
 import { createPublicUnavailableResponse } from "./entitlement-core.js";
+import { enforceAccountAuthRateLimit } from "./account-auth-rate-limit.js";
 import { verifyAccountTurnstile } from "./account-auth-turnstile.js";
 
 const ROUTES = Object.freeze({
@@ -154,6 +155,8 @@ export async function handleAccountAuthRequest(request, env = {}, dependencies =
 
   const service = dependencies.service
     || createAccountAuthService(env, dependencies.serviceDependencies);
+  const enforceRateLimit = dependencies.enforceRateLimit
+    || enforceAccountAuthRateLimit;
   const turnstileVerifier = dependencies.verifyTurnstile || verifyAccountTurnstile;
   try {
     if (url.pathname === ROUTES.requestCode) {
@@ -162,6 +165,7 @@ export async function handleAccountAuthRequest(request, env = {}, dependencies =
           Allow: "POST, OPTIONS",
         });
       }
+      await enforceRateLimit(request, env.ACCOUNT_REQUEST_CODE_RATE_LIMITER);
       const payload = requireAllowedKeys(
         await readJsonBody(request, config.bodyLimitBytes),
         new Set([
@@ -189,6 +193,7 @@ export async function handleAccountAuthRequest(request, env = {}, dependencies =
           Allow: "POST, OPTIONS",
         });
       }
+      await enforceRateLimit(request, env.ACCOUNT_VERIFY_RATE_LIMITER);
       const payload = requireAllowedKeys(
         await readJsonBody(request, config.bodyLimitBytes),
         new Set(["email", "code", "verificationGrant"]),

@@ -88,10 +88,22 @@ never local storage or public UI state, and requires a new code after a page rel
 
 There is no password. A six-digit code expires after 10 minutes, permits five attempts,
 cannot be resent for 60 seconds, and is limited to five sends per email HMAC per hour.
+Cloudflare Rate Limiting bindings add an earlier per-connection boundary: request-code
+allows 5 attempts per 60 seconds and verify allows 30 per 60 seconds, keyed only by the
+validated `CF-Connecting-IP`. The key is passed to the binding but is not written to D1
+or application logs. Rate limiting runs before body parsing, Turnstile, D1, or email.
+A missing or invalid connecting address or binding failure fails only the enabled auth
+route closed; when account auth is off, these bindings are not read.
 Existing-account and new-account requests return the same `code_sent` result. A wrong,
 expired, used, or exhausted code returns the same `invalid_or_expired_code` result.
-Challenge rows older than the short abuse-prevention window are opportunistically removed
-when another code is requested; a production retention job is still required before launch.
+Challenge rows whose code expired more than 24 hours earlier are opportunistically removed
+when another code is requested. The checked-in hourly Cron also calls the same private
+cleanup, but `ACCOUNT_AUTH_CLEANUP_ENABLED=false` makes it return without touching D1.
+Only after the D1 binding and cleanup path are accepted may that flag be enabled. The
+enabled job deletes challenge rows where `expires_at < scheduledTime - 24 hours` and
+global send reservations where `reserved_at < scheduledTime - 24 hours`. With the hourly
+schedule, either kind of temporary row normally remains for about 24 to 25 hours after
+its respective boundary. The public explanation rounds this to “about one day.”
 Successful verification revokes every older session for that account and issues a new
 90-day random session token. This makes the same flow usable after changing or losing a
 device. Logout revokes the presented token and is idempotent.
@@ -132,49 +144,70 @@ current version above 1 without its previous key, or simultaneous current-and-pr
 accounts fails closed. A reviewed procedure for eventually retiring old keys is still a
 production prerequisite.
 
-The Cloudflare Email Service adapter is checked in but deliberately disconnected.
-`index.js` injects it through `serviceDependencies.emailAdapter`; it expects the native
-`ACCOUNT_CODE_EMAIL` binding and an exact normalized sender in
-`ACCOUNT_EMAIL_FROM_ADDRESS`. Neither is present in `wrangler.jsonc`. There is also no
-D1 binding, Turnstile Secret, email-lookup HMAC Secret, or code-HMAC Secret. If account
-HTTP were enabled without any one of them, the route fails closed.
+The earlier disconnected Cloudflare Email Service prototype has been removed and
+replaced locally by a Resend REST API adapter. Cloudflare Email Service / Workers Paid
+was not subscribed, so there is no USD 5 monthly email-service charge. The Resend adapter
+cannot send without the `RESEND_API_KEY` Worker Secret. There is also no D1 binding,
+Turnstile Secret, email-lookup HMAC Secret, or code-HMAC Secret. Account HTTP remains
+disabled, and a missing dependency still fails closed.
 
-As of 2026-08-15, the operator owns no custom domain. Cloudflare Email Service requires
-a sending domain or subdomain managed in Cloudflare DNS before mail can be sent to
-general recipients, so real verification email, account rollout, and Plus sales remain
-blocked. `glucoscope.app` was only a read-only candidate whose official RDAP lookup had
-no registration record at that checkpoint; it has not been purchased or configured.
-Availability, trademark risk, first-year price, and renewal price must be checked again
-immediately before any purchase, and no domain may be acquired without the operator's
-explicit approval.
+On 2026-08-15, the operator purchased `glucoscope.app` for USD 14.20 per year and turned
+automatic renewal off. The planned dedicated sending subdomain is
+`auth.glucoscope.app`, with `no-reply@auth.glucoscope.app` as the exact sender. Domain
+continuation and the then-current renewal price must be reviewed before expiry.
 
-The adapter sends one fixed Japanese/English subject and body; only the six-digit code
-and expiry minutes vary. It does not include blood-glucose data, AI content, display
-names, or other profile data. Missing configuration, a provider throw, or a malformed
-`messageId` produces the same generic `503` at the HTTP boundary and invalidates the
-challenge. The adapter has no logger or D1 access. The destination and code exist only
-in the private in-memory call and Cloudflare's send binding; the returned provider
-`messageId` is not stored by account auth. Do not add raw email addresses, codes,
-tokens, provider errors, or adapter payloads to Worker logs, D1, analytics, or events.
+Resend Free is the approved verification-email candidate. Its published limits on
+2026-08-15 are USD 0/month, 3,000 emails/month, 100 emails/day, one custom domain, and
+30-day ordinary sending-record and message-content retention. This is not a complete
+recipient-retention limit: a hard bounce or spam complaint places the destination on
+Resend's team-wide Suppression List, and sends from every team domain are skipped until
+it is removed. The operator must confirm and resolve the cause before manually removing
+the address through the Dashboard or API; another hard bounce or complaint suppresses
+it again. The verification code itself expires after 10 minutes and is one-use;
+provider retention never extends that validity. Resend's DPA separately describes
+processing during the agreement and deletion of customer and user data within 90 days
+after account termination; do not describe that as an automatic per-message or
+Suppression List expiry while the account remains active.
 
-Before the first closed test, onboard a dedicated Cloudflare Email Sending domain or
-subdomain and verify its managed SPF, DKIM, DMARC, and bounce records. Use a binding
-restricted to the exact sender and, during the closed test, only approved tester
-destinations. Keep the existing per-email HMAC limit and add a reviewed global send cap
-before allowing arbitrary recipients. A successful `send()` means only that Cloudflare
-accepted the message; bounce, deferral, complaint, suppression, and delayed-delivery
-handling still need an operating runbook that does not copy raw recipients into D1 or
-application logs.
+The provider receives the destination address. The message has one fixed
+Japanese/English subject and a short fixed explanation of how to enter the code; only
+the six-digit code and 10-minute expiry vary. It contains no glucose data, AI content,
+display name, profile data, connection detail, or purchase content. Open and click
+tracking must remain disabled. Do not create a tracking subdomain. Do not add raw email
+addresses, codes, tokens, provider errors, or payloads to Worker logs, D1, analytics, or
+events. The provider message ID must not be stored by account auth.
 
-Cloudflare turns **Email preview on automatically for new sending domains**. Preview can
-retain the full HTML, text, headers, and therefore the verification code for about seven
-days. **Email preview must be OFF in the real environment before the first real
-verification email; this is a live-sales prerequisite.** Confirm the setting again after
-domain or environment changes. The relevant primary documentation is Cloudflare's
-[Workers email API](https://developers.cloudflare.com/email-service/api/send-emails/workers-api/),
-[domain configuration](https://developers.cloudflare.com/email-service/configuration/domains/),
-[send-binding restrictions](https://developers.cloudflare.com/email-service/configuration/send-bindings/),
-and [email logs](https://developers.cloudflare.com/email-service/observability/logs/).
+`auth.glucoscope.app` has reached final `verified` status in Resend after the required
+SPF, DKIM, MX, and DMARC records were added manually in Cloudflare DNS and resolved publicly.
+Receiving is off, and no tracking subdomain or open/click tracking is configured. No API
+key, Worker Secret, real email, or deployment has been used. Before the first closed
+test, create a send-only API key scoped to this domain and keep it only as a Worker
+Secret. Restrict the test to approved destinations, keep the existing per-email HMAC
+limit, and keep the implemented D1-backed global cap at 80 accepted reservations per
+rolling 24 hours, below the provider limits. Pending, sent, and failed attempts all
+consume the cap, and reservation is atomic so concurrent requests cannot overshoot it.
+Accept bounce, deferral, complaint, suppression, and delayed-delivery procedures
+without copying raw recipients into D1 or application logs.
+A provider HTTP `200` or `email.sent` event means that Resend accepted the request and
+will attempt delivery; it does not prove arrival in the intended inbox. Confirm actual
+receipt during the closed test. Review the Metrics dashboard daily and keep bounce below
+4% and spam complaints below 0.08%; pause GlucoScope sends before either threshold is
+reached and investigate the cause. Resend may pause or terminate accounts that exceed
+these limits. Do not make a per-second provider number canonical because official pages
+have shown different values. Check the real team Usage page and obey `ratelimit-*`,
+`retry-after`, and `429` responses in addition to GlucoScope's own limits.
+Recheck [Resend pricing](https://resend.com/pricing),
+[message-content storage](https://resend.com/docs/knowledge-base/how-do-i-ensure-sensitive-data-isnt-stored-on-resend),
+[email suppressions](https://resend.com/docs/dashboard/emails/email-suppressions),
+[the Resend DPA](https://resend.com/legal/dpa), and
+[open/click tracking](https://resend.com/docs/dashboard/domains/tracking). Also recheck
+[Resend Usage Limits](https://resend.com/docs/api-reference/rate-limit),
+[event meanings](https://resend.com/docs/webhooks/event-types),
+[delivered versus inbox arrival](https://resend.com/docs/knowledge-base/what-if-an-email-says-delivered-but-the-recipient-has-not-received-it), and the
+[acceptable-use sending thresholds](https://resend.com/legal/acceptable-use) immediately
+before the real test. Account and sales flags remain off until the real closed test and
+the ordinary 30-day retention plus longer Suppression List exception are explicitly
+accepted.
 
 Suggested simple explanation for the future screen:
 

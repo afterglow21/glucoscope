@@ -3,8 +3,9 @@ import { WorkerEntrypoint } from "cloudflare:workers";
 import {
   createPlusEntitlementService,
 } from "./entitlement-core.js";
+import { runAccountAuthCleanup } from "./account-auth-cleanup.js";
 import { handleAccountAuthRequest } from "./account-auth-http.js";
-import { createCloudflareEmailAdapter } from "./cloudflare-email-adapter.js";
+import { createResendEmailAdapter } from "./resend-email-adapter.js";
 import { handleStripeHttpRequest } from "./stripe-http.js";
 
 const ACCOUNT_AUTH_PATHS = new Set([
@@ -52,15 +53,16 @@ export class PlusEntitlementRpc extends WorkerEntrypoint {
 }
 
 export default class extends WorkerEntrypoint {
+  async scheduled(controller) {
+    await runAccountAuthCleanup(this.env, controller);
+  }
+
   async fetch(request) {
     const url = new URL(request.url);
     if (ACCOUNT_AUTH_PATHS.has(url.pathname)) {
       return handleAccountAuthRequest(request, this.env, {
         serviceDependencies: {
-          emailAdapter: createCloudflareEmailAdapter({
-            binding: this.env.ACCOUNT_CODE_EMAIL,
-            fromAddress: this.env.ACCOUNT_EMAIL_FROM_ADDRESS,
-          }),
+          emailAdapter: createResendEmailAdapter(this.env),
         },
       });
     }

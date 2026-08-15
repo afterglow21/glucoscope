@@ -12,7 +12,12 @@ import {
   AccountAuthError,
   createAccountAuthService,
 } from "../src/account-auth-core.js";
+import {
+  AccountAuthCleanupError,
+  runAccountAuthCleanup,
+} from "../src/account-auth-cleanup.js";
 import { handleAccountAuthRequest } from "../src/account-auth-http.js";
+import { enforceAccountAuthRateLimit } from "../src/account-auth-rate-limit.js";
 import { createD1AccountAuthStore } from "../src/account-auth-store.js";
 import { verifyAccountTurnstile } from "../src/account-auth-turnstile.js";
 import { hashSessionToken } from "../src/credentials.js";
@@ -63,6 +68,7 @@ const ENABLED_ENV = Object.freeze({
   ACCOUNT_AUTH_CODE_ATTEMPTS: "5",
   ACCOUNT_AUTH_RESEND_SECONDS: "60",
   ACCOUNT_AUTH_MAX_SENDS_PER_HOUR: "5",
+  ACCOUNT_AUTH_GLOBAL_MAX_SENDS_PER_24_HOURS: "80",
   ACCOUNT_AUTH_SESSION_TTL_DAYS: "90",
   PLUS_BUYER_CONFIRMATION_VERSION: "2026-08-15",
 });
@@ -136,6 +142,7 @@ function createDatabase() {
     "../migrations/0002_account_auth.sql",
     "../migrations/0003_stripe_checkout_state.sql",
     "../migrations/0004_guardian_buyer_confirmation.sql",
+    "../migrations/0005_account_email_global_send_limit.sql",
   ]) {
     database.raw.exec(readFileSync(new URL(migration, import.meta.url), "utf8"));
   }
@@ -366,6 +373,7 @@ test("real SQLite flow sends a short code, rotates sessions for recovery, and st
     expiresInMinutes: 10,
     contactRole: "guardian",
     purpose: "sign_in_or_recover",
+    requestId: CHALLENGE_IDS[0],
   });
   await assert.rejects(
     service.requestCode(confirmedGuardian(), { turnstileVerified: true }),
@@ -715,6 +723,262 @@ test("codes expire after ten minutes and sending is capped per HMAC per hour", a
   assert.equal(delivered.length, 5);
 });
 
+test("rolling global email cap atomically reserves 80 attempts across addresses", async (t) => {
+  const database = createDatabase();
+  t.after(() => database.close());
+  const store = createD1AccountAuthStore(database);
+
+  function challengeInput(index, createdAt = NOW) {
+    const suffix = index.toString(16).padStart(12, "0");
+    const emailLookupHmac = index.toString(36).padStart(43, "0");
+    return {
+      id: `00000000-0000-4000-8000-${suffix}`,
+      emailLookupHmac,
+      alternateEmailLookupHmac: emailLookupHmac,
+      emailHmacKeyVersion: 1,
+      codeHmac: "K".repeat(43),
+      verificationGrantHash: "V".repeat(43),
+      contactRole: "self",
+      adultConfirmed: true,
+      guardianConfirmed: false,
+      buyerConfirmationVersion: "2026-08-15",
+      attempts: 5,
+      createdAt,
+      expiresAt: createdAt + 10 * 60 * 1000,
+      resendAllowedAfter: createdAt - 60 * 1000,
+      windowStartsAt: createdAt - 60 * 60 * 1000,
+      maximumPerWindow: 5,
+      retentionStartsAt: createdAt - 24 * 60 * 60 * 1000,
+      rateWindowMs: 60 * 60 * 1000,
+      resendCooldownMs: 60 * 1000,
+      globalWindowStartsAt: createdAt - 24 * 60 * 60 * 1000,
+      globalMaximumPerWindow: 80,
+      globalRateWindowMs: 24 * 60 * 60 * 1000,
+    };
+  }
+
+  const outcomes = await Promise.all(
+    Array.from({ length: 81 }, (_, offset) => (
+      store.issueChallenge(challengeInput(offset + 1))
+    )),
+  );
+  assert.equal(outcomes.filter((item) => item.status === "pending").length, 80);
+  assert.equal(outcomes.filter((item) => item.status === "throttled").length, 1);
+  assert.ok(outcomes.find((item) => item.status === "throttled").retryAfterSeconds >= 86_399);
+
+  const reserved = database.raw.prepare(`
+    SELECT COUNT(*) AS count FROM account_email_send_reservations
+  `).get();
+  const challenges = database.raw.prepare(`
+    SELECT COUNT(*) AS count FROM account_auth_challenges
+  `).get();
+  assert.equal(Number(reserved.count), 80);
+  assert.equal(Number(challenges.count), 80);
+
+  await store.markChallengeSent({
+    id: challengeInput(1).id,
+    sentAt: NOW + 1,
+  });
+  await store.markChallengeSendFailed({
+    id: challengeInput(2).id,
+    failedAt: NOW + 2,
+  });
+  const stateCounts = database.raw.prepare(`
+    SELECT delivery_state, COUNT(*) AS count
+    FROM account_email_send_reservations
+    GROUP BY delivery_state
+    ORDER BY delivery_state
+  `).all();
+  assert.equal(stateCounts.length, 3);
+  assert.equal(stateCounts[0].delivery_state, "failed");
+  assert.equal(Number(stateCounts[0].count), 1);
+  assert.equal(stateCounts[1].delivery_state, "pending");
+  assert.equal(Number(stateCounts[1].count), 78);
+  assert.equal(stateCounts[2].delivery_state, "sent");
+  assert.equal(Number(stateCounts[2].count), 1);
+  assert.equal(
+    (await store.issueChallenge(challengeInput(82))).status,
+    "throttled",
+  );
+
+  const afterWindow = NOW + 24 * 60 * 60 * 1000 + 1;
+  assert.equal(
+    (await store.issueChallenge(challengeInput(83, afterWindow))).status,
+    "pending",
+  );
+  assert.equal(Number(database.raw.prepare(`
+    SELECT COUNT(*) AS count FROM account_email_send_reservations
+  `).get().count), 1);
+
+  const reservationColumns = database.raw.prepare(`
+    PRAGMA table_info(account_email_send_reservations)
+  `).all().map((column) => column.name);
+  assert.deepEqual(reservationColumns, [
+    "challenge_id",
+    "delivery_state",
+    "reserved_at",
+    "updated_at",
+  ]);
+});
+
+test("hourly cleanup keeps the exact 24-hour boundary and deletes it one millisecond later", async (t) => {
+  const database = createDatabase();
+  t.after(() => database.close());
+  const threshold = NOW - 24 * 60 * 60 * 1000;
+
+  function insertChallenge({ id, marker, expiresAt }) {
+    const createdAt = expiresAt - 10 * 60 * 1000;
+    database.raw.prepare(`
+      INSERT INTO account_auth_challenges (
+        id, email_lookup_hmac, email_hmac_key_version, code_hmac,
+        verification_grant_hash, contact_role, send_state,
+        attempts_remaining, created_at, expires_at, sent_at,
+        consumed_at, invalidated_at, adult_confirmed,
+        guardian_confirmed, buyer_confirmation_version
+      ) VALUES (
+        ?1, ?2, 1, ?3, ?4, 'self', 'failed',
+        5, ?5, ?6, NULL, NULL, ?6, 1, 0, '2026-08-15'
+      )
+    `).run(
+      id,
+      marker.repeat(43),
+      marker.toUpperCase().repeat(43),
+      marker.toLowerCase().repeat(43),
+      createdAt,
+      expiresAt,
+    );
+  }
+
+  insertChallenge({
+    id: "cccccccc-cccc-4ccc-8ccc-ccccccccccc1",
+    marker: "a",
+    expiresAt: threshold - 1,
+  });
+  insertChallenge({
+    id: "cccccccc-cccc-4ccc-8ccc-ccccccccccc2",
+    marker: "b",
+    expiresAt: threshold,
+  });
+  insertChallenge({
+    id: "cccccccc-cccc-4ccc-8ccc-ccccccccccc3",
+    marker: "c",
+    expiresAt: NOW + 10 * 60 * 1000,
+  });
+  database.raw.prepare(`
+    INSERT INTO account_email_send_reservations (
+      challenge_id, delivery_state, reserved_at, updated_at
+    ) VALUES
+      ('dddddddd-dddd-4ddd-8ddd-ddddddddddd1', 'failed', ?1, ?1),
+      ('dddddddd-dddd-4ddd-8ddd-ddddddddddd2', 'sent', ?2, ?2),
+      ('dddddddd-dddd-4ddd-8ddd-ddddddddddd3', 'pending', ?3, ?3)
+  `).run(threshold - 1, threshold, NOW);
+
+  const env = {
+    ACCOUNT_AUTH_CLEANUP_ENABLED: "true",
+    PLUS_DB: database,
+  };
+  assert.deepEqual(
+    await runAccountAuthCleanup(env, { scheduledTime: NOW }),
+    { cleaned: true },
+  );
+  assert.deepEqual(database.raw.prepare(`
+    SELECT id FROM account_auth_challenges ORDER BY id
+  `).all().map((row) => row.id), [
+    "cccccccc-cccc-4ccc-8ccc-ccccccccccc2",
+    "cccccccc-cccc-4ccc-8ccc-ccccccccccc3",
+  ]);
+  assert.deepEqual(database.raw.prepare(`
+    SELECT challenge_id FROM account_email_send_reservations
+    ORDER BY challenge_id
+  `).all().map((row) => row.challenge_id), [
+    "dddddddd-dddd-4ddd-8ddd-ddddddddddd2",
+    "dddddddd-dddd-4ddd-8ddd-ddddddddddd3",
+  ]);
+
+  await runAccountAuthCleanup(env, { scheduledTime: NOW + 1 });
+  assert.deepEqual(database.raw.prepare(`
+    SELECT id FROM account_auth_challenges ORDER BY id
+  `).all().map((row) => row.id), [
+    "cccccccc-cccc-4ccc-8ccc-ccccccccccc3",
+  ]);
+  assert.deepEqual(database.raw.prepare(`
+    SELECT challenge_id FROM account_email_send_reservations
+    ORDER BY challenge_id
+  `).all().map((row) => row.challenge_id), [
+    "dddddddd-dddd-4ddd-8ddd-ddddddddddd3",
+  ]);
+});
+
+test("disabled cleanup touches neither controller time, D1, nor store factory", async () => {
+  let touched = false;
+  const env = new Proxy({ ACCOUNT_AUTH_CLEANUP_ENABLED: "false" }, {
+    get(target, property, receiver) {
+      if (property === "PLUS_DB") {
+        touched = true;
+        throw new Error("D1 must stay untouched");
+      }
+      return Reflect.get(target, property, receiver);
+    },
+  });
+  const controller = Object.defineProperty({}, "scheduledTime", {
+    get() {
+      touched = true;
+      throw new Error("time must stay untouched");
+    },
+  });
+  const result = await runAccountAuthCleanup(env, controller, {
+    createStore() {
+      touched = true;
+      throw new Error("store must stay untouched");
+    },
+  });
+  assert.deepEqual(result, { cleaned: false, skipped: true });
+  assert.equal(touched, false);
+});
+
+test("cleanup binding, clock, and D1 failures stay generic with no logging", async () => {
+  const enabled = { ACCOUNT_AUTH_CLEANUP_ENABLED: "true" };
+  for (const [env, controller, dependencies] of [
+    [enabled, { scheduledTime: NOW }, {}],
+    [enabled, { scheduledTime: -1 }, {}],
+    [enabled, {}, {}],
+    [enabled, { scheduledTime: NOW }, {
+      createStore() {
+        return {
+          async cleanupExpiredAuthRecords() {
+            throw new Error("private-database-detail");
+          },
+        };
+      },
+    }],
+  ]) {
+    await assert.rejects(
+      runAccountAuthCleanup(env, controller, dependencies),
+      (error) => {
+        assert.ok(error instanceof AccountAuthCleanupError);
+        assert.equal(error.code, "cleanup_unavailable");
+        assert.equal(error.message, "cleanup_unavailable");
+        assert.doesNotMatch(String(error), /private-database-detail/u);
+        return true;
+      },
+    );
+  }
+
+  const cleanupSource = readFileSync(
+    new URL("../src/account-auth-cleanup.js", import.meta.url),
+    "utf8",
+  );
+  const indexSource = readFileSync(new URL("../src/index.js", import.meta.url), "utf8");
+  const config = JSON.parse(readFileSync(
+    new URL("../wrangler.jsonc", import.meta.url),
+    "utf8",
+  ));
+  assert.doesNotMatch(cleanupSource, /console\s*\.|email_lookup|code_hmac/u);
+  assert.match(indexSource, /runAccountAuthCleanup\(this\.env, controller\)/u);
+  assert.equal(config.vars.ACCOUNT_AUTH_CLEANUP_ENABLED, "false");
+  assert.deepEqual(config.triggers.crons, ["0 * * * *"]);
+});
+
 test("adult and guardian confirmations are explicit and role-specific", async (t) => {
   const database = createDatabase();
   t.after(() => database.close());
@@ -1055,6 +1319,9 @@ test("HTTP contract enforces exact Origin, bounded JSON, CORS, route methods, an
   const turnstileCalls = [];
   const dependencies = {
     service,
+    async enforceRateLimit() {
+      return { allowed: true };
+    },
     async verifyTurnstile(input) {
       turnstileCalls.push(input);
       return { verified: true };
@@ -1219,12 +1486,303 @@ test("HTTP contract enforces exact Origin, bounded JSON, CORS, route methods, an
   });
 });
 
+test("Cloudflare rate-limit bindings enforce 5 and 30 per IP with separate keys", async () => {
+  function createCountingLimiter(maximum) {
+    const counts = new Map();
+    const keys = [];
+    return {
+      keys,
+      async limit({ key }) {
+        keys.push(key);
+        const next = (counts.get(key) || 0) + 1;
+        counts.set(key, next);
+        return { success: next <= maximum };
+      },
+    };
+  }
+
+  const requestCodeLimiter = createCountingLimiter(5);
+  const requestCodeRequest = new Request("https://worker.invalid/", {
+    headers: { "CF-Connecting-IP": "203.0.113.10" },
+  });
+  for (let count = 0; count < 5; count += 1) {
+    assert.deepEqual(
+      await enforceAccountAuthRateLimit(requestCodeRequest, requestCodeLimiter),
+      { allowed: true },
+    );
+  }
+  await assert.rejects(
+    enforceAccountAuthRateLimit(requestCodeRequest, requestCodeLimiter),
+    (error) => {
+      assert.ok(assertAuthError("please_wait", 429)(error));
+      assert.equal(error.retryAfterSeconds, 60);
+      return true;
+    },
+  );
+  assert.deepEqual(
+    await enforceAccountAuthRateLimit(new Request("https://worker.invalid/", {
+      headers: { "CF-Connecting-IP": "203.0.113.11" },
+    }), requestCodeLimiter),
+    { allowed: true },
+  );
+  assert.equal(requestCodeLimiter.keys.includes(EMAIL), false);
+
+  const verifyLimiter = createCountingLimiter(30);
+  const verifyRequest = new Request("https://worker.invalid/", {
+    headers: { "CF-Connecting-IP": "2001:db8::1" },
+  });
+  for (let count = 0; count < 30; count += 1) {
+    await enforceAccountAuthRateLimit(verifyRequest, verifyLimiter);
+  }
+  await assert.rejects(
+    enforceAccountAuthRateLimit(verifyRequest, verifyLimiter),
+    assertAuthError("please_wait", 429),
+  );
+
+  const config = JSON.parse(readFileSync(
+    new URL("../wrangler.jsonc", import.meta.url),
+    "utf8",
+  ));
+  assert.equal(config.ratelimits.length, 2);
+  assert.deepEqual(config.ratelimits.map((item) => ({
+    name: item.name,
+    limit: item.simple.limit,
+    period: item.simple.period,
+  })), [
+    { name: "ACCOUNT_REQUEST_CODE_RATE_LIMITER", limit: 5, period: 60 },
+    { name: "ACCOUNT_VERIFY_RATE_LIMITER", limit: 30, period: 60 },
+  ]);
+  assert.equal(new Set(config.ratelimits.map((item) => item.namespace_id)).size, 2);
+  for (const item of config.ratelimits) {
+    assert.match(item.namespace_id, /^[1-9]\d*$/u);
+  }
+  assert.equal(config.vars.ACCOUNT_AUTH_GLOBAL_MAX_SENDS_PER_24_HOURS, "80");
+});
+
+test("auth-route rate limiting runs before body, Turnstile, D1, and email work", async () => {
+  const sequence = [];
+  const service = {
+    async requestCode() {
+      sequence.push("service");
+      return {
+        ok: true,
+        status: "code_sent",
+        verificationGrant: VERIFICATION_GRANTS[0],
+      };
+    },
+    async verifyCode() {
+      sequence.push("service");
+      return { ok: true, status: "verified" };
+    },
+  };
+  const rateLimitedEnv = {
+    ...ENABLED_ENV,
+    ACCOUNT_REQUEST_CODE_RATE_LIMITER: {
+      async limit({ key }) {
+        sequence.push(`rate:${key}`);
+        return { success: false };
+      },
+    },
+  };
+  const limited = await handleAccountAuthRequest(new Request(
+    "https://worker.invalid/v1/auth/request-code",
+    {
+      method: "POST",
+      headers: {
+        Origin: ORIGIN,
+        "CF-Connecting-IP": "203.0.113.20",
+        "Content-Type": "application/json",
+      },
+      body: "not-json",
+    },
+  ), rateLimitedEnv, {
+    service,
+    async verifyTurnstile() {
+      sequence.push("turnstile");
+      return { verified: true };
+    },
+  });
+  assert.equal(limited.status, 429);
+  assert.deepEqual(await limited.json(), { ok: false, error: "please_wait" });
+  assert.equal(limited.headers.get("Retry-After"), "60");
+  assert.deepEqual(sequence, ["rate:203.0.113.20"]);
+
+  sequence.length = 0;
+  const allowedEnv = {
+    ...ENABLED_ENV,
+    ACCOUNT_REQUEST_CODE_RATE_LIMITER: {
+      async limit({ key }) {
+        sequence.push(`rate:${key}`);
+        return { success: true };
+      },
+    },
+    ACCOUNT_VERIFY_RATE_LIMITER: {
+      async limit({ key }) {
+        sequence.push(`rate:${key}`);
+        return { success: true };
+      },
+    },
+  };
+  const dependencies = {
+    service,
+    async verifyTurnstile() {
+      sequence.push("turnstile");
+      return { verified: true };
+    },
+  };
+  const allowed = await handleAccountAuthRequest(new Request(
+    "https://worker.invalid/v1/auth/request-code",
+    {
+      method: "POST",
+      headers: {
+        Origin: ORIGIN,
+        "CF-Connecting-IP": "203.0.113.21",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...confirmedSelf(),
+        turnstileToken: "turnstile-token",
+      }),
+    },
+  ), allowedEnv, dependencies);
+  assert.equal(allowed.status, 200);
+  assert.deepEqual(sequence, ["rate:203.0.113.21", "turnstile", "service"]);
+
+  sequence.length = 0;
+  const verified = await handleAccountAuthRequest(new Request(
+    "https://worker.invalid/v1/auth/verify",
+    {
+      method: "POST",
+      headers: {
+        Origin: ORIGIN,
+        "CF-Connecting-IP": "203.0.113.22",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: EMAIL,
+        code: "123456",
+        verificationGrant: VERIFICATION_GRANTS[0],
+      }),
+    },
+  ), allowedEnv, dependencies);
+  assert.equal(verified.status, 200);
+  assert.deepEqual(sequence, ["rate:203.0.113.22", "service"]);
+});
+
+test("missing IP, invalid IP, missing limiter, and limiter error fail closed", async () => {
+  const validRequest = new Request("https://worker.invalid/", {
+    headers: { "CF-Connecting-IP": "203.0.113.30" },
+  });
+  await assert.rejects(
+    enforceAccountAuthRateLimit(validRequest),
+    assertAuthError("service_unavailable", 503),
+  );
+  await assert.rejects(
+    enforceAccountAuthRateLimit(validRequest, {
+      async limit() {
+        throw new Error("private-rate-limit-detail");
+      },
+    }),
+    (error) => {
+      assert.ok(assertAuthError("service_unavailable", 503)(error));
+      assert.doesNotMatch(String(error), /private-rate-limit-detail/u);
+      return true;
+    },
+  );
+  await assert.rejects(
+    enforceAccountAuthRateLimit(validRequest, {
+      async limit() {
+        return {};
+      },
+    }),
+    assertAuthError("service_unavailable", 503),
+  );
+
+  for (const value of [
+    null,
+    "",
+    "999.0.0.1",
+    "01.2.3.4",
+    "203.0.113.30, 203.0.113.31",
+    "[2001:db8::1]",
+    "2001:db8::1%eth0",
+  ]) {
+    let bindingTouched = false;
+    const headers = value === null ? {} : { "CF-Connecting-IP": value };
+    await assert.rejects(
+      enforceAccountAuthRateLimit(new Request("https://worker.invalid/", {
+        headers,
+      }), {
+        async limit() {
+          bindingTouched = true;
+          return { success: true };
+        },
+      }),
+      assertAuthError("service_unavailable", 503),
+    );
+    assert.equal(bindingTouched, false);
+  }
+
+  const rateLimitSource = readFileSync(
+    new URL("../src/account-auth-rate-limit.js", import.meta.url),
+    "utf8",
+  );
+  assert.doesNotMatch(rateLimitSource, /console\s*\.|PLUS_DB|\.prepare\s*\(/u);
+
+  let serviceTouched = false;
+  const routeRequest = new Request(
+    "https://worker.invalid/v1/auth/request-code",
+    {
+      method: "POST",
+      headers: {
+        Origin: ORIGIN,
+        "CF-Connecting-IP": "203.0.113.30",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...confirmedSelf(),
+        turnstileToken: "turnstile-token",
+      }),
+    },
+  );
+  const routeResponse = await handleAccountAuthRequest(
+    routeRequest,
+    ENABLED_ENV,
+    {
+      service: {
+        async requestCode() {
+          serviceTouched = true;
+          throw new Error("must not run");
+        },
+      },
+    },
+  );
+  assert.equal(routeResponse.status, 503);
+  assert.deepEqual(await routeResponse.json(), {
+    ok: false,
+    error: "service_unavailable",
+  });
+  assert.equal(serviceTouched, false);
+});
+
 test("disabled HTTP stays a no-CORS 503 before invoking the service", async () => {
   let touched = false;
+  const disabledEnv = new Proxy({ PLUS_ACCOUNT_AUTH_HTTP_ENABLED: "false" }, {
+    get(target, property, receiver) {
+      if (
+        property === "ACCOUNT_REQUEST_CODE_RATE_LIMITER"
+        || property === "ACCOUNT_VERIFY_RATE_LIMITER"
+      ) {
+        touched = true;
+        throw new Error("rate limiter must not run");
+      }
+      return Reflect.get(target, property, receiver);
+    },
+  });
   const response = await handleAccountAuthRequest(new Request(
-    "https://worker.invalid/v1/session",
+    "https://worker.invalid/v1/auth/request-code",
     { headers: { Origin: ORIGIN } },
-  ), { PLUS_ACCOUNT_AUTH_HTTP_ENABLED: "false" }, {
+  ), disabledEnv, {
     service: new Proxy({}, {
       get() {
         touched = true;

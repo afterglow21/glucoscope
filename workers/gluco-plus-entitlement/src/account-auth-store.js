@@ -36,6 +36,23 @@ export function createD1AccountAuthStore(database) {
   const db = requireDatabase(database);
 
   return Object.freeze({
+    async cleanupExpiredAuthRecords({
+      challengeExpiresBefore,
+      reservationReservedBefore,
+    }) {
+      await db.batch([
+        db.prepare(`
+          DELETE FROM account_auth_challenges
+          WHERE expires_at < ?1
+        `).bind(challengeExpiresBefore),
+        db.prepare(`
+          DELETE FROM account_email_send_reservations
+          WHERE reserved_at < ?1
+        `).bind(reservationReservedBefore),
+      ]);
+      return { cleaned: true };
+    },
+
     async issueChallenge({
       id,
       emailLookupHmac,
@@ -56,12 +73,19 @@ export function createD1AccountAuthStore(database) {
       retentionStartsAt,
       rateWindowMs,
       resendCooldownMs,
+      globalWindowStartsAt,
+      globalMaximumPerWindow,
+      globalRateWindowMs,
     }) {
       const results = await db.batch([
         db.prepare(`
           DELETE FROM account_auth_challenges
           WHERE expires_at < ?1
         `).bind(retentionStartsAt),
+        db.prepare(`
+          DELETE FROM account_email_send_reservations
+          WHERE reserved_at < ?1
+        `).bind(globalWindowStartsAt),
         db.prepare(`
           UPDATE account_auth_challenges
           SET invalidated_at = ?3
@@ -89,6 +113,10 @@ export function createD1AccountAuthStore(database) {
               SELECT 1 FROM account_auth_challenges
               WHERE email_lookup_hmac IN (?2, ?15) AND created_at > ?16
             )
+            AND (
+              SELECT COUNT(*) FROM account_email_send_reservations
+              WHERE reserved_at >= ?17
+            ) < ?18
         `).bind(
           id,
           emailLookupHmac,
@@ -106,6 +134,20 @@ export function createD1AccountAuthStore(database) {
           maximumPerWindow,
           alternateEmailLookupHmac,
           resendAllowedAfter,
+          globalWindowStartsAt,
+          globalMaximumPerWindow,
+        ),
+        db.prepare(`
+          INSERT INTO account_email_send_reservations (
+            challenge_id, delivery_state, reserved_at, updated_at
+          )
+          SELECT ?1, 'pending', ?2, ?2
+          WHERE EXISTS (
+            SELECT 1 FROM account_auth_challenges WHERE id = ?1
+          )
+        `).bind(
+          id,
+          createdAt,
         ),
         db.prepare(`
           UPDATE account_auth_challenges
@@ -138,15 +180,24 @@ export function createD1AccountAuthStore(database) {
               WHERE email_lookup_hmac IN (?2, ?3)
                 AND created_at >= ?4
                 AND id <> ?1
-            ) AS previous_window_count
+            ) AS previous_window_count,
+            (
+              SELECT MIN(reserved_at) FROM account_email_send_reservations
+              WHERE reserved_at >= ?5 AND challenge_id <> ?1
+            ) AS oldest_global_window_reserved_at,
+            (
+              SELECT COUNT(*) FROM account_email_send_reservations
+              WHERE reserved_at >= ?5 AND challenge_id <> ?1
+            ) AS previous_global_window_count
         `).bind(
           id,
           emailLookupHmac,
           alternateEmailLookupHmac,
           windowStartsAt,
+          globalWindowStartsAt,
         ),
       ]);
-      const row = firstBatchRow(results[4]);
+      const row = firstBatchRow(results[6]);
       if (Boolean(row?.inserted)) return { status: "pending", id };
       const latestRetryAt = row?.latest_previous_created_at === null
         || row?.latest_previous_created_at === undefined
@@ -157,35 +208,65 @@ export function createD1AccountAuthStore(database) {
         && row?.oldest_window_created_at !== undefined
         ? Number(row.oldest_window_created_at) + rateWindowMs
         : createdAt;
+      const globalWindowRetryAt =
+        Number(row?.previous_global_window_count || 0) >= globalMaximumPerWindow
+        && row?.oldest_global_window_reserved_at !== null
+        && row?.oldest_global_window_reserved_at !== undefined
+          ? Number(row.oldest_global_window_reserved_at) + globalRateWindowMs
+          : createdAt;
       return {
         status: "throttled",
         retryAfterSeconds: Math.max(
           1,
-          Math.ceil((Math.max(latestRetryAt, windowRetryAt) - createdAt) / 1000),
+          Math.ceil((Math.max(
+            latestRetryAt,
+            windowRetryAt,
+            globalWindowRetryAt,
+          ) - createdAt) / 1000),
         ),
       };
     },
 
     async markChallengeSent({ id, sentAt }) {
-      const row = await db.prepare(`
-        UPDATE account_auth_challenges
-        SET send_state = 'sent', sent_at = ?2
-        WHERE id = ?1
-          AND send_state = 'pending'
-          AND consumed_at IS NULL
-          AND invalidated_at IS NULL
-          AND expires_at > ?2
-        RETURNING id
-      `).bind(id, sentAt).first();
+      const results = await db.batch([
+        db.prepare(`
+          UPDATE account_auth_challenges
+          SET send_state = 'sent', sent_at = ?2
+          WHERE id = ?1
+            AND send_state = 'pending'
+            AND consumed_at IS NULL
+            AND invalidated_at IS NULL
+            AND expires_at > ?2
+          RETURNING id
+        `).bind(id, sentAt),
+        db.prepare(`
+          UPDATE account_email_send_reservations
+          SET delivery_state = 'sent', updated_at = ?2
+          WHERE challenge_id = ?1
+            AND delivery_state = 'pending'
+            AND EXISTS (
+              SELECT 1 FROM account_auth_challenges
+              WHERE id = ?1 AND send_state = 'sent' AND sent_at = ?2
+            )
+        `).bind(id, sentAt),
+      ]);
+      const row = firstBatchRow(results[0]);
       return { sent: Boolean(row) };
     },
 
     async markChallengeSendFailed({ id, failedAt }) {
-      await db.prepare(`
-        UPDATE account_auth_challenges
-        SET send_state = 'failed', invalidated_at = COALESCE(invalidated_at, ?2)
-        WHERE id = ?1 AND consumed_at IS NULL
-      `).bind(id, failedAt).run();
+      await db.batch([
+        db.prepare(`
+          UPDATE account_auth_challenges
+          SET send_state = 'failed', invalidated_at = COALESCE(invalidated_at, ?2)
+          WHERE id = ?1 AND consumed_at IS NULL
+        `).bind(id, failedAt),
+        db.prepare(`
+          UPDATE account_email_send_reservations
+          SET delivery_state = 'failed', updated_at = ?2
+          WHERE challenge_id = ?1 AND delivery_state = 'pending'
+        `).bind(id, failedAt),
+      ]);
     },
 
     async getActiveChallenge({

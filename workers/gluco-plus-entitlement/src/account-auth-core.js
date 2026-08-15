@@ -17,6 +17,7 @@ import {
 const VERIFICATION_CODE_PATTERN = /^\d{6}$/u;
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/u;
 const CONTACT_ROLES = Object.freeze(new Set(["self", "guardian"]));
+const GLOBAL_SEND_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 export class AccountAuthError extends Error {
   constructor(code, status = 400, details = {}) {
@@ -75,6 +76,12 @@ export function readAccountAuthConfig(env = {}) {
       5,
       2,
       10,
+    ),
+    globalMaximumSendsPer24Hours: readInteger(
+      env.ACCOUNT_AUTH_GLOBAL_MAX_SENDS_PER_24_HOURS,
+      80,
+      1,
+      80,
     ),
     sessionTtlMs: readInteger(
       env.ACCOUNT_AUTH_SESSION_TTL_DAYS,
@@ -296,6 +303,9 @@ export function createAccountAuthService(env = {}, dependencies = {}) {
         retentionStartsAt: requestedAt - 24 * 60 * 60 * 1000,
         rateWindowMs: 60 * 60 * 1000,
         resendCooldownMs: config.resendCooldownMs,
+        globalWindowStartsAt: requestedAt - GLOBAL_SEND_WINDOW_MS,
+        globalMaximumPerWindow: config.globalMaximumSendsPer24Hours,
+        globalRateWindowMs: GLOBAL_SEND_WINDOW_MS,
       });
       if (issue.status === "throttled") {
         throw new AccountAuthError("please_wait", 429, {
@@ -314,6 +324,7 @@ export function createAccountAuthService(env = {}, dependencies = {}) {
           expiresInMinutes: Math.ceil(config.codeTtlMs / 60_000),
           contactRole: buyerConfirmation.contactRole,
           purpose: "sign_in_or_recover",
+          requestId: credentials.challengeId,
         }));
         accepted = delivery?.accepted === true;
       } catch {

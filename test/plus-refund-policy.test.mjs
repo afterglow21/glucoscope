@@ -38,9 +38,12 @@ test("Plus refund policy is short, conditional, and still blocked from sale", as
   assert.match(bible, /返金方針は、細かな時間条件や長い除外一覧を作らず/);
   assert.match(bible, /公開問い合わせ先と実際の返金受付手順が[\s\S]*販売ブロッカー/);
   assert.match(readme, /public support contact and an executable refund-support procedure are[\s\S]*still unset sale blockers/);
-  assert.match(spec, /運営者は独自ドメインをまだ保有していない/);
-  assert.match(bible, /運営者は独自ドメインをまだ保有していない/);
-  assert.match(readme, /operator owns no custom domain/);
+  assert.match(spec, /`glucoscope\.app` を年間14\.20米ドルで取得し、自動更新をオフ/);
+  assert.match(spec, /`auth\.glucoscope\.app` はResendで送信元認証済み/);
+  assert.match(bible, /`glucoscope\.app` を年間14\.20米ドルで取得しました。自動更新はオフ/);
+  assert.match(bible, /Resendでも送信ドメインが `verified`/);
+  assert.match(readme, /purchased `glucoscope\.app` for USD 14\.20 per year and turned[\s\S]*automatic renewal off/);
+  assert.match(readme, /No API[\s\S]*key, Worker Secret, real email, or deployment has been used/);
 
   const oldImmediateWindow = new RegExp(`購入から${24}時間以内|${24}時間全額返金`, "u");
   const oldNoReasonPromise = new RegExp(

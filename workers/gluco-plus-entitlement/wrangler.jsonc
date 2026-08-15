@@ -11,6 +11,29 @@
   "observability": {
     "enabled": false
   },
+  "triggers": {
+    "crons": [
+      "0 * * * *"
+    ]
+  },
+  "ratelimits": [
+    {
+      "name": "ACCOUNT_REQUEST_CODE_RATE_LIMITER",
+      "namespace_id": "3105801",
+      "simple": {
+        "limit": 5,
+        "period": 60
+      }
+    },
+    {
+      "name": "ACCOUNT_VERIFY_RATE_LIMITER",
+      "namespace_id": "3105802",
+      "simple": {
+        "limit": 30,
+        "period": 60
+      }
+    }
+  ],
   "vars": {
     "PLUS_ENTITLEMENT_RPC_ENABLED": "false",
     "PLUS_PURCHASES_ENABLED": "false",
@@ -30,6 +53,7 @@
     "PLUS_TERMS_VERSION": "",
     "PLUS_BUYER_CONFIRMATION_VERSION": "",
     "PLUS_ACCOUNT_AUTH_HTTP_ENABLED": "false",
+    "ACCOUNT_AUTH_CLEANUP_ENABLED": "false",
     "ACCOUNT_AUTH_ALLOWED_ORIGIN": "https://afterglow21.github.io",
     "ACCOUNT_AUTH_EXPECTED_HOSTNAME": "afterglow21.github.io",
     "ACCOUNT_AUTH_REQUEST_CODE_ACTION": "glucoscope-plus-request-code",
@@ -39,9 +63,13 @@
     "ACCOUNT_AUTH_CODE_ATTEMPTS": "5",
     "ACCOUNT_AUTH_RESEND_SECONDS": "60",
     "ACCOUNT_AUTH_MAX_SENDS_PER_HOUR": "5",
+    "ACCOUNT_AUTH_GLOBAL_MAX_SENDS_PER_24_HOURS": "80",
     "ACCOUNT_AUTH_SESSION_TTL_DAYS": "90",
     "ACCOUNT_EMAIL_HMAC_KEY_VERSION": "1",
     "ACCOUNT_EMAIL_PREVIOUS_HMAC_KEY_VERSION": "0",
+    "RESEND_FROM_ADDRESS": "GlucoScope <no-reply@auth.glucoscope.app>",
+    "RESEND_TIMEOUT_MS": "10000",
+    "RESEND_RESPONSE_LIMIT_BYTES": "4096",
     "PLUS_PRICE_JPY": "300",
     "PLUS_DURATION_DAYS": "30",
     "SHARE_TRIAL_RESERVATION_TTL_SECONDS": "600"

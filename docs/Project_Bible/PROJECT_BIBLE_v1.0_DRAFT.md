@@ -3807,11 +3807,45 @@ Plusの主要特典をほとんど利用できず、運営側でも解決でき�
 まだ決まっていないため、これは販売ブロッカーです。公開ページ、決済、Worker、Stripe設定は
 この決定だけでは有効にしません。
 
-同日、運営者は独自ドメインをまだ保有していないことを確認しました。Cloudflare Email Serviceで
-一般の宛先へ確認コードを送るには、Cloudflare DNSで管理する送信ドメインまたはサブドメインが必要なため、
-実メール、アカウント公開、Plus販売は停止したままにします。`glucoscope.app`は公式RDAPで登録記録が
-見つからない候補でしたが、購入、商標確認、価格確認、Cloudflare設定は行っていません。購入直前に
-空き、商標、初年度・更新価格を再確認し、運営者の明示承認なしに取得しません。
+同日、運営者は `glucoscope.app` を年間14.20米ドルで取得しました。自動更新はオフです。
+Plusの確認メールには `auth.glucoscope.app` を専用の送信元として使う方針です。期限前に、
+ドメインを続けるかと、その時点の更新価格を運営者があらためて確認します。
+
+月額5米ドルのCloudflare Email Service / Workers Paidは契約しておらず、固定費を避けるため
+確認メールの候補から外しました。代わりにResend Freeを確認メールの送信候補とします。
+2026年8月15日時点の無料枠は、月3,000通、1日100通、送信ドメイン1つ、月額0米ドルです。
+送信に使う情報は、宛先メールアドレス、10分で無効になる6桁コード、コードの入力方法を伝える
+短い固定案内だけとし、氏名、血糖値、グラフ、接続情報、AIお手紙を含めません。開封・クリック追跡は
+無効のまま使います。Resendでは無料枠の通常の送信記録とメール本文が最長30日保持されます。
+hard bounceまたは迷惑メール報告があった宛先はチーム全体のSuppression Listへ入り、全送信ドメインからの
+送信が止まります。原因を確認・解決した後に運営者が手動で削除するまで、30日を超えて残る場合があります。
+原因未解決では削除も再送も行いません。どちらの保持中もコードの有効期限は10分のままです。
+料金・上限・通常の保持条件とSuppression List例外を実メール前に再確認し、少人数の実メール、配信失敗時の手順、プライバシー説明を
+受け入れるまで、アカウント、確認メール、Plus販売はすべて停止したままにします。同日、
+`auth.glucoscope.app` をResendへ追加し、Cloudflare DNSへ必要なSPF、DKIM、MX、DMARCの4レコードを
+手動で追加しました。公開DNSで4件が確認でき、Resendでも送信ドメインが `verified` になっています。
+受信機能は無効、開封・クリック追跡は未設定のため無効です。rolling 24時間で80件までの全体送信予約上限を
+D1で原子的に確保し、pending、sent、failedのすべてを消費として扱うローカル基盤を追加しました。
+確認コードの一時記録は `expires_at < cleanup時刻 - 24時間`、全体送信予約は
+`reserved_at < cleanup時刻 - 24時間` を毎時cleanupの対象とします。毎時実行のため通常は基準から
+約24〜25時間で削除され、公開文では「おおむね1日」と説明します。checked-inのcleanup flagは`false`で、
+D1と実環境cleanupの受け入れ後だけ有効にします。確認済みアカウントのメール照合HMACと購入・会計記録の
+保持期間は、この一時記録とは別で未決です。
+
+確認コード送信は同じ接続元ごとに5回/60秒、コード確認は30回/60秒のCloudflare Rate Limiting bindingを
+本文読取、Turnstile、D1、メール送信より前に使います。検証した `CF-Connecting-IP` はbindingの一時的なkey
+だけに使い、D1やapplication logへ保存しません。欠落、不正、binding失敗では、有効なアカウント認証経路
+だけを`503`で閉じ、アカウント認証が停止中ならbindingへ触れません。
+
+Resend APIのHTTP `200`または`email.sent`は、要求を受け付けて配送を試す状態であり、受信箱への到着を
+保証しません。少人数の実メールでは本人の受信箱まで確認します。運営者はbounce率4%未満、spam complaint率
+0.08%未満を日次確認し、近づいた時点で送信を止めて原因を調べます。超過時はResend側で一時停止・終了され得ます。
+APIの秒間上限は固定値を正本化せず、実アカウントのUsage画面、各応答の `ratelimit-*`、`retry-after`、`429` を
+確認して従います。運用根拠は[Resend Usage Limits](https://resend.com/docs/api-reference/rate-limit)、
+[Event Types](https://resend.com/docs/webhooks/event-types)、
+[Delivered表示と実受信の違い](https://resend.com/docs/knowledge-base/what-if-an-email-says-delivered-but-the-recipient-has-not-received-it)、
+[Acceptable Use Policy](https://resend.com/legal/acceptable-use)です。
+API key、Worker Secret、実メール送信、デプロイはまだ行っていません。
 
 常時表示モードは、ユーザー展開を始めた後に実装します。
 本人が選んだ時だけ、横向きのグラフ画面に限定して動かし、
