@@ -7,6 +7,7 @@ const trustPackUrl = new URL("../pages/about/trust-pack.html", import.meta.url);
 const usageDashboardUrl = new URL("../pages/about/usage-dashboard.html", import.meta.url);
 const trustDirUrl = new URL("../pages/trust/", import.meta.url);
 const plusSpecUrl = new URL("../docs/Feature_Specs/PLUS_30_DAY_PASS.md", import.meta.url);
+const projectBibleUrl = new URL("../docs/Project_Bible/PROJECT_BIBLE_v1.0_DRAFT.md", import.meta.url);
 
 async function read(url) {
   return readFile(url, "utf8");
@@ -55,6 +56,30 @@ test("Plus 30-day pass records the approved one-time boundary without claiming s
   assert.doesNotMatch(spec, /販売中|購入できます|自動更新あり/);
   assert.match(spec, /Subscriptionや自動更新を使わない/);
 });
+
+test("Plus policy candidates stay internal while public pages remain simple", async () => {
+  const [spec, privacy, roadmap, bible] = await Promise.all([
+    read(plusSpecUrl),
+    read(new URL("privacy-notes.html", trustDirUrl)),
+    read(new URL("roadmap.html", trustDirUrl)),
+    read(projectBibleUrl),
+  ]);
+
+  assert.match(spec, /初期販売の候補は、18歳以上/);
+  assert.match(spec, /体験を成功した日から90日間だけ/);
+  assert.match(spec, /販売前の保持候補は7年/);
+  assert.match(bible, /初期販売のアカウント境界候補を「18歳以上/);
+  assert.match(bible, /最後の支払いまたは最終解決の遅い方から180日以内/);
+
+  for (const publicPage of [privacy, roadmap]) {
+    assert.doesNotMatch(publicPage, /最小会計記録は7年|会計記録の候補は7年/u);
+    assert.doesNotMatch(publicPage, /最後の支払いまたは解決から180日/u);
+    assert.doesNotMatch(publicPage, /体験した日から90日間だけ/u);
+  }
+  assert.match(privacy, /Plus 30日パス（まだ販売していません）/);
+  assert.match(roadmap, /まだ販売していません/);
+});
+
 
 test("Trust Pack internal links and local assets resolve", async () => {
   const pages = [trustPackUrl, ...await trustPageUrls()];

@@ -16,19 +16,29 @@ Local-only foundation for the proposed Plus 30-day pass.
 
 The checked-in configuration deliberately keeps RPC, purchases, Checkout HTTP, Stripe
 webhooks, and account HTTP disabled. It has no public `workers.dev` URL, no preview URL,
-no D1 binding, no Stripe identifier, and no Secret declaration. Every checked-in public
-route therefore returns `503 service_unavailable` before reading its request. Worker
-observability is also disabled so account and payment operations do not enter the
-standard Worker logs.
+no D1 binding, no outbound-email binding, no configured sender address, no Stripe
+identifier, and no Secret declaration. Every checked-in public route therefore returns
+`503 service_unavailable` before reading its request. Worker observability is also
+disabled so account and payment operations do not enter the standard Worker logs.
 
 The internal verified-payment function also checks `PLUS_PURCHASES_ENABLED` before it
 reads payment identifiers, generates an entitlement ID, or touches D1. Missing or false
 always fails closed; only an explicit true value allows processing to begin.
 
+Checkout has a separate commerce-readiness gate. Even when the technical Checkout flag
+is enabled, it returns `503 sales_not_ready` before authentication, D1, or Stripe unless
+all of the following are explicitly confirmed: JPY 300 as the buyer's final total,
+the seller's separately reviewed tax treatment, the reviewed buyer policy, a dated terms
+version, and same-site public pages for the commercial disclosure, refund policy, and
+support. Checked-in values remain false, undecided, or empty. The gate is defense in
+depth, not a substitute for reviewing the actual pages and Stripe screen.
+
 Do not deploy this directory yet. After a real D1 database exists, add only its real
-binding and migration directory to `wrangler.jsonc`. Add Secrets interactively and only
-after the email and Stripe adapters have been reviewed. Never commit placeholder IDs,
-API keys, Webhook Secrets, encryption keys, or `.dev.vars`.
+binding and migration directory to a reviewed environment configuration. Add the
+outbound-email binding, sender address, and Secrets only to that reviewed environment
+after the email and Stripe boundaries have been accepted. Never commit tester email
+addresses, placeholder IDs, API keys, Webhook Secrets, HMAC keys, encryption keys, or
+`.dev.vars`.
 
 The current Wrangler dry-run can validate only that the module bundles. Because the
 checked-in configuration intentionally has no `PLUS_DB` binding, neither named RPC
@@ -112,11 +122,40 @@ current version above 1 without its previous key, or simultaneous current-and-pr
 accounts fails closed. A reviewed procedure for eventually retiring old keys is still a
 production prerequisite.
 
-No email adapter, D1 binding, Turnstile Secret, email-lookup HMAC Secret, or code-HMAC
-Secret is configured. If HTTP were enabled without any one of them, the route fails
-closed. A future adapter must explicitly return `{ accepted: true }`; an absent adapter,
-throw, or ambiguous response produces `503` and invalidates the code. Do not add raw
-email addresses, codes, tokens, or adapter payloads to logs.
+The Cloudflare Email Service adapter is checked in but deliberately disconnected.
+`index.js` injects it through `serviceDependencies.emailAdapter`; it expects the native
+`ACCOUNT_CODE_EMAIL` binding and an exact normalized sender in
+`ACCOUNT_EMAIL_FROM_ADDRESS`. Neither is present in `wrangler.jsonc`. There is also no
+D1 binding, Turnstile Secret, email-lookup HMAC Secret, or code-HMAC Secret. If account
+HTTP were enabled without any one of them, the route fails closed.
+
+The adapter sends one fixed Japanese/English subject and body; only the six-digit code
+and expiry minutes vary. It does not include blood-glucose data, AI content, display
+names, or other profile data. Missing configuration, a provider throw, or a malformed
+`messageId` produces the same generic `503` at the HTTP boundary and invalidates the
+challenge. The adapter has no logger or D1 access. The destination and code exist only
+in the private in-memory call and Cloudflare's send binding; the returned provider
+`messageId` is not stored by account auth. Do not add raw email addresses, codes,
+tokens, provider errors, or adapter payloads to Worker logs, D1, analytics, or events.
+
+Before the first closed test, onboard a dedicated Cloudflare Email Sending domain or
+subdomain and verify its managed SPF, DKIM, DMARC, and bounce records. Use a binding
+restricted to the exact sender and, during the closed test, only approved tester
+destinations. Keep the existing per-email HMAC limit and add a reviewed global send cap
+before allowing arbitrary recipients. A successful `send()` means only that Cloudflare
+accepted the message; bounce, deferral, complaint, suppression, and delayed-delivery
+handling still need an operating runbook that does not copy raw recipients into D1 or
+application logs.
+
+Cloudflare turns **Email preview on automatically for new sending domains**. Preview can
+retain the full HTML, text, headers, and therefore the verification code for about seven
+days. **Email preview must be OFF in the real environment before the first real
+verification email; this is a live-sales prerequisite.** Confirm the setting again after
+domain or environment changes. The relevant primary documentation is Cloudflare's
+[Workers email API](https://developers.cloudflare.com/email-service/api/send-emails/workers-api/),
+[domain configuration](https://developers.cloudflare.com/email-service/configuration/domains/),
+[send-binding restrictions](https://developers.cloudflare.com/email-service/configuration/send-bindings/),
+and [email logs](https://developers.cloudflare.com/email-service/observability/logs/).
 
 Suggested simple explanation for the future screen:
 

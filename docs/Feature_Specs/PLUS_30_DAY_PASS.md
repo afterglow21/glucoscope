@@ -1,6 +1,6 @@
 # GlucoScope Plus 30日パス
 
-Status: approved product decisions / local implementation only / not available for purchase
+Status: approved core product decisions / initial-sale, deletion, and retention policy candidates pending owner, professional, and implementation acceptance / local only / not available for purchase
 
 Last reviewed: 2026-08-15
 
@@ -12,7 +12,7 @@ Plus 30日パスは、GlucoScopeを長く育てるために、追加の便利機
 
 Plusは医療サービスではない。診断、治療判断、インスリン量、薬、機器設定、緊急時の判断を提供しない。購入により、より正しい医療判断、より良い血糖値、健康上の効果が得られるとは案内しない。
 
-価格と主な機能は決定済みだが、販売はまだ開始しない。本人確認と復旧、返金、税、問い合わせ対応、Stripeテスト決済、安全確認を終えるまで購入導線を公開しない。
+価格と主な機能は決定済みだが、販売はまだ開始しない。本人確認と復旧、初期販売の年齢・本人管理の確認、返金、税、問い合わせ対応、Stripeテスト決済、安全確認を終えるまで購入導線を公開しない。
 
 ## 2. 決定した初期商品
 
@@ -27,6 +27,7 @@ Plusは医療サービスではない。診断、治療判断、インスリン�
 | PlusのAI分析 | 認証済みPlusアカウントにつき、成功した新規分析を1日5回まで |
 | カスタム期間 | Plus特典 |
 | Share Studio | Plus特典。認証済みアカウントごとに1回だけ無料体験あり |
+| 初期販売の対象（候補・未承認） | 18歳以上で、本人が購入・メール確認・復旧・問い合わせを自分で管理でき、本人だけが使うメールを確認できる人 |
 | 販売開始 | 未定。テストモードと公開前確認の完了後 |
 
 購入前には「300円」「30日間」「1回払い」「自動更新なし」を同じ画面で見せる。期限が来ても自動で料金は発生せず、続けたい人だけが自分で新しいパスを購入する。
@@ -116,7 +117,7 @@ Stripeが決済成功を記録した時刻を開始時刻とし、その時刻�
 
 Plus利用権は、利用記録とは別の専用ストアで管理する。最低限、ランダムなaccount IDとentitlement ID、正規化メールの照合用HMACと鍵version、メール確認状態、商品、開始時刻、終了時刻、状態、Stripe参照ID、Share Studio無料体験の使用状態だけを扱う。完全なメールアドレスや復号できるメール暗号文はD1へ保存しない。メールはコード送信時のメモリと非公開メールadapterだけで扱い、HMAC鍵はデータベースやGitと分けて管理する。
 
-複数端末、ブラウザデータ削除、機種変更へ対応するため、同じメールへ届く短時間・1回限りの6桁確認コードで復旧する。確認成功時は古いsessionをすべて失効し、新しい端末へsessionを切り替える。子どもが自分のメールを持たない場合、保護者が購入する場合、共用メールの場合の案内と複数の子どもを同じ保護者メールへ安全に紐づける方法は販売前に決め、決まるまでは公開routeで保護者用accountを受け付けない。
+複数端末、ブラウザデータ削除、機種変更へ対応するため、同じメールへ届く短時間・1回限りの6桁確認コードで復旧する。確認成功時は古いsessionをすべて失効し、新しい端末へsessionを切り替える。
 
 コード送信時のTurnstileを通過したブラウザへ、256-bitのランダムな`verificationGrant`も返す。ブラウザはこれを同じタブのメモリだけに置き、コード確認時に添える。D1へ保存するのはそのSHA-256 hashだけとし、localStorage、画面、URL、公開状態へ出さない。これにより、コード入力時に2回目のTurnstileを求めず、コード送信をしていない外部からの推測を止める。再読み込み後は、もう一度コードを送るところから始める。
 
@@ -124,23 +125,35 @@ Plus利用権は、利用記録とは別の専用ストアで管理する。最�
 
 完全なメールアドレスを公開ログ、URL、利用記録D1、AI Worker、Relay Workerへ入れない。管理者の利用状況画面にもメール、Stripe ID、購入履歴を表示しない。
 
-認証済みaccountの削除では、購入記録がない場合に全session、Share Studio無料体験状態、短命な認証challenge、account識別子を削除し、同じメールで新しいaccountを作り直せるようにする。entitlementまたは決済receiptがある場合は、返金・法定保存・不正防止の保持方針が決まるまで自動削除せず、詳細を公開しない`account_deletion_requires_support`で停止する。AI quota等の別サービスに残るaccount subjectを同時に削除する調整手順も、削除routeを有効にする前に受け入れ確認する。
-
-購入記録がないaccountを完全削除して同じメールで作り直すと、現状はShare Studio無料体験も新しくなる。「1人1回」と完全削除を両立する保持期間・説明・不正防止ルールが決まるまで販売ブロッカーとし、利用者へ知らせない識別tombstoneは勝手に追加しない。
-
 購入前に、Plusの復旧に使うメールアドレスを確認済みにする。Stripe Checkoutが集めたメールアドレスだけを本人確認として信用せず、購入を始めた認証済みアカウントと、決済後に利用権を受け取るアカウントをサーバー側で同じものとして確認する。メールの確認リンクまたは確認番号は短時間・1回限りとし、試行回数を制限する。確認に失敗してもFreeの機能は止めない。
 
-### 子ども・保護者・共用メール
+### 初期販売対象の候補と、子ども・保護者・共用メール
 
-- 子どもが自分でメールや支払いを安全に管理できない場合に販売するなら、保護者である大人が確認と支払いを管理できる専用の方法を先に用意する。
+次は、販売上の行き違いを減らすための安全側の候補であり、運営者本人の承認前である。
+
+- 初期販売の候補は、18歳以上で、購入、確認メール、別端末への復旧、問い合わせを本人が自分で管理できる人だけを対象とする。
+- Plusアカウントは、本人だけが受信と復旧を管理するメール1つにつき1つとする。家族、兄弟姉妹、学校、施設、職場などの共用メールでは購入を受け付けない。
+- 18歳未満の人、保護者が子どもの代わりに購入・復旧する使い方、別の人の助けがなければメールや支払いを管理できない使い方は、初期販売の対象にしない。
+- 保護者のメール1つへ複数の子どもをまとめると、購入者、復旧できる人、AI回数、Share Studio無料体験を安全に分けられない。専用の保護者・家族機能で、保護者の同意、子どもごとの利用権と回数、復旧と解除を安全に分けられるまで、子ども向けPlus販売を停止する。
 - 子どもへ、保護者のメールやカードのパスワードを渡すよう案内しない。
-- 共用メールを使える条件、誰が復旧を承認できるか、保護者の同意をどう確認するかは販売前に決める。決まるまで購入を受け付けない。
-- 生年月日や年齢は、法務・安全上の必要性と扱いを確認せずに収集しない。初期版では、年齢を推測したり、血糖情報から子どもかどうかを判定したりしない。
+- 初期版では生年月日を集めず、年齢や本人管理の可否を血糖情報、表示名、CGMの種類から推測しない。購入直前に「18歳以上」「本人専用メール」「購入と復旧を自分で管理できる」の3点を分けて確認する。虚偽の確認を促す文面は使わない。
+- 1人が複数の本人用メールを持つことは技術だけでは完全に見分けられない。「別のメールで無料体験を繰り返さない」という利用条件を明示し、見分けられると過大に案内しない。
 - 購入できない場合も、現在血糖や基本グラフなどのFree機能はそのまま使えると案内する。
 
 購入前の短い案内候補：
 
-> Plusを購入するときは、購入後も受け取れるメールアドレスを確認します。子どもが使う場合や、自分でメールと支払いを管理することがむずかしい場合の方法は、保護者向けの安全な案内ができるまで準備中です。メールやカードのパスワードを子どもへ渡す必要はありません。Plusを購入しなくても、血糖値を見る基本機能は使えます。
+> 最初のPlus販売は、18歳以上で、購入とメールの確認、別の端末への復旧を自分で管理できる人が対象です。自分だけが使うメールを1つ確認します。子どもが使うPlusや、保護者・家族の共用メールで管理する方法は、専用の安全な仕組みができるまで販売しません。Plusを購入しなくても、血糖値を見る基本機能は使えます。
+
+### アカウント削除とShare Studio無料体験の再取得
+
+- 購入記録がなく、Share Studio無料体験も使っていないアカウントは、全session、短命な確認記録、無料体験状態、アカウント識別子を削除する。同じメールで新しいアカウントを作り直せる。
+- Share Studio無料体験を成功まで使った後にアカウントを削除する場合は、体験を成功した日から90日間だけ、メールの元に戻せない照合用HMAC、`trial_used`、自動削除に必要な期限だけを別の不正防止記録として残す。完全なメール、血糖値、表示名、CGM情報、AI本文、作成画像、購入情報は残さない。90日を過ぎた記録は自動削除する。
+- この90日内も同じメールでアカウントを作り直せるが、Share Studio無料体験はもう一度使えない。90日より前に成功した体験、または体験を使っていない削除では、この照合記録を残さない。削除画面で、残す内容、理由、消える日を隠さず説明する。
+- 90日記録にも鍵versionを持たせ、メールHMACのcurrent＋previous鍵更新時に、同じ体験記録を保ったまま原子的に更新する。鍵設定が不完全、versionが不明、旧・新HMACに別の記録がある場合は、無料体験を新しく付けず安全に停止する。この記録をログイン、連絡、購入者の追跡、別サービスの照合には使わない。
+- 別のメールで体験を繰り返すことは利用条件で禁止するが、技術で「1人」を完全に見分けられるとは案内しない。
+- 購入または未解決の支払いがあるアカウントは、現在の自動削除routeで「削除できた」と見せず、問い合わせへ案内する。全sessionの失効、Plus停止、返金の扱い、残す最小の購入記録、アカウントとの結び付きを外す日を本人へ確認してから処理する。削除だけで自動返金になるとは案内しない。
+
+この90日ルールは販売前の方針候補であり、まだ実装していない。現状の完全削除では無料体験が新しくなるため、90日記録の実装、期限削除、同じメールでの再登録、公開説明の受け入れテストが通るまで販売ブロッカーとする。
 
 ## 9. Stripe実装方針
 
@@ -183,6 +196,24 @@ Plusは優先医療相談や緊急サポートを含まない。問い合わせ�
 
 問い合わせ先は、ログインできない人も開ける公開ページに置く。返答までの目安と、緊急医療相談には対応しないことを明記する。問い合わせ番号など、カード番号や血糖情報を送らずに状況を確認できる短い参照情報を用意する。メールアドレス、Stripe参照ID、問い合わせ内容の保存期間と削除方法も販売前に決める。
 
+### 購入記録の最小保持候補
+
+購入記録は、アカウントの復旧や問い合わせに使う結び付きと、会計・返金・異議申立てのために残す最小記録を分ける。血糖値、グラフ、CGM接続情報、AI本文、表示名、カード番号、完全なメールアドレスは、どちらにも入れない。
+
+- 会計上の最小記録は、商品、金額、通貨、支払い・返金の状態と日時、Plusの対象期間、Stripeの取引を照合する参照番号だけとする。販売前の保持候補は7年だが、これはすべての運営形態に同じ法定期間だという断定ではない。個人・法人の区分、帳簿の種類、電子取引の扱いを税務・法務の専門家に確認し、必要な期間へ確定するまで販売しない。
+- 復旧や問い合わせのため、購入記録をメール照合HMACとアカウントへ結び付ける期間は、有効なPlus、未完了の支払い、返金、異議申立て、本人確認中の問い合わせがある間だけ延長できる。それらがすべて終わった後は、最後の支払いまたは最終解決の遅い方から180日以内に結び付きを外す。
+- 結び付きを外した後の会計記録は、ログイン、Plus復旧、Share Studio無料体験の判定、通常の利用状況画面に使わない。Stripe参照番号を含むため「完全に匿名」とは案内せず、会計・監査・返金の確認に用途を限定する。
+- 未解決の返金や異議申立てがある間は、解決に必要な結び付きを残せる。解決後は新しい期限を明示し、期限切れを定期的に削除または切り離す。将来の役に立つかもしれないという理由だけで延長しない。
+
+この7年と180日は販売前の最小安全候補であり、法務・税務判断そのものではない。個人情報は利用目的に必要な期間だけ保持し、必要がなくなった時は遅滞なく消す原則と、運営者に適用される帳簿・電子取引の保存義務を販売前に照合する。
+
+販売前に最新版を再確認する公的資料：
+
+- 消費者庁「成年年齢引下げについて」：日本の成年年齢は2022年4月1日から18歳。https://www.caa.go.jp/policies/policy/consumer_education/consumer_education/lower_the_age_of_adulthood/introduction
+- 個人情報保護委員会「個人情報の保護に関する法律についてのガイドライン（通則編）」：利用目的に必要な保存期間を定め、必要がなくなった時は遅滞なく消去する努力義務を確認する。https://www.ppc.go.jp/personalinfo/legal/guidelines_tsusoku/
+- 国税庁「帳簿書類等の保存期間及び保存方法」および「記帳や帳簿等保存・青色申告」：運営形態や帳簿の種類によって5年、7年、10年などがあり得るため、7年候補を一律の法定期間と断定しない。https://www.nta.go.jp/taxes/shiraberu/taxanswer/hojin/5930.htm / https://www.nta.go.jp/publication/pamph/koho/kurashi/html/01_2.htm
+- 国税庁「電子取引データの保存方法をご確認ください」：オンライン決済を含む電子取引の保存方法も別に確認する。https://www.nta.go.jp/law/joho-zeikaishaku/sonota/jirei/pdf/03-7.pdf
+
 ## 12. 購入前に見せる短い説明案
 
 次の文面は、税の扱いを決め、利用者が支払う最終額を300円と確認できた場合の案である。税が別に加わる場合は、主ボタンを含むすべての価格表示を、Stripe Checkoutの最終額と一致する表現へ直してから公開する。
@@ -214,16 +245,16 @@ Plusは優先医療相談や緊急サポートを含まない。問い合わせ�
 ## 13. 販売開始前に残る決定事項
 
 1. メール認証と復旧に使うサービス
-2. 子どもの利用・保護者購入・共用メールの条件と、必要な保護者同意
+2. 初期販売を18歳以上・本人専用メール・本人管理に限定する購入前確認と、子ども向け販売を確実に止める画面・サーバー側手順。保護者・家族機能は将来の別仕様として設計する
 3. 返金条件、返金後の利用権、問い合わせ先、返答までの目安
 4. 二重購入と「決済成功・利用権なし」の自動復旧・確認手順
 5. Stripeの事業者表示、領収書、必要な取引条件表示
 6. 300円を税込の最終支払額にするか、税を別にするか、税登録と商品税コード
 7. 長時間障害時の利用期間延長または返金の基準
-8. Plusアカウント、メール、決済参照、問い合わせ記録の保存期間と削除・訂正方法
+8. 会計記録7年・アカウント結び付き最大180日の候補を、運営形態に適用される法務・税務要件へ確定し、期限削除・切り離し・訂正を自動確認する方法
 9. 公開Usage Dashboardの10件基準を、実利用が増えた後も定期的に見直す手順
 10. 利用状況記録を停止した人へ、AI上限のための必要最小限の成功回数を別記録する説明と確認
-11. account削除後のShare Studio無料体験再取得をどう扱うかと、そのために必要な保持期間・説明
+11. account削除後、成功したShare Studio無料体験から90日だけ最小HMAC記録を残す実装、同じメールでの再登録、期限削除、公開説明
 12. メールHMAC旧鍵の安全な廃止、認証routeの全体rate limit、challenge保持データの定期削除手順
 
 ## 14. GO条件
@@ -239,6 +270,12 @@ Plusは優先医療相談や緊急サポートを含まない。問い合わせ�
 - 購入、期限切れ、再購入、返金、削除、復旧の実行型テストがある
 - 決済失敗や利用権障害でもCGM表示と接続が継続する
 - Privacy Notes、Support Policy、購入画面、返金案内が同じ内容になっている
+- 購入直前に「18歳以上」「本人専用メール」「購入と復旧を本人が管理」の3点を別々に確認し、18歳未満、保護者管理、共用メールではCheckoutを作らない。購入できなくてもFreeを止めないテストがある
+- 子ども向けPlus販売は、保護者・子どもごとの権限、復旧、同意、AI回数、無料体験を分ける専用機能の受け入れまで停止している
+- Share Studio無料体験の成功後にアカウントを削除しても、成功日から90日以内の同じメールでは再体験できず、再登録とFree利用はできる。90日後は照合記録が自動削除される実行型テストがある
+- 90日体験記録のHMAC鍵更新で使用済み状態を失わず、鍵設定不備や新旧記録の衝突では再体験を許さず停止する実行型テストがある
+- 購入記録のあるアカウント削除では、sessionとPlus停止、返金の扱い、最小会計記録、アカウント結び付きの解除を確認し、未解決時に完全削除を装わないテストがある
+- 会計記録の保持期間とアカウント結び付き最大180日の候補を専門家確認で確定し、期限後の削除・切り離しが実行型テストで固定されている
 - 実カード情報やSecretをログ・Git・ブラウザへ出さない確認がある
 - Stripeテストモードで少額決済、返金、二重Webhook、期限切れを本番相当環境で受け入れている
 - 公開前に価格と税の表記を専門家または利用する決済・会計手順で確認している
@@ -259,21 +296,23 @@ Plusは優先医療相談や緊急サポートを含まない。問い合わせ�
 - 税登録がないテスト環境では`automatic_tax`が無効である。将来有効にする場合は、対象地域の登録が`Collecting`であること、正式な商品税コードと税の扱い、Checkout最終額、領収書を別々に確認する
 - 購入画面、Checkout、完了画面、領収書で、価格、1回払い、30日、自動更新なし、税の表示が一致する
 - カード番号とSecretをGlucoScopeのブラウザやログへ出さない。メールと決済参照IDは必要な認証・購入・問い合わせ画面だけで扱い、URLや不要なログへ出さない。血糖値、接続情報、AI本文は決済経路へ入れない
-- 子ども・高齢者を含む実機確認で、「今は購入しない」「確認中」「完了」「期限切れ」「問い合わせ」を一人で見つけられる
+- 18歳以上の購入対象者（高齢者を含む）の実機確認で、「今は購入しない」「確認中」「完了」「期限切れ」「問い合わせ」を一人で見つけられる。18歳未満や保護者・共用メールの確認では購入へ進まず、Freeを続けられる
 - 決済、メール、利用権、問い合わせのどこかが失敗しても、現在血糖と基本グラフを止めない
 
 ## 15. 2026年8月15日のローカル実装チェックポイント
 
 - Plus利用権専用Workerの土台とD1 migrationを追加した。公開HTTPは常に停止応答で、RPC、購入、observabilityも停止している。D1、Stripe、メール送信、Secretは接続していない。
-- 6桁の確認コードと、タブ内メモリだけで扱う256-bitの`verificationGrant`で同じメールへ復旧するアカウント認証、sessionの総入れ替え、ログアウト、購入記録がないアカウントの削除をローカル実装した。完全なメールはD1へ保存せず、元に戻せない照合用HMACだけを扱う。current＋previous鍵による同一accountの原子的なrekeyと、設定不備・重複account時の停止も実SQLiteで確認した。公開route、メール送信adapter、D1 binding、Turnstile/HMAC Secretは未接続で、保護者・共用メールは受け付けない。
+- 6桁の確認コードと、タブ内メモリだけで扱う256-bitの`verificationGrant`で同じメールへ復旧するアカウント認証、sessionの総入れ替え、ログアウト、購入記録がないアカウントの削除をローカル実装した。完全なメールはD1へ保存せず、元に戻せない照合用HMACだけを扱う。current＋previous鍵による同一accountの原子的なrekeyと、設定不備・重複account時の停止も実SQLiteで確認した。Cloudflare Email Service用の確認コードadapterも追加したが、送信binding、送信元domain、D1 binding、Turnstile/HMAC Secretは未接続で、保護者・共用メールは受け付けない。実メール前にEmail previewを停止し、送信元認証と配信失敗時の手順を受け入れる。
 - Free 1回/日、Plus 5回/日のAI成功回数について、10分の予約、成功確定、失敗解除、重複防止、90日削除の基盤を追加した。個人上限のフラグは停止中である。
 - カスタム期間とShare Studioの共通権限判定を追加した。制限フラグは停止中のため、現在のカスタム期間の動作は変わらない。Share Studio画面と体験消費の本番接続はまだない。
 - 管理者画面は、将来のPlus内部サービスから有効なPlusアカウント合計だけを受け取れる。未接続や失敗を0件に見せず「確認できません」とする。
 - 公開Usage Dashboard候補は、前日までの完了した30日間に活動した端末プロフィールが10件以上になった時だけ全体の実数を表示する。10件未満のレスポンスには実数を入れない。
 - Stripe test mode専用のローカルadapterを追加した。CheckoutはJPY 300の`mode=payment`だけを作り、`payment_method_types`、`automatic_tax`、Subscriptionをコードから指定しない。raw bodyのWebhook署名を確認した後、Checkout Session、Price、Product、支払い状態、test mode、アカウント対応をStripeへ再取得して検証し、成功時だけ既存の利用権処理へ渡す。成功した一部・全額返金では利用権を`refunded`へ変更し、二重通知でも重複処理しない実行型SQLiteテストを追加した。購入、Checkout HTTP、Webhookのflagはすべて停止中で、Stripe ID、API key、Webhook Secret、D1 bindingは接続していない。
+- Checkoutには、販売準備を示す独立した停止ゲートも追加した。最終支払総額の扱い、購入者条件、版付き規約、特定商取引法に基づく表記、返金方針、問い合わせ先の同一サイト公開先がすべて確定しない限り、認証、D1、Stripeへ触れる前に停止する。checked-in設定は未確定・空欄・停止のままである。
+- 初期販売を18歳以上・本人専用メール・本人管理へ限定し、子ども・保護者・兄弟姉妹・共用メールを専用機能まで止める方針候補を追加した。Share Studio成功体験から90日の最小照合記録、購入記録の会計保持とアカウント結び付き最大180日を分ける候補も定めたが、いずれもこの時点では文書と回帰条件だけで、WorkerやStripe設定へは実装していない。
 
 これは販売開始や本番制限の完了ではない。公開デモから個人上限を回避できない仕組み、メール送信を含む本人確認・復旧の実環境受け入れ、返金規約、税、領収書、サポート、実際のStripe test mode・複数タブ・返金の受け入れ、本番migrationと公開順の受け入れが残っている。
 
 ## 16. English summary
 
-GlucoScope Plus is a proposed JPY 300 one-time pass for 30 consecutive days. It never renews automatically. Free users keep the core glucose experience, one successful new AI analysis per JST day, and one successful Share Studio trial per verified account. An active Plus account receives up to five successful new AI analyses per JST day, custom graph dates, and continued Share Studio use. Quality-check failures, provider or network failures, Turnstile failures, global-limit failures, aborted work, and browser-local cache hits do not consume an AI use. Plus remains separate from optional donations and the browser Usage profile. Payment data stays on Stripe-hosted Checkout, and verified idempotent webhooks are required before granting an entitlement. A server-authoritative per-account pending Checkout record prevents a second payable Session, reuses an unexpired Session, blocks repurchase during payment confirmation, and permits replacement only after Stripe explicitly reports that the old Session is expired. A verified asynchronous-payment failure releases only the matching open attempt; completed and refunded attempts never move backward to failed. A verified Checkout expiry clears the pending state for only the matching open attempt so the account can safely try again. It is not available for purchase until identity, recovery, refund, tax, privacy, and production acceptance are complete.
+GlucoScope Plus is a proposed JPY 300 one-time pass for 30 consecutive days. It never renews automatically. Free users keep the core glucose experience, one successful new AI analysis per JST day, and one successful Share Studio trial per verified account. An active Plus account receives up to five successful new AI analyses per JST day, custom graph dates, and continued Share Studio use. Quality-check failures, provider or network failures, Turnstile failures, global-limit failures, aborted work, and browser-local cache hits do not consume an AI use. Plus remains separate from optional donations and the browser Usage profile. Initial sales are limited to people aged 18 or older who can manage their own purchase, email verification, recovery, and support using one email account controlled only by them. Sales to children, guardian-managed accounts, siblings, and shared mailboxes remain paused until a dedicated family system can separate consent, recovery, entitlements, quotas, and trials for each child. Deleting an account after a successful Share Studio trial would retain only a one-way email lookup and used-trial marker until 90 days after the successful trial; re-registration remains possible, but the trial does not reset during that window. The candidate retention split keeps account linkage only while necessary and for no more than 180 days after the final payment or case resolution, while a minimal accounting record has a seven-year candidate period pending professional confirmation. Payment data stays on Stripe-hosted Checkout, and verified idempotent webhooks are required before granting an entitlement. A server-authoritative per-account pending Checkout record prevents a second payable Session, reuses an unexpired Session, blocks repurchase during payment confirmation, and permits replacement only after Stripe explicitly reports that the old Session is expired. A verified asynchronous-payment failure releases only the matching open attempt; completed and refunded attempts never move backward to failed. A verified Checkout expiry clears the pending state for only the matching open attempt so the account can safely try again. These age, trial-deletion, and retention rules are policy candidates only and are not implemented. Plus is not available for purchase until identity, recovery, refund, tax, privacy, policy implementation, professional review, and production acceptance are complete.

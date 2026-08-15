@@ -8,6 +8,7 @@ import {
 } from "../src/constants.js";
 import { createD1PlusEntitlementStore } from "../src/d1-store.js";
 import { createPlusEntitlementService } from "../src/entitlement-core.js";
+import { readCommerceReadiness } from "../src/commerce-readiness.js";
 import { handleStripeHttpRequest } from "../src/stripe-http.js";
 import {
   createStripeTestClient,
@@ -152,9 +153,45 @@ function enabledHttpEnv() {
     PLUS_ALLOWED_ORIGIN: ALLOWED_ORIGIN,
     PLUS_CHECKOUT_SUCCESS_PATH: "/glucoscope/?mode=user&checkout=success#settings",
     PLUS_CHECKOUT_CANCEL_PATH: "/glucoscope/?mode=user&checkout=cancelled#settings",
+    PLUS_SALES_READINESS_CONFIRMED: "true",
+    PLUS_FINAL_PRICE_DISPLAY: "total_300_confirmed",
+    PLUS_TAX_TREATMENT_CONFIRMED: "true",
+    PLUS_BUYER_POLICY: "adult_self_managed_only",
+    PLUS_COMMERCIAL_DISCLOSURE_PATH:
+      "/glucoscope/pages/trust/commercial-transactions.html",
+    PLUS_REFUND_POLICY_PATH: "/glucoscope/pages/trust/plus-terms.html",
+    PLUS_SUPPORT_PATH: "/glucoscope/pages/trust/plus-support.html",
+    PLUS_TERMS_VERSION: "2026-08-15",
     STRIPE_WEBHOOK_SECRET: WEBHOOK_SECRET,
   };
 }
+
+test("commerce readiness requires final tax, buyer, terms, and same-site public pages", () => {
+  const ready = readCommerceReadiness(enabledHttpEnv(), ALLOWED_ORIGIN);
+  assert.equal(ready.ready, true);
+  assert.equal(
+    ready.commercialDisclosureUrl,
+    `${ALLOWED_ORIGIN}/glucoscope/pages/trust/commercial-transactions.html`,
+  );
+
+  for (const override of [
+    { PLUS_SALES_READINESS_CONFIRMED: "false" },
+    { PLUS_FINAL_PRICE_DISPLAY: "undecided" },
+    { PLUS_TAX_TREATMENT_CONFIRMED: "false" },
+    { PLUS_BUYER_POLICY: "guardian_shared_email" },
+    { PLUS_TERMS_VERSION: "" },
+    { PLUS_TERMS_VERSION: "2026-02-30" },
+    { PLUS_TERMS_VERSION: "2026-13-01" },
+    { PLUS_COMMERCIAL_DISCLOSURE_PATH: "https://attacker.invalid/terms" },
+    { PLUS_REFUND_POLICY_PATH: "/outside-project.html" },
+    { PLUS_SUPPORT_PATH: "/glucoscope/pages/trust/" },
+  ]) {
+    assert.equal(
+      readCommerceReadiness({ ...enabledHttpEnv(), ...override }, ALLOWED_ORIGIN).ready,
+      false,
+    );
+  }
+});
 
 function validRetrievedSession(overrides = {}) {
   return {
@@ -323,6 +360,14 @@ test("checked-in Stripe HTTP and webhook switches stay off with no identifiers o
   assert.equal(config.vars.PLUS_PURCHASES_ENABLED, "false");
   assert.equal(config.vars.PLUS_CHECKOUT_HTTP_ENABLED, "false");
   assert.equal(config.vars.PLUS_STRIPE_WEBHOOK_ENABLED, "false");
+  assert.equal(config.vars.PLUS_SALES_READINESS_CONFIRMED, "false");
+  assert.equal(config.vars.PLUS_FINAL_PRICE_DISPLAY, "undecided");
+  assert.equal(config.vars.PLUS_TAX_TREATMENT_CONFIRMED, "false");
+  assert.equal(config.vars.PLUS_BUYER_POLICY, "undecided");
+  assert.equal(config.vars.PLUS_COMMERCIAL_DISCLOSURE_PATH, "");
+  assert.equal(config.vars.PLUS_REFUND_POLICY_PATH, "");
+  assert.equal(config.vars.PLUS_SUPPORT_PATH, "");
+  assert.equal(config.vars.PLUS_TERMS_VERSION, "");
   assert.equal(config.vars.PLUS_ALLOWED_ORIGIN, "https://afterglow21.github.io");
   assert.equal(
     config.vars.PLUS_CHECKOUT_SUCCESS_PATH,
@@ -512,6 +557,27 @@ test("disabled routes fail before authentication, body parsing, Stripe, or D1", 
     assert.equal(response.status, 503);
     assert.equal(response.headers.get("access-control-allow-origin"), null);
   }
+  assert.equal(touches, 0);
+});
+
+test("Checkout stays fail-closed when sale notices are not confirmed", async () => {
+  let touches = 0;
+  const dependencies = {
+    entitlementService: new Proxy({}, { get() { touches += 1; throw new Error(); } }),
+    stripeClient: new Proxy({}, { get() { touches += 1; throw new Error(); } }),
+    store: new Proxy({}, { get() { touches += 1; throw new Error(); } }),
+  };
+  const env = {
+    ...enabledHttpEnv(),
+    PLUS_SALES_READINESS_CONFIRMED: "false",
+  };
+  const response = await handleStripeHttpRequest(
+    plusCheckoutRequest(),
+    env,
+    dependencies,
+  );
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), { ok: false, error: "sales_not_ready" });
   assert.equal(touches, 0);
 });
 

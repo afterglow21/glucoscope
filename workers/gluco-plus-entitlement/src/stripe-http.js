@@ -24,6 +24,7 @@ import {
   readStripeWebhookConfig,
   verifyStripeWebhookSignature,
 } from "./stripe-webhook.js";
+import { readCommerceReadiness } from "./commerce-readiness.js";
 
 class RequestBodyTooLargeError extends Error {}
 
@@ -319,6 +320,11 @@ async function handleCheckout(request, env, dependencies) {
   }
   if (!isJsonContentType(request)) {
     return jsonResponse({ ok: false, error: "unsupported_media_type" }, 415, allowedOrigin);
+  }
+
+  const commerceReadiness = readCommerceReadiness(env, allowedOrigin);
+  if (!commerceReadiness.ready) {
+    return jsonResponse({ ok: false, error: "sales_not_ready" }, 503, allowedOrigin);
   }
 
   try {
