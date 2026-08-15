@@ -3505,20 +3505,40 @@ require completion. The entitlement remains separate from the browser Usage prof
 the administrator dashboard may show only an aggregate active-Plus count, never individual
 payment or account details.
 
-The expanded local implementation foundation now exists but remains disabled and unpublished.
-It includes an atomic AI-quota reservation ledger, a separate non-public Plus entitlement
-Worker, server-side Share Studio trial reservation, a disabled custom-range gate, an optional
-administrator aggregate for active Plus accounts, short-code email account/recovery and safe
-no-purchase account deletion, a test-mode Stripe Checkout/Webhook adapter, and a per-account
+The expanded implementation foundation remains disabled and unpublished. It includes an
+atomic AI-quota reservation ledger, a separate non-public Plus entitlement Worker, server-side
+Share Studio trial reservation, a disabled custom-range gate, an optional administrator
+aggregate for active Plus accounts, short-code email account/recovery and safe no-purchase
+account deletion, a test-mode Stripe Checkout/Webhook adapter, and a per-account
 unfinished-Checkout guard that prevents a second payable Session. The matching settings UI is
-checked in but hidden. There is no Plus D1 binding, email adapter, Stripe key, Webhook Secret,
-Price/Product identifier, or live entitlement, and every related flag remains false. The
+checked in but hidden.
+
+Code checkpoint `b5669df` is deployed only as the stopped
+`glucoscope-plus-entitlement-staging` Worker. Version
+`bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9` receives 100% of that Worker's traffic, but
+`workers_dev=false`, the live URL returns `404`, preview URLs are off, routes and Cron triggers
+are empty, observability is off, and its Secret list is empty. Account auth, cleanup, RPC,
+purchases, Checkout HTTP, Stripe webhooks, sales readiness, and tax readiness all remain
+false. The staging-only APAC D1 `glucoscope-plus-staging` has migrations `0001` through `0005`
+applied, and all 12 application tables were verified at zero rows after deployment. Request-code
+and verify use staging-specific rate-limit IDs distinct from the future production IDs.
+
+A later acceptance used a temporary remote preview restricted to localhost and only synthetic
+old and fresh rows. Cleanup removed only the old rows. Request-code returned a safe `503`
+before its limiter reached `429`; verify returned `400` before its separate limiter reached
+`429`. Invalid placeholder Turnstile and Resend values prevented any provider or email call.
+The preview was stopped, every known synthetic row was deleted, and all 12 application tables
+returned to zero. No public route, real email, or Secret was used.
+
+There is no Resend API key, related Worker Secret, Stripe key, Webhook Secret, Price/Product
+identifier, public account route, or live entitlement, and no real email has been sent. The
 existing AI and custom-range experience therefore remains unchanged. The public Usage
 Dashboard candidate adds only aggregate totals for the 30 completed days through yesterday;
 it omits exact totals until at least 10 consenting device profiles contributed, and never
-returns names or device-level rows. Do not enable individual quota or Plus feature gates
-until identity and recovery, refunds, tax and support, public-demo anti-bypass handling,
-migrations, deployment order, and production acceptance are complete.
+returns names or device-level rows. Public accounts and sales remain no-go. Do not enable
+individual quota or Plus feature gates until identity and recovery, closed email delivery,
+refunds, tax and support, public-demo anti-bypass handling, deployment order, and production
+acceptance are complete.
 
 The always-on mode comes after user rollout begins. It is opt-in, limited to the graph in
 landscape orientation, and must clearly explain battery and screen-on behavior. It is a
@@ -3757,16 +3777,34 @@ AI回数を消費しません。この決定はローカル実装とStripeテス
 Plus利用権はブラウザの利用記録プロフィールから分離し、管理者画面には有効なPlus合計だけを表示し、
 個別の購入・アカウント情報を表示しません。
 
-ローカル実装基盤を拡張しましたが、すべて停止状態で未公開です。AI回数の原子的な予約台帳、
+実装基盤を拡張しましたが、すべて停止状態で未公開です。AI回数の原子的な予約台帳、
 公開しないPlus利用権Worker、Share Studio無料体験のサーバー側予約、停止中のカスタム期間ゲート、
 管理者画面の有効Plus合計受け口、短い確認コードによるメール確認・復旧、購入記録がない場合の
 アカウント削除、StripeテストモードのCheckout/Webhook adapter、未完了の支払い画面をアカウントごとに
 再利用または停止して二重の支払い画面を作らない仕組みを含みます。対応する設定画面も追加しましたが
-非表示です。Plus用D1 binding、メール送信adapter、Stripe key、Webhook Secret、Price/Product識別子、
-実利用権は接続せず、関連flagはすべてfalseです。そのため、現在のAIとカスタム期間の動作は変えません。
+非表示です。
+
+commit `b5669df` は、停止中の `glucoscope-plus-entitlement-staging` Workerだけへ配置しました。
+Version `bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9`へ通信の100%を向けていますが、
+`workers_dev=false`で実URLは`404`、preview URLは無効、routeとCronは空、observabilityは無効、
+Secretは0件です。アカウント認証、cleanup、RPC、購入、Checkout HTTP、Stripe Webhook、販売準備、
+税確認のflagはすべて`false`です。APACのstaging専用D1 `glucoscope-plus-staging`へmigration
+`0001`〜`0005`を適用し、デプロイ後も12個のapplication tableがすべて0件であることを確認しました。
+request-codeとverifyは、将来の本番用と重ならないstaging専用のrate limit IDを使います。
+
+その後、localhostだけに限定した一時的なremote previewで、古い行と新しい行の合成データを使って
+受け入れ確認しました。cleanupは古い行だけを削除し、新しい行を残しました。request-codeは安全な
+`503`の後に専用上限の`429`、verifyは`400`の後に別の専用上限の`429`を確認しました。無効な仮の
+Turnstile値とResend値により、外部providerやメール送信は呼ばれていません。previewを停止し、既知の
+合成行をすべて削除した後、12個のapplication tableは再びすべて0件になりました。公開経路、実メール、
+Secretは使っていません。
+
+Resend API keyと関連Worker Secret、Stripe key、Webhook Secret、Price/Product識別子、公開アカウント
+経路、実利用権は接続せず、実メールも送っていません。そのため、現在のAIとカスタム期間の動作は
+変えません。公開アカウントとPlus販売は引き続き開始不可です。
 公開Usage Dashboard候補は、前日までの完了した30日間について、利用記録に同意した端末プロフィールが
 10件以上集まった時だけ全体の実数を表示し、名前や端末別の行は返しません。本人確認と復旧、返金、
-税とサポート、公開デモからの上限回避防止、migration、公開順、本番受け入れが完了するまで、個人上限と
+実メール、税とサポート、公開デモからの上限回避防止、公開順、本番受け入れが完了するまで、個人上限と
 Plus特典の制限を有効にしません。
 
 同日、運営者は、子どものPlusを18歳以上の保護者が管理できる方針を決定しました。購入とメールを
@@ -3845,7 +3883,8 @@ APIの秒間上限は固定値を正本化せず、実アカウントのUsage画
 [Event Types](https://resend.com/docs/webhooks/event-types)、
 [Delivered表示と実受信の違い](https://resend.com/docs/knowledge-base/what-if-an-email-says-delivered-but-the-recipient-has-not-received-it)、
 [Acceptable Use Policy](https://resend.com/legal/acceptable-use)です。
-API key、Worker Secret、実メール送信、デプロイはまだ行っていません。
+Resend API keyと関連Worker Secretはまだ作成・接続しておらず、実メールも送っていません。Cloudflareへの
+配置は、上記のURLを持たない停止中staging checkpointだけです。公開アカウントとPlus販売は開始しません。
 
 常時表示モードは、ユーザー展開を始めた後に実装します。
 本人が選んだ時だけ、横向きのグラフ画面に限定して動かし、

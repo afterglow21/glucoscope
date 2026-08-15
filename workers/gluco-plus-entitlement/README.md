@@ -1,6 +1,7 @@
 # GlucoScope Plus entitlement Worker
 
-Local-only foundation for the proposed Plus 30-day pass.
+Non-public foundation for the proposed Plus 30-day pass, with a stopped staging
+checkpoint and no public account or sales path.
 
 ## Fixed product boundary
 
@@ -15,11 +16,35 @@ Local-only foundation for the proposed Plus 30-day pass.
 ## Current safety state
 
 The checked-in configuration deliberately keeps RPC, purchases, Checkout HTTP, Stripe
-webhooks, and account HTTP disabled. It has no public `workers.dev` URL, no preview URL,
-no D1 binding, no outbound-email binding, no configured sender address, no Stripe
-identifier, and no Secret declaration. Every checked-in public route therefore returns
-`503 service_unavailable` before reading its request. Worker observability is also
-disabled so account and payment operations do not enter the standard Worker logs.
+webhooks, account HTTP, account cleanup, sales readiness, and tax readiness disabled.
+The default future-production candidate has no D1 binding. The reviewed `staging`
+environment binds only its dedicated D1 database while keeping every release switch
+false: `PLUS_ENTITLEMENT_RPC_ENABLED`, `PLUS_PURCHASES_ENABLED`,
+`PLUS_CHECKOUT_HTTP_ENABLED`, `PLUS_STRIPE_WEBHOOK_ENABLED`,
+`PLUS_ACCOUNT_AUTH_HTTP_ENABLED`, `ACCOUNT_AUTH_CLEANUP_ENABLED`,
+`PLUS_SALES_READINESS_CONFIRMED`, and `PLUS_TAX_TREATMENT_CONFIRMED`.
+
+Code checkpoint `b5669df` is deployed as the stopped
+`glucoscope-plus-entitlement-staging` Worker. Version
+`bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9` receives 100% of that Worker's traffic, but
+`workers_dev=false`, preview URLs are disabled, no routes or Cron triggers exist,
+observability is disabled, and the live `workers.dev` URL returns `404`. Its Secret list
+is empty. This deployment is an unreachable schema-and-binding checkpoint, not public
+account access or a sales release.
+
+The staging-only `PLUS_DB` binding points to `glucoscope-plus-staging` in APAC.
+Migrations `0001` through `0005` are applied, and all 12 application tables were verified
+at zero rows after deployment. Request-code and verify use staging-specific rate-limit
+IDs, distinct from the future production IDs. Because account HTTP remains false, the
+bindings are not read and no account operation can begin.
+
+A later acceptance used a temporary remote preview restricted to localhost and only
+synthetic old and fresh rows. Cleanup removed the old rows without removing the fresh
+rows. Request-code returned a safe `503` before the dedicated limiter reached `429`;
+verify returned `400` before its separate limiter reached `429`. Invalid placeholder
+Turnstile and Resend values prevented any provider or email call. The preview was stopped,
+all known synthetic rows were deleted, and all 12 application tables returned to zero.
+No public route, real email, or Secret was used.
 
 The internal verified-payment function also checks `PLUS_PURCHASES_ENABLED` before it
 reads payment identifiers, generates an entitlement ID, or touches D1. Missing or false
@@ -43,17 +68,16 @@ depends on the bank or card issuer. This is not a minute-by-minute SLA, and it d
 make every kind of request refundable. A public support contact and an executable refund-support procedure are
 still unset sale blockers; the checked-in refund-policy path therefore remains blank.
 
-Do not deploy this directory yet. After a real D1 database exists, add only its real
-binding and migration directory to a reviewed environment configuration. Add the
-outbound-email binding, sender address, and Secrets only to that reviewed environment
-after the email and Stripe boundaries have been accepted. Never commit tester email
-addresses, placeholder IDs, API keys, Webhook Secrets, HMAC keys, encryption keys, or
-`.dev.vars`.
+Keep the existing staging deployment stopped and unreachable. Do not add a route, Cron,
+public `workers.dev` endpoint, preview URL, Secret, sender, or commerce identifier merely
+because the D1 schema is present. Add the outbound-email settings and Secrets only to a
+separately reviewed closed-test Version after the email boundary is accepted. Never
+commit tester email addresses, placeholder IDs, API keys, Webhook Secrets, HMAC keys,
+encryption keys, or `.dev.vars`.
 
-The current Wrangler dry-run can validate only that the module bundles. Because the
-checked-in configuration intentionally has no `PLUS_DB` binding, neither named RPC
-entrypoint is operational or ready to deploy. Calls fail closed while RPC is paused and
-also fail closed if the D1 binding is absent.
+Neither named RPC entrypoint is operational while its flag remains false. The default
+environment also continues to fail closed without a D1 binding. The staging D1 binding
+does not authorize RPC, account access, email, Checkout, webhooks, cleanup, or sales.
 
 ## Passwordless account and recovery boundary
 
@@ -97,10 +121,12 @@ route closed; when account auth is off, these bindings are not read.
 Existing-account and new-account requests return the same `code_sent` result. A wrong,
 expired, used, or exhausted code returns the same `invalid_or_expired_code` result.
 Challenge rows whose code expired more than 24 hours earlier are opportunistically removed
-when another code is requested. The checked-in hourly Cron also calls the same private
-cleanup, but `ACCOUNT_AUTH_CLEANUP_ENABLED=false` makes it return without touching D1.
-Only after the D1 binding and cleanup path are accepted may that flag be enabled. The
-enabled job deletes challenge rows where `expires_at < scheduledTime - 24 hours` and
+when another code is requested. The future-production candidate declares an hourly Cron,
+but the stopped staging environment explicitly has no Cron trigger. In every environment,
+`ACCOUNT_AUTH_CLEANUP_ENABLED=false` makes cleanup return without touching D1. Only after
+the bound D1 and cleanup path are accepted together in the intended environment may that
+flag be enabled. The enabled job deletes challenge rows where
+`expires_at < scheduledTime - 24 hours` and
 global send reservations where `reserved_at < scheduledTime - 24 hours`. With the hourly
 schedule, either kind of temporary row normally remains for about 24 to 25 hours after
 its respective boundary. The public explanation rounds this to “about one day.”
@@ -147,9 +173,10 @@ production prerequisite.
 The earlier disconnected Cloudflare Email Service prototype has been removed and
 replaced locally by a Resend REST API adapter. Cloudflare Email Service / Workers Paid
 was not subscribed, so there is no USD 5 monthly email-service charge. The Resend adapter
-cannot send without the `RESEND_API_KEY` Worker Secret. There is also no D1 binding,
-Turnstile Secret, email-lookup HMAC Secret, or code-HMAC Secret. Account HTTP remains
-disabled, and a missing dependency still fails closed.
+cannot send without the `RESEND_API_KEY` Worker Secret. The stopped staging environment
+has its dedicated D1 binding but no Resend API key, Turnstile Secret, email-lookup HMAC
+Secret, or code-HMAC Secret. Account HTTP remains disabled, and a missing dependency
+still fails closed.
 
 On 2026-08-15, the operator purchased `glucoscope.app` for USD 14.20 per year and turned
 automatic renewal off. The planned dedicated sending subdomain is
@@ -179,10 +206,12 @@ events. The provider message ID must not be stored by account auth.
 
 `auth.glucoscope.app` has reached final `verified` status in Resend after the required
 SPF, DKIM, MX, and DMARC records were added manually in Cloudflare DNS and resolved publicly.
-Receiving is off, and no tracking subdomain or open/click tracking is configured. No API
-key, Worker Secret, real email, or deployment has been used. Before the first closed
-test, create a send-only API key scoped to this domain and keep it only as a Worker
-Secret. Restrict the test to approved destinations, keep the existing per-email HMAC
+Receiving is off, and no tracking subdomain or open/click tracking is configured. No
+Resend API key or related Worker Secret exists, and no real email has been sent. The only
+Worker deployment is the stopped, unreachable staging checkpoint described above, whose
+Secret list is empty. Before the first closed test, create a send-only API key scoped to
+this domain and keep it only as a Worker Secret. Restrict the test to approved
+destinations, keep the existing per-email HMAC
 limit, and keep the implemented D1-backed global cap at 80 accepted reservations per
 rolling 24 hours, below the provider limits. Pending, sent, and failed attempts all
 consume the cap, and reservation is atomic so concurrent requests cannot overshoot it.
@@ -313,10 +342,12 @@ request logs show that the adapter actually needs it. Set all values with
 Cloudflare's secret or dashboard configuration facilities; never put their values in
 Git or `.dev.vars`.
 
-Live sales remain blocked. Stripe-hosted test acceptance, real D1 binding and migration,
-email delivery, user-facing terms, tax and receipt decisions, support and refund policy,
-and multi-tab acceptance of the per-account pending-Checkout guard are still required.
-The three payment switches must not be enabled merely because this local adapter bundles.
+Live sales remain blocked. The stopped staging D1 schema-and-binding checkpoint is
+complete, but closed email delivery, the required Secrets, Stripe-hosted test acceptance,
+user-facing terms, tax and receipt decisions, support and refund policy, and multi-tab
+acceptance of the per-account pending-Checkout guard are still required. The payment,
+account, RPC, cleanup, sales, and tax switches must not be enabled merely because this
+adapter bundles or the empty staging schema exists.
 
 ## Local verification
 
