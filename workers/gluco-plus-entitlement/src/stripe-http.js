@@ -338,9 +338,15 @@ async function handleCheckout(request, env, dependencies) {
     ));
     const entitlementService = dependencies.entitlementService
       || createPlusEntitlementService(env);
-    const subject = await entitlementService.resolveAiSubject(token);
-    if (subject?.status !== "ok") {
+    const subject = await entitlementService.resolveCheckoutBuyer(
+      token,
+      commerceReadiness.buyerConfirmationVersion,
+    );
+    if (subject?.status === "invalid_session") {
       return jsonResponse({ ok: false, error: "authentication_required" }, 401, allowedOrigin);
+    }
+    if (subject?.status !== "ok") {
+      return jsonResponse({ ok: false, error: "buyer_confirmation_required" }, 409, allowedOrigin);
     }
     if (subject.plusActive) {
       return jsonResponse({ ok: false, error: "plus_already_active" }, 409, allowedOrigin);

@@ -114,7 +114,9 @@ function createDatabase() {
   const database = new NodeD1Database();
   for (const migrationName of [
     "0001_initial_plus_entitlement_schema.sql",
+    "0002_account_auth.sql",
     "0003_stripe_checkout_state.sql",
+    "0004_guardian_buyer_confirmation.sql",
   ]) {
     const migration = readFileSync(
       new URL(`../migrations/${migrationName}`, import.meta.url),

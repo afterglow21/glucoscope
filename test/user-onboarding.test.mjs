@@ -84,8 +84,8 @@ test("GlucoScore is omitted from reflections unless it rises by at least two", (
 test("public data connection remains clickable and clearly marked as early access", () => {
   assert.match(index, /データ接続（先行体験）/);
   assert.match(index, /Gluroo接続は少人数で確認しながら提供しています/);
-  assert.match(index, /style\.css\?v=20260815-plus-account-foundation-1/);
-  assert.match(index, /js\/app\.js\?v=20260815-plus-account-foundation-1/);
+  assert.match(index, /style\.css\?v=20260815-guardian-confirmation-1/);
+  assert.match(index, /js\/app\.js\?v=20260815-guardian-confirmation-1/);
   assert.match(app, /dataSourceButtonDemo: "データ接続（先行体験）"/);
   assert.match(app, /dataSourceDialogTitle: "Data connection \(early access\)"/);
   assert.doesNotMatch(index, /id="dataSourceButton"[^>]+disabled/);
@@ -121,15 +121,22 @@ test("local profile is a compact display-name and registered-record management s
   const profileStart = index.indexOf('id="localProfileDialog"');
   const profileEnd = index.indexOf('<div class="dashboard">', profileStart);
   const profileDialog = index.slice(profileStart, profileEnd);
+  const plusAccountStart = profileDialog.indexOf('id="plusAccountCard"');
+  const displayAndUsageProfile = plusAccountStart >= 0
+    ? profileDialog.slice(0, plusAccountStart)
+    : profileDialog;
   assert.doesNotMatch(profileDialog, /id="localProfileDeleteButton"/);
   assert.doesNotMatch(profileDialog, /dataSourceRelayConsent/);
-  assert.doesNotMatch(profileDialog, /type="radio"|localProfileUsageSharingPreference|localProfilePreference/);
-  assert.doesNotMatch(profileDialog, /usageProfileNotice|usageProfileStartButton|usageProfileSkipButton|この端末の利用状況を共有する|今はしない/);
+  assert.doesNotMatch(displayAndUsageProfile, /type="radio"|localProfileUsageSharingPreference|localProfilePreference/);
+  assert.doesNotMatch(displayAndUsageProfile, /usageProfileNotice|usageProfileStartButton|usageProfileSkipButton|この端末の利用状況を共有する|今はしない/);
   assert.match(profileDialog, /id="usageProfileCard"[^>]*hidden/);
   assert.match(profileDialog, /利用記録の管理/);
   assert.match(profileDialog, /autocomplete="nickname"/);
   assert.doesNotMatch(profileDialog, /id="localProfileDisplayName"[^>]+maxlength=/);
   assert.match(profileDialog, /role="status" aria-live="polite"/);
+  assert.match(profileDialog, /id="plusAccountEditConfirmationButton"/);
+  assert.match(app, /cancelVerification\?\.\(\)/);
+  assert.match(app, /plusAccountVerificationPending = false;[\s\S]*codePanel\.hidden = true;[\s\S]*emailInput\?\.focus\?\.\(\)/);
 
   const jaProfileCopyStart = app.indexOf('localProfileButton: "あなたの設定"');
   const jaProfileCopyEnd = app.indexOf("dataSourceDialogTitle:", jaProfileCopyStart);

@@ -44,6 +44,9 @@ export function createD1AccountAuthStore(database) {
       codeHmac,
       verificationGrantHash,
       contactRole,
+      adultConfirmed,
+      guardianConfirmed,
+      buyerConfirmationVersion,
       attempts,
       createdAt,
       expiresAt,
@@ -71,19 +74,20 @@ export function createD1AccountAuthStore(database) {
           INSERT INTO account_auth_challenges (
             id, email_lookup_hmac, email_hmac_key_version, code_hmac,
             verification_grant_hash, contact_role, send_state,
+            adult_confirmed, guardian_confirmed, buyer_confirmation_version,
             attempts_remaining, created_at,
             expires_at, sent_at, consumed_at, invalidated_at
           )
           SELECT
-            ?1, ?2, ?3, ?4, ?5, ?6, 'pending', ?7, ?8, ?9,
+            ?1, ?2, ?3, ?4, ?5, ?6, 'pending', ?7, ?8, ?9, ?10, ?11, ?12,
             NULL, NULL, NULL
           WHERE (
             SELECT COUNT(*) FROM account_auth_challenges
-            WHERE email_lookup_hmac IN (?2, ?12) AND created_at >= ?10
-          ) < ?11
+            WHERE email_lookup_hmac IN (?2, ?15) AND created_at >= ?13
+          ) < ?14
             AND NOT EXISTS (
               SELECT 1 FROM account_auth_challenges
-              WHERE email_lookup_hmac IN (?2, ?12) AND created_at > ?13
+              WHERE email_lookup_hmac IN (?2, ?15) AND created_at > ?16
             )
         `).bind(
           id,
@@ -92,6 +96,9 @@ export function createD1AccountAuthStore(database) {
           codeHmac,
           verificationGrantHash,
           contactRole,
+          adultConfirmed ? 1 : 0,
+          guardianConfirmed ? 1 : 0,
+          buyerConfirmationVersion,
           attempts,
           createdAt,
           expiresAt,
@@ -188,7 +195,9 @@ export function createD1AccountAuthStore(database) {
       now,
     }) {
       const row = await db.prepare(`
-        SELECT id, code_hmac, attempts_remaining, expires_at
+        SELECT
+          id, code_hmac, attempts_remaining, expires_at, contact_role,
+          adult_confirmed, guardian_confirmed, buyer_confirmation_version
         FROM account_auth_challenges
         WHERE email_lookup_hmac IN (?1, ?2)
           AND verification_grant_hash = ?3
@@ -211,6 +220,10 @@ export function createD1AccountAuthStore(database) {
         codeHmac: row.code_hmac,
         attemptsRemaining: Number(row.attempts_remaining),
         expiresAt: Number(row.expires_at),
+        contactRole: row.contact_role,
+        adultConfirmed: Number(row.adult_confirmed) === 1,
+        guardianConfirmed: Number(row.guardian_confirmed) === 1,
+        buyerConfirmationVersion: row.buyer_confirmation_version,
       };
     },
 
@@ -257,17 +270,23 @@ export function createD1AccountAuthStore(database) {
       newAccountId,
       newSessionId,
       newTokenHash,
+      buyerRole,
+      buyerConfirmationVersion,
       verifiedAt,
       sessionExpiresAt,
     }) {
+      const guardianConfirmedAt = buyerRole === "guardian" ? verifiedAt : null;
       const results = await db.batch([
         db.prepare(`
           INSERT OR IGNORE INTO accounts (
             id, email_lookup_hmac, email_ciphertext, email_key_version,
-            email_verified_at, status, created_at, updated_at
+            email_verified_at, status, created_at, updated_at,
+            buyer_role, buyer_confirmation_version,
+            adult_confirmed_at, guardian_confirmed_at
           )
           SELECT
-            ?1, ?2, '${EMAIL_NOT_STORED_MARKER}', ?3, ?4, 'active', ?4, ?4
+            ?1, ?2, '${EMAIL_NOT_STORED_MARKER}', ?3, ?4, 'active', ?4, ?4,
+            ?6, ?7, ?4, ?8
           WHERE NOT EXISTS (
             SELECT 1 FROM accounts
             WHERE email_lookup_hmac IN (?2, ?5) AND status = 'active'
@@ -278,6 +297,9 @@ export function createD1AccountAuthStore(database) {
           emailHmacKeyVersion,
           verifiedAt,
           alternateEmailLookupHmac,
+          buyerRole,
+          buyerConfirmationVersion,
+          guardianConfirmedAt,
         ),
         db.prepare(`
           UPDATE accounts
@@ -292,6 +314,7 @@ export function createD1AccountAuthStore(database) {
               SELECT COUNT(*) FROM accounts
               WHERE email_lookup_hmac IN (?1, ?2) AND status = 'active'
             ) = 1
+            AND (buyer_role IS NULL OR buyer_role = ?5)
             AND NOT EXISTS (
               SELECT 1 FROM accounts AS current_account
               WHERE current_account.email_lookup_hmac = ?1
@@ -302,29 +325,50 @@ export function createD1AccountAuthStore(database) {
           alternateEmailLookupHmac,
           emailHmacKeyVersion,
           verifiedAt,
+          buyerRole,
         ),
         db.prepare(`
           UPDATE accounts
           SET
             email_verified_at = COALESCE(email_verified_at, ?2),
+            buyer_role = COALESCE(buyer_role, ?4),
+            buyer_confirmation_version = ?5,
+            adult_confirmed_at = ?2,
+            guardian_confirmed_at = ?6,
             updated_at = MAX(updated_at, ?2)
           WHERE email_lookup_hmac = ?1
             AND status = 'active'
+            AND (buyer_role IS NULL OR buyer_role = ?4)
             AND (
               SELECT COUNT(*) FROM accounts
               WHERE email_lookup_hmac IN (?1, ?3) AND status = 'active'
             ) = 1
-        `).bind(emailLookupHmac, verifiedAt, alternateEmailLookupHmac),
+        `).bind(
+          emailLookupHmac,
+          verifiedAt,
+          alternateEmailLookupHmac,
+          buyerRole,
+          buyerConfirmationVersion,
+          guardianConfirmedAt,
+        ),
         db.prepare(`
           INSERT OR IGNORE INTO share_trial_state (account_id, updated_at)
           SELECT id, ?2 FROM accounts
           WHERE email_lookup_hmac = ?1
             AND status = 'active'
+            AND buyer_role = ?4
+            AND buyer_confirmation_version = ?5
             AND (
               SELECT COUNT(*) FROM accounts
               WHERE email_lookup_hmac IN (?1, ?3) AND status = 'active'
             ) = 1
-        `).bind(emailLookupHmac, verifiedAt, alternateEmailLookupHmac),
+        `).bind(
+          emailLookupHmac,
+          verifiedAt,
+          alternateEmailLookupHmac,
+          buyerRole,
+          buyerConfirmationVersion,
+        ),
         db.prepare(`
           UPDATE sessions
           SET revoked_at = COALESCE(revoked_at, ?2)
@@ -336,8 +380,16 @@ export function createD1AccountAuthStore(database) {
                 SELECT COUNT(*) FROM accounts
                 WHERE email_lookup_hmac IN (?1, ?3) AND status = 'active'
               ) = 1
+              AND buyer_role = ?4
+              AND buyer_confirmation_version = ?5
           ) AND revoked_at IS NULL
-        `).bind(emailLookupHmac, verifiedAt, alternateEmailLookupHmac),
+        `).bind(
+          emailLookupHmac,
+          verifiedAt,
+          alternateEmailLookupHmac,
+          buyerRole,
+          buyerConfirmationVersion,
+        ),
         db.prepare(`
           INSERT INTO sessions (
             id, account_id, token_hash, created_at, expires_at, revoked_at
@@ -347,6 +399,13 @@ export function createD1AccountAuthStore(database) {
           WHERE email_lookup_hmac = ?5
             AND status = 'active'
             AND email_verified_at IS NOT NULL
+            AND buyer_role = ?7
+            AND buyer_confirmation_version = ?8
+            AND adult_confirmed_at IS NOT NULL
+            AND (
+              (?7 = 'self' AND guardian_confirmed_at IS NULL)
+              OR (?7 = 'guardian' AND guardian_confirmed_at IS NOT NULL)
+            )
             AND (
               SELECT COUNT(*) FROM accounts
               WHERE email_lookup_hmac IN (?5, ?6) AND status = 'active'
@@ -358,26 +417,51 @@ export function createD1AccountAuthStore(database) {
           sessionExpiresAt,
           emailLookupHmac,
           alternateEmailLookupHmac,
+          buyerRole,
+          buyerConfirmationVersion,
         ),
         db.prepare(`
           SELECT
-            a.id AS account_id,
-            s.created_at AS session_created_at,
-            s.expires_at AS session_expires_at
-          FROM sessions AS s
-          JOIN accounts AS a ON a.id = s.account_id
-          WHERE s.id = ?1 AND s.token_hash = ?2
-          LIMIT 1
-        `).bind(newSessionId, newTokenHash),
+            COUNT(*) AS account_count,
+            MAX(a.buyer_role) AS buyer_role,
+            (
+              SELECT s.account_id FROM sessions AS s
+              WHERE s.id = ?1 AND s.token_hash = ?2
+              LIMIT 1
+            ) AS session_account_id,
+            (
+              SELECT s.created_at FROM sessions AS s
+              WHERE s.id = ?1 AND s.token_hash = ?2
+              LIMIT 1
+            ) AS session_created_at,
+            (
+              SELECT s.expires_at FROM sessions AS s
+              WHERE s.id = ?1 AND s.token_hash = ?2
+              LIMIT 1
+            ) AS session_expires_at
+          FROM accounts AS a
+          WHERE a.email_lookup_hmac IN (?3, ?4)
+            AND a.status = 'active'
+        `).bind(
+          newSessionId,
+          newTokenHash,
+          emailLookupHmac,
+          alternateEmailLookupHmac,
+        ),
       ]);
       const row = firstBatchRow(results[6]);
-      return row
-        ? {
-            accountId: row.account_id,
-            issuedAt: Number(row.session_created_at),
-            expiresAt: Number(row.session_expires_at),
-          }
-        : null;
+      if (row?.session_account_id) {
+        return {
+          status: "ready",
+          accountId: row.session_account_id,
+          issuedAt: Number(row.session_created_at),
+          expiresAt: Number(row.session_expires_at),
+        };
+      }
+      if (Number(row?.account_count) === 1 && row?.buyer_role !== buyerRole) {
+        return { status: "buyer_role_conflict" };
+      }
+      return null;
     },
 
     async getSessionState({ tokenHash, now }) {

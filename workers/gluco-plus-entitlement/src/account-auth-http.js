@@ -164,7 +164,13 @@ export async function handleAccountAuthRequest(request, env = {}, dependencies =
       }
       const payload = requireAllowedKeys(
         await readJsonBody(request, config.bodyLimitBytes),
-        new Set(["email", "turnstileToken"]),
+        new Set([
+          "email",
+          "turnstileToken",
+          "contactRole",
+          "adultConfirmed",
+          "guardianConfirmed",
+        ]),
       );
       await turnstileVerifier({
         token: payload.turnstileToken,

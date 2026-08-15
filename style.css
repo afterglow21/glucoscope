@@ -7304,7 +7304,8 @@ body.local-profile-dialog-open {
 
 .plus-account-card[hidden],
 .plus-account-panel[hidden],
-.plus-account-code-panel[hidden] {
+.plus-account-code-panel[hidden],
+.plus-account-check[hidden] {
   display:none !important;
 }
 
@@ -7374,6 +7375,49 @@ body.local-profile-dialog-open {
 .plus-account-code-panel {
   display:grid;
   gap:12px;
+}
+
+.plus-account-confirmation {
+  display:grid;
+  gap:9px;
+  margin:0;
+  padding:12px;
+  border:1px solid rgba(147,197,253,.22);
+  border-radius:12px;
+}
+
+.plus-account-confirmation legend {
+  padding:0 5px;
+  color:#eff6ff;
+  font-size:13px;
+  font-weight:800;
+}
+
+.plus-account-confirmation label,
+.plus-account-check {
+  display:flex;
+  align-items:center;
+  gap:9px;
+  min-height:44px;
+  padding:8px 4px;
+  color:#dbeafe;
+  font-size:14px;
+  line-height:1.55;
+  cursor:pointer;
+}
+
+.plus-account-confirmation input,
+.plus-account-check input {
+  flex:0 0 auto;
+  width:18px;
+  height:18px;
+  margin:0;
+}
+
+.plus-account-confirmation small {
+  color:#aebfd3;
+  font-size:13px;
+  line-height:1.65;
 }
 
 .plus-account-turnstile {

@@ -33,6 +33,16 @@ version, and same-site public pages for the commercial disclosure, refund policy
 support. Checked-in values remain false, undecided, or empty. The gate is defense in
 depth, not a substitute for reviewing the actual pages and Stripe screen.
 
+The owner-approved working refund policy is intentionally short: correct duplicate
+charges or a paid-but-missing Plus grant, and issue a full refund if the operator cannot
+resolve them; also issue a full refund after review when a major GlucoScope-side outage
+made the principal Plus benefits mostly unusable and the operator could not resolve it.
+There are no partial refunds, and a refunded payment ends its Plus entitlement. Card
+statement visibility is described only as an ordinary 5–10-business-day estimate that
+depends on the bank or card issuer. This is not a minute-by-minute SLA, and it does not
+make every kind of request refundable. A public support contact and an executable refund-support procedure are
+still unset sale blockers; the checked-in refund-policy path therefore remains blank.
+
 Do not deploy this directory yet. After a real D1 database exists, add only its real
 binding and migration directory to a reviewed environment configuration. Add the
 outbound-email binding, sender address, and Secrets only to that reviewed environment
@@ -129,6 +139,15 @@ The Cloudflare Email Service adapter is checked in but deliberately disconnected
 D1 binding, Turnstile Secret, email-lookup HMAC Secret, or code-HMAC Secret. If account
 HTTP were enabled without any one of them, the route fails closed.
 
+As of 2026-08-15, the operator owns no custom domain. Cloudflare Email Service requires
+a sending domain or subdomain managed in Cloudflare DNS before mail can be sent to
+general recipients, so real verification email, account rollout, and Plus sales remain
+blocked. `glucoscope.app` was only a read-only candidate whose official RDAP lookup had
+no registration record at that checkpoint; it has not been purchased or configured.
+Availability, trademark risk, first-year price, and renewal price must be checked again
+immediately before any purchase, and no domain may be acquired without the operator's
+explicit approval.
+
 The adapter sends one fixed Japanese/English subject and body; only the six-digit code
 and expiry minutes vary. It does not include blood-glucose data, AI content, display
 names, or other profile data. Missing configuration, a provider throw, or a malformed
@@ -161,11 +180,22 @@ Suggested simple explanation for the future screen:
 
 > このメールは、ログインと機種変更のときの確認に使います。血糖値やAIのお手紙をメールで送ることはありません。
 
-Guardian or shared-email use remains undecided and unavailable until a safe family rule
-exists. The public HTTP request contract accepts only `{ email, turnstileToken }` and
-rejects guardian fields. It must not tell a child to use a guardian email, because one
-email currently maps to one account and could incorrectly merge siblings' entitlements,
-trial use, and AI quota.
+The public request-code contract has a strict allowlist:
+`{ email, turnstileToken, contactRole, adultConfirmed, guardianConfirmed }`.
+The adult managing the purchase must explicitly confirm that they are 18 or older.
+`contactRole=self` requires `guardianConfirmed=false`; `contactRole=guardian` requires a
+second explicit confirmation that the guardian will manage the child's purchase,
+recovery, and support. Migration `0004_guardian_buyer_confirmation.sql` stores only the
+verified buyer role, confirmation version, and confirmation timestamps on the account.
+It stores no child name, birth date, display name, glucose value, or CGM information.
+
+One email still maps to one Plus account. A guardian can manage a child's single account,
+but one mailbox cannot represent separate sibling accounts until a family feature splits
+entitlements, AI quotas, recovery, and Share Studio trials per child. A later code with a
+different buyer role fails closed and does not change the existing account. Checkout
+rechecks the role, adult/guardian confirmation, and current confirmation version from D1;
+browser fields are never authoritative. All account, purchase, and sales flags remain
+false in checked-in configuration.
 
 ## Internal RPC contract
 
@@ -173,6 +203,9 @@ Bind another Worker specifically to the named `PlusEntitlementRpc` entrypoint.
 
 - `resolveAiSubject(sessionToken)` returns only a stable internal subject ID and whether
   Plus is active.
+- `resolveCheckoutBuyer(sessionToken, confirmationVersion)` is private to Checkout. It
+  returns an eligible opaque account only when the stored adult/self-or-guardian
+  confirmation matches the required current version.
 - `getActivePlusSummary(sessionToken)` returns feature booleans, the active time window,
   and Share Studio trial state.
 - `reserveShareTrial`, `completeShareTrial`, and `releaseShareTrial` implement a short

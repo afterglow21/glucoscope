@@ -51,6 +51,16 @@ function jsonResponse(body, status = 200) {
   });
 }
 
+function confirmedSelfRequest(email, turnstileToken = "turnstile") {
+  return {
+    email,
+    turnstileToken,
+    contactRole: "self",
+    adultConfirmed: true,
+    guardianConfirmed: false
+  };
+}
+
 test("defaults to unavailable and rejects unsafe endpoints", async () => {
   const { api } = loadClient();
   assert.equal(api.getState().status, "unavailable");
@@ -74,6 +84,11 @@ test("the checked-in account and purchase UI stays hidden and network-inert", ()
   assert.match(index, /id="plusAccountDeleteDetails"/u);
   assert.match(index, /基本の血糖表示は、Plusを買わなくても使えます。/u);
   assert.match(index, /300円で30日間使う（支払い画面へ）/u);
+  assert.match(index, /id="plusAccountRoleGuardian"/u);
+  assert.match(index, /id="plusAccountAdultConfirmed"[^>]*required/u);
+  assert.match(index, /子どもの名前・生年月日・血糖値は入力しません。/u);
+  assert.match(app, /plusAccountVerificationPending = true;[\s\S]*setPlusAccountControlsDisabled\(false\)/u);
+  assert.match(app, /locksBuyerConfirmation = plusAccountVerificationPending/u);
   assert.match(app, /checkoutReturn === "success"/u);
   assert.match(app, /pollPlusCheckoutConfirmation/u);
   assert.match(app, /history\.replaceState/u);
@@ -97,14 +112,16 @@ test("request-code preserves local-part case and keeps its verification grant in
   });
   await api.configure({ enabled: true, endpoint: "https://plus.example" });
   const result = await api.requestCode({
-    email: "  Friend@Example.COM ",
-    turnstileToken: "turnstile"
+    ...confirmedSelfRequest("  Friend@Example.COM ")
   });
   assert.equal(result.ok, true);
   assert.equal(captured.url, "https://plus.example/v1/auth/request-code");
   assert.deepEqual(JSON.parse(captured.init.body), {
     email: "Friend@example.com",
-    turnstileToken: "turnstile"
+    turnstileToken: "turnstile",
+    contactRole: "self",
+    adultConfirmed: true,
+    guardianConfirmed: false
   });
   assert.equal(captured.init.headers.has("Authorization"), false);
   assert.equal("verificationGrant" in result, false);
@@ -143,10 +160,9 @@ test("verification stores only the opaque session token and exposes no credentia
     }
   });
   await api.configure({ enabled: true, endpoint: "https://plus.example" });
-  assert.equal((await api.requestCode({
-    email: "A@Example.COM",
-    turnstileToken: "turnstile"
-  })).ok, true);
+  assert.equal((await api.requestCode(
+    confirmedSelfRequest("A@Example.COM")
+  )).ok, true);
   const result = await api.verifyCode({ email: "A@Example.COM", code: "123456" });
   assert.equal(result.ok, true);
   assert.deepEqual(
@@ -192,6 +208,31 @@ test("verification fails locally without a request-code grant", async () => {
   assert.equal(calls, 0);
 });
 
+test("a pending code is bound to the email that requested it", async () => {
+  let verificationCalls = 0;
+  const { api } = loadClient({
+    fetchImpl: async (url) => {
+      if (url.endsWith("/v1/auth/request-code")) {
+        return jsonResponse({
+          ok: true,
+          status: "code_sent",
+          verificationGrant: VERIFICATION_GRANT
+        });
+      }
+      verificationCalls += 1;
+      return jsonResponse({ ok: false, error: "unexpected" }, 500);
+    }
+  });
+  await api.configure({ enabled: true, endpoint: "https://plus.example" });
+  await api.requestCode(confirmedSelfRequest("first@example.com"));
+  const result = await api.verifyCode({
+    email: "changed@example.com",
+    code: "123456"
+  });
+  assert.equal(result.error, "verification_grant_required");
+  assert.equal(verificationCalls, 0);
+});
+
 test("wrong-code retries retain the in-memory verification grant until success", async () => {
   const verifyBodies = [];
   let verifyCalls = 0;
@@ -226,7 +267,7 @@ test("wrong-code retries retain the in-memory verification grant until success",
     }
   });
   await api.configure({ enabled: true, endpoint: "https://plus.example" });
-  await api.requestCode({ email: "A@example.com", turnstileToken: "turnstile" });
+  await api.requestCode(confirmedSelfRequest("A@example.com"));
   assert.equal((await api.verifyCode({ email: "A@example.com", code: "000000" })).error,
     "invalid_or_expired_code");
   assert.equal((await api.verifyCode({ email: "A@example.com", code: "123456" })).ok, true);
@@ -260,12 +301,39 @@ test("configure, clear, logout, and delete discard an in-memory verification gra
       }
     });
     await api.configure({ enabled: true, endpoint: "https://plus.example" });
-    await api.requestCode({ email: "A@example.com", turnstileToken: "turnstile" });
+    await api.requestCode(confirmedSelfRequest("A@example.com"));
     await clearGrant(api);
     const result = await api.verifyCode({ email: "A@example.com", code: "123456" });
     assert.equal(result.error, "verification_grant_required");
     assert.equal(verificationCalls, 0);
   }
+});
+
+test("changing the pending email or buyer choices cancels verification without a network request", async () => {
+  let verificationCalls = 0;
+  const { api } = loadClient({
+    fetchImpl: async (url) => {
+      if (url.endsWith("/v1/auth/request-code")) {
+        return jsonResponse({
+          ok: true,
+          status: "code_sent",
+          verificationGrant: VERIFICATION_GRANT
+        });
+      }
+      verificationCalls += 1;
+      return jsonResponse({ ok: false, error: "unexpected" }, 500);
+    }
+  });
+  await api.configure({ enabled: true, endpoint: "https://plus.example" });
+  assert.equal((await api.requestCode(confirmedSelfRequest("A@example.com"))).ok, true);
+  const cancelled = api.cancelVerification();
+  assert.equal(cancelled.ok, true);
+  assert.equal(cancelled.status, "verification_cancelled");
+  assert.equal((await api.verifyCode({
+    email: "A@example.com",
+    code: "123456"
+  })).error, "verification_grant_required");
+  assert.equal(verificationCalls, 0);
 });
 
 test("refresh authenticates from storage and removes stale credentials on 401", async () => {

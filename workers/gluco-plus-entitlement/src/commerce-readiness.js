@@ -49,13 +49,18 @@ export function readCommerceReadiness(env = {}, allowedOrigin = "") {
     env.PLUS_SUPPORT_PATH,
   );
   const termsVersion = readIsoDate(env.PLUS_TERMS_VERSION);
+  const buyerConfirmationVersion = readIsoDate(
+    env.PLUS_BUYER_CONFIRMATION_VERSION,
+  );
 
   return Object.freeze({
     ready: readExactBoolean(env.PLUS_SALES_READINESS_CONFIRMED)
       && String(env.PLUS_FINAL_PRICE_DISPLAY ?? "") === "total_300_confirmed"
       && readExactBoolean(env.PLUS_TAX_TREATMENT_CONFIRMED)
-      && String(env.PLUS_BUYER_POLICY ?? "") === "adult_self_managed_only"
+      && String(env.PLUS_BUYER_POLICY ?? "")
+        === "adult_self_or_confirmed_guardian"
       && Boolean(termsVersion)
+      && Boolean(buyerConfirmationVersion)
       && Boolean(commercialDisclosureUrl)
       && Boolean(refundPolicyUrl)
       && Boolean(supportUrl),
@@ -63,5 +68,6 @@ export function readCommerceReadiness(env = {}, allowedOrigin = "") {
     refundPolicyUrl,
     supportUrl,
     termsVersion,
+    buyerConfirmationVersion,
   });
 }

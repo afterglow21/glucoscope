@@ -14,6 +14,7 @@ import { hashSessionToken } from "./credentials.js";
 import { createD1PlusEntitlementStore } from "./d1-store.js";
 
 const MAX_PROVIDER_EVENT_ID_LENGTH = 255;
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/u;
 
 export class PlusEntitlementError extends Error {
   constructor(code, status = 400) {
@@ -72,6 +73,15 @@ function validateRequestId(value) {
     throw new PlusEntitlementError("invalid_request", 400);
   }
   return requestId;
+}
+
+function validateBuyerConfirmationVersion(value) {
+  const raw = String(value ?? "").trim();
+  if (!ISO_DATE_PATTERN.test(raw)) return null;
+  const date = new Date(`${raw}T00:00:00.000Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === raw
+    ? raw
+    : null;
 }
 
 function requireSafeEpoch(value, fieldName) {
@@ -179,6 +189,32 @@ export function createPlusEntitlementService(env = {}, dependencies = {}) {
         status: "ok",
         subjectId: snapshot.accountId,
         plusActive,
+      });
+    },
+
+    async resolveCheckoutBuyer(sessionToken, requiredVersionValue) {
+      const snapshot = await resolveSnapshot(sessionToken);
+      if (!snapshot) return Object.freeze({ status: "invalid_session" });
+      const requiredVersion = validateBuyerConfirmationVersion(
+        requiredVersionValue,
+      );
+      const selfConfirmed = snapshot.buyerRole === "self"
+        && snapshot.guardianConfirmedAt === null;
+      const guardianConfirmed = snapshot.buyerRole === "guardian"
+        && Number.isSafeInteger(snapshot.guardianConfirmedAt);
+      if (
+        !requiredVersion
+        || snapshot.buyerConfirmationVersion !== requiredVersion
+        || !Number.isSafeInteger(snapshot.adultConfirmedAt)
+        || (!selfConfirmed && !guardianConfirmed)
+      ) {
+        return Object.freeze({ status: "buyer_confirmation_required" });
+      }
+      return Object.freeze({
+        status: "ok",
+        subjectId: snapshot.accountId,
+        plusActive: Boolean(snapshot.activeEntitlement),
+        buyerRole: snapshot.buyerRole,
       });
     },
 

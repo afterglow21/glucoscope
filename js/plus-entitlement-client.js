@@ -8,6 +8,7 @@
   const VERIFICATION_GRANT_PATTERN = /^[A-Za-z0-9_-]{43}$/u;
   const CODE_PATTERN = /^\d{6}$/u;
   const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
+  const CONTACT_ROLES = new Set(["self", "guardian"]);
 
   let configuration = Object.freeze({
     enabled: false,
@@ -18,9 +19,17 @@
   let state = unavailableState("not_configured");
   let operationEpoch = 0;
   let verificationGrant = "";
+  let verificationEmail = "";
 
   function clearVerificationGrant() {
     verificationGrant = "";
+    verificationEmail = "";
+  }
+
+  function cancelVerification() {
+    operationEpoch += 1;
+    clearVerificationGrant();
+    return Object.freeze({ ok: true, status: "verification_cancelled" });
   }
 
   function unavailableState(reason = "unavailable") {
@@ -289,17 +298,36 @@
     return { ok: true, state: publicState(), error: null };
   }
 
-  async function requestCode({ email, turnstileToken } = {}) {
+  async function requestCode({
+    email,
+    turnstileToken,
+    contactRole,
+    adultConfirmed,
+    guardianConfirmed
+  } = {}) {
     const normalizedEmail = normalizeEmail(email);
     const token = String(turnstileToken || "");
-    if (!normalizedEmail || !token || token.length > 4096) {
+    const role = String(contactRole || "");
+    const confirmationIsValid = CONTACT_ROLES.has(role)
+      && adultConfirmed === true
+      && (
+        (role === "self" && guardianConfirmed === false)
+        || (role === "guardian" && guardianConfirmed === true)
+      );
+    if (!normalizedEmail || !token || token.length > 4096 || !confirmationIsValid) {
       return { ok: false, error: "invalid_request" };
     }
     const epoch = ++operationEpoch;
     clearVerificationGrant();
     const result = await requestJson("/v1/auth/request-code", {
       method: "POST",
-      body: { email: normalizedEmail, turnstileToken: token }
+      body: {
+        email: normalizedEmail,
+        turnstileToken: token,
+        contactRole: role,
+        adultConfirmed: true,
+        guardianConfirmed: role === "guardian"
+      }
     });
     if (epoch !== operationEpoch) return { ok: false, skipped: true };
     const grant = String(result.payload?.verificationGrant || "");
@@ -310,6 +338,7 @@
       return { ok: false, error: "invalid_response" };
     }
     verificationGrant = grant;
+    verificationEmail = normalizedEmail;
     return { ok: true, status: "code_sent", error: null };
   }
 
@@ -320,6 +349,9 @@
       return { ok: false, error: "invalid_request" };
     }
     if (!VERIFICATION_GRANT_PATTERN.test(verificationGrant)) {
+      return { ok: false, error: "verification_grant_required" };
+    }
+    if (normalizedEmail !== verificationEmail) {
       return { ok: false, error: "verification_grant_required" };
     }
 
@@ -418,6 +450,7 @@
     refresh,
     requestCode,
     verifyCode,
+    cancelVerification,
     logout,
     deleteAccount,
     createCheckout,

@@ -64,6 +64,7 @@ const ENABLED_ENV = Object.freeze({
   ACCOUNT_AUTH_RESEND_SECONDS: "60",
   ACCOUNT_AUTH_MAX_SENDS_PER_HOUR: "5",
   ACCOUNT_AUTH_SESSION_TTL_DAYS: "90",
+  PLUS_BUYER_CONFIRMATION_VERSION: "2026-08-15",
 });
 
 class NodeD1Statement {
@@ -134,6 +135,7 @@ function createDatabase() {
     "../migrations/0001_initial_plus_entitlement_schema.sql",
     "../migrations/0002_account_auth.sql",
     "../migrations/0003_stripe_checkout_state.sql",
+    "../migrations/0004_guardian_buyer_confirmation.sql",
   ]) {
     database.raw.exec(readFileSync(new URL(migration, import.meta.url), "utf8"));
   }
@@ -201,6 +203,24 @@ function assertAuthError(code, status) {
   return (error) => error instanceof AccountAuthError
     && error.code === code
     && error.status === status;
+}
+
+function confirmedSelf(email = EMAIL) {
+  return {
+    email,
+    contactRole: "self",
+    adultConfirmed: true,
+    guardianConfirmed: false,
+  };
+}
+
+function confirmedGuardian(email = EMAIL) {
+  return {
+    email,
+    contactRole: "guardian",
+    adultConfirmed: true,
+    guardianConfirmed: true,
+  };
 }
 
 test("checked-in auth configuration is disabled and contains no runtime bindings or Secrets", () => {
@@ -315,7 +335,7 @@ test("missing or ambiguous email adapter fails closed and never reports code_sen
   ]) {
     const service = createAccountAuthService(ENABLED_ENV, dependencies);
     await assert.rejects(
-      service.requestCode({ email: EMAIL }, { turnstileVerified: true }),
+      service.requestCode(confirmedSelf(), { turnstileVerified: true }),
       assertAuthError("service_unavailable", 503),
     );
   }
@@ -333,9 +353,7 @@ test("real SQLite flow sends a short code, rotates sessions for recovery, and st
   );
 
   const requested = await service.requestCode({
-    email: " family@Example.COM ",
-    contactRole: "guardian",
-    guardianConfirmed: true,
+    ...confirmedGuardian(" family@Example.COM "),
   }, { turnstileVerified: true });
   assert.deepEqual(requested, {
     ok: true,
@@ -350,7 +368,7 @@ test("real SQLite flow sends a short code, rotates sessions for recovery, and st
     purpose: "sign_in_or_recover",
   });
   await assert.rejects(
-    service.requestCode({ email: EMAIL }, { turnstileVerified: true }),
+    service.requestCode(confirmedGuardian(), { turnstileVerified: true }),
     assertAuthError("please_wait", 429),
   );
   assert.equal(delivered.length, 1);
@@ -385,24 +403,36 @@ test("real SQLite flow sends a short code, rotates sessions for recovery, and st
   });
 
   const storedAccount = database.raw.prepare(`
-    SELECT email_lookup_hmac, email_ciphertext, email_key_version
+    SELECT
+      email_lookup_hmac, email_ciphertext, email_key_version, buyer_role,
+      buyer_confirmation_version, adult_confirmed_at, guardian_confirmed_at
     FROM accounts
   `).get();
   assert.equal(storedAccount.email_ciphertext, "email-not-stored-v1");
   assert.equal(Number(storedAccount.email_key_version), 1);
+  assert.equal(storedAccount.buyer_role, "guardian");
+  assert.equal(storedAccount.buyer_confirmation_version, "2026-08-15");
+  assert.equal(Number(storedAccount.adult_confirmed_at), NOW);
+  assert.equal(Number(storedAccount.guardian_confirmed_at), NOW);
   assert.doesNotMatch(JSON.stringify(storedAccount), /family@example\.com/iu);
   const storedChallenge = database.raw.prepare(`
-    SELECT email_lookup_hmac, code_hmac, verification_grant_hash, contact_role
+    SELECT
+      email_lookup_hmac, code_hmac, verification_grant_hash, contact_role,
+      adult_confirmed, guardian_confirmed, buyer_confirmation_version
     FROM account_auth_challenges
   `).get();
   assert.match(storedChallenge.email_lookup_hmac, /^[A-Za-z0-9_-]{43}$/u);
   assert.match(storedChallenge.code_hmac, /^[A-Za-z0-9_-]{43}$/u);
   assert.match(storedChallenge.verification_grant_hash, /^[A-Za-z0-9_-]{43}$/u);
   assert.notEqual(storedChallenge.verification_grant_hash, requested.verificationGrant);
+  assert.equal(storedChallenge.contact_role, "guardian");
+  assert.equal(Number(storedChallenge.adult_confirmed), 1);
+  assert.equal(Number(storedChallenge.guardian_confirmed), 1);
+  assert.equal(storedChallenge.buyer_confirmation_version, "2026-08-15");
   assert.doesNotMatch(JSON.stringify(storedChallenge), /family|example|123456/iu);
 
   clock.value += 61_000;
-  const recoveryRequest = await service.requestCode({ email: EMAIL }, {
+  const recoveryRequest = await service.requestCode(confirmedGuardian(), {
     turnstileVerified: true,
   });
   assert.deepEqual(recoveryRequest, {
@@ -482,7 +512,7 @@ test("email HMAC rotation atomically rekeys the same Plus account without losing
     createDeterministicDependencies(store, clock, delivered),
   );
   const requested = await service.requestCode(
-    { email: EMAIL },
+    confirmedSelf(),
     { turnstileVerified: true },
   );
   const verified = await service.verifyCode({
@@ -532,7 +562,7 @@ test("email HMAC rotation fails closed for unsafe key configuration or duplicate
       createDeterministicDependencies(store, clock, delivered),
     );
     await assert.rejects(
-      unsafeService.requestCode({ email: EMAIL }, { turnstileVerified: true }),
+      unsafeService.requestCode(confirmedSelf(), { turnstileVerified: true }),
       assertAuthError("service_unavailable", 503),
     );
     assert.equal(delivered.length, 0);
@@ -564,7 +594,7 @@ test("email HMAC rotation fails closed for unsafe key configuration or duplicate
     createDeterministicDependencies(store, clock, delivered),
   );
   const requested = await service.requestCode(
-    { email: EMAIL },
+    confirmedSelf(),
     { turnstileVerified: true },
   );
   await assert.rejects(
@@ -594,7 +624,7 @@ test("five wrong attempts exhaust the code and all failures stay enumeration-res
     createDeterministicDependencies(store, clock, delivered),
   );
   const requested = await service.requestCode(
-    { email: EMAIL },
+    confirmedSelf(),
     { turnstileVerified: true },
   );
   await assert.rejects(
@@ -660,7 +690,7 @@ test("codes expire after ten minutes and sending is capped per HMAC per hour", a
     createDeterministicDependencies(store, clock, delivered),
   );
   const requested = await service.requestCode(
-    { email: EMAIL },
+    confirmedSelf(),
     { turnstileVerified: true },
   );
   clock.value += 10 * 60 * 1000;
@@ -675,17 +705,17 @@ test("codes expire after ten minutes and sending is capped per HMAC per hour", a
 
   for (let accepted = 1; accepted < 5; accepted += 1) {
     clock.value += 61_000;
-    await service.requestCode({ email: EMAIL }, { turnstileVerified: true });
+    await service.requestCode(confirmedSelf(), { turnstileVerified: true });
   }
   clock.value += 61_000;
   await assert.rejects(
-    service.requestCode({ email: EMAIL }, { turnstileVerified: true }),
+    service.requestCode(confirmedSelf(), { turnstileVerified: true }),
     assertAuthError("please_wait", 429),
   );
   assert.equal(delivered.length, 5);
 });
 
-test("guardian email requires an explicit confirmation", async (t) => {
+test("adult and guardian confirmations are explicit and role-specific", async (t) => {
   const database = createDatabase();
   t.after(() => database.close());
   const service = createAccountAuthService(ENABLED_ENV, {
@@ -693,11 +723,117 @@ test("guardian email requires an explicit confirmation", async (t) => {
     emailAdapter: { async sendAccountCode() { return { accepted: true }; } },
   });
   await assert.rejects(
-    service.requestCode({ email: EMAIL, contactRole: "guardian" }, {
+    service.requestCode({
+      email: EMAIL,
+      contactRole: "self",
+      guardianConfirmed: false,
+    }, {
+      turnstileVerified: true,
+    }),
+    assertAuthError("adult_confirmation_required", 400),
+  );
+  await assert.rejects(
+    service.requestCode({
+      email: EMAIL,
+      contactRole: "guardian",
+      adultConfirmed: true,
+      guardianConfirmed: false,
+    }, {
       turnstileVerified: true,
     }),
     assertAuthError("guardian_confirmation_required", 400),
   );
+  await assert.rejects(
+    service.requestCode({
+      email: EMAIL,
+      contactRole: "self",
+      adultConfirmed: true,
+      guardianConfirmed: true,
+    }, {
+      turnstileVerified: true,
+    }),
+    assertAuthError("invalid_request", 400),
+  );
+});
+
+test("buyer confirmation schema rejects every partial legacy state", (t) => {
+  const database = createDatabase();
+  t.after(() => database.close());
+  const insertPartial = database.raw.prepare(`
+    INSERT INTO accounts (
+      id, email_lookup_hmac, email_ciphertext, email_key_version,
+      email_verified_at, status, created_at, updated_at,
+      buyer_role, buyer_confirmation_version,
+      adult_confirmed_at, guardian_confirmed_at
+    ) VALUES (
+      '33333333-3333-4333-8333-333333333333',
+      ?2, 'email-not-stored-v1', 1,
+      ?1, 'active', ?1, ?1,
+      NULL, '2026-08-15', NULL, NULL
+    )
+  `);
+  assert.throws(
+    () => insertPartial.run(NOW, "P".repeat(43)),
+    /invalid buyer confirmation/u,
+  );
+
+  database.raw.prepare(`
+    INSERT INTO accounts (
+      id, email_lookup_hmac, email_ciphertext, email_key_version,
+      email_verified_at, status, created_at, updated_at
+    ) VALUES (
+      '44444444-4444-4444-8444-444444444444',
+      ?2, 'email-not-stored-v1', 1,
+      ?1, 'active', ?1, ?1
+    )
+  `).run(NOW, "L".repeat(43));
+  assert.throws(() => database.raw.prepare(`
+    UPDATE accounts
+    SET adult_confirmed_at = ?1
+    WHERE id = '44444444-4444-4444-8444-444444444444'
+  `).run(NOW), /invalid buyer confirmation/u);
+});
+
+test("a verified account role cannot be changed by a later code", async (t) => {
+  const database = createDatabase();
+  t.after(() => database.close());
+  const store = createD1AccountAuthStore(database);
+  const clock = { value: NOW };
+  const delivered = [];
+  const service = createAccountAuthService(
+    ENABLED_ENV,
+    createDeterministicDependencies(store, clock, delivered),
+  );
+  const firstRequest = await service.requestCode(confirmedGuardian(), {
+    turnstileVerified: true,
+  });
+  const firstSession = await service.verifyCode({
+    email: EMAIL,
+    code: delivered[0].code,
+    verificationGrant: firstRequest.verificationGrant,
+  });
+
+  clock.value += 61_000;
+  const conflictingRequest = await service.requestCode(confirmedSelf(), {
+    turnstileVerified: true,
+  });
+  await assert.rejects(
+    service.verifyCode({
+      email: EMAIL,
+      code: delivered[1].code,
+      verificationGrant: conflictingRequest.verificationGrant,
+    }),
+    assertAuthError("buyer_role_conflict", 409),
+  );
+  const account = database.raw.prepare(`
+    SELECT buyer_role, guardian_confirmed_at FROM accounts
+  `).get();
+  assert.equal(account.buyer_role, "guardian");
+  assert.equal(Number(account.guardian_confirmed_at), NOW);
+  assert.equal((await service.getSessionStatus(firstSession.sessionToken)).status, "ready");
+  assert.equal(Number(database.raw.prepare(`
+    SELECT COUNT(*) AS count FROM sessions WHERE revoked_at IS NULL
+  `).get().count), 1);
 });
 
 test("authenticated deletion removes the account and allows a fresh registration", async (t) => {
@@ -711,7 +847,7 @@ test("authenticated deletion removes the account and allows a fresh registration
     createDeterministicDependencies(store, clock, delivered),
   );
   const firstRequest = await service.requestCode(
-    { email: EMAIL },
+    confirmedSelf(),
     { turnstileVerified: true },
   );
   const first = await service.verifyCode({
@@ -748,7 +884,7 @@ test("authenticated deletion removes the account and allows a fresh registration
 
   clock.value += 61_000;
   const recreateRequest = await service.requestCode(
-    { email: EMAIL },
+    confirmedSelf(),
     { turnstileVerified: true },
   );
   const recreated = await service.verifyCode({
@@ -774,7 +910,7 @@ test("an account with a purchase receipt stays intact and requires private suppo
     createDeterministicDependencies(store, clock, delivered),
   );
   const requested = await service.requestCode(
-    { email: EMAIL },
+    confirmedSelf(),
     { turnstileVerified: true },
   );
   const verified = await service.verifyCode({
@@ -818,7 +954,7 @@ test("an open Checkout attempt blocks deletion before an unresolved payment can 
     createDeterministicDependencies(store, clock, delivered),
   );
   const requested = await service.requestCode(
-    { email: EMAIL },
+    confirmedSelf(),
     { turnstileVerified: true },
   );
   const verified = await service.verifyCode({
@@ -929,7 +1065,10 @@ test("HTTP contract enforces exact Origin, bounded JSON, CORS, route methods, an
     {
       method: "POST",
       headers: { Origin: ORIGIN, "Content-Type": "application/json" },
-      body: JSON.stringify({ email: EMAIL, turnstileToken: "token-one" }),
+      body: JSON.stringify({
+        ...confirmedSelf(),
+        turnstileToken: "token-one",
+      }),
     },
   ), ENABLED_ENV, dependencies);
   assert.equal(requestCode.status, 200);
@@ -942,6 +1081,10 @@ test("HTTP contract enforces exact Origin, bounded JSON, CORS, route methods, an
   });
   assert.equal(turnstileCalls[0].expectedAction, "glucoscope-plus-request-code");
   assert.equal(turnstileCalls[0].expectedHostname, "afterglow21.github.io");
+  assert.deepEqual(calls[0], ["requestCode", {
+    ...confirmedSelf(),
+    turnstileToken: "token-one",
+  }]);
 
   const verify = await handleAccountAuthRequest(new Request(
     "https://worker.invalid/v1/auth/verify",
@@ -1029,12 +1172,34 @@ test("HTTP contract enforces exact Origin, bounded JSON, CORS, route methods, an
         email: EMAIL,
         turnstileToken: "token-three",
         contactRole: "guardian",
+        adultConfirmed: true,
         guardianConfirmed: true,
       }),
     },
   ), ENABLED_ENV, dependencies);
-  assert.equal(publicGuardianPayload.status, 400);
-  assert.deepEqual(await publicGuardianPayload.json(), {
+  assert.equal(publicGuardianPayload.status, 200);
+  assert.deepEqual(calls.at(-1), ["requestCode", {
+    email: EMAIL,
+    turnstileToken: "token-three",
+    contactRole: "guardian",
+    adultConfirmed: true,
+    guardianConfirmed: true,
+  }]);
+
+  const unexpectedChildField = await handleAccountAuthRequest(new Request(
+    "https://worker.invalid/v1/auth/request-code",
+    {
+      method: "POST",
+      headers: { Origin: ORIGIN, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...confirmedGuardian(),
+        turnstileToken: "token-four",
+        childName: "must-not-be-sent",
+      }),
+    },
+  ), ENABLED_ENV, dependencies);
+  assert.equal(unexpectedChildField.status, 400);
+  assert.deepEqual(await unexpectedChildField.json(), {
     ok: false,
     error: "invalid_request",
   });
@@ -1044,7 +1209,7 @@ test("HTTP contract enforces exact Origin, bounded JSON, CORS, route methods, an
     {
       method: "POST",
       headers: { Origin: ORIGIN, "Content-Type": "application/json" },
-      body: JSON.stringify({ email: EMAIL, turnstileToken: "token-four" }),
+      body: JSON.stringify({ ...confirmedSelf(), turnstileToken: "token-five" }),
     },
   ), ENABLED_ENV, dependencies);
   assert.equal(queryRejected.status, 400);

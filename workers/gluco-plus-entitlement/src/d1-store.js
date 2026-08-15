@@ -16,6 +16,16 @@ function toSessionSnapshot(row) {
   const hasEntitlement = Boolean(row.entitlement_id);
   return {
     accountId: row.account_id,
+    buyerRole: row.buyer_role ?? null,
+    buyerConfirmationVersion: row.buyer_confirmation_version ?? null,
+    adultConfirmedAt: row.adult_confirmed_at === null
+      || row.adult_confirmed_at === undefined
+      ? null
+      : Number(row.adult_confirmed_at),
+    guardianConfirmedAt: row.guardian_confirmed_at === null
+      || row.guardian_confirmed_at === undefined
+      ? null
+      : Number(row.guardian_confirmed_at),
     activeEntitlement: hasEntitlement
       ? {
         id: row.entitlement_id,
@@ -544,13 +554,21 @@ export function createD1PlusEntitlementStore(database) {
       emailLookupHmac,
       verifiedAt,
       now,
+      buyerRole = null,
+      buyerConfirmationVersion = null,
+      adultConfirmedAt = null,
+      guardianConfirmedAt = null,
     }) {
       const results = await db.batch([
         db.prepare(`
           INSERT INTO accounts (
             id, email_lookup_hmac, email_ciphertext, email_key_version,
-            email_verified_at, status, created_at, updated_at
-          ) VALUES (?1, ?2, ?3, ?4, ?5, 'active', ?6, ?6)
+            email_verified_at, status, created_at, updated_at,
+            buyer_role, buyer_confirmation_version,
+            adult_confirmed_at, guardian_confirmed_at
+          ) VALUES (
+            ?1, ?2, ?3, ?4, ?5, 'active', ?6, ?6, ?7, ?8, ?9, ?10
+          )
           RETURNING id, email_verified_at, status, created_at, updated_at
         `).bind(
           id,
@@ -559,6 +577,10 @@ export function createD1PlusEntitlementStore(database) {
           1,
           verifiedAt,
           now,
+          buyerRole,
+          buyerConfirmationVersion,
+          adultConfirmedAt,
+          guardianConfirmedAt,
         ),
         db.prepare(`
           INSERT INTO share_trial_state (account_id, updated_at)
@@ -591,6 +613,10 @@ export function createD1PlusEntitlementStore(database) {
       const row = await db.prepare(`
         SELECT
           a.id AS account_id,
+          a.buyer_role,
+          a.buyer_confirmation_version,
+          a.adult_confirmed_at,
+          a.guardian_confirmed_at,
           e.id AS entitlement_id,
           e.starts_at AS entitlement_starts_at,
           e.ends_at AS entitlement_ends_at,

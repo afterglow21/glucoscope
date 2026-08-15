@@ -23,6 +23,7 @@ let usageProfileTurnstileTimeoutGeneration = 0;
 let plusAccountTurnstileWidgetId = null;
 let plusAccountDeleteTurnstileWidgetId = null;
 let plusAccountActionInFlight = false;
+let plusAccountVerificationPending = false;
 let plusCheckoutConfirmationPending = false;
 let plusCheckoutCancelledReturn = false;
 let plusCheckoutPollGeneration = 0;
@@ -312,11 +313,18 @@ const translations = {
     plusAccountBenefitRange: "グラフの日付を自由に選べます。",
     plusAccountBenefitShare: "Share Studioを使えます。購入前にも1回だけ試せます。",
     plusAccountEmailLabel: "確認に使うメール",
-    plusAccountEmailHelp: "パスワードは入力しません。子どもの利用方法は、販売開始前に保護者向けの案内を用意します。",
+    plusAccountEmailHelp: "パスワードは入力しません。1つのメールで管理できるPlusアカウントは1つです。",
+    plusAccountRoleLegend: "だれが購入やメールを管理しますか？",
+    plusAccountRoleSelf: "自分のために、自分で管理します",
+    plusAccountRoleGuardian: "子どものために、保護者として管理します",
+    plusAccountRoleHelp: "子どもの名前・生年月日・血糖値は入力しません。兄弟姉妹を別々に管理する家族機能は、まだ準備中です。",
+    plusAccountAdultConfirmed: "購入やメールを管理する私は18歳以上です",
+    plusAccountGuardianConfirmed: "私は保護者として、購入・別の端末で使うための確認・返金の問い合わせを管理します",
     plusAccountSendCodeButton: "確認コードを送る",
     plusAccountCodeLabel: "メールに届いた6桁の確認コード",
     plusAccountCodeHelp: "10分以内に入力してください。この画面を閉じたり更新した時は、もう一度コードを送ってください。届かない時は迷惑メールも確認できます。",
     plusAccountVerifyButton: "確認する",
+    plusAccountEditConfirmationButton: "メール・選択を直す",
     plusAccountPurchaseButton: "300円で30日間使う（支払い画面へ）",
     plusAccountRefreshButton: "状態を更新する",
     plusAccountLogoutButton: "この端末からログアウト",
@@ -670,11 +678,18 @@ const translations = {
     plusAccountBenefitRange: "Choose custom dates for the graph.",
     plusAccountBenefitShare: "Use Share Studio, with one trial before purchase.",
     plusAccountEmailLabel: "Email for verification",
-    plusAccountEmailHelp: "No password is needed. Guidance for parents and guardians will be ready before sales begin.",
+    plusAccountEmailHelp: "No password is needed. One email address can manage one Plus account.",
+    plusAccountRoleLegend: "Who will manage the purchase and email?",
+    plusAccountRoleSelf: "I will manage them for myself",
+    plusAccountRoleGuardian: "I am a guardian managing them for a child",
+    plusAccountRoleHelp: "We do not ask for the child's name, birth date, or glucose data. A family feature for managing siblings separately is still being prepared.",
+    plusAccountAdultConfirmed: "I am 18 or older and will manage the purchase and email",
+    plusAccountGuardianConfirmed: "As the guardian, I will manage the purchase, use on another device, and refund questions",
     plusAccountSendCodeButton: "Send verification code",
     plusAccountCodeLabel: "Six-digit code from the email",
     plusAccountCodeHelp: "Enter it within 10 minutes. If you close or reload this page, send a new code. If it does not arrive, check the junk folder too.",
     plusAccountVerifyButton: "Verify",
+    plusAccountEditConfirmationButton: "Change email or choices",
     plusAccountPurchaseButton: "Use Plus for 30 days for JPY 300 (payment page)",
     plusAccountRefreshButton: "Refresh status",
     plusAccountLogoutButton: "Sign out on this device",
@@ -2917,6 +2932,26 @@ function getPlusAccountFriendlyError(error, action = "account") {
       ? "The safety check could not be confirmed. Please complete it again."
       : "安全確認を確かめられませんでした。もう一度確認してください。";
   }
+  if (code === "adult_confirmation_required") {
+    return currentLanguage === "en"
+      ? "The adult managing the purchase and email must confirm they are 18 or older."
+      : "購入やメールを管理する18歳以上の人が、確認してください。";
+  }
+  if (code === "guardian_confirmation_required") {
+    return currentLanguage === "en"
+      ? "The guardian must confirm that they will manage the purchase, recovery, and refund questions."
+      : "保護者として、購入・復旧・返金の問い合わせを管理することを確認してください。";
+  }
+  if (code === "buyer_role_conflict") {
+    return currentLanguage === "en"
+      ? "This email was already verified in a different role. Its role was not changed. Plus support will help after sales begin. Basic glucose viewing is unchanged."
+      : "このメールは別の立場で確認済みです。登録内容は変更していません。販売開始後はPlusの問い合わせ先で確認できます。基本の血糖表示は変わりません。";
+  }
+  if (code === "buyer_confirmation_required") {
+    return currentLanguage === "en"
+      ? "The purchase confirmation has changed. Send a new code and confirm again."
+      : "購入前の確認内容が変わりました。新しいコードを送り、もう一度確認してください。";
+  }
   if (code === "invalid_or_expired_code" || code === "verification_grant_required") {
     return currentLanguage === "en"
       ? "The code is different or has expired. Send a new code and try again."
@@ -2951,9 +2986,14 @@ function setPlusAccountControlsDisabled(disabled) {
   plusAccountActionInFlight = Boolean(disabled);
   [
     "plusAccountEmail",
+    "plusAccountRoleSelf",
+    "plusAccountRoleGuardian",
+    "plusAccountAdultConfirmed",
+    "plusAccountGuardianConfirmed",
     "plusAccountCode",
     "plusAccountSendCodeButton",
     "plusAccountVerifyButton",
+    "plusAccountEditConfirmationButton",
     "plusAccountPurchaseButton",
     "plusAccountRefreshButton",
     "plusAccountLogoutButton",
@@ -2961,10 +3001,32 @@ function setPlusAccountControlsDisabled(disabled) {
   ].forEach((id) => {
     const control = document.getElementById(id);
     if (control) {
+      const locksBuyerConfirmation = plusAccountVerificationPending && [
+        "plusAccountEmail",
+        "plusAccountRoleSelf",
+        "plusAccountRoleGuardian",
+        "plusAccountAdultConfirmed",
+        "plusAccountGuardianConfirmed"
+      ].includes(id);
       control.disabled = plusAccountActionInFlight
+        || locksBuyerConfirmation
         || (id === "plusAccountPurchaseButton" && plusCheckoutConfirmationPending);
     }
   });
+}
+
+function updatePlusGuardianConfirmation() {
+  const guardianSelected = document.getElementById("plusAccountRoleGuardian")?.checked === true;
+  const panel = document.getElementById("plusAccountGuardianConfirmation");
+  const checkbox = document.getElementById("plusAccountGuardianConfirmed");
+  if (panel) panel.hidden = !guardianSelected;
+  if (checkbox) {
+    checkbox.required = guardianSelected;
+    if (!guardianSelected) {
+      checkbox.checked = false;
+      checkbox.removeAttribute("aria-invalid");
+    }
+  }
 }
 
 function formatPlusEndDate(value) {
@@ -3297,9 +3359,26 @@ async function initializePlusEntitlementFoundation() {
 function setupPlusAccountFoundation() {
   const emailInput = document.getElementById("plusAccountEmail");
   const codeInput = document.getElementById("plusAccountCode");
+  const roleSelfInput = document.getElementById("plusAccountRoleSelf");
+  const roleGuardianInput = document.getElementById("plusAccountRoleGuardian");
+  const adultConfirmedInput = document.getElementById("plusAccountAdultConfirmed");
+  const guardianConfirmedInput = document.getElementById("plusAccountGuardianConfirmed");
   const deleteDetails = document.getElementById("plusAccountDeleteDetails");
   emailInput?.addEventListener("input", () => emailInput.removeAttribute("aria-invalid"));
   codeInput?.addEventListener("input", () => codeInput.removeAttribute("aria-invalid"));
+  [roleSelfInput, roleGuardianInput].forEach((input) => {
+    input?.addEventListener("change", () => {
+      document.getElementById("plusAccountBuyerRole")?.removeAttribute("aria-invalid");
+      updatePlusGuardianConfirmation();
+    });
+  });
+  adultConfirmedInput?.addEventListener("change", () => {
+    adultConfirmedInput.removeAttribute("aria-invalid");
+  });
+  guardianConfirmedInput?.addEventListener("change", () => {
+    guardianConfirmedInput.removeAttribute("aria-invalid");
+  });
+  updatePlusGuardianConfirmation();
   emailInput?.addEventListener("keydown", (event) => {
     if (event.key !== "Enter") return;
     event.preventDefault();
@@ -3324,6 +3403,31 @@ function setupPlusAccountFoundation() {
         : "確認できるメールを入力してください。");
       return;
     }
+    const contactRole = document.querySelector(
+      'input[name="plusAccountContactRole"]:checked'
+    )?.value || "";
+    if (!contactRole) {
+      document.getElementById("plusAccountBuyerRole")?.setAttribute("aria-invalid", "true");
+      roleSelfInput?.focus?.();
+      setPlusAccountStatus(currentLanguage === "en"
+        ? "Choose who will manage the purchase and email."
+        : "購入やメールを管理する人を選んでください。");
+      return;
+    }
+    if (!adultConfirmedInput?.checkValidity?.()) {
+      adultConfirmedInput?.setAttribute("aria-invalid", "true");
+      adultConfirmedInput?.reportValidity?.();
+      adultConfirmedInput?.focus?.();
+      setPlusAccountStatus(getPlusAccountFriendlyError("adult_confirmation_required"));
+      return;
+    }
+    if (contactRole === "guardian" && !guardianConfirmedInput?.checkValidity?.()) {
+      guardianConfirmedInput?.setAttribute("aria-invalid", "true");
+      guardianConfirmedInput?.reportValidity?.();
+      guardianConfirmedInput?.focus?.();
+      setPlusAccountStatus(getPlusAccountFriendlyError("guardian_confirmation_required"));
+      return;
+    }
     const email = emailInput?.value || "";
     const turnstileToken = readPlusAccountTurnstileToken();
     if (!turnstileToken) {
@@ -3334,13 +3438,21 @@ function setupPlusAccountFoundation() {
     }
     setPlusAccountControlsDisabled(true);
     setPlusAccountStatus(currentLanguage === "en" ? "Sending the code…" : "確認コードを送っています…");
-    const result = await plusEntitlementClient?.requestCode?.({ email, turnstileToken });
+    const result = await plusEntitlementClient?.requestCode?.({
+      email,
+      turnstileToken,
+      contactRole,
+      adultConfirmed: adultConfirmedInput?.checked === true,
+      guardianConfirmed: guardianConfirmedInput?.checked === true
+    });
     resetPlusAccountTurnstile();
     setPlusAccountControlsDisabled(false);
     if (!result?.ok) {
       setPlusAccountStatus(getPlusAccountFriendlyError(result?.error, "code"));
       return;
     }
+    plusAccountVerificationPending = true;
+    setPlusAccountControlsDisabled(false);
     const codePanel = document.getElementById("plusAccountCodePanel");
     if (codePanel) codePanel.hidden = false;
     setPlusAccountStatus(currentLanguage === "en"
@@ -3369,6 +3481,7 @@ function setupPlusAccountFoundation() {
       setPlusAccountStatus(getPlusAccountFriendlyError(result?.error, "verify"));
       return;
     }
+    plusAccountVerificationPending = false;
     if (codeInput) codeInput.value = "";
     updatePlusAccountUi();
     configurePlusFeatureGating();
@@ -3381,6 +3494,22 @@ function setupPlusAccountFoundation() {
       ? purchaseButton
       : document.getElementById("plusAccountRefreshButton");
     nextFocus?.focus?.();
+  });
+
+  document.getElementById("plusAccountEditConfirmationButton")?.addEventListener("click", () => {
+    if (plusAccountActionInFlight) return;
+    plusEntitlementClient?.cancelVerification?.();
+    plusAccountVerificationPending = false;
+    if (codeInput) codeInput.value = "";
+    const codePanel = document.getElementById("plusAccountCodePanel");
+    if (codePanel) codePanel.hidden = true;
+    setPlusAccountControlsDisabled(false);
+    resetPlusAccountTurnstile();
+    setPlusAccountStatus(currentLanguage === "en"
+      ? "You can change the email or choices, then send a new code."
+      : "メールや選択を直して、新しい確認コードを送れます。"
+    );
+    emailInput?.focus?.();
   });
 
   document.getElementById("plusAccountRefreshButton")?.addEventListener("click", async () => {
@@ -3400,6 +3529,7 @@ function setupPlusAccountFoundation() {
     if (plusAccountActionInFlight) return;
     setPlusAccountControlsDisabled(true);
     await plusEntitlementClient?.logout?.();
+    plusAccountVerificationPending = false;
     plusCheckoutConfirmationPending = false;
     plusCheckoutCancelledReturn = false;
     plusCheckoutPollGeneration += 1;

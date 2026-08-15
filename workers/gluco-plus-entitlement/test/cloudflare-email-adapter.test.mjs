@@ -65,6 +65,8 @@ test("Cloudflare binding receives one fixed-subject bilingual verification email
     assert.match(body, /GlucoScope verification code/u);
     assert.match(body, new RegExp(CODE, "u"));
     assert.match(body, /10/u);
+    assert.match(body, /コードを送ったGlucoScopeの画面へ戻って入力/u);
+    assert.match(body, /Return to the GlucoScope screen where you requested the code/u);
     assert.doesNotMatch(body, new RegExp(DESTINATION_EMAIL, "u"));
   }
 });

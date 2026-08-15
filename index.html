@@ -28,7 +28,7 @@
   <meta name="glucoscope-plus-account-enabled" content="false">
   <meta name="glucoscope-plus-purchases-enabled" content="false">
   <meta name="glucoscope-plus-entitlement-endpoint" content="">
-  <link rel="stylesheet" href="style.css?v=20260815-plus-account-foundation-1">
+  <link rel="stylesheet" href="style.css?v=20260815-guardian-confirmation-1">
 </head>
 <body>
 
@@ -294,7 +294,30 @@
           <label class="local-profile-field" for="plusAccountEmail">
             <span data-i18n-key="plusAccountEmailLabel">確認に使うメール</span>
             <input id="plusAccountEmail" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" aria-describedby="plusAccountEmailHelp" required>
-            <small id="plusAccountEmailHelp" data-i18n-key="plusAccountEmailHelp">パスワードは入力しません。子どもの利用方法は、販売開始前に保護者向けの案内を用意します。</small>
+            <small id="plusAccountEmailHelp" data-i18n-key="plusAccountEmailHelp">パスワードは入力しません。1つのメールで管理できるPlusアカウントは1つです。</small>
+          </label>
+
+          <fieldset id="plusAccountBuyerRole" class="plus-account-confirmation" aria-describedby="plusAccountRoleHelp">
+            <legend data-i18n-key="plusAccountRoleLegend">だれが購入やメールを管理しますか？</legend>
+            <label>
+              <input id="plusAccountRoleSelf" type="radio" name="plusAccountContactRole" value="self" required>
+              <span data-i18n-key="plusAccountRoleSelf">自分のために、自分で管理します</span>
+            </label>
+            <label>
+              <input id="plusAccountRoleGuardian" type="radio" name="plusAccountContactRole" value="guardian">
+              <span data-i18n-key="plusAccountRoleGuardian">子どものために、保護者として管理します</span>
+            </label>
+            <small id="plusAccountRoleHelp" data-i18n-key="plusAccountRoleHelp">子どもの名前・生年月日・血糖値は入力しません。兄弟姉妹を別々に管理する家族機能は、まだ準備中です。</small>
+          </fieldset>
+
+          <label class="plus-account-check">
+            <input id="plusAccountAdultConfirmed" type="checkbox" required>
+            <span data-i18n-key="plusAccountAdultConfirmed">購入やメールを管理する私は18歳以上です</span>
+          </label>
+
+          <label id="plusAccountGuardianConfirmation" class="plus-account-check" hidden>
+            <input id="plusAccountGuardianConfirmed" type="checkbox">
+            <span data-i18n-key="plusAccountGuardianConfirmed">私は保護者として、購入・別の端末で使うための確認・返金の問い合わせを管理します</span>
           </label>
 
           <div id="plusAccountTurnstile" class="plus-account-turnstile" aria-label="Plusのメール確認の安全確認"></div>
@@ -306,7 +329,10 @@
               <input id="plusAccountCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" aria-describedby="plusAccountCodeHelp" required>
               <small id="plusAccountCodeHelp" data-i18n-key="plusAccountCodeHelp">10分以内に入力してください。この画面を閉じたり更新した時は、もう一度コードを送ってください。届かない時は迷惑メールも確認できます。</small>
             </label>
-            <button id="plusAccountVerifyButton" class="usage-profile-primary-button" type="button" data-i18n-key="plusAccountVerifyButton">確認する</button>
+            <div class="usage-profile-actions">
+              <button id="plusAccountVerifyButton" class="usage-profile-primary-button" type="button" data-i18n-key="plusAccountVerifyButton">確認する</button>
+              <button id="plusAccountEditConfirmationButton" class="usage-profile-secondary-button" type="button" data-i18n-key="plusAccountEditConfirmationButton">メール・選択を直す</button>
+            </div>
           </div>
         </div>
 
@@ -904,13 +930,13 @@
 <script src="js/data-source.js?v=20260812-safari-save-1"></script>
 <script src="js/data-relay-client.js?v=20260812-connection-lifecycle-1"></script>
 <script src="js/local-profile.js?v=20260811-usage-profile-stage-1"></script>
-<script src="js/usage-client.js?v=20260815-plus-account-foundation-1"></script>
-<script src="js/plus-entitlement-client.js?v=20260815-plus-account-foundation-1"></script>
-<script src="js/plus-feature-access.js?v=20260815-plus-account-foundation-1"></script>
+<script src="js/usage-client.js?v=20260815-guardian-confirmation-1"></script>
+<script src="js/plus-entitlement-client.js?v=20260815-guardian-confirmation-1"></script>
+<script src="js/plus-feature-access.js?v=20260815-guardian-confirmation-1"></script>
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js?v=20260721-user-foundation-3"></script>
-<script src="js/app.js?v=20260815-plus-account-foundation-1"></script>
+<script src="js/app.js?v=20260815-guardian-confirmation-1"></script>
 <!-- Cloudflare Web Analytics: aggregate page-view and performance metrics only -->
 <script src="js/analytics-loader.js?v=20260811-usage-profile-stage-1"></script>
 <!-- End Cloudflare Web Analytics -->

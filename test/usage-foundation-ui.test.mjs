@@ -999,10 +999,10 @@ test("AI usage is recorded only for a completed new OpenAI generation", () => {
 test("local display-name storage remains network-free and server sync is separate", () => {
   assert.doesNotMatch(localProfile, /\b(?:fetch|XMLHttpRequest|sendBeacon|WebSocket)\b/u);
   assert.match(index, /js\/local-profile\.js\?v=20260811-usage-profile-stage-1/);
-  assert.match(index, /js\/usage-client\.js\?v=20260815-plus-account-foundation-1/);
-  assert.match(index, /js\/plus-feature-access\.js\?v=20260815-plus-account-foundation-1/);
-  assert.match(index, /style\.css\?v=20260815-plus-account-foundation-1/);
-  assert.match(index, /js\/app\.js\?v=20260815-plus-account-foundation-1/);
+  assert.match(index, /js\/usage-client\.js\?v=20260815-guardian-confirmation-1/);
+  assert.match(index, /js\/plus-feature-access\.js\?v=20260815-guardian-confirmation-1/);
+  assert.match(index, /style\.css\?v=20260815-guardian-confirmation-1/);
+  assert.match(index, /js\/app\.js\?v=20260815-guardian-confirmation-1/);
   assert.match(app, /updateUsageProfileDisplayName\(result\.profile\.displayName\)/);
   assert.doesNotMatch(app, /handleLocalProfileDelete|localProfileDeleteButton/);
   assert.match(app, /if \(!state\.enabled \|\| !state\.registered\) return;/);

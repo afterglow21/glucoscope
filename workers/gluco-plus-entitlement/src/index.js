@@ -30,6 +30,10 @@ export class PlusEntitlementRpc extends WorkerEntrypoint {
     return this.#service().resolveAiSubject(sessionToken);
   }
 
+  async resolveCheckoutBuyer(sessionToken, confirmationVersion) {
+    return this.#service().resolveCheckoutBuyer(sessionToken, confirmationVersion);
+  }
+
   async getActivePlusSummary(sessionToken) {
     return this.#service().getActivePlusSummary(sessionToken);
   }

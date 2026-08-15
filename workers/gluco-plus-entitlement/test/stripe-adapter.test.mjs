@@ -106,7 +106,9 @@ function createDatabase() {
   const database = new NodeD1Database();
   for (const migrationName of [
     "0001_initial_plus_entitlement_schema.sql",
+    "0002_account_auth.sql",
     "0003_stripe_checkout_state.sql",
+    "0004_guardian_buyer_confirmation.sql",
   ]) {
     const migration = readFileSync(
       new URL(`../migrations/${migrationName}`, import.meta.url),
@@ -117,7 +119,10 @@ function createDatabase() {
   return database;
 }
 
-async function createVerifiedAccount(store) {
+async function createVerifiedAccount(store, {
+  buyerRole = "self",
+  buyerConfirmationVersion = "2026-08-15",
+} = {}) {
   await store.createAccount({
     id: ACCOUNT_ID,
     emailLookupHmac: "m".repeat(43),
@@ -125,6 +130,10 @@ async function createVerifiedAccount(store) {
     emailKeyVersion: 1,
     verifiedAt: NOW,
     now: NOW,
+    buyerRole,
+    buyerConfirmationVersion,
+    adultConfirmedAt: NOW,
+    guardianConfirmedAt: buyerRole === "guardian" ? NOW : null,
   });
   await store.createSession({
     id: SESSION_ID,
@@ -156,12 +165,13 @@ function enabledHttpEnv() {
     PLUS_SALES_READINESS_CONFIRMED: "true",
     PLUS_FINAL_PRICE_DISPLAY: "total_300_confirmed",
     PLUS_TAX_TREATMENT_CONFIRMED: "true",
-    PLUS_BUYER_POLICY: "adult_self_managed_only",
+    PLUS_BUYER_POLICY: "adult_self_or_confirmed_guardian",
     PLUS_COMMERCIAL_DISCLOSURE_PATH:
       "/glucoscope/pages/trust/commercial-transactions.html",
     PLUS_REFUND_POLICY_PATH: "/glucoscope/pages/trust/plus-terms.html",
     PLUS_SUPPORT_PATH: "/glucoscope/pages/trust/plus-support.html",
     PLUS_TERMS_VERSION: "2026-08-15",
+    PLUS_BUYER_CONFIRMATION_VERSION: "2026-08-15",
     STRIPE_WEBHOOK_SECRET: WEBHOOK_SECRET,
   };
 }
@@ -179,6 +189,8 @@ test("commerce readiness requires final tax, buyer, terms, and same-site public 
     { PLUS_FINAL_PRICE_DISPLAY: "undecided" },
     { PLUS_TAX_TREATMENT_CONFIRMED: "false" },
     { PLUS_BUYER_POLICY: "guardian_shared_email" },
+    { PLUS_BUYER_CONFIRMATION_VERSION: "" },
+    { PLUS_BUYER_CONFIRMATION_VERSION: "2026-02-30" },
     { PLUS_TERMS_VERSION: "" },
     { PLUS_TERMS_VERSION: "2026-02-30" },
     { PLUS_TERMS_VERSION: "2026-13-01" },
@@ -368,6 +380,7 @@ test("checked-in Stripe HTTP and webhook switches stay off with no identifiers o
   assert.equal(config.vars.PLUS_REFUND_POLICY_PATH, "");
   assert.equal(config.vars.PLUS_SUPPORT_PATH, "");
   assert.equal(config.vars.PLUS_TERMS_VERSION, "");
+  assert.equal(config.vars.PLUS_BUYER_CONFIRMATION_VERSION, "");
   assert.equal(config.vars.PLUS_ALLOWED_ORIGIN, "https://afterglow21.github.io");
   assert.equal(
     config.vars.PLUS_CHECKOUT_SUCCESS_PATH,
@@ -581,6 +594,114 @@ test("Checkout stays fail-closed when sale notices are not confirmed", async () 
   assert.equal(touches, 0);
 });
 
+test("Checkout refuses an account without the current adult or guardian confirmation", async () => {
+  let downstreamTouches = 0;
+  const response = await handleStripeHttpRequest(
+    plusCheckoutRequest(),
+    enabledHttpEnv(),
+    {
+      entitlementService: {
+        async resolveCheckoutBuyer(token, version) {
+          assert.equal(token, SESSION_TOKEN);
+          assert.equal(version, "2026-08-15");
+          return { status: "buyer_confirmation_required" };
+        },
+      },
+      stripeClient: new Proxy({}, {
+        get() { downstreamTouches += 1; throw new Error("must not touch Stripe"); },
+      }),
+      store: new Proxy({}, {
+        get() { downstreamTouches += 1; throw new Error("must not reserve Checkout"); },
+      }),
+    },
+  );
+  assert.equal(response.status, 409);
+  assert.deepEqual(await response.json(), {
+    ok: false,
+    error: "buyer_confirmation_required",
+  });
+  assert.equal(downstreamTouches, 0);
+});
+
+test("real Checkout rejects a stale confirmation version before Stripe", async (t) => {
+  const database = createDatabase();
+  t.after(() => database.close());
+  const store = createD1PlusEntitlementStore(database);
+  await createVerifiedAccount(store, {
+    buyerConfirmationVersion: "2026-08-14",
+  });
+  let stripeTouches = 0;
+  const response = await handleStripeHttpRequest(
+    plusCheckoutRequest(),
+    enabledHttpEnv(),
+    {
+      store,
+      now: () => NOW + 1000,
+      entitlementService: createPlusEntitlementService(enabledHttpEnv(), {
+        store,
+        now: () => NOW + 1000,
+        hashSessionToken: async (token) => token === SESSION_TOKEN
+          ? SESSION_TOKEN_HASH
+          : "x".repeat(43),
+      }),
+      stripeClient: new Proxy({}, {
+        get() {
+          stripeTouches += 1;
+          throw new Error("must not touch Stripe");
+        },
+      }),
+    },
+  );
+  assert.equal(response.status, 409);
+  assert.deepEqual(await response.json(), {
+    ok: false,
+    error: "buyer_confirmation_required",
+  });
+  assert.equal(stripeTouches, 0);
+  assert.equal(Number(database.raw.prepare(`
+    SELECT COUNT(*) AS count FROM checkout_attempts
+  `).get().count), 0);
+});
+
+test("real guardian confirmation can open one Checkout", async (t) => {
+  const database = createDatabase();
+  t.after(() => database.close());
+  const store = createD1PlusEntitlementStore(database);
+  await createVerifiedAccount(store, { buyerRole: "guardian" });
+  const checkoutUrl = `https://checkout.stripe.com/c/pay/${CHECKOUT_ID}`;
+  let createCalls = 0;
+  const response = await handleStripeHttpRequest(
+    plusCheckoutRequest(),
+    enabledHttpEnv(),
+    {
+      store,
+      now: () => NOW + 1000,
+      entitlementService: createPlusEntitlementService(enabledHttpEnv(), {
+        store,
+        now: () => NOW + 1000,
+        hashSessionToken: async (token) => token === SESSION_TOKEN
+          ? SESSION_TOKEN_HASH
+          : "x".repeat(43),
+      }),
+      stripeClient: {
+        config: { priceId: PRICE_ID, productId: PRODUCT_ID },
+        async createPlusCheckout(input) {
+          createCalls += 1;
+          assert.equal(input.accountId, ACCOUNT_ID);
+          return {
+            checkoutUrl,
+            checkoutSessionId: CHECKOUT_ID,
+            expiresAt: NOW + 60 * 60 * 1000,
+          };
+        },
+      },
+    },
+  );
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { ok: true, checkoutUrl });
+  assert.equal(createCalls, 1);
+});
+
 test("Checkout route enforces exact Origin, bounded JSON, authentication, and no-store CORS", async (t) => {
   const database = createDatabase();
   t.after(() => database.close());
@@ -590,12 +711,13 @@ test("Checkout route enforces exact Origin, bounded JSON, authentication, and no
   const dependencies = {
     store,
     now: () => NOW + 1000,
-    entitlementService: {
-      async resolveAiSubject(token) {
-        assert.equal(token, SESSION_TOKEN);
-        return { status: "ok", subjectId: ACCOUNT_ID, plusActive: false };
-      },
-    },
+    entitlementService: createPlusEntitlementService(enabledHttpEnv(), {
+      store,
+      now: () => NOW + 1000,
+      hashSessionToken: async (token) => token === SESSION_TOKEN
+        ? SESSION_TOKEN_HASH
+        : "x".repeat(43),
+    }),
     stripeClient: {
       async createPlusCheckout(input) {
         checkoutCalls += 1;
@@ -784,7 +906,7 @@ test("parallel Checkout clicks create at most one Session and later reuse its UR
     stripeClient,
     now: () => NOW + 1000,
     entitlementService: {
-      async resolveAiSubject() {
+      async resolveCheckoutBuyer() {
         return { status: "ok", subjectId: ACCOUNT_ID, plusActive: false };
       },
     },
@@ -847,7 +969,7 @@ test("a Stripe-confirmed expired Checkout is replaced once with the new request"
     store,
     now: () => NOW + 1000,
     entitlementService: {
-      async resolveAiSubject() {
+      async resolveCheckoutBuyer() {
         return { status: "ok", subjectId: ACCOUNT_ID, plusActive: false };
       },
     },
@@ -926,7 +1048,7 @@ test("a completed Checkout stays blocked while payment confirmation is pending",
       store,
       now: () => NOW + 2 * 60 * 60 * 1000,
       entitlementService: {
-        async resolveAiSubject() {
+        async resolveCheckoutBuyer() {
           return { status: "ok", subjectId: ACCOUNT_ID, plusActive: false };
         },
       },

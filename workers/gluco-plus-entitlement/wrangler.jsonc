@@ -28,6 +28,7 @@
     "PLUS_REFUND_POLICY_PATH": "",
     "PLUS_SUPPORT_PATH": "",
     "PLUS_TERMS_VERSION": "",
+    "PLUS_BUYER_CONFIRMATION_VERSION": "",
     "PLUS_ACCOUNT_AUTH_HTTP_ENABLED": "false",
     "ACCOUNT_AUTH_ALLOWED_ORIGIN": "https://afterglow21.github.io",
     "ACCOUNT_AUTH_EXPECTED_HOSTNAME": "afterglow21.github.io",

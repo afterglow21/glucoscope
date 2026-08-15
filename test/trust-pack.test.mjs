@@ -57,7 +57,7 @@ test("Plus 30-day pass records the approved one-time boundary without claiming s
   assert.match(spec, /Subscriptionや自動更新を使わない/);
 });
 
-test("Plus policy candidates stay internal while public pages remain simple", async () => {
+test("Plus buyer policy stays complete internally while public pages remain simple", async () => {
   const [spec, privacy, roadmap, bible] = await Promise.all([
     read(plusSpecUrl),
     read(new URL("privacy-notes.html", trustDirUrl)),
@@ -65,10 +65,12 @@ test("Plus policy candidates stay internal while public pages remain simple", as
     read(projectBibleUrl),
   ]);
 
-  assert.match(spec, /初期販売の候補は、18歳以上/);
+  assert.match(spec, /購入とメールを管理する18歳以上の本人/);
+  assert.match(spec, /子どもの氏名、生年月日、血糖値、表示名、CGMの種類を保護者確認で集めない/);
   assert.match(spec, /体験を成功した日から90日間だけ/);
   assert.match(spec, /販売前の保持候補は7年/);
-  assert.match(bible, /初期販売のアカウント境界候補を「18歳以上/);
+  assert.match(bible, /子どものPlusを18歳以上の保護者が管理できる方針/);
+  assert.match(bible, /子どもの氏名、生年月日、血糖値、表示名、CGMの種類は集めず/);
   assert.match(bible, /最後の支払いまたは最終解決の遅い方から180日以内/);
 
   for (const publicPage of [privacy, roadmap]) {
@@ -77,6 +79,12 @@ test("Plus policy candidates stay internal while public pages remain simple", as
     assert.doesNotMatch(publicPage, /体験した日から90日間だけ/u);
   }
   assert.match(privacy, /Plus 30日パス（まだ販売していません）/);
+  assert.match(privacy, /本人利用か保護者管理かを確認した日/);
+  assert.match(privacy, /二重決済やPlusが始まらない問題/);
+  assert.match(privacy, /GlucoScope側の大きな障害/);
+  assert.match(privacy, /If GlucoScope cannot correct a duplicate charge/);
+  assert.match(roadmap, /18歳以上の保護者が購入・復旧・問い合わせを管理/);
+  assert.match(roadmap, /the approved policy is a full refund after review/);
   assert.match(roadmap, /まだ販売していません/);
 });
 

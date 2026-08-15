@@ -15,6 +15,7 @@ import {
 } from "./credentials.js";
 
 const VERIFICATION_CODE_PATTERN = /^\d{6}$/u;
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/u;
 const CONTACT_ROLES = Object.freeze(new Set(["self", "guardian"]));
 
 export class AccountAuthError extends Error {
@@ -37,6 +38,15 @@ function readInteger(value, fallback, minimum, maximum) {
   const parsed = Number(value);
   if (!Number.isSafeInteger(parsed)) return fallback;
   return Math.min(maximum, Math.max(minimum, parsed));
+}
+
+function readIsoDate(value) {
+  const raw = String(value ?? "").trim();
+  if (!ISO_DATE_PATTERN.test(raw)) return null;
+  const date = new Date(`${raw}T00:00:00.000Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === raw
+    ? raw
+    : null;
 }
 
 export function readAccountAuthConfig(env = {}) {
@@ -84,6 +94,9 @@ export function readAccountAuthConfig(env = {}) {
       0,
       999_999,
     ),
+    buyerConfirmationVersion: readIsoDate(
+      env.PLUS_BUYER_CONFIRMATION_VERSION,
+    ),
   });
 }
 
@@ -128,15 +141,27 @@ function requireVerificationGrant(value) {
   return grant;
 }
 
-function readContactRole(input) {
-  const role = String(input?.contactRole || "self");
+function requireBuyerConfirmation(input, version) {
+  if (!version) throw new AccountAuthError("service_unavailable", 503);
+  const role = String(input?.contactRole ?? "");
   if (!CONTACT_ROLES.has(role)) {
     throw new AccountAuthError("invalid_request", 400);
+  }
+  if (input?.adultConfirmed !== true) {
+    throw new AccountAuthError("adult_confirmation_required", 400);
   }
   if (role === "guardian" && input?.guardianConfirmed !== true) {
     throw new AccountAuthError("guardian_confirmation_required", 400);
   }
-  return role;
+  if (role === "self" && input?.guardianConfirmed !== false) {
+    throw new AccountAuthError("invalid_request", 400);
+  }
+  return Object.freeze({
+    contactRole: role,
+    adultConfirmed: true,
+    guardianConfirmed: role === "guardian",
+    buyerConfirmationVersion: version,
+  });
 }
 
 function requireSessionToken(value) {
@@ -232,7 +257,10 @@ export function createAccountAuthService(env = {}, dependencies = {}) {
       requireVerifiedTurnstile(context);
       const emailAdapter = getEmailAdapter();
       const normalizedEmail = requireEmail(input?.email);
-      const contactRole = readContactRole(input);
+      const buyerConfirmation = requireBuyerConfirmation(
+        input,
+        config.buyerConfirmationVersion,
+      );
       const requestedAt = requireSafeEpoch(now());
       const emailIdentities = await getEmailLookupIdentities(normalizedEmail);
       const currentEmailIdentity = emailIdentities[0];
@@ -258,7 +286,7 @@ export function createAccountAuthService(env = {}, dependencies = {}) {
         emailHmacKeyVersion: config.emailHmacKeyVersion,
         codeHmac: credentials.codeHmac,
         verificationGrantHash: credentials.verificationGrantHash,
-        contactRole,
+        ...buyerConfirmation,
         attempts: config.codeAttempts,
         createdAt: requestedAt,
         expiresAt: requestedAt + config.codeTtlMs,
@@ -284,7 +312,7 @@ export function createAccountAuthService(env = {}, dependencies = {}) {
           destinationEmail: normalizedEmail,
           code: credentials.code,
           expiresInMinutes: Math.ceil(config.codeTtlMs / 60_000),
-          contactRole,
+          contactRole: buyerConfirmation.contactRole,
           purpose: "sign_in_or_recover",
         }));
         accepted = delivery?.accepted === true;
@@ -356,6 +384,15 @@ export function createAccountAuthService(env = {}, dependencies = {}) {
       if (!consumption?.consumed) {
         throw new AccountAuthError("invalid_or_expired_code", 400);
       }
+      if (
+        challenge.adultConfirmed !== true
+        || !CONTACT_ROLES.has(challenge.contactRole)
+        || (challenge.contactRole === "guardian")
+          !== (challenge.guardianConfirmed === true)
+        || challenge.buyerConfirmationVersion !== config.buyerConfirmationVersion
+      ) {
+        throw new AccountAuthError("buyer_confirmation_required", 409);
+      }
 
       const sessionCredentials = await makeSession(cryptoImpl);
       const newAccountId = cryptoImpl.randomUUID();
@@ -366,10 +403,17 @@ export function createAccountAuthService(env = {}, dependencies = {}) {
         newAccountId,
         newSessionId: sessionCredentials.id,
         newTokenHash: sessionCredentials.tokenHash,
+        buyerRole: challenge.contactRole,
+        buyerConfirmationVersion: challenge.buyerConfirmationVersion,
         verifiedAt,
         sessionExpiresAt: verifiedAt + config.sessionTtlMs,
       });
-      if (!session) throw new AccountAuthError("service_unavailable", 503);
+      if (session?.status === "buyer_role_conflict") {
+        throw new AccountAuthError("buyer_role_conflict", 409);
+      }
+      if (session?.status !== "ready") {
+        throw new AccountAuthError("service_unavailable", 503);
+      }
       const sessionSnapshot = await store.getSessionState({
         tokenHash: sessionCredentials.tokenHash,
         now: verifiedAt,
