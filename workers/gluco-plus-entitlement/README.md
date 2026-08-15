@@ -46,6 +46,16 @@ Turnstile and Resend values prevented any provider or email call. The preview wa
 all known synthetic rows were deleted, and all 12 application tables returned to zero.
 No public route, real email, or Secret was used.
 
+On 2026-08-16 JST, a separate one-message closed acceptance reached the staging Worker
+only through a localhost client and a private service binding. It used Resend's official
+delivered test recipient, not a personal recipient. Resend accepted the message and then
+reported it delivered. This proves the Worker-to-Resend request and Resend's test-delivery
+path only; it is not a personal-inbox or Turnstile end-to-end acceptance. The exact
+temporary challenge and send-reservation rows were deleted, all 12 application tables
+returned to zero, and stopped Version `bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9` was restored
+to 100% traffic. Public account UI and sales remained off throughout. No public route,
+preview URL, or Cron trigger exists.
+
 The internal verified-payment function also checks `PLUS_PURCHASES_ENABLED` before it
 reads payment identifiers, generates an entitlement ID, or touches D1. Missing or false
 always fails closed; only an explicit true value allows processing to begin.
@@ -173,10 +183,15 @@ production prerequisite.
 The earlier disconnected Cloudflare Email Service prototype has been removed and
 replaced locally by a Resend REST API adapter. Cloudflare Email Service / Workers Paid
 was not subscribed, so there is no USD 5 monthly email-service charge. The Resend adapter
-cannot send without the `RESEND_API_KEY` Worker Secret. The stopped staging environment
-has its dedicated D1 binding but no Resend API key, Turnstile Secret, email-lookup HMAC
-Secret, or code-HMAC Secret. Account HTTP remains disabled, and a missing dependency
-still fails closed.
+cannot send without the `RESEND_API_KEY` Worker Secret. The restored stopped staging
+Version has its dedicated D1 binding but exposes none of the closed-test Secrets. Account
+HTTP remains disabled, and a missing dependency still fails closed.
+
+The closed acceptance also found a Cloudflare Workers runtime interoperability issue:
+`fetch` with `redirect: "error"` threw a `TypeError` before the Resend request could
+complete. The adapter now uses `redirect: "manual"` and rejects every `3xx` response
+without following it, so the Authorization header and request body are not forwarded to
+a redirect destination. Focused adapter tests cover both `302` and `307` responses.
 
 On 2026-08-15, the operator purchased `glucoscope.app` for USD 14.20 per year and turned
 automatic renewal off. The planned dedicated sending subdomain is
@@ -206,12 +221,12 @@ events. The provider message ID must not be stored by account auth.
 
 `auth.glucoscope.app` has reached final `verified` status in Resend after the required
 SPF, DKIM, MX, and DMARC records were added manually in Cloudflare DNS and resolved publicly.
-Receiving is off, and no tracking subdomain or open/click tracking is configured. No
-Resend API key or related Worker Secret exists, and no real email has been sent. The only
-Worker deployment is the stopped, unreachable staging checkpoint described above, whose
-Secret list is empty. Before the first closed test, create a send-only API key scoped to
-this domain and keep it only as a Worker Secret. Restrict the test to approved
-destinations, keep the existing per-email HMAC
+Receiving is off, and no tracking subdomain or open/click tracking is configured. A
+send-only API key and the account-auth Secrets were used only by temporary non-public
+closed-test Versions. They are not exposed by the restored stopped Version described
+above. The accepted one-message test used Resend's official delivered test recipient; no
+personal mailbox has been tested. Restrict any later test to an explicitly approved
+destination, keep the existing per-email HMAC
 limit, and keep the implemented D1-backed global cap at 80 accepted reservations per
 rolling 24 hours, below the provider limits. Pending, sent, and failed attempts all
 consume the cap, and reservation is atomic so concurrent requests cannot overshoot it.
@@ -234,9 +249,9 @@ Recheck [Resend pricing](https://resend.com/pricing),
 [event meanings](https://resend.com/docs/webhooks/event-types),
 [delivered versus inbox arrival](https://resend.com/docs/knowledge-base/what-if-an-email-says-delivered-but-the-recipient-has-not-received-it), and the
 [acceptable-use sending thresholds](https://resend.com/legal/acceptable-use) immediately
-before the real test. Account and sales flags remain off until the real closed test and
-the ordinary 30-day retention plus longer Suppression List exception are explicitly
-accepted.
+before any personal-mailbox test. Account and sales flags remain off until personal-inbox
+delivery, the Turnstile path, and the ordinary 30-day retention plus longer Suppression
+List exception are explicitly accepted.
 
 Suggested simple explanation for the future screen:
 
@@ -343,11 +358,12 @@ Cloudflare's secret or dashboard configuration facilities; never put their value
 Git or `.dev.vars`.
 
 Live sales remain blocked. The stopped staging D1 schema-and-binding checkpoint is
-complete, but closed email delivery, the required Secrets, Stripe-hosted test acceptance,
-user-facing terms, tax and receipt decisions, support and refund policy, and multi-tab
-acceptance of the per-account pending-Checkout guard are still required. The payment,
-account, RPC, cleanup, sales, and tax switches must not be enabled merely because this
-adapter bundles or the empty staging schema exists.
+complete and the official Resend test-recipient acceptance passed, but personal-inbox and
+Turnstile end-to-end acceptance, Stripe-hosted test acceptance, user-facing terms, tax and
+receipt decisions, support and refund policy, and multi-tab acceptance of the per-account
+pending-Checkout guard are still required. The payment, account, RPC, cleanup, sales, and
+tax switches must not be enabled merely because this adapter bundles, the provider test
+passed, or the empty staging schema exists.
 
 ## Local verification
 

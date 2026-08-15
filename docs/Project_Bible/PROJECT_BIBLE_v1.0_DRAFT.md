@@ -3530,15 +3530,29 @@ before its limiter reached `429`; verify returned `400` before its separate limi
 The preview was stopped, every known synthetic row was deleted, and all 12 application tables
 returned to zero. No public route, real email, or Secret was used.
 
-There is no Resend API key, related Worker Secret, Stripe key, Webhook Secret, Price/Product
-identifier, public account route, or live entitlement, and no real email has been sent. The
-existing AI and custom-range experience therefore remains unchanged. The public Usage
-Dashboard candidate adds only aggregate totals for the 30 completed days through yesterday;
-it omits exact totals until at least 10 consenting device profiles contributed, and never
-returns names or device-level rows. Public accounts and sales remain no-go. Do not enable
-individual quota or Plus feature gates until identity and recovery, closed email delivery,
-refunds, tax and support, public-demo anti-bypass handling, deployment order, and production
-acceptance are complete.
+On 2026-08-16 JST, a separate one-message closed acceptance reached staging only from a
+localhost client through a private service binding. It used Resend's official delivered test
+recipient, not a personal destination. Resend accepted one message and then reported it
+delivered. This verifies the Worker-to-Resend request and Resend test-delivery path only; it
+does not accept personal-inbox delivery or the Turnstile end-to-end path. The exact temporary
+challenge and send-reservation rows were deleted, all 12 application tables returned to zero,
+and stopped Version `bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9` was restored to 100% traffic. No
+public route, preview URL, or Cron exists. Public account UI and sales remained off throughout.
+
+That acceptance found a Cloudflare Workers runtime interoperability issue: the adapter's
+former `redirect: "error"` fetch option threw a `TypeError` before sending could complete.
+The adapter now uses `redirect: "manual"` and rejects every `3xx` without following it, so it
+does not forward the Authorization header or request body to a redirect destination. Focused
+adapter tests cover `302` and `307`.
+
+There is no Stripe key, Webhook Secret, Price/Product identifier, public account route, or
+live entitlement. The existing AI and custom-range experience therefore remains unchanged.
+The public Usage Dashboard candidate adds only aggregate totals for the 30 completed days
+through yesterday; it omits exact totals until at least 10 consenting device profiles
+contributed, and never returns names or device-level rows. Public accounts and sales remain
+no-go. Do not enable individual quota or Plus feature gates until identity and recovery,
+personal-inbox and Turnstile end-to-end acceptance, refunds, tax and support, public-demo
+anti-bypass handling, deployment order, and production acceptance are complete.
 
 The always-on mode comes after user rollout begins. It is opt-in, limited to the graph in
 landscape orientation, and must clearly explain battery and screen-on behavior. It is a
@@ -3799,13 +3813,25 @@ Turnstile値とResend値により、外部providerやメール送信は呼ばれ
 合成行をすべて削除した後、12個のapplication tableは再びすべて0件になりました。公開経路、実メール、
 Secretは使っていません。
 
-Resend API keyと関連Worker Secret、Stripe key、Webhook Secret、Price/Product識別子、公開アカウント
-経路、実利用権は接続せず、実メールも送っていません。そのため、現在のAIとカスタム期間の動作は
-変えません。公開アカウントとPlus販売は引き続き開始不可です。
+2026年8月16日JST、localhostからprivate service bindingだけを通す1通限定の非公開受け入れを
+別に行いました。個人の宛先ではなくResend公式の配信成功テスト宛先を使い、Resendで1通の受理と
+`delivered`を確認しました。これはWorkerからResendまでとResendのテスト配信経路の確認であり、
+本人受信箱やTurnstileを含むE2E受け入れではありません。試験で作成したchallengeと送信予約の行は
+特定して削除し、12個のapplication tableがすべて0件へ戻ったことを確認しました。試験後は停止Version
+`bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9`へ通信の100%を戻しました。公開route、preview URL、Cronはなく、
+公開アカウント画面とPlus販売は試験中も試験後も停止したままです。
+
+この受け入れで、Cloudflare Workers runtimeではResendへの`fetch`に `redirect: "error"` を指定すると
+`TypeError`になり、送信を完了できない相互運用上の問題が分かりました。adapterは
+`redirect: "manual"`へ変更し、`3xx`を追跡せず拒否します。これによりAuthorization headerと本文を
+redirect先へ転送しません。`302`と`307`の実行型テストでこの境界を固定しました。
+
+Stripe key、Webhook Secret、Price/Product識別子、公開アカウント経路、実利用権は接続していません。
+そのため、現在のAIとカスタム期間の動作は変えません。公開アカウントとPlus販売は引き続き開始不可です。
 公開Usage Dashboard候補は、前日までの完了した30日間について、利用記録に同意した端末プロフィールが
 10件以上集まった時だけ全体の実数を表示し、名前や端末別の行は返しません。本人確認と復旧、返金、
-実メール、税とサポート、公開デモからの上限回避防止、公開順、本番受け入れが完了するまで、個人上限と
-Plus特典の制限を有効にしません。
+本人受信箱とTurnstileを含むE2E、税とサポート、公開デモからの上限回避防止、公開順、本番受け入れが
+完了するまで、個人上限とPlus特典の制限を有効にしません。
 
 同日、運営者は、子どものPlusを18歳以上の保護者が管理できる方針を決定しました。購入とメールを
 管理する人は、本人利用でも保護者利用でも18歳以上であることを明示確認します。保護者はさらに、
@@ -3858,7 +3884,7 @@ Plusの確認メールには `auth.glucoscope.app` を専用の送信元とし�
 hard bounceまたは迷惑メール報告があった宛先はチーム全体のSuppression Listへ入り、全送信ドメインからの
 送信が止まります。原因を確認・解決した後に運営者が手動で削除するまで、30日を超えて残る場合があります。
 原因未解決では削除も再送も行いません。どちらの保持中もコードの有効期限は10分のままです。
-料金・上限・通常の保持条件とSuppression List例外を実メール前に再確認し、少人数の実メール、配信失敗時の手順、プライバシー説明を
+料金・上限・通常の保持条件とSuppression List例外を本人受信箱への送信前に再確認し、少人数の本人受信箱、配信失敗時の手順、プライバシー説明を
 受け入れるまで、アカウント、確認メール、Plus販売はすべて停止したままにします。同日、
 `auth.glucoscope.app` をResendへ追加し、Cloudflare DNSへ必要なSPF、DKIM、MX、DMARCの4レコードを
 手動で追加しました。公開DNSで4件が確認でき、Resendでも送信ドメインが `verified` になっています。
@@ -3883,8 +3909,10 @@ APIの秒間上限は固定値を正本化せず、実アカウントのUsage画
 [Event Types](https://resend.com/docs/webhooks/event-types)、
 [Delivered表示と実受信の違い](https://resend.com/docs/knowledge-base/what-if-an-email-says-delivered-but-the-recipient-has-not-received-it)、
 [Acceptable Use Policy](https://resend.com/legal/acceptable-use)です。
-Resend API keyと関連Worker Secretはまだ作成・接続しておらず、実メールも送っていません。Cloudflareへの
-配置は、上記のURLを持たない停止中staging checkpointだけです。公開アカウントとPlus販売は開始しません。
+2026年8月16日の公式テスト宛先による1通の受理・`delivered`確認後も、本人受信箱への送信とTurnstileを
+含むE2Eは未確認です。閉じた試験用Versionでだけ使った送信・認証用Secretは、100%へ復帰した停止中
+Versionには露出しません。Cloudflareへの現在の配置は、上記のURLを持たない停止中staging checkpointです。
+公開アカウントとPlus販売は開始しません。
 
 常時表示モードは、ユーザー展開を始めた後に実装します。
 本人が選んだ時だけ、横向きのグラフ画面に限定して動かし、

@@ -297,7 +297,11 @@ export function createResendEmailAdapter(env = {}, dependencies = {}) {
             method: "POST",
             headers,
             body,
-            redirect: "error",
+            // This Cloudflare Workers runtime path returned TypeError for
+            // redirect:"error". Manual mode preserves the fail-closed
+            // boundary: any 3xx is returned and rejected below, without
+            // forwarding Authorization or the body to another location.
+            redirect: "manual",
             signal: AbortSignal.timeout(attemptTimeoutMs),
           });
         } catch {

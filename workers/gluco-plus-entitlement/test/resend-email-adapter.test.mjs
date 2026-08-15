@@ -71,7 +71,7 @@ test("Resend receives one bounded plain-text verification request", async () => 
   const [{ url, init }] = requests;
   assert.equal(url, "https://api.resend.com/emails");
   assert.equal(init.method, "POST");
-  assert.equal(init.redirect, "error");
+  assert.equal(init.redirect, "manual");
   assert.ok(init.signal instanceof AbortSignal);
   assert.equal(init.signal.aborted, false);
   assert.equal(init.headers.get("Accept"), "application/json");
@@ -167,8 +167,8 @@ test("malformed message input fails closed before fetch", async () => {
   assert.equal(fetches, 0);
 });
 
-test("provider rejection and timeout remain generic", async () => {
-  for (const status of [400, 401]) {
+test("provider rejection, redirect, and timeout remain generic", async () => {
+  for (const status of [302, 307, 400, 401]) {
     let fetches = 0;
     const adapter = createResendEmailAdapter(ENV, {
       async fetch() {

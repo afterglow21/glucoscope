@@ -43,8 +43,9 @@ test("Plus refund policy is short, conditional, and still blocked from sale", as
   assert.match(bible, /`glucoscope\.app` を年間14\.20米ドルで取得しました。自動更新はオフ/);
   assert.match(bible, /Resendでも送信ドメインが `verified`/);
   assert.match(readme, /purchased `glucoscope\.app` for USD 14\.20 per year and turned[\s\S]*automatic renewal off/);
-  assert.match(readme, /No[\s\S]*Resend API key or related Worker Secret exists,[\s\S]*no real email has been sent/);
-  assert.match(readme, /only[\s\S]*stopped, unreachable staging checkpoint[\s\S]*Secret list is empty/);
+  assert.match(readme, /send-only API key and the account-auth Secrets were used only by temporary non-public[\s\S]*closed-test Versions/);
+  assert.match(readme, /official delivered test recipient; no[\s\S]*personal mailbox has been tested/);
+  assert.match(readme, /restored stopped staging\s+Version[\s\S]*exposes none of the closed-test Secrets/);
 
   const oldImmediateWindow = new RegExp(`購入から${24}時間以内|${24}時間全額返金`, "u");
   const oldNoReasonPromise = new RegExp(
