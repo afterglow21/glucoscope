@@ -207,6 +207,54 @@ test("checked-in config is non-public, paused, and has no unprovisioned bindings
   );
 });
 
+test("staging binds only its dedicated D1 while every release path stays stopped", () => {
+  const config = JSON.parse(readFileSync(
+    new URL("../wrangler.jsonc", import.meta.url),
+    "utf8",
+  ));
+  const staging = config.env?.staging;
+
+  assert.equal(staging.name, "glucoscope-plus-entitlement-staging");
+  assert.equal(staging.workers_dev, false);
+  assert.equal(staging.preview_urls, false);
+  assert.deepEqual(staging.observability, { enabled: false });
+  assert.deepEqual(staging.triggers, { crons: [] });
+  assert.deepEqual(staging.vars, config.vars);
+  assert.deepEqual(staging.d1_databases, [{
+    binding: "PLUS_DB",
+    database_name: "glucoscope-plus-staging",
+    database_id: "67059733-36d1-433f-a8e1-e2e6c5b52d37",
+    migrations_dir: "migrations",
+  }]);
+  assert.equal("routes" in staging, false);
+  assert.deepEqual(staging.ratelimits.map((item) => ({
+    name: item.name,
+    namespaceId: item.namespace_id,
+    limit: item.simple.limit,
+    period: item.simple.period,
+  })), [
+    {
+      name: "ACCOUNT_REQUEST_CODE_RATE_LIMITER",
+      namespaceId: "3105901",
+      limit: 5,
+      period: 60,
+    },
+    {
+      name: "ACCOUNT_VERIFY_RATE_LIMITER",
+      namespaceId: "3105902",
+      limit: 30,
+      period: 60,
+    },
+  ]);
+  assert.equal(
+    staging.ratelimits.some((item) => config.ratelimits
+      .some((topLevel) => topLevel.namespace_id === item.namespace_id)),
+    false,
+  );
+  assert.equal("services" in staging, false);
+  assert.equal("secrets" in staging, false);
+});
+
 test("migration fixes one-time JPY 300 entitlements to exactly 30 days and excludes health fields", () => {
   const migration = readFileSync(
     new URL("../migrations/0001_initial_plus_entitlement_schema.sql", import.meta.url),
