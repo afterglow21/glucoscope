@@ -3153,12 +3153,12 @@ GlucoScopeはGlurooと提携しておらず、医療判断には使いません�
 
 ---
 
-## Public Developer and Privacy Summaries
-## 公開向けの開発・プライバシー要約
+## Public Developer, Roadmap, and Privacy Summaries
+## 公開向けの開発・ロードマップ・プライバシー要約
 
 ### EN
 
-The public Developer Status and Privacy Notes are user summaries,
+The public Developer Status, Roadmap, and Privacy Notes are user summaries,
 not engineering logs.
 They must be understandable to children, older adults,
 and people who are unfamiliar with IT.
@@ -3166,6 +3166,9 @@ and people who are unfamiliar with IT.
 These pages should explain only what a person can use,
 what happens to their information, what is not collected,
 which choices remain under their control, and what is improving next.
+The public Roadmap should use short sections for what is available now,
+what is improving, what comes next, future paid features,
+and promises that will not change.
 They must omit deployment and Version identifiers, database and table names,
 HTTP and CORS probe results, browser-storage key names, incident timelines,
 rollback targets, and internal configuration details.
@@ -3178,7 +3181,7 @@ both the internal record and the short public summary must be updated.
 
 ### JP
 
-公開向けのDeveloper StatusとPrivacy Notesは、
+公開向けのDeveloper Status、Roadmap、Privacy Notesは、
 技術者向けの運用ログではなく、利用者向けの短い要約です。
 ITに慣れていない子どもや高齢者にも伝わる言葉を使います。
 
@@ -3186,6 +3189,9 @@ ITに慣れていない子どもや高齢者にも伝わる言葉を使います
 今使えること、情報の扱い、記録しないもの、
 利用者が自分で選べること、これから良くすることだけを、
 やさしく簡潔に載せます。
+公開Roadmapは、今できること、いま良くしていること、
+これから、将来の有料機能、変わらない約束に分け、
+短く伝えます。
 deploymentやVersionのID、データベースやテーブル名、
 HTTP・CORSの確認結果、ブラウザ保存キー、障害確認の時系列、
 復帰先や内部設定は載せません。

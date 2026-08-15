@@ -83,9 +83,46 @@ test("Plus buyer policy stays complete internally while public pages remain simp
   assert.match(privacy, /二重決済やPlusが始まらない問題/);
   assert.match(privacy, /GlucoScope側の大きな障害/);
   assert.match(privacy, /If GlucoScope cannot correct a duplicate charge/);
-  assert.match(roadmap, /18歳以上の保護者が購入・復旧・問い合わせを管理/);
-  assert.match(roadmap, /the approved policy is a full refund after review/);
+  assert.match(roadmap, /18歳以上の保護者が、購入、別の端末で使うための確認、問い合わせを管理/);
+  assert.match(roadmap, /This is not a refund-for-any-reason policy/);
   assert.match(roadmap, /まだ販売していません/);
+});
+
+test("Roadmap stays simple for users while technical evidence stays internal", async () => {
+  const roadmap = await read(new URL("roadmap.html", trustDirUrl));
+
+  assert.match(roadmap, /これからどんな順番で育っていくかを、やさしい言葉でお知らせします/);
+  assert.match(roadmap, /今できること/);
+  assert.match(roadmap, /いま良くしていること/);
+  assert.match(roadmap, /これから/);
+  assert.match(roadmap, /Plus 30日パス（準備中）/);
+  assert.match(roadmap, /変わらない約束/);
+  assert.match(roadmap, /登録せずに公開デモと3種類の血糖測定機器（CGM）を見比べるページを開けます/);
+  assert.match(roadmap, /利用記録やAI分析で問題が起きても、血糖値やグラフの表示は続けられる/);
+  assert.match(roadmap, /300円の1回払いで30日間使える予定です。自動更新はありません/);
+  assert.match(roadmap, /Freeでは成功した新しいAI分析を1日1回、Plusでは1日5回まで/);
+  assert.match(roadmap, /文書の確認などで失敗した回は数えません/);
+  assert.match(roadmap, /グラフのカスタム期間とShare StudioはPlus特典/);
+  assert.match(roadmap, /確認済みの利用者ごとに1回だけ無料で試せる/);
+  assert.match(roadmap, /この保護者確認のために、子どもの名前や血糖値は集めません/);
+  assert.match(roadmap, /GlucoScopeをよくするため、表示名、利用した日/);
+  assert.match(roadmap, /血糖値、接続情報、AIお手紙の内容は記録しません/);
+  assert.match(roadmap, /GlucoScopeは医療機器ではなく、診断、治療、インスリン量の判断をしません/);
+
+  assert.match(roadmap, /Available now/);
+  assert.match(roadmap, /Improving now/);
+  assert.match(roadmap, /Coming next/);
+  assert.match(roadmap, /Plus 30-day pass \(in preparation\)/);
+  assert.match(roadmap, /What will not change/);
+  assert.match(roadmap, /one successful new AI analysis per day, while Plus includes up to five/);
+  assert.match(roadmap, /an adult guardian age 18 or older/);
+  assert.match(roadmap, /It is not yet available for purchase/);
+  assert.match(roadmap, /To improve GlucoScope, we record a display name/);
+  assert.doesNotMatch(roadmap, /Usage records contain only/);
+
+  assert.doesNotMatch(roadmap, /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+  assert.doesNotMatch(roadmap, /<code>|\b(?:D1|deployment|Version|CORS|Cron|sessionStorage|adapter|RELAY_ENABLED|KV)\b|\b(?:200|204|401|403|503)\b/i);
+  assert.doesNotMatch(roadmap, /Phase [A-E]|現在の技術課題|historical checkpoint|過去のチェックポイント/i);
 });
 
 
@@ -124,7 +161,6 @@ test("public relay wording preserves the current verification and privacy bounda
   const privacy = await read(new URL("privacy-notes.html", trustDirUrl));
   const safety = await read(new URL("safety-policy.html", trustDirUrl));
   const support = await read(new URL("support-policy.html", trustDirUrl));
-  const roadmap = await read(new URL("roadmap.html", trustDirUrl));
   const developerStatus = await read(new URL("../pages/about/developer-status.html", import.meta.url));
   const readme = await read(new URL("../README.md", import.meta.url));
 
@@ -217,17 +253,6 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(safety, /接続失敗は、CGMやポンプが止まったことを意味しません/);
   assert.match(support, /Gluroo、Nightscout、Azure、Cloudflare、OpenAI/);
   assert.match(support, /GlucoScopeや限定中継についての質問・不具合報告は、GlurooではなくGlucoScopeが受けます/);
-  assert.match(roadmap, /初回告知はまだ実施していません/);
-  assert.match(roadmap, /公開3CGM比較ラボは、安全対応と別の継続公開判断を経てライブ公開を開始しました/);
-  assert.match(roadmap, /2回の監督下確認ではどちらも接続確認まで成功しましたが/);
-  assert.match(roadmap, /既知の試験用プロフィール2件も削除しました/);
-  assert.match(roadmap, /D1は <code>0 \/ 0 \/ 0<\/code> のままで利用プロフィールは作成されていません/);
-  assert.match(roadmap, /5d160aed-7b27-48e6-b0a8-783534f97b6f/);
-  assert.match(roadmap, /a398d59e-54c1-4b8d-a9a4-b779af360a54/);
-  assert.match(roadmap, /635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a/);
-  assert.match(roadmap, /利用プロフィールの作成・停止・再開・書き出し・削除、一般利用者向け限定中継のG7基本経路、小さなUX修正は完了し、1〜3人の先行体験を開始しました/);
-  assert.match(roadmap, /Gluroo（Libre）の接続に成功し、「GlucoScopeを始める」の後も同じ画面にとどまってライブ血糖を表示できました/);
-  assert.match(roadmap, /D1は <code>profiles \/ usage_daily \/ event_receipts = 0 \/ 0 \/ 0<\/code> のまま/);
   assert.match(developerStatus, /今使えることと、これから直していくことだけを簡単にお知らせします/);
   assert.match(developerStatus, /公開デモは、登録せずに見ることができます/);
   assert.match(developerStatus, /グルコは、あなたを責めたり、数字で評価したりしません/);
@@ -236,34 +261,6 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.doesNotMatch(developerStatus, /href="\.\.\/trust\/roadmap\.html"/);
   assert.doesNotMatch(developerStatus, /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
   assert.doesNotMatch(developerStatus, /<code>|\b(?:D1|deployment|Version|CORS|Cron|sessionStorage|adapter|RELAY_ENABLED)\b|\b(?:200|204|401|403|503)\b/i);
-  assert.match(roadmap, /管理者ダッシュボードは、管理者1名だけが使える認証付きの読取専用画面として受け入れを完了しました/);
-  assert.match(roadmap, /300円の1回払い・30日間・自動更新なし/);
-  assert.match(roadmap, /FreeのAIは成功時だけ1日1回、Plusは1日5回まで/);
-  assert.match(roadmap, /まだ販売していません/);
-  assert.match(roadmap, /機能特典を付けない1回ごとの任意の開発支援とは別/);
-  assert.doesNotMatch(roadmap, /管理者ダッシュボードをつくります|今後の利用者別管理者ダッシュボード/);
-  assert.match(roadmap, /ユーザー展開を始めた後、横向きグラフだけで本人が選べる常時表示モード/);
-  assert.match(roadmap, /現時点の3CGM比較ページは継続公開ライブデモです/);
-  assert.match(roadmap, /約3時間の継続稼働を確認/);
-  assert.match(roadmap, /これまでの確認は合計2回/);
-  assert.match(roadmap, /一般利用者向け限定中継は現在、1〜3人の先行体験に限って有効です/);
-  assert.match(roadmap, /1〜3人の先行体験を開始しました。利用状況と安全境界の観察は、次の設計と並行して続けます/);
-  assert.match(roadmap, /Safari完全終了後の復元、約1時間後の自然失効、上限到達時の挙動は運用確認として残します/);
-  assert.match(roadmap, /今回確認できたのは1回の公開ページ受け入れです。継続運用、複数回のブラウザ表示更新、古いデータ表示・自然失効は未確認/);
-  assert.match(roadmap, /21:25 JSTの停止中Cron後も両KVキーの期限は停止後の基準から変わらず、想定した2キーだけでmetadataもありませんでした/);
-  assert.match(roadmap, /The public 3CGM Comparison Lab began continuous live publication/);
-  assert.match(roadmap, /Live CGM handoff, the usage-profile lifecycle, the general-user G7 basic route, and the small pre-rollout UX corrections are complete/);
-  assert.match(roadmap, /The administrator dashboard has completed one-administrator acceptance as an authenticated read-only view/);
-  assert.match(roadmap, /JPY 300 as a one-time payment for 30 days, with no automatic renewal/);
-  assert.match(roadmap, /Free receives one successful new AI analysis per day/);
-  assert.match(roadmap, /Plus is not yet available for purchase/);
-  assert.match(roadmap, /Observation of real usage and safety boundaries continues in parallel with the next design task/);
-  assert.doesNotMatch(roadmap, /Build the administrator dashboard|future person-level administrator dashboard/);
-  assert.match(roadmap, /After user rollout begins, add an opt-in always-on mode only for the landscape graph/);
-  assert.match(roadmap, /After the 21:25 JST stopped Cron, both KV expirations were unchanged from the post-stop baseline/);
-  assert.match(roadmap, /Libreだけを一時有効にしたVersion `2e72847d-5011-47c5-80e6-8cb931a1b141`/);
-  assert.match(roadmap, /19:25 JSTのCronで公開`\/v1\/libre`応答が合計523件/);
-  assert.match(roadmap, /次の停止中Cron後もLibreキーの有効期限は延長されませんでした/);
   assert.match(readme, /Guardian route completed its first iPhone Safari acceptance/);
   assert.match(readme, /general-user Dexcom G7 route completed a supervised iPhone Safari acceptance/);
   assert.match(readme, /approved `workers\.dev` target is fixed in the checked-in frontend/);
