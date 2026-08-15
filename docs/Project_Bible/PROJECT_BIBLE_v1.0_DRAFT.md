@@ -3539,6 +3539,17 @@ challenge and send-reservation rows were deleted, all 12 application tables retu
 and stopped Version `bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9` was restored to 100% traffic. No
 public route, preview URL, or Cron exists. Public account UI and sales remained off throughout.
 
+Later on 2026-08-16 JST, the first personal-inbox and real-Turnstile closed E2E acceptance
+passed. A dedicated Managed widget allowed only `localhost` and had pre-clearance off; a
+private localhost harness used a service-binding Version override to reach only a zero-percent
+candidate. A controlled request-code check returned `400`, the single real request returned
+`200 code_sent`, and one Resend message arrived in the operator's personal inbox. Verification
+and authenticated-session checks each returned `200`, account deletion returned `200`, and the
+old session returned `401`. The exact test send-reservation row was removed, all 12 application
+tables returned to zero, stopped Version `bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9` was restored to
+100%, and the public `workers.dev` URL returned `404`. Public account UI, sales, and payment
+stayed off. No email address, code, token, Secret, site key, or candidate Version ID is recorded.
+
 That acceptance found a Cloudflare Workers runtime interoperability issue: the adapter's
 former `redirect: "error"` fetch option threw a `TypeError` before sending could complete.
 The adapter now uses `redirect: "manual"` and rejects every `3xx` without following it, so it
@@ -3550,9 +3561,9 @@ live entitlement. The existing AI and custom-range experience therefore remains 
 The public Usage Dashboard candidate adds only aggregate totals for the 30 completed days
 through yesterday; it omits exact totals until at least 10 consenting device profiles
 contributed, and never returns names or device-level rows. Public accounts and sales remain
-no-go. Do not enable individual quota or Plus feature gates until identity and recovery,
-personal-inbox and Turnstile end-to-end acceptance, refunds, tax and support, public-demo
-anti-bypass handling, deployment order, and production acceptance are complete.
+no-go. Do not enable individual quota or Plus feature gates until the remaining identity and
+recovery work, delivery-failure acceptance, refunds, tax and support, public-demo anti-bypass
+handling, deployment order, payment testing, and production acceptance are complete.
 
 The always-on mode comes after user rollout begins. It is opt-in, limited to the graph in
 landscape orientation, and must clearly explain battery and screen-on behavior. It is a
@@ -3821,6 +3832,16 @@ Secretは使っていません。
 `bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9`へ通信の100%を戻しました。公開route、preview URL、Cronはなく、
 公開アカウント画面とPlus販売は試験中も試験後も停止したままです。
 
+同日、`localhost`だけを許可したManaged Turnstile（pre-clearanceなし）と、service bindingの
+Version overrideで通信0%の候補だけへ到達する非公開localhost harnessを使い、本人受信箱を含む
+最初のE2Eも受け入れました。`request-code`の事前確認は`400`、実送信は`200 code_sent`で、
+Resendのメール1通が運営者本人の受信箱へ到着しました。コード確認と認証済みsession確認はそれぞれ
+`200`、アカウント削除は`200`、削除前sessionの再利用は`401`でした。試験用の送信予約行だけを
+特定して削除し、12個のapplication tableをすべて0件へ戻しました。停止Version
+`bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9`を100%へ戻し、公開`workers.dev` URLが`404`であることを
+確認しました。公開アカウント画面、販売、決済は停止したままで、メールアドレス、コード、token、
+Secret、site key、候補Version IDは記録していません。
+
 この受け入れで、Cloudflare Workers runtimeではResendへの`fetch`に `redirect: "error"` を指定すると
 `TypeError`になり、送信を完了できない相互運用上の問題が分かりました。adapterは
 `redirect: "manual"`へ変更し、`3xx`を追跡せず拒否します。これによりAuthorization headerと本文を
@@ -3829,9 +3850,9 @@ redirect先へ転送しません。`302`と`307`の実行型テストでこの�
 Stripe key、Webhook Secret、Price/Product識別子、公開アカウント経路、実利用権は接続していません。
 そのため、現在のAIとカスタム期間の動作は変えません。公開アカウントとPlus販売は引き続き開始不可です。
 公開Usage Dashboard候補は、前日までの完了した30日間について、利用記録に同意した端末プロフィールが
-10件以上集まった時だけ全体の実数を表示し、名前や端末別の行は返しません。本人確認と復旧、返金、
-本人受信箱とTurnstileを含むE2E、税とサポート、公開デモからの上限回避防止、公開順、本番受け入れが
-完了するまで、個人上限とPlus特典の制限を有効にしません。
+10件以上集まった時だけ全体の実数を表示し、名前や端末別の行は返しません。追加の本人確認・復旧と
+配信失敗時の受け入れ、返金、税とサポート、公開デモからの上限回避防止、公開順、決済試験、
+本番受け入れが完了するまで、個人上限とPlus特典の制限を有効にしません。
 
 同日、運営者は、子どものPlusを18歳以上の保護者が管理できる方針を決定しました。購入とメールを
 管理する人は、本人利用でも保護者利用でも18歳以上であることを明示確認します。保護者はさらに、
@@ -3884,7 +3905,7 @@ Plusの確認メールには `auth.glucoscope.app` を専用の送信元とし�
 hard bounceまたは迷惑メール報告があった宛先はチーム全体のSuppression Listへ入り、全送信ドメインからの
 送信が止まります。原因を確認・解決した後に運営者が手動で削除するまで、30日を超えて残る場合があります。
 原因未解決では削除も再送も行いません。どちらの保持中もコードの有効期限は10分のままです。
-料金・上限・通常の保持条件とSuppression List例外を本人受信箱への送信前に再確認し、少人数の本人受信箱、配信失敗時の手順、プライバシー説明を
+料金・上限・通常の保持条件とSuppression List例外を追加の本人受信箱への送信前に再確認し、少人数の追加受信、配信失敗時の手順、プライバシー説明を
 受け入れるまで、アカウント、確認メール、Plus販売はすべて停止したままにします。同日、
 `auth.glucoscope.app` をResendへ追加し、Cloudflare DNSへ必要なSPF、DKIM、MX、DMARCの4レコードを
 手動で追加しました。公開DNSで4件が確認でき、Resendでも送信ドメインが `verified` になっています。
@@ -3909,9 +3930,10 @@ APIの秒間上限は固定値を正本化せず、実アカウントのUsage画
 [Event Types](https://resend.com/docs/webhooks/event-types)、
 [Delivered表示と実受信の違い](https://resend.com/docs/knowledge-base/what-if-an-email-says-delivered-but-the-recipient-has-not-received-it)、
 [Acceptable Use Policy](https://resend.com/legal/acceptable-use)です。
-2026年8月16日の公式テスト宛先による1通の受理・`delivered`確認後も、本人受信箱への送信とTurnstileを
-含むE2Eは未確認です。閉じた試験用Versionでだけ使った送信・認証用Secretは、100%へ復帰した停止中
-Versionには露出しません。Cloudflareへの現在の配置は、上記のURLを持たない停止中staging checkpointです。
+2026年8月16日、公式テスト宛先の受理・`delivered`確認に加え、本人受信箱1通と実Turnstileを含む
+最初の非公開E2Eを受け入れました。閉じた試験用Versionだけで使った送信・認証用Secretは、100%へ
+復帰した停止中Versionには露出しません。Cloudflareへの現在の配置は、上記の公開URLを持たない停止中
+staging checkpointです。追加の少人数受信、復旧、配信失敗時の手順と残る公開前確認を終えるまで、
 公開アカウントとPlus販売は開始しません。
 
 常時表示モードは、ユーザー展開を始めた後に実装します。

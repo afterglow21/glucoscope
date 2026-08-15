@@ -50,11 +50,22 @@ On 2026-08-16 JST, a separate one-message closed acceptance reached the staging 
 only through a localhost client and a private service binding. It used Resend's official
 delivered test recipient, not a personal recipient. Resend accepted the message and then
 reported it delivered. This proves the Worker-to-Resend request and Resend's test-delivery
-path only; it is not a personal-inbox or Turnstile end-to-end acceptance. The exact
+path only; it was not a personal-inbox or Turnstile end-to-end acceptance. The exact
 temporary challenge and send-reservation rows were deleted, all 12 application tables
 returned to zero, and stopped Version `bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9` was restored
 to 100% traffic. Public account UI and sales remained off throughout. No public route,
 preview URL, or Cron trigger exists.
+
+Later on 2026-08-16 JST, a dedicated Managed Turnstile widget restricted to `localhost`,
+with pre-clearance off, was used by a private localhost harness. A service-binding Version
+override targeted only a zero-percent candidate. A controlled request-code check returned
+`400`; the one real request then returned `200 code_sent`, one Resend message arrived in the
+operator's personal inbox, code verification and the authenticated session check each
+returned `200`, account deletion returned `200`, and the old session returned `401`. The
+exact test send-reservation row was removed, all 12 application tables returned to zero,
+and stopped Version `bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9` was restored to 100%. The public
+`workers.dev` URL returned `404`; public account UI, sales, and payment remained off. No
+email address, code, token, Secret, site key, or candidate Version ID is recorded.
 
 The internal verified-payment function also checks `PLUS_PURCHASES_ENABLED` before it
 reads payment identifiers, generates an entitlement ID, or touches D1. Missing or false
@@ -249,9 +260,10 @@ Recheck [Resend pricing](https://resend.com/pricing),
 [event meanings](https://resend.com/docs/webhooks/event-types),
 [delivered versus inbox arrival](https://resend.com/docs/knowledge-base/what-if-an-email-says-delivered-but-the-recipient-has-not-received-it), and the
 [acceptable-use sending thresholds](https://resend.com/legal/acceptable-use) immediately
-before any personal-mailbox test. Account and sales flags remain off until personal-inbox
-delivery, the Turnstile path, and the ordinary 30-day retention plus longer Suppression
-List exception are explicitly accepted.
+before any additional personal-mailbox test. The first personal-inbox and Turnstile path
+passed the closed acceptance above. Account and sales flags remain off until the ordinary
+30-day retention plus longer Suppression List exception, recovery and delivery-failure
+procedures, and the remaining release gates are explicitly accepted.
 
 Suggested simple explanation for the future screen:
 
@@ -357,13 +369,13 @@ request logs show that the adapter actually needs it. Set all values with
 Cloudflare's secret or dashboard configuration facilities; never put their values in
 Git or `.dev.vars`.
 
-Live sales remain blocked. The stopped staging D1 schema-and-binding checkpoint is
-complete and the official Resend test-recipient acceptance passed, but personal-inbox and
-Turnstile end-to-end acceptance, Stripe-hosted test acceptance, user-facing terms, tax and
-receipt decisions, support and refund policy, and multi-tab acceptance of the per-account
-pending-Checkout guard are still required. The payment, account, RPC, cleanup, sales, and
-tax switches must not be enabled merely because this adapter bundles, the provider test
-passed, or the empty staging schema exists.
+Live sales remain blocked. The stopped staging D1 schema-and-binding checkpoint, official
+Resend test-recipient acceptance, and the first personal-inbox and Turnstile closed E2E
+acceptance passed, but recovery and delivery-failure acceptance, Stripe-hosted test
+acceptance, user-facing terms, tax and receipt decisions, support and refund policy, and
+multi-tab acceptance of the per-account pending-Checkout guard are still required. The
+payment, account, RPC, cleanup, sales, and tax switches must not be enabled merely because
+these closed checks passed.
 
 ## Local verification
 
