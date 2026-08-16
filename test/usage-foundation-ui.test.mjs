@@ -193,7 +193,7 @@ test("quota request context is inert while off, leaves the reviewed demo credent
   assert.equal(enabled.enabled, true);
   assert.equal(enabled.quotaCredentialKind, "account");
   assert.equal(enabled.authorization, `Bearer ${"B".repeat(43)}`);
-  assert.match(index, /name="glucoscope-ai-per-user-quota-enabled" content="false"/u);
+  assert.match(index, /name="glucoscope-ai-per-user-quota-enabled" content="true"/u);
   assert.match(app, /data\.cache\?\.status === "approved-demo-sample"[\s\S]*aiLetterStatusApprovedDemoSample/u);
 });
 

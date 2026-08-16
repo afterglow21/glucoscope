@@ -963,12 +963,13 @@ This section is active for the personal-user early-access release published on 2
 - Only a newly and successfully completed OpenAI generation is eligible for the separate Usage-profile AI count. Browser cache, any retained but unread shared cache, stale fallback, failed generation, button press, and ChatGPT-copy actions are not counted.
 - Version 28 is historical and must not be restored while user AI remains enabled. Keep Version 29 or later fail-closed, or first publish and verify Pages with user AI disabled before Worker recovery. Do not interrupt CGM connection or ordinary glucose display.
 
-## 38. Disabled server-authoritative personal quota candidate (updated 2026-08-16)
+## 38. Server-authoritative personal quota (released for early access 2026-08-17)
 
-This is checked in as an inactive release candidate. `AI_PER_USER_QUOTA_ENABLED=false`
-in both the AI and Usage Workers, and the separate frontend flag is false. Therefore the
-current Pages request sends no `Authorization`, `requestId`, or credential-kind field and
-the current public behavior is unchanged.
+Production early access enables this contract through reviewed runtime configurations while
+the checked-in Worker flags remain fail-closed. The personal frontend sends an ephemeral
+profile credential and idempotent `requestId`; the public demo sends no bearer credential.
+Usage D1 migration `0002_ai_quota.sql` was applied before enforcement and began with both
+quota tables empty.
 
 When all flags are later enabled, the browser may send only `Authorization: Bearer
 <token>`, a UUID `requestId`, and `quotaCredentialKind=device_profile|account`. The kind
@@ -997,8 +998,8 @@ and make no OpenAI call. This means a forged `pageMode` can obtain only the same
 sample, not analysis of supplied data. Unknown modes fail closed; exact personal-user mode
 still requires an authoritative credential.
 
-The former shared 10-per-slot and 30-per-day count ceilings are disabled only in the same
-reviewed release where personal quota and the fixed demo sample are enabled. The global
+The former shared 10-per-slot and 30-per-day count ceilings are disabled in the same reviewed
+release where personal quota and the fixed demo sample are enabled. The global
 atomic counter remains for anonymous operational totals, actual token/cost accounting,
 Turnstile events, and the monthly cost warning/stop. A per-user quota completion or release
 failure preserves any known provider usage in the global atomic release and returns no text.

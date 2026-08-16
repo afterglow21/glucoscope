@@ -14,10 +14,10 @@ GitHub Pages
 
 ## Current production behavior
 
-Current traffic target — 2026-08-16 JST:
+Reviewed personal-quota target — 2026-08-17 JST:
 
-- 100% of AI Worker traffic routes to atomic-counter Version `c0a31ac7-257c-4225-a8f1-3bf7669f6937`.
-- The only reviewed direct rollback after atomic activation is unserved atomic stopped Version `46f44888-002b-4847-8553-5cd12e3d7ac5` (`AI_USAGE_ATOMIC_COUNTER_ENABLED=true`, `AI_ENABLED=false`). Old new-origin Version `7ea0cfef-5322-4370-b72d-e2885f129f38`, Phase A, and the pre-activation quiesce Version must not receive rollback traffic after the schema marker was written.
+- The reviewed personal-quota target is Version `86fd6a35-4db2-46f4-a745-0cfc036a5dc7`.
+- Direct behavior rollback uses Version `7af1189b-aaa5-4f18-8a1f-5e447d6d7d8e`, which keeps `AI_USAGE_ATOMIC_COUNTER_ENABLED=true` and AI available while restoring shared count ceilings. Emergency AI-off recovery uses atomic stopped Version `46f44888-002b-4847-8553-5cd12e3d7ac5`. Old new-origin Version `7ea0cfef-5322-4370-b72d-e2885f129f38` and pre-atomic Versions must not receive rollback traffic.
 - Phase A returned the privacy-protected personal aggregate as `suppressed` with no exact totals. A quiet window longer than 130 seconds completed before activation. The zero-percent activation probe used a synthetic non-health summary and an invalid Turnstile token; it returned `403`, wrote the private atomic marker, increased only the failed-Turnstile count by one, and left generation, token, cost, and pending-reservation totals unchanged.
 - The atomic live Version's Usage `GET` and the public Dashboard's supervised real-browser visual check passed. One supervised `letter` / `night` generation moved the daily count from `0` to `1`, the monthly count from `15` to `16`, and the daily verified-Turnstile count from `0` to `1` exactly once. Token and estimated-cost totals increased once, with no duplicate, cache hit, rate limit, or budget block.
 - It retains the personal-user AI, all-mode browser-local cache, CORS, Turnstile, and no-store boundaries first accepted below.
@@ -60,7 +60,7 @@ This section describes the personal-user boundary first accepted in Version 29 a
 - The browser-provided `pageMode` is not trusted as authentication or proof that a summary belongs to the public demo. The KV binding is retained for the staged recovery rules below, not as permission to restore Version 28 while user AI is enabled. Existing entries are not read, no new entries are written, and retained entries expire naturally within their existing maximum 24-hour lifetime.
 - Deleting the saved data connection clears the current browser AI-letter cache, retired local cache keys, and the stored AI confirmation. It does not claim to delete OpenAI abuse-monitoring logs.
 - The Worker calls the OpenAI Responses API with `store: false`. OpenAI states that API data is not used to train its models by default unless the customer opts in. Under the default abuse-monitoring setting, logs may contain prompts and responses and are normally retained for up to 30 days; legal or service-protection exceptions may require longer retention. See [OpenAI API data controls](https://developers.openai.com/api/docs/guides/your-data).
-- The generation guard is still one singleton, infrastructure-wide guard shared by the public demo and every user. `AI_SLOT_GENERATION_LIMIT=10` and `AI_DAILY_GENERATION_LIMIT=30` are not per-person allowances. Browser-local displays do not consume a new-generation count; current production has no shared-cache display path.
+- Free personal use is limited to one successfully completed new analysis per JST day for each device profile. Plus is designed for five per verified active account after sales begin. The public demo receives a reviewed fixed sample with no OpenAI call. The former shared 10-per-slot and 30-per-day count ceilings are disabled; the singleton atomic counter remains for aggregate operations, actual token/cost accounting, and the global cost safety stop. Browser-local displays do not consume a personal generation count.
 - AI failure affects only the AI panel. It must not stop, clear, or replace an already verified CGM connection or the normal glucose display.
 - AI generation `POST /api/gluco-letter` requires an `Origin` header that passes the existing allowlist. Originless `GET /api/gluco-letter/usage` remains available for existing operational checks.
 - A successful Turnstile Siteverify response must match both `hostname=glucoscope.app` and `action=glucoscope-ai-letter`. The production variables are `TURNSTILE_EXPECTED_HOSTNAME` and `TURNSTILE_EXPECTED_ACTION`.
@@ -72,11 +72,11 @@ This section describes the personal-user boundary first accepted in Version 29 a
 - ブラウザから届く `pageMode` は、認証や公開デモ由来であることの証明として信頼しません。KV bindingは下記の段階的な復旧手順のため残しますが、ユーザーAIがONのままVersion 28へ戻す許可ではありません。既存entryは読み込まず、新規entryも書きません。残っているentryは既存の最長24時間以内に自然失効します。
 - 保存済みデータ接続の削除時は、現在の端末内AIキャッシュ、退役済みの端末内キャッシュ、保存したAI確認も削除します。OpenAIの不正利用監視ログまで削除できる、とは案内しません。
 - WorkerはOpenAI Responses APIへ `store: false` で送信します。OpenAIは、利用者側が明示的にopt-inしない限りAPIデータをmodel学習へ使わないと説明しています。一方、標準の不正利用監視ではpromptやresponseを含み得るログが通常最長30日保持され、法令またはサービス・第三者保護のため、それより長い保持が必要となる例外があります。根拠は [OpenAI API data controls](https://developers.openai.com/api/docs/guides/your-data) です。
-- 生成上限は、公開デモとすべての利用者で共用する1つの全体カウンターのままです。`AI_SLOT_GENERATION_LIMIT=10` と `AI_DAILY_GENERATION_LIMIT=30` は個人別の上限ではありません。端末内の保存済み表示は新しい生成回数を使わず、現在の本番には共有キャッシュ表示経路がありません。
+- Freeの個人利用は、端末プロフィールごとにJST 1日1回、成功した新しいAI分析を使えます。Plusは販売開始後、確認済みの有効アカウントごとに1日5回の設計です。公開デモは人が内容を確認した固定サンプルを表示し、OpenAIを呼びません。旧来の朝昼夜各10回・1日30回の共有回数上限は無効にし、全体のatomic counterは運用集計、実token・費用、全体費用安全弁のため残します。端末内の保存済み表示は個人の新しい生成回数を使いません。
 - AI分析の失敗はAI欄だけで完結させます。確認済みCGM接続や通常の血糖表示を停止、削除、デモデータへ置換しません。
 - AI生成の `POST /api/gluco-letter` は、既存allowlistを通る `Origin` headerを必須にします。既存運用確認用のOriginなし `GET /api/gluco-letter/usage` は維持します。
 - Turnstile Siteverifyの成功時は、`hostname=glucoscope.app` と `action=glucoscope-ai-letter` の両方の一致を必須にします。本番の変数名は `TURNSTILE_EXPECTED_HOSTNAME` と `TURNSTILE_EXPECTED_ACTION` です。
-- Worker先行、Pages後続の公開は完了しました。atomic有効化後の直接rollbackは、上に記録したatomic対応の停止Versionだけです。Version 28、Version 29、旧new-origin Version、Phase A、事前quiesce Versionは履歴であり、rollback trafficを向けません。CGM表示は継続します。
+- 個人別上限の動作rollbackは、上に記録したatomic対応のPhase A Versionを使います。緊急にAIを止める場合だけatomic停止Versionを使います。Version 28、Version 29、旧new-origin Version、事前quiesce Versionは履歴であり、rollback trafficを向けません。CGM表示は継続します。
 
 ## Historical Version 28 v14 behavior / 旧Version 28のv14動作
 
@@ -278,12 +278,13 @@ AI_CACHE_ENABLED=false         # Worker configuration
 
 Workers KV is eventually consistent across Cloudflare locations. A newly written value is normally visible immediately where it was written, but another location may briefly see an older value while its edge cache expires.
 
-## Staged personal quota and reviewed public-demo sample (checked in disabled)
+## Personal quota and reviewed public-demo sample
 
-The AI Worker is wired to the Usage Worker's named `AiQuotaService` entrypoint, but the
-checked-in `AI_PER_USER_QUOTA_ENABLED=false` keeps current production behavior. While
-the frontend flag is also false, the browser sends neither an `Authorization` header nor
-a quota `requestId`.
+The live AI Worker is wired to the Usage Worker's named `AiQuotaService` entrypoint.
+Production enables the personal-quota flag through a reviewed rollout configuration; the
+checked-in `AI_PER_USER_QUOTA_ENABLED=false` remains a fail-closed baseline and must not be
+used as evidence of the deployed value. The frontend sends one ephemeral profile credential
+and an idempotent quota `requestId` only for the personal-user path.
 
 When all quota switches are deliberately enabled later, a new OpenAI call validates
 input and Turnstile, finishes the infrastructure-wide guards, reserves through the
@@ -313,8 +314,9 @@ creating a reusable uncredentialed OpenAI path.
 The matching consent and Privacy copy explains that only the successful day/count is retained
 for quota enforcement. `AI_SHARED_COUNT_LIMITS_ENABLED=false` then removes the former shared
 10-per-slot and 30-per-day count ceilings, while the anonymous atomic counter and global
-monthly cost stop remain. Checked-in defaults deliberately retain current production behavior:
-personal quota and the demo sample are off, and shared count limits are on.
+monthly cost stop remain. Checked-in defaults deliberately remain fail-closed: personal quota
+and the demo sample are off, and shared count limits are on. Production uses the reviewed
+aligned rollout values instead.
 
 ## Local development
 

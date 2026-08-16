@@ -127,7 +127,7 @@ test("Roadmap stays simple for users while technical evidence stays internal", a
   assert.match(roadmap, /登録せずに公開デモと3種類の血糖測定機器（CGM）を見比べるページを開けます/);
   assert.match(roadmap, /利用記録やAI分析で問題が起きても、血糖値やグラフの表示は続けられる/);
   assert.match(roadmap, /300円の1回払いで30日間使える予定です。自動更新はありません/);
-  assert.match(roadmap, /Freeでは成功した新しいAI分析を1日1回、販売開始後のPlusでは1日5回まで/);
+  assert.match(roadmap, /Freeで成功した新しいAI分析を端末プロフィールごとに1日1回/);
   assert.match(roadmap, /公開デモは内容を確認した固定サンプルを表示し、新しいAI生成を使いません/);
   assert.match(roadmap, /文書の確認などで失敗した回は数えません/);
   assert.match(roadmap, /グラフのカスタム期間とShare StudioはPlus特典/);
@@ -146,8 +146,8 @@ test("Roadmap stays simple for users while technical evidence stays internal", a
   assert.match(roadmap, /Coming next/);
   assert.match(roadmap, /Plus 30-day pass \(in preparation\)/);
   assert.match(roadmap, /What will not change/);
-  assert.match(roadmap, /Free is planned to include one successful new AI analysis per day, while Plus will include up to five after sales begin/);
-  assert.match(roadmap, /public demo will display a reviewed fixed sample without a new AI generation/);
+  assert.match(roadmap, /Free includes one successful new AI analysis per day for each device profile/);
+  assert.match(roadmap, /public demo displays a reviewed fixed sample without a new AI generation/);
   assert.match(roadmap, /an adult guardian age 18 or older/);
   assert.match(roadmap, /It is not yet available for purchase/);
   assert.match(roadmap, /To improve GlucoScope, we record a display name/);
