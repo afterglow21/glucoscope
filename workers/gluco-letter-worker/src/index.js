@@ -50,7 +50,7 @@ const DEFAULT_GUARD_CONFIG = {
 
 let fallbackUsageState = null;
 
-const DEFAULT_CORS_ALLOWED_ORIGINS = ["https://afterglow21.github.io"];
+const DEFAULT_CORS_ALLOWED_ORIGINS = ["https://glucoscope.app"];
 const CORS_ALLOWED_METHODS = ["GET", "POST", "OPTIONS"];
 const CORS_MAX_AGE_SECONDS = 86400;
 

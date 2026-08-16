@@ -6,33 +6,32 @@ import { fileURLToPath } from "node:url";
 
 import {
   buildUpstreamUrl,
-  consumeRelayLimits,
+  consumeGlobalRelayLimit,
   fetchGlurooEntries,
   handleRelayRequest,
-  issueRelayTicket,
   normalizeEntry,
   readConfig,
   validateRelayPayload,
-  validateSessionPayload,
+  validateDeviceSessionCreationPayload,
   validateSourceUrl,
-  verifyRelayTicket,
   verifyTurnstileToken,
 } from "../src/relay-core.js";
 import { consumeCounterStorage, validateCounterInput } from "../src/rate-limit-core.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
-const ORIGIN = "https://afterglow21.github.io";
+const ORIGIN = "https://glucoscope.app";
 const TOKEN = "test-token-not-a-real-secret";
 const TURNSTILE_TOKEN = "turnstile-test-token";
-const TICKET_SECRET = "test-only-ticket-secret-with-at-least-32-characters";
+const DEVICE_SESSION_SECRET = "test-only-device-session-secret-with-at-least-32-characters";
 const TURNSTILE_SECRET = "test-only-turnstile-secret";
 const NOW_MS = Date.parse("2026-08-03T06:00:00.000Z");
-const TEST_SID = "123e4567-e89b-42d3-a456-426614174000";
+const DEVICE_COOKIE = `__Host-glucoscope_relay_session=${"d".repeat(43)}`;
 
 function env(overrides = {}) {
   return {
     RELAY_ENABLED: "true",
+    RELAY_DEVICE_SESSIONS_ENABLED: "true",
     CORS_ALLOWED_ORIGINS: ORIGIN,
     CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN: "false",
     GLUROO_HOST_SUFFIX: ".ns.gluroo.com",
@@ -41,15 +40,15 @@ function env(overrides = {}) {
     MAX_REQUEST_BYTES: "8192",
     MAX_UPSTREAM_BYTES: "6291456",
     UPSTREAM_TIMEOUT_MS: "100",
-    TURNSTILE_EXPECTED_HOSTNAME: "afterglow21.github.io",
+    TURNSTILE_EXPECTED_HOSTNAME: "glucoscope.app",
     TURNSTILE_EXPECTED_ACTION: "glucoscope-data-relay",
     TURNSTILE_TIMEOUT_MS: "100",
-    RELAY_TICKET_TTL_SECONDS: "3600",
-    SESSION_DAILY_LIMIT: "250",
+    RELAY_DEVICE_SESSION_IDLE_TTL_SECONDS: "15552000",
+    RELAY_DEVICE_SESSION_DAILY_LIMIT: "3000",
     GLOBAL_WARNING_DAILY: "20000",
     GLOBAL_HARD_DAILY: "50000",
     TURNSTILE_SECRET_KEY: TURNSTILE_SECRET,
-    RELAY_TICKET_SECRET: TICKET_SECRET,
+    RELAY_DEVICE_SESSION_SECRET: DEVICE_SESSION_SECRET,
     ...overrides,
   };
 }
@@ -61,6 +60,7 @@ function relayRequest(body, options = {}) {
     headers: {
       Origin: options.origin === undefined ? ORIGIN : options.origin,
       "Content-Type": options.contentType || "application/json",
+      Cookie: options.cookie === undefined ? DEVICE_COOKIE : options.cookie,
       ...(options.headers || {}),
     },
     body: method === "OPTIONS" ? undefined : JSON.stringify(body),
@@ -72,7 +72,6 @@ function validPayload(overrides = {}) {
     sourceUrl: "https://example.ns.gluroo.com/ignored/path?old=query",
     credential: TOKEN,
     limit: 2,
-    relayTicket: "fake-ticket-value-that-is-long-enough.for-tests",
     ...overrides,
   };
 }
@@ -88,8 +87,8 @@ function jsonFetch(data, options = {}) {
 function bypassServices(overrides = {}) {
   return {
     now: () => NOW_MS,
-    verifyTicket: async () => ({ sid: TEST_SID, origin: ORIGIN, scope: "entries" }),
-    consumeLimits: async () => ({ globalCount: 1, sessionCount: 1, warning: false }),
+    authorizeDeviceSession: async () => ({ tokenId: "e".repeat(43), result: { status: "active" } }),
+    consumeGlobalLimit: async () => ({ globalCount: 1, warning: false }),
     ...overrides,
   };
 }
@@ -182,13 +181,11 @@ test("constructs only entries.json with count, date bounds, and token-query auth
   assert.equal(upstream.toString().includes("relayTicket"), false);
 });
 
-test("requires a relay ticket at the HTTP boundary but not in the upstream builder", () => {
+test("rejects the removed relayTicket field", () => {
   const config = readConfig(env());
-  const withoutTicket = { sourceUrl: "https://abc.ns.gluroo.com", credential: TOKEN, limit: 2 };
-  assert.equal(validateRelayPayload(withoutTicket, config).relayTicket, undefined);
   assert.throws(
-    () => validateRelayPayload(withoutTicket, config, { requireTicket: true }),
-    /relay_ticket_invalid/,
+    () => validateRelayPayload(validPayload({ relayTicket: "removed" }), config),
+    /invalid_request/,
   );
 });
 
@@ -206,15 +203,25 @@ test("rejects unknown payload fields, oversized entry limits, and ranges over 31
   );
 });
 
-test("validates only the Turnstile token field for a session request", () => {
-  assert.deepEqual(validateSessionPayload({ turnstileToken: TURNSTILE_TOKEN }), {
+test("device-session creation validates only Turnstile and one fixed source credential pair", () => {
+  const input = {
     turnstileToken: TURNSTILE_TOKEN,
+    sourceUrl: "https://sample.ns.gluroo.com/ignored",
+    credential: TOKEN,
+  };
+  assert.deepEqual(validateDeviceSessionCreationPayload(input, readConfig(env())), {
+    turnstileToken: TURNSTILE_TOKEN,
+    sourceUrl: "https://sample.ns.gluroo.com",
+    credential: TOKEN,
   });
   assert.throws(
-    () => validateSessionPayload({ turnstileToken: TURNSTILE_TOKEN, credential: TOKEN }),
+    () => validateDeviceSessionCreationPayload({ ...input, unexpected: true }, readConfig(env())),
     /invalid_request/,
   );
-  assert.throws(() => validateSessionPayload({ turnstileToken: "" }), /turnstile_failed/);
+  assert.throws(
+    () => validateDeviceSessionCreationPayload({ ...input, turnstileToken: "" }, readConfig(env())),
+    /turnstile_failed/,
+  );
 });
 
 test("uses GET, manual redirects, no-store cache, and never sends token in headers", async () => {
@@ -349,88 +356,6 @@ test("drops unknown direction values", () => {
   assert.equal("direction" in entry, false);
 });
 
-test("issues and verifies an origin-bound HMAC ticket", async () => {
-  const config = readConfig(env());
-  const issued = await issueRelayTicket({
-    origin: ORIGIN,
-    secret: TICKET_SECRET,
-    config,
-    nowMs: NOW_MS,
-    randomUUID: () => TEST_SID,
-  });
-  const claims = await verifyRelayTicket({
-    ticket: issued.ticket,
-    origin: ORIGIN,
-    secret: TICKET_SECRET,
-    config,
-    nowMs: NOW_MS + 10_000,
-  });
-  assert.equal(claims.sid, TEST_SID);
-  assert.equal(claims.origin, ORIGIN);
-  assert.equal(claims.scope, "entries");
-  assert.equal(issued.expiresInSeconds, 3600);
-  assert.equal(issued.ticket.includes(TICKET_SECRET), false);
-});
-
-test("rejects tampered, expired, wrong-origin, and wrong-secret tickets", async () => {
-  const config = readConfig(env());
-  const issued = await issueRelayTicket({
-    origin: ORIGIN,
-    secret: TICKET_SECRET,
-    config,
-    nowMs: NOW_MS,
-    randomUUID: () => TEST_SID,
-  });
-  const tampered = `${issued.ticket.slice(0, -1)}${issued.ticket.endsWith("A") ? "B" : "A"}`;
-  await assert.rejects(
-    verifyRelayTicket({ ticket: tampered, origin: ORIGIN, secret: TICKET_SECRET, config, nowMs: NOW_MS }),
-    /relay_ticket_invalid/,
-  );
-  await assert.rejects(
-    verifyRelayTicket({
-      ticket: issued.ticket,
-      origin: ORIGIN,
-      secret: TICKET_SECRET,
-      config,
-      nowMs: NOW_MS + 3_600_000,
-    }),
-    /relay_ticket_invalid/,
-  );
-  await assert.rejects(
-    verifyRelayTicket({
-      ticket: issued.ticket,
-      origin: "https://evil.example",
-      secret: TICKET_SECRET,
-      config,
-      nowMs: NOW_MS,
-    }),
-    /relay_ticket_invalid/,
-  );
-  await assert.rejects(
-    verifyRelayTicket({
-      ticket: issued.ticket,
-      origin: ORIGIN,
-      secret: "different-test-secret-that-is-at-least-32-characters",
-      config,
-      nowMs: NOW_MS,
-    }),
-    /relay_ticket_invalid/,
-  );
-});
-
-test("fails closed when the ticket secret is absent or too short", async () => {
-  await assert.rejects(
-    issueRelayTicket({
-      origin: ORIGIN,
-      secret: "short",
-      config: readConfig(env()),
-      nowMs: NOW_MS,
-      randomUUID: () => TEST_SID,
-    }),
-    /relay_temporarily_paused/,
-  );
-});
-
 test("validates Turnstile server-side with exact hostname and action", async () => {
   let seenUrl;
   let seenInit;
@@ -443,7 +368,7 @@ test("validates Turnstile server-side with exact hostname and action", async () 
       seenInit = init;
       return Response.json({
         success: true,
-        hostname: "afterglow21.github.io",
+        hostname: "glucoscope.app",
         action: "glucoscope-data-relay",
       });
     },
@@ -485,7 +410,7 @@ test("maps Siteverify transport, HTTP, and response failures to safe diagnostics
 test("rejects Turnstile hostname, action, and success mismatches with safe diagnostics", async () => {
   const failures = [
     {
-      result: { success: false, hostname: "afterglow21.github.io", action: "glucoscope-data-relay" },
+      result: { success: false, hostname: "glucoscope.app", action: "glucoscope-data-relay" },
       diagnosticCode: "710999",
     },
     {
@@ -493,7 +418,7 @@ test("rejects Turnstile hostname, action, and success mismatches with safe diagn
       diagnosticCode: "710601",
     },
     {
-      result: { success: true, hostname: "afterglow21.github.io", action: "other-action" },
+      result: { success: true, hostname: "glucoscope.app", action: "other-action" },
       diagnosticCode: "710602",
     },
   ];
@@ -539,11 +464,15 @@ test("maps only known Siteverify failures to opaque six-digit diagnostics", asyn
   }
 });
 
-test("session endpoint returns only an opaque diagnostic for a Siteverify failure", async () => {
+test("device-session endpoint returns only an opaque diagnostic for a Siteverify failure", async () => {
   const response = await handleRelayRequest(
     relayRequest(
-      { turnstileToken: TURNSTILE_TOKEN },
-      { url: "https://relay.example/v1/session" },
+      {
+        turnstileToken: TURNSTILE_TOKEN,
+        sourceUrl: "https://sample.ns.gluroo.com",
+        credential: TOKEN,
+      },
+      { url: "https://relay.example/v1/device-session" },
     ),
     env(),
     {
@@ -563,86 +492,6 @@ test("session endpoint returns only an opaque diagnostic for a Siteverify failur
   assert.equal(JSON.stringify(body).includes(TURNSTILE_SECRET), false);
   assert.equal(JSON.stringify(body).includes(TURNSTILE_TOKEN), false);
   assert.equal(JSON.stringify(body).includes("invalid-input-secret"), false);
-});
-
-test("session endpoint returns a signed ticket but no secret", async () => {
-  const response = await handleRelayRequest(
-    relayRequest(
-      { turnstileToken: TURNSTILE_TOKEN },
-      { url: "https://relay.example/v1/session" },
-    ),
-    env(),
-    {
-      now: () => NOW_MS,
-      randomUUID: () => TEST_SID,
-      turnstileFetch: async () =>
-        Response.json({
-          success: true,
-          hostname: "afterglow21.github.io",
-          action: "glucoscope-data-relay",
-        }),
-    },
-  );
-  const body = await response.json();
-  assert.equal(response.status, 200);
-  assert.equal(body.ok, true);
-  assert.equal(typeof body.relayTicket, "string");
-  assert.equal(body.expiresInSeconds, 3600);
-  assert.equal(JSON.stringify(body).includes(TICKET_SECRET), false);
-  assert.equal(JSON.stringify(body).includes(TURNSTILE_SECRET), false);
-});
-
-test("entries endpoint accepts a real issued ticket and checks limits before upstream", async () => {
-  const localEnv = env({ RELAY_USAGE_COUNTER: createCounterBinding() });
-  const config = readConfig(localEnv);
-  const issued = await issueRelayTicket({
-    origin: ORIGIN,
-    secret: TICKET_SECRET,
-    config,
-    nowMs: NOW_MS,
-    randomUUID: () => TEST_SID,
-  });
-  const calls = [];
-  const response = await handleRelayRequest(
-    relayRequest(validPayload({ relayTicket: issued.ticket })),
-    localEnv,
-    {
-      now: () => NOW_MS + 1_000,
-      upstreamFetch: async () => {
-        calls.push("upstream");
-        return new Response(JSON.stringify([{ sgv: 110, date: 1785000000000 }]));
-      },
-    },
-  );
-  assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), {
-    ok: true,
-    entries: [{ sgv: 110, date: 1785000000000, dateString: "2026-07-25T17:20:00.000Z" }],
-  });
-  assert.deepEqual(calls, ["upstream"]);
-});
-
-test("invalid tickets are rejected before rate limits and upstream", async () => {
-  let limitsCalled = false;
-  let upstreamCalled = false;
-  const response = await handleRelayRequest(
-    relayRequest(validPayload({ relayTicket: "invalid-ticket-value-that-is-long-enough.x" })),
-    env(),
-    {
-      now: () => NOW_MS,
-      consumeLimits: async () => {
-        limitsCalled = true;
-      },
-      upstreamFetch: async () => {
-        upstreamCalled = true;
-        return new Response("[]");
-      },
-    },
-  );
-  assert.equal(response.status, 403);
-  assert.deepEqual(await response.json(), { ok: false, error: "relay_ticket_invalid" });
-  assert.equal(limitsCalled, false);
-  assert.equal(upstreamCalled, false);
 });
 
 test("counter input accepts only a day bucket and positive limit", () => {
@@ -683,49 +532,31 @@ test("counter resets when the UTC day bucket changes", async () => {
   assert.deepEqual(nextDay, { allowed: true, count: 1, limit: 2 });
 });
 
-test("relay limits use anonymous session and global counters only", async () => {
+test("global relay limit uses only the Worker-wide UTC counter", async () => {
   const binding = createCounterBinding();
   const localEnv = env({ RELAY_USAGE_COUNTER: binding });
-  const result = await consumeRelayLimits(
-    localEnv,
-    { sid: TEST_SID },
-    readConfig(localEnv),
-    NOW_MS,
-  );
-  assert.deepEqual(result, { globalCount: 1, sessionCount: 1, warning: false });
-  assert.deepEqual([...binding.counters.keys()].sort(), ["global", `session:${TEST_SID}`].sort());
+  const result = await consumeGlobalRelayLimit(localEnv, readConfig(localEnv), NOW_MS);
+  assert.deepEqual(result, { globalCount: 1, warning: false });
+  assert.deepEqual([...binding.counters.keys()], ["global"]);
 });
 
-test("per-session limit returns rate_limited and global hard stop returns paused", async () => {
-  const sessionBinding = createCounterBinding();
-  const sessionEnv = env({
-    RELAY_USAGE_COUNTER: sessionBinding,
-    SESSION_DAILY_LIMIT: "1",
-  });
-  await consumeRelayLimits(sessionEnv, { sid: TEST_SID }, readConfig(sessionEnv), NOW_MS);
-  await assert.rejects(
-    consumeRelayLimits(sessionEnv, { sid: TEST_SID }, readConfig(sessionEnv), NOW_MS),
-    /rate_limited/,
-  );
-  assert.equal(sessionBinding.counters.get("global")?.count, 1);
-  assert.equal(sessionBinding.counters.get(`session:${TEST_SID}`)?.count, 1);
-
+test("global hard stop returns paused", async () => {
   const globalBinding = createCounterBinding();
   const globalEnv = env({
     RELAY_USAGE_COUNTER: globalBinding,
     GLOBAL_WARNING_DAILY: "1",
     GLOBAL_HARD_DAILY: "1",
   });
-  await consumeRelayLimits(globalEnv, { sid: TEST_SID }, readConfig(globalEnv), NOW_MS);
+  await consumeGlobalRelayLimit(globalEnv, readConfig(globalEnv), NOW_MS);
   await assert.rejects(
-    consumeRelayLimits(globalEnv, { sid: TEST_SID }, readConfig(globalEnv), NOW_MS),
+    consumeGlobalRelayLimit(globalEnv, readConfig(globalEnv), NOW_MS),
     /relay_temporarily_paused/,
   );
 });
 
 test("missing Durable Object binding fails closed", async () => {
   await assert.rejects(
-    consumeRelayLimits(env(), { sid: TEST_SID }, readConfig(env()), NOW_MS),
+    consumeGlobalRelayLimit(env(), readConfig(env()), NOW_MS),
     /relay_temporarily_paused/,
   );
 });
@@ -753,9 +584,9 @@ test("rejects requests from an unapproved origin", async () => {
   assert.equal(response.headers.get("access-control-allow-origin"), null);
 });
 
-test("handles allowed CORS preflights without Turnstile, ticket, counter, or upstream calls", async () => {
+test("handles allowed CORS preflights without Turnstile, session, counter, or upstream calls", async () => {
   let called = false;
-  for (const pathname of ["/v1/session", "/v1/entries"]) {
+  for (const pathname of ["/v1/device-session/status", "/v1/entries"]) {
     const response = await handleRelayRequest(
       relayRequest({}, { method: "OPTIONS", url: `https://relay.example${pathname}` }),
       env(),
@@ -763,10 +594,7 @@ test("handles allowed CORS preflights without Turnstile, ticket, counter, or ups
         verifyTurnstile: async () => {
           called = true;
         },
-        verifyTicket: async () => {
-          called = true;
-        },
-        consumeLimits: async () => {
+        authorizeDeviceSession: async () => {
           called = true;
         },
         upstreamFetch: async () => {
@@ -781,11 +609,11 @@ test("handles allowed CORS preflights without Turnstile, ticket, counter, or ups
   assert.equal(called, false);
 });
 
-test("honors the checked-in kill switch for sessions and entries", async () => {
-  for (const pathname of ["/v1/session", "/v1/entries"]) {
+test("honors the checked-in kill switch for device sessions and entries", async () => {
+  for (const pathname of ["/v1/device-session", "/v1/entries"]) {
     const response = await handleRelayRequest(
       relayRequest(
-        pathname === "/v1/session" ? { turnstileToken: TURNSTILE_TOKEN } : validPayload(),
+        pathname === "/v1/device-session" ? { turnstileToken: TURNSTILE_TOKEN } : validPayload(),
         { url: `https://relay.example${pathname}` },
       ),
       env({ RELAY_ENABLED: "false" }),
@@ -852,25 +680,35 @@ test("rejects missing origins, wrong methods, and unknown paths", async () => {
   assert.equal(wrongPath.status, 404);
 });
 
-test("checked-in Wrangler config remains paused with one workers.dev target and SQLite Durable Object export", () => {
+test("checked-in Wrangler config remains paused on the reviewed custom domain with SQLite Durable Object exports", () => {
   const configText = fs.readFileSync(path.join(ROOT, "wrangler.jsonc"), "utf8");
   const config = JSON.parse(configText);
   assert.match(configText, /"observability"\s*:\s*\{\s*"enabled"\s*:\s*false/s);
   assert.match(configText, /"RELAY_ENABLED"\s*:\s*"false"/);
-  assert.match(configText, /"workers_dev"\s*:\s*true/);
+  assert.match(configText, /"RELAY_DEVICE_SESSIONS_ENABLED"\s*:\s*"false"/);
+  assert.match(configText, /"workers_dev"\s*:\s*false/);
   assert.match(configText, /"preview_urls"\s*:\s*false/);
+  assert.deepEqual(config.routes, [{ pattern: "relay.glucoscope.app", custom_domain: true }]);
+  assert.equal(config.vars.CORS_ALLOWED_ORIGINS, "https://glucoscope.app");
+  assert.equal(config.vars.TURNSTILE_EXPECTED_HOSTNAME, "glucoscope.app");
   assert.match(configText, /"name"\s*:\s*"RELAY_USAGE_COUNTER"/);
   assert.match(configText, /"class_name"\s*:\s*"RelayUsageCounter"/);
   assert.match(configText, /"RelayUsageCounter"\s*:\s*\{\s*"type"\s*:\s*"durable-object"\s*,\s*"storage"\s*:\s*"sqlite"/s);
+  assert.match(configText, /"name"\s*:\s*"RELAY_DEVICE_SESSION"/);
+  assert.match(configText, /"class_name"\s*:\s*"RelayDeviceSession"/);
+  assert.match(configText, /"RelayDeviceSession"\s*:\s*\{\s*"type"\s*:\s*"durable-object"\s*,\s*"storage"\s*:\s*"sqlite"/s);
   assert.deepEqual([...config.secrets.required].sort(), [
-    "RELAY_TICKET_SECRET",
+    "RELAY_DEVICE_SESSION_SECRET",
     "TURNSTILE_SECRET_KEY",
   ]);
   assert.equal(config.vars.TURNSTILE_TIMEOUT_MS, "10000");
+  assert.equal(config.vars.RELAY_DEVICE_SESSION_DAILY_LIMIT, "3000");
+  assert.equal(config.vars.RELAY_DEVICE_SESSION_IDLE_TTL_SECONDS, "15552000");
   assert.doesNotMatch(
     configText,
-    /"(?:TURNSTILE_SECRET_KEY|RELAY_TICKET_SECRET)"\s*:\s*"/,
+    /"(?:TURNSTILE_SECRET_KEY|RELAY_DEVICE_SESSION_SECRET)"\s*:\s*"/,
   );
+  assert.doesNotMatch(configText, /RELAY_TICKET|LEGACY_TICKET|"SESSION_DAILY_LIMIT"/u);
   assert.equal(/kv_namespaces|d1_databases|r2_buckets/i.test(configText), false);
 });
 
@@ -879,6 +717,8 @@ test("relay source contains no console logging, shared cache, or AI binding", ()
     "relay-core.js",
     "rate-limit-core.js",
     "rate-limit-counter.js",
+    "device-session-core.js",
+    "device-session.js",
   ].map((name) => fs.readFileSync(path.join(ROOT, "src", name), "utf8"));
   const source = sources.join("\n");
   assert.equal(/console\.(log|info|warn|error)/.test(source), false);

@@ -593,7 +593,7 @@ TURNSTILE_SECRET_KEY=<secret>
 Production identity checks:
 
 ```text
-TURNSTILE_EXPECTED_HOSTNAME=afterglow21.github.io
+TURNSTILE_EXPECTED_HOSTNAME=glucoscope.app
 TURNSTILE_EXPECTED_ACTION=glucoscope-ai-letter
 ```
 
@@ -920,13 +920,13 @@ The existing generation guard is a singleton shared by the public demo and all u
 Production browser origin:
 
 ```text
-https://afterglow21.github.io
+https://glucoscope.app
 ```
 
 Normal allowed browser response:
 
 ```text
-Access-Control-Allow-Origin: https://afterglow21.github.io
+Access-Control-Allow-Origin: https://glucoscope.app
 Vary: Origin
 ```
 
@@ -934,7 +934,7 @@ Allowed preflight response:
 
 ```text
 HTTP 204
-Access-Control-Allow-Origin: https://afterglow21.github.io
+Access-Control-Allow-Origin: https://glucoscope.app
 Access-Control-Allow-Methods: GET, POST, OPTIONS
 Access-Control-Allow-Headers: Content-Type
 Access-Control-Max-Age: 86400

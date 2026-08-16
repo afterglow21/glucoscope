@@ -22,8 +22,14 @@
     })();
   </script>
   <title>GlucoScope</title>
-  <!-- GlucoScope Limited Data Relay: the public endpoint is configured for paused acceptance testing only. -->
-  <meta name="glucoscope-data-relay-endpoint" content="https://glucoscope-data-relay.afterglow21.workers.dev">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="GlucoScope">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/gluco/about/gluco-small-notice.png">
+  <!-- GlucoScope Limited Data Relay: the browser client uses an anonymous device session. -->
+  <meta name="glucoscope-data-relay-endpoint" content="https://relay.glucoscope.app">
   <meta name="glucoscope-usage-profile-enabled" content="true">
   <meta name="glucoscope-plus-account-enabled" content="false">
   <meta name="glucoscope-plus-purchases-enabled" content="false">
@@ -129,16 +135,8 @@
 
         <div id="dataSourceRelayNotice" class="data-source-notice data-source-relay-notice">
           <strong data-i18n-key="dataSourceRelayNoticeTitle">Glurooのかんたん接続について</strong>
-          <p data-i18n-key="dataSourceRelayNoticeLead">接続に必要な情報と、表示する血糖データがGlucoScopeの限定中継機能を一時的に通ります。接続情報や血糖データを保存したり、AIへ送ったり、他の利用者と共有したりしません。</p>
+          <p data-i18n-key="dataSourceRelayNoticeLead">接続に必要な情報と、表示する血糖データがGlucoScopeの限定中継機能を一時的に通ります。接続先URL・合言葉・血糖データは保存せず、AIへ送ったり、他の利用者と共有したりしません。</p>
         </div>
-
-        <label id="dataSourceRelayConsentOption" class="data-source-save-option data-source-relay-consent">
-          <input id="dataSourceRelayConsent" type="checkbox">
-          <span>
-            <strong data-i18n-key="dataSourceRelayConsentLabel">限定中継について確認しました</strong>
-            <small data-i18n-key="dataSourceRelayConsentHelp">上の説明を読み、接続情報と表示に必要な血糖データが限定中継機能を一時的に通ることに同意します。</small>
-          </span>
-        </label>
 
         <div id="dataSourceNightscoutDirectNotice" class="data-source-notice data-source-direct-notice" hidden>
           <strong data-i18n-key="dataSourceDirectNoticeTitle">自分のNightscoutへ直接つなぎます</strong>
@@ -189,7 +187,7 @@
 
         <div id="dataSourceRelayCheck" class="data-source-relay-check">
           <strong data-i18n-key="dataSourceRelayCheckTitle">安全確認</strong>
-          <p data-i18n-key="dataSourceRelayCheckLead">Glurooへつなぐ前に、短い安全確認を行います。確認後に発行される接続用チケットは、このタブの中だけで使い、約1時間で期限が切れます。</p>
+          <p data-i18n-key="dataSourceRelayCheckLead">初めてGlurooへつなぐときだけ、短い安全確認を行います。その後は、この端末を普段使っている間は自動的につながります。接続を削除したとき、サイトデータを消したとき、長く使わなかったとき、安全のために必要なときは、もう一度確認します。</p>
           <div id="dataSourceRelayTurnstile" class="data-source-relay-turnstile" hidden aria-label="データ接続の安全確認"></div>
         </div>
 
@@ -927,8 +925,8 @@
 
 <script src="vendor/chart.js/chart.umd.min.js?v=4.5.1"></script>
 <script src="js/api.js"></script>
-<script src="js/data-source.js?v=20260812-safari-save-1"></script>
-<script src="js/data-relay-client.js?v=20260812-connection-lifecycle-1"></script>
+<script src="js/data-source.js?v=20260816-device-session-1"></script>
+<script src="js/data-relay-client.js?v=20260816-device-session-1"></script>
 <script src="js/local-profile.js?v=20260811-usage-profile-stage-1"></script>
 <script src="js/usage-client.js?v=20260815-guardian-confirmation-1"></script>
 <script src="js/plus-entitlement-client.js?v=20260815-guardian-confirmation-1"></script>
@@ -936,7 +934,7 @@
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js?v=20260721-user-foundation-3"></script>
-<script src="js/app.js?v=20260815-guardian-confirmation-1"></script>
+<script src="js/app.js?v=20260816-device-session-1"></script>
 <!-- Cloudflare Web Analytics: aggregate page-view and performance metrics only -->
 <script src="js/analytics-loader.js?v=20260811-usage-profile-stage-1"></script>
 <!-- End Cloudflare Web Analytics -->

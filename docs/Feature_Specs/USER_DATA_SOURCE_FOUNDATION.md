@@ -23,15 +23,17 @@ On 2026-08-12, the general-user Dexcom G7 relay route also passed supervised iPh
 
 After the later Usage lifecycle and general-user Dexcom G7 acceptances passed, separate explicit approval started continuous 1–3 person early access. Usage deployment `4fbf0e2c-5f5c-4f4f-98a9-ae57d73b4824` routes 100% to Version `5d160aed-7b27-48e6-b0a8-783534f97b6f`, and relay deployment `5f8d00d9-9d68-4b2a-99cd-c58c26123684` routes 100% to Version `a398d59e-54c1-4b8d-a9a4-b779af360a54`. Initial D1 counts remained `0 / 0 / 0`; approved-origin preflights returned `204`, invalid Turnstile and unapproved-origin requests returned `403`, and no-store boundaries passed. Checked-in Worker kill switches remain `false`, and the reviewed stopped Versions remain immediate rollback targets. This is not a broad public rollout.
 
+The checked-in 2026-08-16 migration candidate replaces that historical one-hour ticket boundary with an anonymous long-lived device session. It targets `https://glucoscope.app` and `https://relay.glucoscope.app`, is not deployed or published, and intentionally does not preserve the old ticket connection. The existing early-access person will run the connection safety check once after the coordinated release.
+
 1. Open `user.html` or `index.html?mode=user`.
 2. Choose exactly one numbered route.
 3. Tapping Method 1 opens the Gluroo preparation step and screenshot guide; tapping Method 2 opens the Nightscout connection form.
 4. Enter a required display name. The display name does not need to be a real name. Directly below it, the form shows the short notice `表示名と基本的な利用回数を、GlucoScopeをよくするために記録します。血糖値や接続情報は記録しません。` with a `詳しく` link.
 5. Enter the Nightscout-compatible URL and an API Secret or read token when required, then run the connection test.
-6. After a successful test, pressing `GlucoScopeを始める` attempts to create the browser usage profile and saves the connection in browser local storage, or keeps it only for the current browser session. Failure of the usage-only Turnstile or Usage Worker must not block an otherwise verified CGM connection; in that case the connection starts with no usage profile and collection off. Gluroo relay consent, its separate Turnstile and signed ticket, destination validation, and browser-storage success remain fail-closed.
-7. When setup already runs in user mode, GlucoScope activates the saved configuration and adapter in place without an unnecessary reload. Entry from the public demo uses full navigation into user mode. Nightscout is read directly by the browser; Gluroo entries are read through Limited Data Relay using a short-lived session ticket.
+6. After a successful test, pressing `GlucoScopeを始める` attempts to create the browser usage profile and saves the connection in browser local storage, or keeps it only for the current browser session. Failure of the usage-only Turnstile or Usage Worker must not block an otherwise verified CGM connection; in that case the connection starts with no usage profile and collection off. The separate initial Gluroo safety check, destination validation, anonymous device-session creation, and browser-storage success remain fail-closed.
+7. When setup already runs in user mode, GlucoScope activates the saved configuration and adapter in place without an unnecessary reload. Entry from the public demo uses full navigation into user mode. Nightscout is read directly by the browser; Gluroo entries are read through Limited Data Relay using the browser-managed anonymous device session.
 
-The existing root `index.html` without `mode=user` remains Kazuma's public demo. Viewing that demo never requires a display name or usage profile. The Gluroo relay notice and confirmation remain a separate boundary because they explain transient processing of connection details; they must not be merged into or replaced by the usage-profile notice.
+The existing root `index.html` without `mode=user` remains Kazuma's public demo. Viewing that demo never requires a display name or usage profile. The plain Gluroo relay explanation remains a separate boundary because it explains transient processing of connection details; it must not be merged into or replaced by the usage-profile notice. A separate confirmation checkbox is not required.
 
 ## Privacy boundary
 
@@ -42,14 +44,16 @@ For User Foundation 0.4.0:
 - Gluroo Global Connect uses Limited Data Relay. Its URL, credential, requested range, and required glucose entries are processed transiently by Cloudflare infrastructure and the relay Worker.
 - The relay application does not store, cache, log, send to AI, or share the Gluroo URL, credential, or glucose payload.
 - The relay retrieves glucose entries only. Treatments, insulin, carbohydrates, medication, pump settings, and device-status data are outside the relay scope.
-- The signed relay ticket is stored only in browser `sessionStorage`, is bound to the approved origin, and expires after about one hour.
-- The SQLite Durable Object stores only a UTC date bucket and request count for abuse prevention. It does not store source URLs, credentials, glucose values, entry timestamps, response bodies, IP addresses, or AI content.
+- The relay sets a host-only `__Host-glucoscope_relay_session` cookie with `Secure`, `HttpOnly`, `SameSite=Strict`, and `Path=/`. Browser JavaScript never receives or stores the raw session token.
+- The anonymous device session expires after 180 days without successful use. Successful status or glucose requests roll the idle expiry forward, but permanent access is not promised; browser-data removal, expiry, a security change, explicit deletion, or emergency revocation can require the safety check again.
+- The per-device SQLite Durable Object stores only an HMAC-derived session-token ID, creation time, last successful use, idle expiry, revocation state, an HMAC fingerprint derived from the canonical source URL and credential, and a UTC day bucket/count. It does not store the raw session token, raw source URL, credential, glucose data, display name, email address, IP address, or User-Agent.
+- The relay session identifier and source fingerprint are not joined to the optional Usage profile or Plus identity. Usage and Plus cannot use either field to identify or combine the relay session.
 - The Cloudflare Web Analytics beacon is not loaded in user mode or on any same-origin page while a user connection remains in local or session browser storage.
 - If browser storage cannot be checked safely, analytics stays disabled as the privacy-first fallback.
 - Chart.js is served from a reviewed local vendored file instead of a third-party runtime CDN on the page that handles connection details and glucose data.
-- The user can delete the saved connection from the setup screen. Deletion also clears the current relay ticket, browser-local AI-letter cache, and stored first-use AI confirmation; it does not claim to delete OpenAI's abuse-monitoring logs.
+- The user can delete the saved connection from the setup screen. GlucoScope first removes the locally saved URL and credential, browser-local AI-letter cache, stored first-use AI confirmation, and related connection state. It then attempts to revoke the anonymous server session and clear its cookie; local deletion never waits for or depends on that network request. If revocation cannot reach the Worker, the server still holds no raw connection details or glucose data. The session becomes invalid at its existing idle expiry and the alarm removes the record afterward; no exact physical-deletion time is promised. This does not claim to delete OpenAI's abuse-monitoring logs.
 - A shared device should use session-only storage or remove the connection after use.
-- The usage-profile service receives the display name and allowlisted usage counts only. The data-source URL, credential, glucose values, and relay ticket are never sent to that service.
+- The usage-profile service receives the display name and allowlisted usage counts only. The data-source URL, credential, glucose values, raw relay-session token, session identifier, and source fingerprint are never sent to that service.
 
 Browser local storage is not encrypted storage. Anyone who can use the same unlocked browser profile may be able to access locally stored information. JavaScript running on another page of the same GlucoScope origin can also share that browser-storage boundary. The setup screen must explain the shared-device boundary and the Gluroo relay boundary separately in plain language.
 
@@ -77,10 +81,11 @@ The relay:
 - accepts only the approved Gluroo hostname suffix;
 - constructs `/api/v1/entries.json` internally;
 - rejects redirects and arbitrary destinations;
-- requires server-validated Turnstile and a signed origin-bound ticket;
-- enforces date, entry, byte, timeout, session, and Worker-wide limits;
+- requires server-validated Turnstile and a non-empty verified Gluroo response before creating or replacing a browser-managed anonymous device session;
+- accepts credentialed browser requests only from `https://glucoscope.app`, through `https://relay.glucoscope.app`, with exact-Origin CORS and the protected same-site cookie;
+- binds each new session to the HMAC fingerprint of its verified canonical source URL and credential before replacing the previous session, then enforces date, entry, byte, timeout, per-device daily, and Worker-wide limits;
 - fails closed when configuration, secrets, counters, or the relay endpoint are unavailable;
-- is currently available only to the approved 1–3 person early-access group through its single approved `workers.dev` target. Public wording and consent, final security checks, explicit live-enablement approval, and the accepted Guardian, Libre 2, and Dexcom G7 route checks remain the boundary for use. The checked-in `RELAY_ENABLED=false` safety default and reviewed stopped Version remain the immediate rollback path. The Phase 3C public-policy review and the 2026-08-06 written Gluroo support response are recorded in `LIMITED_DATA_RELAY.md`; the response is conditional on continued compliance with Gluroo's EULA, terms, and other documents.
+- has a historical ticket Version currently available only to the approved small early-access group through its old `workers.dev` target. The checked-in device-session candidate is not deployed or published, targets only `relay.glucoscope.app`, and keeps both activation flags `false`. Current public wording, final security checks, a recorded rollout decision, and the accepted Guardian, Libre 2, and Dexcom G7 route checks remain the boundary for use. The Phase 3C public-policy review and the 2026-08-06 written Gluroo support response are recorded in `LIMITED_DATA_RELAY.md`; the response is conditional on continued compliance with Gluroo's EULA, terms, and other documents.
 
 A direct Gluroo request must not be used as a silent fallback, and a failed relay request must never fall back to Kazuma’s public-demo data.
 
@@ -109,7 +114,7 @@ Deployment boundary as of 2026-08-14: deployment `a5b57a76-954b-4bb9-bbba-c23bfd
 Production uses the following boundary in `mode=user`:
 
 - Before the first AI request for the current notice version, show a short, explicit confirmation that the summarized glucose information on the page will be sent to OpenAI. Cancelling sends nothing. The rule-based local Gluco message and ChatGPT-copy path remain available.
-- Send the selected-period summary only. Do not send the display name, Nightscout or Gluroo URL, connection passphrase, relay ticket, raw glucose-entry list, treatment list, insulin, food, medication, or device settings.
+- Send the selected-period summary only. Do not send the display name, Nightscout or Gluroo URL, connection passphrase, relay-session cookie or identifier, raw glucose-entry list, treatment list, insulin, food, medication, or device settings.
 - Store confirmation only in the browser as `glucoscope.aiLetterUserConsent.v1`.
 - Keep at most 30 AI letters in the browser-local `glucoscope.aiLetterLocalCache.v14` cache.
 - During personal-user early access, `SHARED_AI_CACHE_ENABLED=false` in code and `AI_CACHE_ENABLED=false` in Worker configuration disable shared-KV reads, writes, and stale fallback for every mode, including `kazuma-public-demo`. Browser-provided `pageMode` is routing metadata, not trusted authentication, and cannot authorize shared-cache access. The KV binding remains only for the staged recovery rules below, not for a direct Version 28 restore while user AI is enabled; existing entries are not read, no new entries are written, and retained entries expire naturally within the configured maximum of 24 hours. Every mode uses browser-local cache only, with at most 30 entries.
@@ -118,7 +123,7 @@ Production uses the following boundary in `mode=user`:
 - AI, Turnstile, provider, budget, or shared-limit failure affects only the AI panel. It must not stop or delete an already verified CGM connection, block ordinary glucose display, or silently fall back to Kazuma's demo data.
 - Deleting the saved data connection clears the browser-local AI cache, retired local AI cache keys, and saved AI confirmation. This is separate from deleting only the Usage-profile record.
 - AI generation `POST /api/gluco-letter` requires an approved, present `Origin`. Originless Usage `GET` remains available for the existing operational checks.
-- Turnstile must use action `glucoscope-ai-letter`, and the Worker must verify both that action and hostname `afterglow21.github.io` before calling OpenAI.
+- Turnstile must use action `glucoscope-ai-letter`, and the Worker must verify both that action and hostname `glucoscope.app` before calling OpenAI.
 
 The Worker-first, Pages-second release is complete. Version 28 is historical and must not be restored while user AI remains enabled because its spoofable `pageMode` boundary would reopen shared-KV writes. Keep AI fail-closed on Version 29 or later, or first publish and verify Pages with user AI disabled before Worker recovery. CGM connection and ordinary glucose display remain independent.
 
@@ -146,10 +151,10 @@ Connection errors, missing data, old data, and unsupported formats should be sho
 - User mode opens a required setup screen when no connection is stored.
 - A new personal-data connection requires a display name, clearly says that a real name is unnecessary, and creates the usage profile only when `GlucoScopeを始める` is pressed.
 - A usage-profile-only failure leaves usage unregistered and off but does not block a verified CGM connection; Gluroo relay security and browser-storage failures still block completion.
-- The fixed short usage notice and `詳しく` link appear before that start action; the separate Gluroo relay confirmation remains intact.
+- The fixed short usage notice and `詳しく` link appear before that start action; the separate plain Gluroo relay explanation remains intact without a confusing consent checkbox.
 - A connection cannot be saved until a live glucose entry is validated.
-- Changing the provider, connection fields, relay confirmation, or setup step cancels and invalidates the in-flight connection test; an older response cannot re-enable saving for newer fields.
-- Each Gluroo Turnstile challenge has its own generation and timeout. Relay preparation is single-flight, so a concurrent caller cannot overwrite a challenge or reuse its token. A render failure, cancellation, timeout, or stale callback is cleaned up without completing or blocking a later attempt.
+- Changing the provider, connection fields, or setup step cancels and invalidates the in-flight connection test; an older response cannot re-enable saving for newer fields.
+- Each initial Gluroo Turnstile challenge has its own generation and timeout. Relay preparation is single-flight, so a concurrent caller cannot overwrite a challenge or reuse its token. A render failure, cancellation, timeout, or stale callback is cleaned up without completing or blocking a later attempt. Ordinary refreshes use the protected long-lived session and do not show a new challenge while it remains valid and source-bound.
 - HTTPS is required except for localhost development.
 - The secret is masked by default.
 - The user may choose persistent or session-only browser storage.
@@ -162,7 +167,7 @@ Connection errors, missing data, old data, and unsupported formats should be sho
 - Analytics remains disabled while either user connection storage key exists.
 - JavaScript syntax checks and adapter tests pass.
 - The repeated-callback guard and simplified lifecycle are enabled only for supervised re-acceptance; any broader rollout waits until Create, Stop, Resume, Delete, and the secondary export path pass.
-- Saving from an already-user-mode setup activates the saved config and adapter in place. It must not reopen required setup solely because a reload lost an otherwise valid in-memory relay ticket.
+- Saving from an already-user-mode setup activates the saved config and adapter in place. Startup does not depend on a JavaScript-readable ticket. If the protected session is invalid or the source fingerprint differs, the first relay read opens the required setup with the saved fields prefilled for one new safety check.
 - Entry from the public demo still performs full navigation into user mode.
 
 The frontend keeps the verified connection as the core browser-storage operation, treats display-name-only storage as best effort, and gives usage-profile creation and updates bounded timeouts. Supervised iPhone acceptance confirmed that `GlucoScopeを始める` stays in user mode with an active adapter and can display live Gluroo (Libre) glucose. At that checkpoint, Usage profile creation had not occurred. A later supervised check then accepted stale-credential cleanup, Create, reload deduplication and daily recording, Stop, Resume, allowlisted export, and Delete.
@@ -188,6 +193,14 @@ The visible setup flow therefore:
 - shows the exact App Store name and current developer name so a person can verify the app even when its icon changes;
 - never assumes that a person can distinguish FreeStyle LibreLink, LibreLinkUp, Gluroo, and Mail by name alone;
 - incorporates independent field-test feedback before calling the onboarding complete.
+
+On iPhone, the normal beginner route is: open GlucoScope in Safari, add it to the Home Screen,
+open the new icon, and complete the first data connection inside that icon. Current WebKit behavior
+can copy cookies into the Home Screen app but does not copy local storage, which is where the selected
+connection URL and credential are kept. Connecting in Safari before adding the icon can therefore
+require one extra connection inside the icon. This implementation detail stays out of ordinary copy;
+the guide states only the action and expected result. See
+[WebKit's Home Screen web app storage note](https://webkit.org/blog/14787/webkit-features-in-safari-17-2/).
 
 ## External-service maintenance boundary
 

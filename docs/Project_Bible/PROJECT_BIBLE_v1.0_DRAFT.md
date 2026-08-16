@@ -1687,8 +1687,8 @@ AzureやNightscoutを自分で構築する方法は上級者向けの選択肢�
 
 ---
 
-## Current Limited Data Relay 0.2 Decision
-## 現在の限定データリレー0.2方針
+## Current Limited Data Relay 0.3 Decision
+## 現在の限定データリレー0.3方針
 
 ### EN
 
@@ -1703,7 +1703,13 @@ The current routes are:
 
 The relay accepts glucose entries only. It does not retrieve treatments, insulin, carbohydrates, medication, pump settings, or device-status data. The Gluroo URL, credential, requested range, and required glucose entries pass transiently through Cloudflare infrastructure and the relay Worker. The GlucoScope application does not store, cache, log, send to AI, or share those values.
 
-The relay uses server-validated Turnstile, an origin-bound ticket that expires after about one hour, strict destination and path restrictions, request limits, and a kill switch. Its Durable Object stores only a UTC date bucket and request count.
+The 2026-08-16 checked-in migration candidate replaces the one-hour JavaScript-readable relay ticket with an anonymous long-lived device session. Turnstile is required when the device session is created or replaced. Before changing a working session, the relay verifies that the proposed canonical Gluroo URL and credential return at least one valid glucose entry; it then creates and binds the new session, revokes the previous session, and returns the already verified entries. Invalid input, an empty response, or an upstream failure leaves the previous session intact. The relay sets a host-only `__Host-glucoscope_relay_session` cookie with `Secure`, `HttpOnly`, `SameSite=Strict`, and `Path=/`; JavaScript never receives or stores the raw session token. The exact site Origin is `https://glucoscope.app`, and the only candidate relay target is `https://relay.glucoscope.app`. Strict destination and path restrictions, per-device and Worker-wide request limits, and the kill switch remain mandatory. After migration, rollback uses a reviewed stopped Version of this same device-session code; the historical ticket Version is evidence only.
+
+The per-device SQLite Durable Object stores only an HMAC-derived session-token ID, creation time, last successful use, idle expiry, revocation state, an HMAC fingerprint derived from the canonical source URL and credential, and a UTC day bucket/count. It does not store the raw token, raw source URL, credential, glucose data, display name, email address, IP address, or User-Agent. The relay identity and source fingerprint are not joined to the optional Usage profile or Plus identity.
+
+The idle expiry is 180 days after the last successful use and rolls forward with ordinary successful use. This improves continuity but is not a promise of permanent access. Browser-data removal, expiry, a security change, explicit deletion, or emergency revocation may require one new safety check. Deletion removes the locally saved URL and credential first, then attempts to revoke the server record and clear the cookie; local deletion never waits for or depends on the network. The anonymous server session becomes invalid at its existing idle deadline, cannot retrieve glucose without the browser-held source details, and is eligible for alarm cleanup afterward; an exact physical-deletion time is not promised.
+
+This candidate is checked in but is not deployed or published. No DNS, GitHub Pages, Worker Version, route, or live traffic was changed by this decision. Existing early access remains on the historical ticket Version until the coordinated migration; backward compatibility is intentionally not required, so the existing early-access person will connect once after the release. On iPhone, the beginner route adds GlucoScope to the Home Screen first and completes the initial connection inside the new icon, because WebKit can copy cookies into a Home Screen web app but does not copy local storage. The implementation evidence is [WebKit's Home Screen web app storage note](https://webkit.org/blog/14787/webkit-features-in-safari-17-2/).
 
 Guardian (MiniMed 780G) is now a verified Gluroo input route on iPhone:
 
@@ -1750,7 +1756,13 @@ The general-user Limited Data Relay Dexcom G7 route also passed a supervised nor
 
 限定リレーが取得するのは血糖エントリーだけです。治療記録、インスリン、炭水化物、薬、ポンプ設定、機器状態は取得しません。GlurooのURL、接続用の合言葉、指定期間、表示に必要な血糖データはCloudflare基盤とリレーWorkerを一時的に通りますが、GlucoScopeのアプリケーションでは保存、共有キャッシュ、ログ記録、AI送信、他の利用者との共有を行いません。
 
-リレーでは、Worker側で検証するTurnstile、約1時間で期限が切れるGlucoScopeのOrigin専用チケット、厳しい接続先・パス制限、回数制限、緊急停止スイッチを使います。Durable Objectsへ保存するのはUTCの日付と回数だけです。
+2026年8月16日にGitへ保存した移行候補では、JavaScriptから読める約1時間のリレーチケットを廃止し、匿名の長期端末セッションへ置き換えます。端末セッションを作成または入れ替える時にTurnstileを必須にします。リレーは、ホストだけで使える `__Host-glucoscope_relay_session` cookieを `Secure`、`HttpOnly`、`SameSite=Strict`、`Path=/` で設定し、生のsession tokenをJavaScriptへ渡さず保存させません。サイトの正確なOriginは `https://glucoscope.app`、候補リレーの接続先は `https://relay.glucoscope.app` だけとします。厳しい接続先・パス制限、端末別とWorker全体の回数制限、緊急停止スイッチは維持します。
+
+端末ごとのSQLite Durable Objectへ保存してよいのは、session tokenをHMACで元に戻せない形へ変えたID、作成日時、最後に正常利用した日時、未使用期限、無効化状態、正規化した接続先URLと合言葉から作るHMAC fingerprint、UTCの日付と日次回数だけです。生のsession token、生の接続先URL、合言葉、血糖データ、表示名、メールアドレス、IPアドレス、User-Agentは保存しません。端末セッションのIDと接続元fingerprintを、任意のUsageプロフィールやPlus本人確認へ結びつけません。
+
+未使用期限は最後の正常利用から180日で、普段の正常利用中は先へ延ばします。つながりやすくするための仕組みですが、永続利用を保証しません。ブラウザ保存の削除、期限切れ、安全上の変更、明示削除、緊急無効化では、もう一度安全確認を求める場合があります。接続削除では、端末内URLと合言葉を先に削除してから、サーバー記録の無効化とcookie削除を試みます。端末内削除は通信を待たず、通信成功に依存させません。その場合、匿名サーバーsessionは既存の未使用期限で無効になり、その後alarm cleanupの対象になります。物理削除の正確な時刻は保証せず、端末だけにあったURLと合言葉なしに血糖データを取得できません。
+
+この移行候補はGitに保存しただけで、本番デプロイも公開もしていません。DNS、GitHub Pages、Worker Version、route、本番trafficは変更していません。現在の先行体験は、同時切替までは過去のチケットVersionを使います。旧方式との互換性は意図的に残さず、既存の先行利用者には公開後に1回だけ接続し直してもらいます。iPhoneでは、WebKitがcookieをホーム画面Webアプリへ引き継げる一方でlocal storageは引き継がないため、最初にGlucoScopeをホーム画面へ追加し、新しいアイコンの中で初回接続を完了する案内を標準にします。実装根拠は[WebKitのホーム画面Webアプリのstorage説明](https://webkit.org/blog/14787/webkit-features-in-safari-17-2/)です。
 
 Guardian（MiniMed 780G）は、iPhoneで次のGluroo入力ルートを実機確認済みです。
 
@@ -3337,7 +3349,7 @@ A failure limited to the usage-profile Turnstile or Usage Worker must not block 
 otherwise verified CGM connection. Save the required display name and connection in the
 browser, start user mode, and leave the usage profile unregistered with collection off.
 This fail-open boundary does not include Gluroo relay consent, its separate Turnstile and
-signed ticket, destination validation, or successful browser storage; those remain
+relay device session, destination validation, or successful browser storage; those remain
 fail-closed.
 
 The notice must also disclose the random profile ID, usage-recording state, notice version, and
@@ -3612,7 +3624,7 @@ Lucky Gluco No.51〜70とUnicorn Glucoは除外し、想い出IDや出会った�
 利用プロフィール専用のTurnstileまたはUsage Workerだけが失敗した場合は、検証済みの
 CGM接続を止めません。必須表示名と接続情報をブラウザへ保存してユーザーモードを開始し、
 利用プロフィールは未登録・利用記録OFFのままとします。Gluroo限定中継そのものの同意、
-Turnstile、署名付きticket、接続先検証と、ブラウザ保存の成功はこの例外へ含めず、
+Turnstile、長期端末セッション、接続先検証と、ブラウザ保存の成功はこの例外へ含めず、
 従来どおりfail-closedを維持します。
 
 運営に必要なランダムなprofile ID、利用記録の状態、説明版、作成・更新・最終利用日時も案内します。
@@ -5188,7 +5200,7 @@ Current Version 29 and the published frontend enforce the following personal-use
 - The request sends the selected-period glucose summary to the GlucoScope Worker and OpenAI.
   It may contain range labels, the latest reading/time/direction/delta, aggregate
   TIR/TAR/TBR/average/CV, eligible longer-range metrics, and derived reflection hints.
-  It must not contain the display name, connection URL, connection passphrase, relay ticket,
+  It must not contain the display name, connection URL, connection passphrase, relay-session cookie or identifier,
   raw glucose-entry list, treatment list, insulin, food, medication, or device settings.
 - The confirmation is versioned and stored only in the browser as
   `glucoscope.aiLetterUserConsent.v1`. User-mode letters use only
@@ -5219,7 +5231,7 @@ Current Version 29 and the published frontend enforce the following personal-use
 - AI-generation `POST /api/gluco-letter` requires an approved, present `Origin` header.
   Originless `GET /api/gluco-letter/usage` remains available for existing operational checks.
 - AI Turnstile uses `action=glucoscope-ai-letter`. The Worker must verify both that action
-  and `hostname=afterglow21.github.io`; a Usage-profile token from action
+  and `hostname=glucoscope.app`; a Usage-profile token from action
   `glucoscope-usage-profile` is not interchangeable.
 - Turnstile, provider, quality, budget, limit, cache, or Usage-recording failure stays inside
   the AI panel. It must not stop, clear, or replace an already verified CGM connection or
@@ -5245,7 +5257,7 @@ Version 28は履歴であり、ユーザーAIがONの間は直接戻してはい
 - GlucoScope WorkerとOpenAIへ送るのは、選択期間の血糖サマリーです。期間と範囲、
   最新値・時刻・方向・差分、TIR/TAR/TBR/平均/CV、条件を満たす長期指標、
   振り返り用の集計ヒントを含む場合があります。表示名、接続先URL、接続用の合言葉、
-  relay ticket、元の血糖データ一覧、治療記録、インスリン、食事、薬、機器設定は送りません。
+  relay-session cookieやidentifier、元の血糖データ一覧、治療記録、インスリン、食事、薬、機器設定は送りません。
 - 確認はVersion付きで `glucoscope.aiLetterUserConsent.v1` へ端末内だけに保存します。
   ユーザー版のお手紙は `glucoscope.aiLetterLocalCache.v14` だけに最大30件保存します。
 - 個人ユーザー早期公開中は、コードの `SHARED_AI_CACHE_ENABLED=false` とWorker設定の
@@ -5271,7 +5283,7 @@ Version 28は履歴であり、ユーザーAIがONの間は直接戻してはい
 - AI生成 `POST /api/gluco-letter` は、許可された `Origin` headerを必須にします。
   Originなしの `GET /api/gluco-letter/usage` は既存運用確認のため維持します。
 - AI用Turnstileは `action=glucoscope-ai-letter` とします。Workerはこのactionと
-  `hostname=afterglow21.github.io` の両方を検証し、利用プロフィール用
+  `hostname=glucoscope.app` の両方を検証し、利用プロフィール用
   `glucoscope-usage-profile` tokenを流用しません。
 - Turnstile、provider、品質確認、budget、全体上限、cache、AI利用記録の失敗は、
   AI欄だけで完結させます。確認済みCGM接続や通常の血糖表示を停止、削除、置換せず、

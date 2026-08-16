@@ -1,5 +1,5 @@
 const DAY_MS = 24 * 60 * 60 * 1000;
-const ALLOWED_ORIGIN = "https://afterglow21.github.io";
+const ALLOWED_ORIGIN = "https://glucoscope.app";
 const ALLOWED_METHODS = ["GET", "POST", "PATCH", "DELETE", "OPTIONS"];
 const ALLOWED_HEADERS = new Set(["authorization", "content-type"]);
 const DISPLAY_NAME_LIMIT = 30;

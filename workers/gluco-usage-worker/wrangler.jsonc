@@ -49,7 +49,7 @@
     "AI_QUOTA_RETENTION_DAYS": "90",
     "USAGE_NOTICE_VERSION": "2026-08-12-simple-connection-1",
     "USAGE_TIMEZONE_OFFSET_HOURS": "9",
-    "CORS_ALLOWED_ORIGIN": "https://afterglow21.github.io",
+    "CORS_ALLOWED_ORIGIN": "https://glucoscope.app",
     "CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN": "false",
     "MAX_REQUEST_BYTES": "8192",
     "MAX_EVENTS_PER_REQUEST": "20",
@@ -58,7 +58,7 @@
     "DAILY_USAGE_RETENTION_DAYS": "90",
     "EVENT_RECEIPT_RETENTION_DAYS": "7",
     "INACTIVE_PROFILE_RETENTION_DAYS": "90",
-    "TURNSTILE_EXPECTED_HOSTNAME": "afterglow21.github.io",
+    "TURNSTILE_EXPECTED_HOSTNAME": "glucoscope.app",
     "TURNSTILE_EXPECTED_ACTION": "glucoscope-usage-profile",
     "TURNSTILE_TIMEOUT_MS": "10000"
   }

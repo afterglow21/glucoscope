@@ -4,7 +4,10 @@
   const baseManager = root.GlucoScopeDataSource;
   if (!baseManager) return;
 
-  const SESSION_KEY = "glucoscope.dataRelay.session.v1";
+  // This key belongs to the retired one-hour bearer ticket. It is never read;
+  // cleanup is kept so an older build cannot leave a credential-like value in
+  // browser storage after the HttpOnly device-session migration.
+  const LEGACY_SESSION_KEY = "glucoscope.dataRelay.session.v1";
   const LOCAL_ENDPOINT_STORAGE_KEY = "glucoscope.dataRelayEndpoint.v1";
   const RELAY_META_NAME = "glucoscope-data-relay-endpoint";
   const TURNSTILE_SITE_KEY = "0x4AAAAAADyftbRcWQW23mEa";
@@ -13,15 +16,18 @@
   const TURNSTILE_CONTAINER_ID = "dataSourceRelayTurnstile";
   const TURNSTILE_CHALLENGE_TIMEOUT_MS = 15_000;
   const REQUEST_TIMEOUT_MS = 20_000;
-  const TICKET_EXPIRY_SKEW_MS = 30_000;
   const MAX_RELAY_ENDPOINT_LENGTH = 2_048;
-  const MAX_TICKET_LENGTH = 2_048;
 
   let relayWidgetId = null;
   let pendingChallenge = null;
   let challengeGeneration = 0;
   let pendingPreparation = null;
-  let preparationGeneration = 0;
+  let pendingStatusProbe = null;
+  let connectionGeneration = 0;
+  let activeConnectionIdentity = "";
+  let deviceSessionState = "unknown";
+  let preparedConnectionTest = null;
+  const activeRequestControllers = new Set();
 
   function createRelayError(code, message = code, details = {}) {
     const error = new Error(message);
@@ -35,6 +41,11 @@
     return /^\d{6}$/u.test(code) ? code : "";
   }
 
+  function normalizeRelayErrorCode(value) {
+    const code = String(value ?? "").trim();
+    return /^[a-z][a-z0-9_]{0,63}$/u.test(code) ? code : "relay_unavailable";
+  }
+
   function getStorage(name) {
     try {
       const storage = root?.[name];
@@ -42,6 +53,16 @@
       return storage;
     } catch {
       return null;
+    }
+  }
+
+  function cleanupLegacyRelaySession() {
+    for (const storageName of ["localStorage", "sessionStorage"]) {
+      try {
+        getStorage(storageName)?.removeItem(LEGACY_SESSION_KEY);
+      } catch {
+        // Cleanup is best effort and must never make a saved connection unusable.
+      }
     }
   }
 
@@ -104,86 +125,116 @@
     return normalizeRelayEndpoint(configured);
   }
 
-  function parseSession(raw, endpoint = getRelayEndpoint(), nowMs = Date.now()) {
-    if (!raw || !endpoint) return null;
+  function getConnectionIdentity(config) {
+    // This is memory-only and is never logged, returned, or written to storage.
+    return `${config.baseUrl}\n${config.credential}`;
+  }
 
-    try {
-      const parsed = JSON.parse(raw);
-      const expiresAtMs = Date.parse(parsed?.expiresAt || "");
-      if (
-        parsed?.version !== 1 ||
-        parsed.endpoint !== endpoint ||
-        typeof parsed.ticket !== "string" ||
-        parsed.ticket.length < 20 ||
-        parsed.ticket.length > MAX_TICKET_LENGTH ||
-        /[\u0000-\u0020\u007f]/u.test(parsed.ticket) ||
-        !Number.isFinite(expiresAtMs) ||
-        expiresAtMs <= nowMs + TICKET_EXPIRY_SKEW_MS
-      ) {
-        return null;
+  function abortActiveRelayRequests() {
+    for (const controller of activeRequestControllers) {
+      try {
+        controller.abort();
+      } catch {
+        // Generation checks still reject a late response from an abort-ignoring fetch.
       }
+    }
+    activeRequestControllers.clear();
+  }
 
-      return Object.freeze({
-        version: 1,
-        endpoint,
-        ticket: parsed.ticket,
-        expiresAt: new Date(expiresAtMs).toISOString()
-      });
-    } catch {
+  function invalidateConnectionWork(nextState = "unknown", { clearIdentity = false } = {}) {
+    connectionGeneration += 1;
+    abortActiveRelayRequests();
+    pendingStatusProbe = null;
+    pendingPreparation = null;
+    preparedConnectionTest = null;
+    resetRelayTurnstile();
+    if (clearIdentity) activeConnectionIdentity = "";
+    deviceSessionState = nextState;
+    return connectionGeneration;
+  }
+
+  function activateConnection(config) {
+    const identity = getConnectionIdentity(config);
+    if (identity !== activeConnectionIdentity) {
+      invalidateConnectionWork("unknown");
+      activeConnectionIdentity = identity;
+    }
+    return { identity, generation: connectionGeneration };
+  }
+
+  function createDeviceSessionHint(status = deviceSessionState) {
+    return Object.freeze({
+      version: 2,
+      authentication: "http-only-cookie",
+      status
+    });
+  }
+
+  // HttpOnly cookies intentionally cannot be inspected synchronously. This
+  // method is a non-secret launch hint for the existing app bootstrap. A fresh
+  // page returns "unknown" so it can start normally; the first relay request
+  // performs a server-side status probe before requesting entries.
+  function readRelaySession() {
+    cleanupLegacyRelaySession();
+    if (!getRelayEndpoint()) return null;
+    if (["invalid", "source-mismatch", "revoking", "revoked"].includes(deviceSessionState)) {
       return null;
     }
-  }
-
-  function readRelaySession(nowMs = Date.now()) {
-    const storage = getStorage("sessionStorage");
-    const endpoint = getRelayEndpoint();
-    const session = parseSession(storage?.getItem(SESSION_KEY), endpoint, nowMs);
-    if (!session) storage?.removeItem(SESSION_KEY);
-    return session;
-  }
-
-  function saveRelaySession(input) {
-    const endpoint = getRelayEndpoint();
-    const expiresAtMs = Date.parse(input?.expiresAt || "");
-    if (
-      !endpoint ||
-      typeof input?.ticket !== "string" ||
-      input.ticket.length < 20 ||
-      input.ticket.length > MAX_TICKET_LENGTH ||
-      !Number.isFinite(expiresAtMs) ||
-      expiresAtMs <= Date.now()
-    ) {
-      throw createRelayError("relay_ticket_invalid");
-    }
-
-    const storage = getStorage("sessionStorage");
-    if (!storage) throw createRelayError("relay_unavailable");
-
-    const session = {
-      version: 1,
-      endpoint,
-      ticket: input.ticket,
-      expiresAt: new Date(expiresAtMs).toISOString()
-    };
-    storage.setItem(SESSION_KEY, JSON.stringify(session));
-    return Object.freeze(session);
+    return createDeviceSessionHint();
   }
 
   function clearRelaySession() {
-    getStorage("sessionStorage")?.removeItem(SESSION_KEY);
+    cleanupLegacyRelaySession();
+    invalidateConnectionWork("revoked", { clearIdentity: true });
   }
 
-  async function postRelayJson(path, payload, options = {}) {
+  function throwIfGenerationChanged(expectedGeneration) {
+    if (Number.isInteger(expectedGeneration) && expectedGeneration !== connectionGeneration) {
+      throw createRelayError("request_aborted");
+    }
+  }
+
+  function throwIfRequestObsolete(expectedGeneration, signal) {
+    throwIfGenerationChanged(expectedGeneration);
+    if (signal?.aborted) throw createRelayError("request_aborted");
+  }
+
+  function awaitWithSignal(promise, signal) {
+    if (!signal) return promise;
+    if (signal.aborted) return Promise.reject(createRelayError("request_aborted"));
+
+    return new Promise((resolve, reject) => {
+      const onAbort = () => reject(createRelayError("request_aborted"));
+      signal.addEventListener("abort", onAbort, { once: true });
+      promise.then(
+        (value) => {
+          signal.removeEventListener?.("abort", onAbort);
+          resolve(value);
+        },
+        (error) => {
+          signal.removeEventListener?.("abort", onAbort);
+          reject(error);
+        }
+      );
+    });
+  }
+
+  async function requestRelayJson(path, payload, options = {}) {
     const endpoint = getRelayEndpoint();
     if (!endpoint) throw createRelayError("relay_unavailable");
 
     const fetchImpl = options.fetchImpl || root?.fetch || globalThis.fetch;
     if (typeof fetchImpl !== "function") throw createRelayError("relay_unavailable");
 
+    const method = String(options.method || "POST").toUpperCase();
     const controller = new AbortController();
     const externalSignal = options.signal;
+    const expectedGeneration = options.expectedGeneration;
     let timeoutTriggered = false;
     let externalAbortHandler = null;
+
+    throwIfRequestObsolete(expectedGeneration, externalSignal);
+    activeRequestControllers.add(controller);
 
     if (externalSignal) {
       if (externalSignal.aborted) controller.abort(externalSignal.reason);
@@ -199,14 +250,20 @@
     }, Number(options.timeoutMs) || REQUEST_TIMEOUT_MS);
 
     try {
-      const response = await fetchImpl(`${endpoint}${path}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      const requestOptions = {
+        method,
+        credentials: "include",
         cache: "no-store",
         redirect: "error",
         signal: controller.signal
-      });
+      };
+      if (payload !== undefined) {
+        requestOptions.headers = { "Content-Type": "application/json" };
+        requestOptions.body = JSON.stringify(payload);
+      }
+
+      const response = await fetchImpl(`${endpoint}${path}`, requestOptions);
+      throwIfRequestObsolete(expectedGeneration, externalSignal);
 
       let data = null;
       try {
@@ -216,10 +273,10 @@
           status: response.status
         });
       }
+      throwIfRequestObsolete(expectedGeneration, externalSignal);
 
       if (!response.ok || data?.ok !== true) {
-        const code = typeof data?.error === "string" ? data.error : "relay_unavailable";
-        if (code === "relay_ticket_invalid") clearRelaySession();
+        const code = normalizeRelayErrorCode(data?.error);
         const turnstileErrorCode = code === "turnstile_failed"
           ? normalizeTurnstileErrorCode(data?.turnstileErrorCode)
           : "";
@@ -233,10 +290,12 @@
     } catch (cause) {
       if (cause?.code) throw cause;
       const externallyAborted = controller.signal.aborted && !timeoutTriggered && Boolean(externalSignal?.aborted);
+      const staleGeneration = Number.isInteger(expectedGeneration)
+        && expectedGeneration !== connectionGeneration;
       throw createRelayError(
         timeoutTriggered
           ? "request_timeout"
-          : externallyAborted
+          : externallyAborted || staleGeneration
             ? "request_aborted"
             : "relay_unavailable",
         "Relay request failed.",
@@ -244,25 +303,43 @@
       );
     } finally {
       root.clearTimeout(timeout);
+      activeRequestControllers.delete(controller);
       if (externalAbortHandler && typeof externalSignal?.removeEventListener === "function") {
         externalSignal.removeEventListener("abort", externalAbortHandler);
       }
     }
   }
 
-  async function issueRelaySession(turnstileToken, options = {}) {
+  async function createDeviceSession(turnstileToken, configInput, options = {}) {
     if (typeof turnstileToken !== "string" || !turnstileToken.trim()) {
       throw createRelayError("turnstile_failed");
     }
+    const config = baseManager.sanitizeConfig(configInput);
 
-    const result = await postRelayJson("/v1/session", {
-      turnstileToken: turnstileToken.trim()
-    }, options);
+    const expectedGeneration = Number.isInteger(options.expectedGeneration)
+      ? options.expectedGeneration
+      : connectionGeneration;
+    const result = await requestRelayJson("/v1/device-session", {
+      turnstileToken: turnstileToken.trim(),
+      sourceUrl: config.baseUrl,
+      credential: config.credential
+    }, { ...options, expectedGeneration });
 
-    return saveRelaySession({
-      ticket: result.data.relayTicket,
-      expiresAt: result.data.expiresAt
+    if (result.data?.session?.status !== "active") {
+      throw createRelayError("relay_unavailable");
+    }
+    if (!Array.isArray(result.data?.entries)) {
+      throw createRelayError("relay_unavailable");
+    }
+    throwIfGenerationChanged(expectedGeneration);
+    cleanupLegacyRelaySession();
+    deviceSessionState = "active";
+    preparedConnectionTest = Object.freeze({
+      identity: getConnectionIdentity(config),
+      generation: expectedGeneration,
+      entries: result.data.entries
     });
+    return createDeviceSessionHint("active");
   }
 
   function ensureTurnstileContainer() {
@@ -425,55 +502,153 @@
   async function prepareConnection(configInput, options = {}) {
     const config = baseManager.sanitizeConfig(configInput);
     if (config.provider !== "gluroo") return null;
+    if (!getRelayEndpoint()) throw createRelayError("relay_unavailable");
 
-    const endpoint = getRelayEndpoint();
-    if (!endpoint) throw createRelayError("relay_unavailable");
-
-    const existing = readRelaySession();
-    if (existing) return existing;
-
-    // A Turnstile token is single-use. Keep token acquisition and session
-    // creation as one owned flight so a concurrent caller cannot overwrite a
-    // challenge, reuse its token, or let an older cleanup cancel a newer one.
-    if (pendingPreparation) throw createRelayError("relay_busy");
-    preparationGeneration += 1;
-    const generation = preparationGeneration;
-    pendingPreparation = { generation };
-
-    try {
-      let token = options.turnstileToken || "";
-      if (!token) token = await requestTurnstileToken(options);
-      return await issueRelaySession(token, options);
-    } finally {
-      if (pendingPreparation?.generation === generation) {
-        resetRelayTurnstile();
-        pendingPreparation = null;
-      }
+    const { identity, generation } = activateConnection(config);
+    if (
+      pendingPreparation
+      && pendingPreparation.identity === identity
+      && pendingPreparation.generation === generation
+    ) {
+      return awaitWithSignal(pendingPreparation.promise, options.signal);
     }
+
+    // prepareConnection is called only by the explicit connection-test action.
+    // Rotate even an existing cookie here so changing a Gluroo URL/passphrase
+    // cannot inherit a session bound to the previous connection.
+    const record = { identity, generation, promise: null };
+    const promise = (async () => {
+      try {
+        let token = options.turnstileToken || "";
+        if (!token) token = await requestTurnstileToken(options);
+        throwIfGenerationChanged(generation);
+        return await createDeviceSession(
+          token,
+          config,
+          { ...options, expectedGeneration: generation }
+        );
+      } finally {
+        if (pendingPreparation === record) {
+          resetRelayTurnstile();
+          pendingPreparation = null;
+        }
+      }
+    })();
+    record.promise = promise;
+    pendingPreparation = record;
+    return awaitWithSignal(promise, options.signal);
+  }
+
+  function startDeviceSessionStatusProbe(config, options = {}) {
+    const { identity, generation } = activateConnection(config);
+    if (deviceSessionState === "active") {
+      return Promise.resolve(createDeviceSessionHint("active"));
+    }
+    if (["invalid", "source-mismatch", "revoked"].includes(deviceSessionState)) {
+      return Promise.reject(createRelayError(
+        deviceSessionState === "source-mismatch"
+          ? "device_session_source_mismatch"
+          : "device_session_invalid",
+        undefined,
+        { status: 401 }
+      ));
+    }
+
+    if (
+      pendingStatusProbe
+      && pendingStatusProbe.identity === identity
+      && pendingStatusProbe.generation === generation
+    ) {
+      return awaitWithSignal(pendingStatusProbe.promise, options.signal);
+    }
+
+    const record = { identity, generation, promise: null };
+    const promise = (async () => {
+      try {
+        const result = await requestRelayJson("/v1/device-session/status", {}, {
+          ...options,
+          signal: undefined,
+          expectedGeneration: generation
+        });
+        if (result.data?.session?.status !== "active") {
+          throw createRelayError("relay_unavailable");
+        }
+        throwIfGenerationChanged(generation);
+        deviceSessionState = "active";
+        return createDeviceSessionHint("active");
+      } catch (error) {
+        if (generation === connectionGeneration && error?.code === "device_session_invalid") {
+          deviceSessionState = "invalid";
+        }
+        throw error;
+      } finally {
+        if (pendingStatusProbe === record) pendingStatusProbe = null;
+      }
+    })();
+    record.promise = promise;
+    pendingStatusProbe = record;
+    return awaitWithSignal(promise, options.signal);
   }
 
   async function requestRelayEntries(config, options = {}) {
-    const session = readRelaySession();
-    if (!session) throw createRelayError("relay_ticket_required");
+    const { generation } = activateConnection(config);
+    await startDeviceSessionStatusProbe(config, options);
+    throwIfGenerationChanged(generation);
 
     const payload = {
       sourceUrl: config.baseUrl,
       credential: config.credential,
-      limit: options.limit,
-      relayTicket: session.ticket
+      limit: options.limit
     };
     if (options.from !== undefined || options.to !== undefined) {
       payload.from = new Date(options.from).toISOString();
       payload.to = new Date(options.to).toISOString();
     }
 
-    const result = await postRelayJson("/v1/entries", payload, options);
-    return {
-      data: Array.isArray(result.data.entries) ? result.data.entries : [],
-      strategy: "limited-relay",
-      status: result.status,
-      urlOrigin: new URL(result.endpoint).origin
-    };
+    try {
+      const result = await requestRelayJson("/v1/entries", payload, {
+        ...options,
+        expectedGeneration: generation
+      });
+      throwIfGenerationChanged(generation);
+      deviceSessionState = "active";
+      return {
+        data: Array.isArray(result.data.entries) ? result.data.entries : [],
+        strategy: "limited-relay",
+        status: result.status,
+        urlOrigin: new URL(result.endpoint).origin
+      };
+    } catch (error) {
+      if (generation === connectionGeneration) {
+        if (error?.code === "device_session_invalid") deviceSessionState = "invalid";
+        if (error?.code === "device_session_source_mismatch") deviceSessionState = "source-mismatch";
+      }
+      throw error;
+    }
+  }
+
+  async function revokeDeviceSession(options = {}) {
+    if (!getRelayEndpoint()) throw createRelayError("relay_unavailable");
+    const previousState = deviceSessionState;
+    const generation = invalidateConnectionWork("revoking");
+
+    try {
+      await requestRelayJson("/v1/device-session", undefined, {
+        ...options,
+        method: "DELETE",
+        expectedGeneration: generation
+      });
+      throwIfGenerationChanged(generation);
+      cleanupLegacyRelaySession();
+      deviceSessionState = "revoked";
+      activeConnectionIdentity = "";
+      return Object.freeze({ ok: true, status: "revoked" });
+    } catch (error) {
+      if (generation === connectionGeneration) {
+        deviceSessionState = previousState === "revoked" ? "revoked" : "unknown";
+      }
+      throw error;
+    }
   }
 
   function createGlurooRelayAdapter(configInput) {
@@ -504,7 +679,15 @@
       },
 
       async testConnection(options = {}) {
-        const result = await requestRelayEntries(config, { ...options, limit: 2 });
+        const identity = getConnectionIdentity(config);
+        const prepared = (
+          preparedConnectionTest?.identity === identity
+          && preparedConnectionTest?.generation === connectionGeneration
+        ) ? preparedConnectionTest : null;
+        if (prepared) preparedConnectionTest = null;
+        const result = prepared
+          ? { data: prepared.entries }
+          : await requestRelayEntries(config, { ...options, limit: 2 });
         const entries = baseManager._testing.normalizeGlucoseEntries(result.data);
         if (!entries.length) {
           throw createRelayError("no_glucose_data");
@@ -533,7 +716,7 @@
     if (notice) notice.hidden = !isGluroo;
     if (directNotice) directNotice.hidden = isGluroo;
     if (check) check.hidden = !isGluroo;
-    if (!isGluroo) resetRelayTurnstile();
+    if (!isGluroo) invalidateConnectionWork("unknown", { clearIdentity: true });
   }
 
   const wrappedManager = Object.freeze({
@@ -546,28 +729,35 @@
         : baseManager.createAdapter(config);
     },
     clearUserConfig() {
+      // Keep local credential deletion synchronous and independent of the
+      // best-effort server revocation that the app starts immediately after.
       baseManager.clearUserConfig();
       clearRelaySession();
     }
   });
 
+  cleanupLegacyRelaySession();
   root.GlucoScopeDataSource = wrappedManager;
   root.GlucoScopeDataRelay = Object.freeze({
-    SESSION_KEY,
+    LEGACY_SESSION_KEY,
     TURNSTILE_ACTION,
     getRelayEndpoint,
     readRelaySession,
     clearRelaySession,
     prepareConnection,
+    probeDeviceSession: startDeviceSessionStatusProbe,
+    revokeDeviceSession,
     updateUi,
     _testing: Object.freeze({
       normalizeTurnstileErrorCode,
+      normalizeRelayErrorCode,
       normalizeRelayEndpoint,
-      parseSession,
-      saveRelaySession,
-      issueRelaySession,
-      postRelayJson,
-      createGlurooRelayAdapter
+      cleanupLegacyRelaySession,
+      createDeviceSession,
+      requestRelayJson,
+      createGlurooRelayAdapter,
+      getDeviceSessionState: () => deviceSessionState,
+      getConnectionGeneration: () => connectionGeneration
     })
   });
 })(typeof window !== "undefined" ? window : globalThis);

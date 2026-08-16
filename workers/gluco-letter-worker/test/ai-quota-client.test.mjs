@@ -84,6 +84,8 @@ test("Authorization is added to CORS only when quota enforcement is enabled", ()
 
 test("checked-in integration is off, internal-only, and ignores debug controls when authoritative", () => {
   assert.match(wranglerSource, /AI_PER_USER_QUOTA_ENABLED = "false"/u);
+  assert.match(wranglerSource, /TURNSTILE_EXPECTED_HOSTNAME = "glucoscope\.app"/u);
+  assert.match(wranglerSource, /CORS_ALLOWED_ORIGINS = "https:\/\/glucoscope\.app"/u);
   assert.match(wranglerSource, /binding = "AI_QUOTA"[\s\S]*entrypoint = "AiQuotaService"/u);
   assert.match(workerSource, /handleCorsPreflight\(request, corsDecision, env\)/u);
   assert.match(workerSource, /const generationSignal = quotaConfig\.enabled \? request\.signal : undefined/u);

@@ -185,8 +185,20 @@
   }
 
   function clearUserConfig() {
-    getStorage("localStorage")?.removeItem(STORAGE_KEY);
-    getStorage("sessionStorage")?.removeItem(SESSION_STORAGE_KEY);
+    let firstError = null;
+    for (const [storageName, storageKey] of [
+      ["localStorage", STORAGE_KEY],
+      ["sessionStorage", SESSION_STORAGE_KEY]
+    ]) {
+      try {
+        getStorage(storageName)?.removeItem(storageKey);
+      } catch (error) {
+        // Continue so one blocked storage area cannot prevent the other copy
+        // from being removed. Report the failure only after both were tried.
+        firstError ||= error;
+      }
+    }
+    if (firstError) throw firstError;
   }
 
   function getLaunchMode() {

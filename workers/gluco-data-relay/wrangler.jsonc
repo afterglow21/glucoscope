@@ -3,14 +3,20 @@
   "name": "glucoscope-data-relay",
   "main": "src/index.js",
   "compatibility_date": "2026-08-03",
-  "workers_dev": true,
+  "workers_dev": false,
   "preview_urls": false,
+  "routes": [
+    {
+      "pattern": "relay.glucoscope.app",
+      "custom_domain": true
+    }
+  ],
   "observability": {
     "enabled": false
   },
   "secrets": {
     "required": [
-      "RELAY_TICKET_SECRET",
+      "RELAY_DEVICE_SESSION_SECRET",
       "TURNSTILE_SECRET_KEY"
     ]
   },
@@ -19,6 +25,10 @@
       {
         "name": "RELAY_USAGE_COUNTER",
         "class_name": "RelayUsageCounter"
+      },
+      {
+        "name": "RELAY_DEVICE_SESSION",
+        "class_name": "RelayDeviceSession"
       }
     ]
   },
@@ -26,11 +36,16 @@
     "RelayUsageCounter": {
       "type": "durable-object",
       "storage": "sqlite"
+    },
+    "RelayDeviceSession": {
+      "type": "durable-object",
+      "storage": "sqlite"
     }
   },
   "vars": {
     "RELAY_ENABLED": "false",
-    "CORS_ALLOWED_ORIGINS": "https://afterglow21.github.io",
+    "RELAY_DEVICE_SESSIONS_ENABLED": "false",
+    "CORS_ALLOWED_ORIGINS": "https://glucoscope.app",
     "CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN": "false",
     "GLUROO_HOST_SUFFIX": ".ns.gluroo.com",
     "MAX_ENTRIES": "12000",
@@ -38,11 +53,11 @@
     "MAX_REQUEST_BYTES": "8192",
     "MAX_UPSTREAM_BYTES": "6291456",
     "UPSTREAM_TIMEOUT_MS": "15000",
-    "TURNSTILE_EXPECTED_HOSTNAME": "afterglow21.github.io",
+    "TURNSTILE_EXPECTED_HOSTNAME": "glucoscope.app",
     "TURNSTILE_EXPECTED_ACTION": "glucoscope-data-relay",
     "TURNSTILE_TIMEOUT_MS": "10000",
-    "RELAY_TICKET_TTL_SECONDS": "3600",
-    "SESSION_DAILY_LIMIT": "250",
+    "RELAY_DEVICE_SESSION_IDLE_TTL_SECONDS": "15552000",
+    "RELAY_DEVICE_SESSION_DAILY_LIMIT": "3000",
     "GLOBAL_WARNING_DAILY": "20000",
     "GLOBAL_HARD_DAILY": "50000"
   }

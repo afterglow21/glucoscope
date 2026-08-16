@@ -264,6 +264,22 @@ test("keeps a successful session save when old persistent cleanup is rejected", 
   assert.equal(api.getActiveConfig().baseUrl, "https://new-session.example.test");
 });
 
+test("connection deletion tries both browser storage areas before reporting a failure", () => {
+  const localStorage = createStorage();
+  const sessionStorage = createStorage();
+  const context = loadModule({ search: "?mode=user", localStorage, sessionStorage });
+  const api = context.GlucoScopeDataSource;
+  localStorage.setItem(api.STORAGE_KEY, "persistent-copy");
+  sessionStorage.setItem(api.SESSION_STORAGE_KEY, "session-copy");
+  localStorage.removeItem = () => {
+    throw new Error("persistent deletion rejected");
+  };
+
+  assert.throws(() => api.clearUserConfig(), /persistent deletion rejected/);
+  assert.equal(localStorage.getItem(api.STORAGE_KEY), "persistent-copy");
+  assert.equal(sessionStorage.getItem(api.SESSION_STORAGE_KEY), null);
+});
+
 test("uses a SHA-1 api-secret header for a regular Nightscout source", async () => {
   const requests = [];
   const context = loadModule({

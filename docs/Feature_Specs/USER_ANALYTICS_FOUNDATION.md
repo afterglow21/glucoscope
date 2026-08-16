@@ -162,7 +162,7 @@ Phase 1Bの端末プロフィール、D1、API、開始・停止、書き出し�
 
 法律文書のようなチェックボックスは追加しない。Gluroo限定中継の確認は、接続先情報をCloudflareで一時処理する別の境界として維持し、この利用プロフィール案内へ混ぜない。端末プロフィール作成の直前だけTurnstileを表示し、actionは `glucoscope-usage-profile` とする。
 
-利用プロフィール用TurnstileまたはUsage Workerだけが失敗した場合は、検証済みのCGM接続を止めない。必須表示名と接続情報をブラウザへ保存してユーザーモードを開始し、利用プロフィールは未登録・利用記録OFFのままとする。Gluroo限定中継そのものの同意、Turnstile、署名付きticket、接続先検証はこのfail-open境界へ含めず、従来どおりfail-closedを維持する。ブラウザへの表示名または接続情報の保存に失敗した場合も、接続成功扱いにしない。
+利用プロフィール用TurnstileまたはUsage Workerだけが失敗した場合は、検証済みのCGM接続を止めない。必須表示名と接続情報をブラウザへ保存してユーザーモードを開始し、利用プロフィールは未登録・利用記録OFFのままとする。Gluroo限定中継そのものの説明、Turnstile、長期端末セッション、接続先検証はこのfail-open境界へ含めず、従来どおりfail-closedを維持する。ブラウザへの表示名または接続情報の保存に失敗した場合も、接続成功扱いにしない。
 
 Phase 1Bで扱ってよいのは次だけとする。
 
@@ -288,14 +288,14 @@ Gitに保存する `USAGE_COLLECTION_ENABLED=false` と `RELAY_ENABLED=false` �
 AI Worker deployment `a5b57a76-954b-4bb9-bbba-c23bfd0fa516` はVersion 29（`235cdf03-31d7-40fd-ab58-5c1c6aa2d923`）へ本番通信の100%を向け、対応するフロントはPages merge `a4497ab1a5d303c8a16b7d0aad999bf0dc1bde5d` で公開した。Version 28は履歴であり、ユーザーAIがONの間は直接戻してはならない。
 
 - `mode=user`では、現在の案内Versionで初めてAI分析を使う時だけ、TurnstileとAI送信より先に短く明示確認する。確認は `glucoscope.aiLetterUserConsent.v1` へVersion付きで端末内保存し、取り消した場合は何も送らない。
-- AIへ送るのは選択期間の集計サマリーである。表示名、接続先URL、接続用の合言葉、relay ticket、元の血糖データ一覧、治療、インスリン、食事、薬、機器設定は送らない。
+- AIへ送るのは選択期間の集計サマリーである。表示名、接続先URL、接続用の合言葉、端末セッション識別情報、元の血糖データ一覧、治療、インスリン、食事、薬、機器設定は送らない。
 - OpenAI Responses APIは `store: false` で呼ぶ。OpenAIは明示的なopt-inがないAPIデータをmodel学習へ使わないと説明している。一方、標準の不正利用監視ログにはpromptやresponseが含まれる場合があり、通常最長30日保持される。法令またはサービス・第三者保護のため、それより長い保持が必要となる例外がある。根拠は [OpenAI API data controls](https://developers.openai.com/api/docs/guides/your-data) とする。
 - 個人ユーザー早期公開中は、コードの `SHARED_AI_CACHE_ENABLED=false` とWorker設定の `AI_CACHE_ENABLED=false` により、公開デモを含む全modeで共有KVの読み取り、書き込み、stale fallbackを停止する。ブラウザから届く `pageMode` は認証ではなく、共有cacheの利用を許可する根拠にしない。KV bindingは下記の段階的な復旧手順のためだけに残し、ユーザーAIがONのままVersion 28へ戻す許可にはしない。既存entryは読まず、新規entryも書かず、保持中のentryは設定済みの最長24時間以内に自然失効する。全modeで端末内 `glucoscope.aiLetterLocalCache.v14` だけを最大30件使う。
 - 保存したデータ接続を削除すると、端末内AIキャッシュ、退役済み端末内AIキャッシュ、保存済みAI確認を削除する。これはOpenAIの不正利用監視ログの遠隔削除ではない。利用プロフィールだけの削除では、これらを連動削除しない。
 - AI Workerの朝・昼・夜各10回、1日最大30回は、公開デモと全利用者で共有する全体運用上限であり、個人別の利用権ではない。他の利用により全体上限へ到達した場合も、CGM表示を止めずAI欄だけでやさしく伝える。
 - 利用分析へ加算してよいのは、OpenAIから新しく正常に生成され、`generation.complete=true` の応答だけである。端末cache、保持中だが候補では読まない共有cache、stale fallback、失敗、ボタン押下、ChatGPTコピーは加算しない。
 - AI生成 `POST /api/gluco-letter` は許可された `Origin` headerを必須にする。OriginなしのUsage `GET` は既存の運用確認のため維持する。
-- AI用Turnstile actionは `glucoscope-ai-letter` とし、WorkerはSiteverifyの `action` と `hostname=afterglow21.github.io` の両方を検証する。利用プロフィール用 `glucoscope-usage-profile` tokenをAIへ流用しない。
+- AI用Turnstile actionは `glucoscope-ai-letter` とし、WorkerはSiteverifyの `action` と `hostname=glucoscope.app` の両方を検証する。利用プロフィール用 `glucoscope-usage-profile` tokenをAIへ流用しない。
 - Turnstile、OpenAI、品質確認、budget、全体上限、AI利用記録のどこで失敗しても、AI欄だけで完結させ、検証済みCGM接続、通常の血糖表示、接続情報を止めたり削除したりしない。公開デモデータへもfallbackしない。
 - Worker先行、Pages後続の公開は完了した。偽装できる `pageMode` 境界から共有KV書き込みが再開し得るため、ユーザーAIがONのままVersion 28へ戻してはならない。Version 29以降でAIをfail-closedに保つか、先にPages側のユーザーAIを停止して公開確認してからWorkerを復旧する。
 
@@ -313,7 +313,7 @@ D1の既存view `admin_device_usage` に対する固定`SELECT` 1つだけを使
 - 新しく正常に完了したAI分析の合計回数
 - 通常のグルコの想い出No.1〜50の現在数
 
-profile ID、token・token hash、作成・更新・最終利用日時、日別行、event receipt、血糖値・グラフ、AIへ送った内容・AIお手紙本文、CGM種別、接続先・合言葉・ticket、IPアドレス、raw User-Agentは選択・返却・表示しない。
+profile ID、token・token hash、作成・更新・最終利用日時、日別行、event receipt、血糖値・グラフ、AIへ送った内容・AIお手紙本文、CGM種別、接続先・合言葉・端末セッション識別情報、IPアドレス、raw User-Agentは選択・返却・表示しない。
 
 2026年8月15日、管理者1名の実browser acceptanceを完了した。未認証requestはAccessへの`302`で停止し、許可された管理者の`GET /`はサーバー描画の読取専用empty stateを表示した。query付きURLと未知pathは`404`となり、script、画像、外部linkは0件だった。preview URL、application log、invocation logは無効のままとする。本番D1確認は実数を記録せず、「行数不変」という境界結果だけを残す。メールOne-time PINはMFAではないため、メールアカウント側の二段階認証を有効にし、管理者追加や運用範囲拡大の前にMFA対応IdPを再検討する。
 

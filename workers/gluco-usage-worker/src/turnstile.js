@@ -34,7 +34,7 @@ export async function verifyTurnstileToken({ token, env = {}, config }, fetchImp
   if (
     !result?.success
     || String(result.hostname || "").toLowerCase()
-      !== String(env.TURNSTILE_EXPECTED_HOSTNAME || "afterglow21.github.io").toLowerCase()
+      !== String(env.TURNSTILE_EXPECTED_HOSTNAME || "glucoscope.app").toLowerCase()
     || result.action !== String(env.TURNSTILE_EXPECTED_ACTION || "glucoscope-usage-profile")
   ) {
     throw new UsageApiError("turnstile_failed", 403);

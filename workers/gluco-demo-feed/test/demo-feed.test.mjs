@@ -18,7 +18,7 @@ import {
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
-const ORIGIN = "https://afterglow21.github.io";
+const ORIGIN = "https://glucoscope.app";
 const SOURCE_URL = "https://demo.ns.gluroo.com";
 const SECRET = "test-only-demo-secret";
 const G7_SOURCE_URL = "https://g7-demo.ns.gluroo.com";
@@ -524,6 +524,7 @@ test("checked-in Wrangler config is stopped and contains only secret names and t
   assert.equal(config.vars.DEMO_FEED_ENABLED, "false");
   assert.equal(config.vars.DEMO_LIBRE_FEED_ENABLED, "false");
   assert.equal(config.vars.DEMO_G7_FEED_ENABLED, "false");
+  assert.equal(config.vars.CORS_ALLOWED_ORIGIN, ORIGIN);
   assert.equal(config.vars.DEMO_FEED_CACHE_KEY, "public:libre-2:v1");
   assert.equal(config.vars.DEMO_G7_FEED_CACHE_KEY, "public:dexcom-g7:v1");
   assert.notEqual(config.vars.DEMO_FEED_CACHE_KEY, config.vars.DEMO_G7_FEED_CACHE_KEY);

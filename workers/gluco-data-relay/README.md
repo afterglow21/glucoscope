@@ -1,10 +1,31 @@
-# GlucoScope Limited Data Relay — 1–3 person early access and rollback boundary
+# GlucoScope Limited Data Relay — long-lived device-session candidate and rollback boundary
 
 This directory contains the Gluroo-only relay, including its security, access-control, request-limit, and rollback boundaries.
 
-Phase 3A connected the user onboarding flow to the relay client while keeping the checked-in endpoint blank. Phase 3B created the stopped Cloudflare Worker shell and Durable Object, registered the required Worker Secrets, and verified the stopped production response. The checked-in frontend now points only to the approved target and requires explicit consent. Guardian, FreeStyle Libre 2, and Dexcom G7 device acceptances passed. After separate explicit approval on 2026-08-12, deployment `5f8d00d9-9d68-4b2a-99cd-c58c26123684` routed accepted Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` to 100% for a 1–3 person early-access group. This is not a broad public rollout. The checked-in kill switch remains `RELAY_ENABLED=false`, and stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` remains the immediate rollback target.
+## Checked-in long-lived device-session candidate
 
-## Implemented through Phase 3B
+The checked-in candidate replaces the one-hour browser ticket with an opaque device session. It is not deployed or published: no DNS, GitHub Pages, Worker Version, route, custom domain, or live traffic was changed by this source update. The intended browser Origin is `https://glucoscope.app`, and the only candidate relay target is the custom domain `https://relay.glucoscope.app`; `workers_dev=false` leaves no candidate `workers.dev` route.
+
+- `POST /v1/device-session` verifies Turnstile and confirms that the proposed Gluroo connection returns at least one valid glucose entry before it creates the new session, replaces any existing session, and sets the 256-bit opaque `__Host-glucoscope_relay_session` cookie with `Secure`, `HttpOnly`, `SameSite=Strict`, and `Path=/`;
+- `POST /v1/device-session/status` verifies and rolls the idle lifetime forward without exposing the token to JavaScript;
+- session creation binds the new session to an HMAC fingerprint of the verified canonical Gluroo URL and credential; `POST /v1/entries` requires the same fingerprint on every later request;
+- `DELETE /v1/device-session` deletes the server record and clears the cookie;
+- one SQLite Durable Object is sharded per anonymous device session, and its alarm removes idle records;
+- the device counter is atomic, resets on the UTC day boundary, and is checked before the Worker-wide counter.
+
+The candidate has no legacy `/v1/session` endpoint, signed-ticket acceptance path, `relayTicket` request field, or `RELAY_TICKET_SECRET` requirement. A failed replacement leaves the existing working session intact. After migration, rollback must use a reviewed stopped Version of this same device-session code; the historical ticket Version is not a compatible rollback target.
+
+The device-session object stores only an HMAC-derived token ID, creation and last-seen timestamps, idle expiry, revocation state, an HMAC source/credential fingerprint, and a UTC day bucket/count. It does not store the raw cookie token, raw Gluroo URL, credential, glucose data, IP address, User-Agent, display name, or email address. The relay identity and source fingerprint are not joined to the optional Usage profile or Plus identity. The checked-in idle lifetime is 180 days of inactivity and rolls forward on successful use without promising permanent access. The checked-in device limit is 3,000 relay requests per UTC day. Both are inactive while `RELAY_ENABLED=false` and `RELAY_DEVICE_SESSIONS_ENABLED=false`.
+
+Connection deletion removes the locally saved URL and credential first, then attempts server revocation and cookie removal. Local deletion never waits for or depends on the network. If revocation cannot reach the Worker, the server has no raw URL, credential, or glucose payload. The session becomes invalid at its existing idle expiry and the alarm removes the record afterward; an exact physical-deletion time is not promised.
+
+Existing early-access browser connections intentionally require one safety check after the coordinated migration. On iPhone, the beginner path adds GlucoScope to the Home Screen first and completes the initial connection inside the icon because WebKit can copy cookies into the Home Screen app but does not copy local storage. See [WebKit's Home Screen web app storage note](https://webkit.org/blog/14787/webkit-features-in-safari-17-2/).
+
+## Historical one-hour ticket deployment record
+
+Phase 3A connected the user onboarding flow to the relay client while keeping the endpoint blank. Phase 3B created the stopped Cloudflare Worker shell and Durable Object, registered the required Worker Secrets, and verified the stopped production response. At that historical checkpoint, the frontend pointed only to the approved target and required explicit consent. Guardian, FreeStyle Libre 2, and Dexcom G7 device acceptances passed. After separate explicit approval on 2026-08-12, deployment `5f8d00d9-9d68-4b2a-99cd-c58c26123684` routed accepted Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` to 100% for a 1–3 person early-access group. This was not a broad public rollout. The old deployment's stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` remains its rollback evidence; the checked-in candidate boundary is the section above.
+
+## Historical ticket implementation through Phase 3B
 
 - `POST /v1/session` verifies a Cloudflare Turnstile token server-side;
 - the Siteverify request follows Cloudflare's Worker pattern: form-encoded POST, a 10-second timeout, and no redirect or cache override;
@@ -18,16 +39,16 @@ Phase 3A connected the user onboarding flow to the relay client while keeping th
 
 The Durable Object stores only a UTC day bucket and a request count. It does not store Gluroo URLs, credentials, glucose values, entry timestamps, response bodies, IP addresses, or AI content.
 
-## Production Secret bindings
+## Required Secret bindings
 
-The following names are registered as Cloudflare Worker Secrets. Their values must never be placed in `wrangler.jsonc`, committed `.env` or `.dev.vars` files, screenshots, deployment records, or support messages:
+The following names must be registered as Cloudflare Worker Secrets before the device-session candidate is activated. Their values must never be placed in `wrangler.jsonc`, committed `.env` or `.dev.vars` files, screenshots, deployment records, or support messages:
 
 ```text
 TURNSTILE_SECRET_KEY
-RELAY_TICKET_SECRET
+RELAY_DEVICE_SESSION_SECRET
 ```
 
-`TURNSTILE_SECRET_KEY` uses the existing GlucoScope Turnstile configuration. `RELAY_TICKET_SECRET` is a separately generated random value used only by this Worker.
+`TURNSTILE_SECRET_KEY` uses the GlucoScope Turnstile configuration for `glucoscope.app`. `RELAY_DEVICE_SESSION_SECRET` is a separate random value used only to derive opaque device-session IDs and source fingerprints in this Worker.
 
 The two names are also declared under `secrets.required` in `wrangler.jsonc`. Secret names are not credentials; their values remain only in Cloudflare. This declaration makes Wrangler validate that the required bindings exist before a future deployment.
 
@@ -40,9 +61,9 @@ npm run verify
 npm run deploy:dry
 ```
 
-The dry-run binding summary must show the `RELAY_USAGE_COUNTER` Durable Object binding and `RELAY_ENABLED=false`. Wrangler does not print routing, Preview URL, observability, or remote Secret values in that summary, so `workers_dev=true`, `preview_urls=false`, the SQLite `exports` declaration, `secrets.required`, and `observability.enabled=false` are verified from `wrangler.jsonc`, the automated tests, and a read-only Cloudflare Secret-name check.
+The dry-run binding summary must show the `RELAY_USAGE_COUNTER` and `RELAY_DEVICE_SESSION` Durable Object bindings and both activation flags as `false`. Wrangler does not print every routing or privacy setting in that summary, so `workers_dev=false`, the `relay.glucoscope.app` custom-domain route, `preview_urls=false`, the SQLite `exports` declaration, `secrets.required`, and `observability.enabled=false` are verified from `wrangler.jsonc`, the automated tests, and a read-only Cloudflare Secret-name check.
 
-## Phase 3B production verification — 2026-08-05
+## Historical: Phase 3B production verification — 2026-08-05
 
 - `RelayUsageCounter` was created with SQLite storage.
 - Both required Secret names were present on the final Worker Version.
@@ -54,7 +75,7 @@ The dry-run binding summary must show the `RELAY_USAGE_COUNTER` Durable Object b
 - The final stopped/no-target Version ID was `89a2e968-96df-49bb-b8f0-ce631c3b4b32`.
 - No Gluroo credential or glucose payload was used during the stopped-state test.
 
-## Pre-activation Cloudflare re-audit — 2026-08-05
+## Historical: pre-activation Cloudflare re-audit — 2026-08-05
 
 - Wrangler `4.118.0` completed a local `deploy --dry-run`; no deployment occurred.
 - The current declarative `exports` configuration is valid and keeps `RelayUsageCounter` on Cloudflare's recommended SQLite storage backend. It must not be mixed with the legacy `migrations` flow.
@@ -67,11 +88,13 @@ The dry-run binding summary must show the `RELAY_USAGE_COUNTER` Durable Object b
 
 ## Deployment boundary
 
-There is intentionally no real `deploy` npm script. The stopped `workers.dev` target was created only after explicit approval. The checked-in frontend endpoint is fixed to that target for paused-state acceptance testing, version-specific Preview URLs are disabled, and `RELAY_ENABLED=false` prevents Turnstile verification, ticket issuance, counter consumption, or upstream access.
+There is intentionally no real `deploy` npm script. The candidate declares only the `relay.glucoscope.app` custom domain, keeps `workers_dev=false` and Preview URLs disabled, and has not provisioned or routed that domain. `RELAY_ENABLED=false` and `RELAY_DEVICE_SESSIONS_ENABLED=false` prevent Turnstile verification, device-session creation, counter consumption, or upstream access. Any Secret registration, custom-domain creation, upload, deployment, Pages publication, or traffic change is a separate rollout action.
+
+The old `workers.dev` target and ticket Versions in the sections below are historical production and rollback evidence. They are not an endpoint or compatibility path in the checked-in candidate.
 
 The Phase 3C public-policy review, stopped-target deployment, final Trust Pack review, and first basic Guardian and FreeStyle Libre 2 end-to-end acceptances are complete. On 2026-08-06, Gluroo support replied in writing that the proposed use should work and was acceptable to them only while it remains consistent with their EULA, terms, and other documents. The response does not create affiliation, endorsement, partnership, legal assurance about CGM data re-sharing, or permission to use GGC for medical decisions. GlucoScope must handle its own user questions, must not market GGC as a free alternative to subscription Nightscout services, and may say only that GGC currently has no cost during its testing phase while a future subscription is being considered. Extended range and operational checks, any routing change, and continuing live relay enablement still require separate review and explicit approval.
 
-## Permanent stopped target verification — 2026-08-05
+## Historical: permanent stopped target verification — 2026-08-05
 
 - Target: `https://glucoscope-data-relay.afterglow21.workers.dev`
 - Version ID: `ea0b8f59-3e9b-4475-b93a-91855834b3ce`
@@ -81,16 +104,16 @@ The Phase 3C public-policy review, stopped-target deployment, final Trust Pack r
 - One Cloudflare `1042` response occurred immediately after deployment and did not reproduce on the subsequent empty-body or repeated JSON-body stopped checks. Live enablement must stop for investigation if it reappears.
 - No Gluroo URL, credential, glucose payload, Turnstile token, relay ticket, or Durable Object counter was used.
 
-## Paused frontend acceptance — 2026-08-05
+## Historical: paused frontend acceptance — 2026-08-05
 
-- The checked-in endpoint is exactly the approved `workers.dev` target above; there is no additional route or Preview URL.
+- At that historical checkpoint, the checked-in endpoint was exactly the approved `workers.dev` target above; there was no additional route or Preview URL.
 - Gluroo requires an unchecked-by-default consent control before any relay request. Missing consent stops in the browser before the Turnstile or Worker request begins.
 - The consent and privacy wording was confirmed in the desktop layout and at a 375 × 667 mobile viewport.
 - Nightscout hides the relay consent control and retains its direct-connection wording.
 - The public target returned `503 relay_temporarily_paused` with `Cache-Control: no-store` during the acceptance check.
 - Only placeholder values were used. No real Gluroo URL, credential, glucose payload, relay ticket, or Secret value was entered or printed.
 
-## Final pre-live configuration audit — 2026-08-05
+## Historical: final pre-live configuration audit — 2026-08-05
 
 - Gluroo's current EULA, Privacy Policy, User Manual, FAQ, Nightscout integration guidance, and third-party-tool guidance were rechecked. No new express prohibition or known provider objection was found; GlucoScope still makes no claim of approval, affiliation, endorsement, or partnership.
 - Gluroo's 2026-08-06 written support response was recorded with its EULA/terms condition, medical-decision boundary, CGM re-sharing legal boundary, possible future GGC subscription, no-free-alternative marketing boundary, non-affiliation statement, and GlucoScope-owned support responsibility.
@@ -101,7 +124,7 @@ The Phase 3C public-policy review, stopped-target deployment, final Trust Pack r
 - `observability.enabled=false` remains an intentional privacy exception. The Worker contains no console logging, and this audit did not use a Gluroo URL, credential, glucose payload, Turnstile token, relay ticket, or Durable Object counter.
 - No Worker deployment, Secret mutation, routing change, or live enablement occurred during that audit. The later accepted live test is recorded below.
 
-## Final stopped validation deployment — 2026-08-05
+## Historical: final stopped validation deployment — 2026-08-05
 
 - Source commit: `98def2e96065f1a801728e060673ea22d4ff9e44`.
 - Wrangler `4.118.0` deployed with `--strict` and message `paused pre-live safety audit` after separate explicit approval.
@@ -111,7 +134,7 @@ The Phase 3C public-policy review, stopped-target deployment, final Trust Pack r
 - The exact-origin preflight returned `204`; three consecutive exact-origin POSTs returned `503 relay_temporarily_paused`; wrong-origin and missing-origin POSTs returned `403` without an allow-origin header. The earlier one-time Cloudflare `1042` response did not recur.
 - No Gluroo URL, credential, glucose payload, Turnstile token, relay ticket, or Durable Object counter was used. No Secret mutation, routing change, or live enablement occurred.
 
-## Guardian candidate-route acceptance pause — 2026-08-05
+## Historical: Guardian candidate-route acceptance pause — 2026-08-05
 
 - A separately approved acceptance attempt temporarily routed 100% of traffic to Version `84139213-8521-4772-b3f3-47ee0018c5d3` with message `temporary Guardian route acceptance`.
 - The attempt stopped before a Gluroo URL, credential, or glucose payload was submitted because the current public Pages build did not yet expose the Guardian guide needed for the test.
@@ -119,7 +142,7 @@ The Phase 3C public-policy review, stopped-target deployment, final Trust Pack r
 - The current stopped Version retains the exact CORS origin, originless-request rejection, both required Secret bindings, and the SQLite `RelayUsageCounter` Durable Object binding.
 - End-to-end acceptance through GlucoScope remains incomplete. Restarting it and setting `RELAY_ENABLED=true` still require a separate explicit approval.
 
-## Stopped safe-diagnostic deployment — 2026-08-06
+## Historical: stopped safe-diagnostic deployment — 2026-08-06
 
 - Source merge commit: `06dba2dc1321562e494a572e0da0c2cfbeb206a8`.
 - Wrangler `4.113.0` deployed with `--strict` and message `stopped safe Turnstile diagnostics from main 06dba2d` after explicit approval.
@@ -130,7 +153,7 @@ The Phase 3C public-policy review, stopped-target deployment, final Trust Pack r
 - Only a dummy request body was used. No Gluroo URL, credential, glucose payload, real Turnstile token, relay ticket, or Durable Object counter was used.
 - This deployment added safe server-side diagnostics but did not complete the end-to-end real-device test by itself.
 
-## First Guardian end-to-end acceptance — 2026-08-06
+## Historical: first Guardian end-to-end acceptance — 2026-08-06
 
 - PR #12 merged Siteverify request alignment at `d3051852b6a3b698de67d163cd290bd2b4ad2c3a` after Worker tests (43) and frontend tests (73) passed.
 - Stopped Version `2ea372de-a7c5-44c8-8852-0c21f5382633` first verified the merged code, exact CORS origin, both required Secret names, and Durable Object binding with `RELAY_ENABLED=false`.
@@ -143,7 +166,7 @@ The Phase 3C public-policy review, stopped-target deployment, final Trust Pack r
 
 This completes the first basic end-to-end acceptance. Today/yesterday/7-day/30-day coverage, deletion, ticket expiry, limit behavior, and any continuing Friends & Family enablement remain separate gates.
 
-## First FreeStyle Libre 2 end-to-end acceptance — 2026-08-06
+## Historical: first FreeStyle Libre 2 end-to-end acceptance — 2026-08-06
 
 - FreeStyle LibreLink, LibreLinkUp, and live Libre 2 readings in Gluroo were confirmed before relay enablement.
 - After separate explicit approval, temporary Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` received 100% of traffic with deployment message `temporary Libre 2 end-to-end acceptance` and `RELAY_ENABLED=true`.
@@ -155,7 +178,7 @@ This completes the first basic end-to-end acceptance. Today/yesterday/7-day/30-d
 
 This completes the first basic Libre 2 end-to-end acceptance only. Historical comparison capture, extended periods, deletion, ticket expiry, limit behavior, and any continuing enablement remain separate gates.
 
-## Supervised user-flow retry — 2026-08-12
+## Historical: supervised user-flow retry — 2026-08-12
 
 - Usage Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` and relay Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` were temporarily enabled for a second supervised iPhone retry.
 - Relay connection testing succeeded. After `GlucoScopeを始める`, Usage Turnstile appeared briefly and the required data-connection screen reopened. Usage D1 remained `0 / 0 / 0`; no usage profile was created.
@@ -164,7 +187,7 @@ This completes the first basic Libre 2 end-to-end acceptance only. Historical co
 - This release activates the saved config and adapter in place for an already-user-mode page and retains full navigation from the public demo. Local tests passed, and the later supervised Libre acceptance confirmed the fix on-device.
 - No Secret value, Turnstile token, Gluroo URL, credential, glucose payload, relay ticket, display name, or profile identifier is recorded here.
 
-## Successful supervised user-mode acceptance — 2026-08-12
+## Historical: successful supervised user-mode acceptance — 2026-08-12
 
 - After the in-place fix was published, the same relay and Usage candidate Versions were temporarily enabled for a third supervised iPhone acceptance.
 - The Gluroo (Libre) connection passed, `GlucoScopeを始める` kept the existing user-mode page, and live glucose was displayed. This accepts the core CGM handoff fix on the tested device.
@@ -173,7 +196,7 @@ This completes the first basic Libre 2 end-to-end acceptance only. Historical co
 - Approved-origin preflight returned `204` and an approved-origin stopped `POST` returned `503` for both Workers. Checked-in flags remain `false`; the public frontend supervised-candidate gate remains `true`, and the general-user relay is paused.
 - No Secret value, Turnstile token, Gluroo URL, credential, glucose payload, relay ticket, display name, or profile identifier is recorded here.
 
-## General-user Dexcom G7 acceptance — 2026-08-12
+## Historical: general-user Dexcom G7 acceptance — 2026-08-12
 
 - After separate approval, deployment `eb10444c-56ca-46eb-8e6c-0a15d2bd9fdf` routed active Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` to 100% after stopped-state CORS and rejection checks passed.
 - iPhone normal Safari passed connection testing, current glucose, graph display, today/yesterday/7-day/30-day switching, reload and redisplay, and browser-connection deletion followed by return to setup.
@@ -181,21 +204,21 @@ This completes the first basic Libre 2 end-to-end acceptance only. Historical co
 - Deployment `5c390d07-13ce-4547-b53c-9a7ea9936696` restored stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` at 100%. Stopped `POST` returned `503` with `Cache-Control: no-store` and `Vary: Origin`.
 - No Secret value, URL, credential, token, relay ticket, or glucose value was printed, logged, or committed.
 
-The G7 basic user route and its period/reload/deletion checks are verified. Separate explicit approval later enabled the reviewed Version for the 1–3 person early-access group; Safari full-quit restoration, natural ticket expiry, and live limit exhaustion remain open operational observations.
+Historical result: the G7 basic user route and its period/reload/deletion checks are verified under the ticket Version. Separate explicit approval later enabled that Version for the small early-access group. This evidence does not accept the new device-session lifecycle.
 
 ## Safe activation sequence
 
-Each numbered boundary is independently reviewable. Steps 1 through 7 are complete; G7 also completed current, period, reload, and deletion checks. Do not combine continuing live enablement with any remaining check in one unreviewed operation.
+Each numbered boundary is independently reviewable. None of these device-session rollout steps is completed merely because the source is checked in. Do not combine infrastructure creation, live enablement, and personal-data acceptance in one unreviewed operation.
 
 1. Recheck the current Gluroo public materials for material changes or a known provider objection.
 2. Confirm that each intended device route is described according to its actual verification status. The accepted general-user Dexcom G7 route may be described only within its recorded connection, period, reload, and deletion checks; other untested relay routes must not be advertised as verified, and Libre 2 must not be described beyond its completed basic-path checks. The separate public-demo Worker keeps its own verification record.
-3. Run `npm run verify`, `npm run deploy:dry`, `git diff --check`, the frontend checks, and a Secret-pattern scan. Confirm that `RELAY_ENABLED=false`, `workers_dev=true`, `preview_urls=false`, `observability.enabled=false`, the SQLite Durable Object export, and the exact CORS origin remain intact.
-4. After explicit approval, add only the agreed permanent Cloudflare target. This phase uses the single `workers.dev` target above. Any future Custom Domain or route change requires a separate review and approval.
-5. With `RELAY_ENABLED=false`, deploy only after separate explicit approval. Verify allowed-origin preflight, allowed-origin paused response, wrong-origin rejection, no-cache headers, Durable Object binding, and the presence of the two Secret binding names. Never print or copy Secret values into the repository, terminal record, screenshot, or support message.
-6. Keep the reviewed Trust wording and explicit consent UI aligned with the checked-in stopped endpoint. Direct Nightscout and the public demo must still work when the relay is paused.
-7. Ask for a separate explicit approval before changing `RELAY_ENABLED` to `true` and deploying that change. The first live check must use the person's Global Connect URL and API Secret only in the browser UI, never in commands, logs, screenshots, or test fixtures.
-8. Current, today, yesterday, 7-day, and 30-day reads, credential deletion, and the emergency pause path are accepted for G7. During the 1–3 person early-access period, observe natural ticket expiry, full-Safari-quit restoration, and live session/global limit behavior without widening the rollout.
-9. Immediately restore `RELAY_ENABLED=false` if Gluroo objects, applicable terms materially change, abnormal traffic is detected, or a privacy or safety concern appears.
+3. Run `npm run verify`, `npm run deploy:dry`, `git diff --check`, frontend checks, and a Secret-pattern scan. Confirm both activation flags are `false`, `workers_dev=false`, Preview URLs and observability are off, both SQLite Durable Object exports exist, only the two candidate Secret names are required, the exact Origin is `https://glucoscope.app`, and only the `relay.glucoscope.app` custom-domain route is declared.
+4. Before the site switch, add `glucoscope.app` to every production Turnstile widget hostname allowlist and deploy every backend that must accept the new Origin. Create and verify only the `relay.glucoscope.app` custom domain; do not expose the candidate on `workers.dev`.
+5. With both activation flags `false`, deploy only after a recorded rollout decision. Verify exact-Origin credentialed preflight, wrong- and missing-Origin rejection, paused responses, no-store headers, both Durable Object bindings, both Secret binding names, and absence of the old ticket endpoint. Never print or copy Secret values into the repository, terminal record, screenshot, or support message.
+6. Publish the matching `glucoscope.app` site only after the stopped Worker boundary passes. Confirm the plain relay explanation, one-time reconnect message, Home-Screen-first iPhone guide, and independence of direct Nightscout and the public demo.
+7. After a separate live-test decision, enable the device-session and relay gates. Use a person's Global Connect URL and API Secret only in the browser UI. Accept creation, rotation, status, source binding and mismatch, rolling idle expiry, daily/global limits, reload, full Safari quit, Home Screen launch, and one-time reconnect without logging private data.
+8. Accept deletion with local credentials removed before any network dependency, online server revocation, offline best-effort behavior, cookie clearing, and scheduled expiry cleanup. Then accept current, today, yesterday, 7-day, and 30-day reads for each route before widening its verified claim.
+9. Immediately return both activation flags to `false` if Gluroo objects, applicable terms materially change, abnormal traffic is detected, or a privacy or safety concern appears. The old Cloudflare ticket Version remains historical rollback evidence, but the candidate contains no dual-authentication compatibility and the new site must fail closed if the relay is paused.
 
 ## Accepted routes and remaining operational checks
 
@@ -215,13 +238,13 @@ GlucoScope
 
 The Guardian path has completed its first end-to-end iPhone Safari acceptance through the relay and GlucoScope for current glucose, graph display, and reload. The FreeStyle Libre 2 path has separately completed its first basic acceptance through FreeStyle LibreLink, LibreLinkUp, Gluroo, the relay, and GlucoScope for current glucose, graph display, reload, and return from the iOS Home Screen. The general-user Dexcom G7 route completed connection, current, today, yesterday, 7-day, 30-day, reload, and deletion checks in normal Safari. Other untested routes remain unverified, and every accepted route may be described only to the extent of its recorded checks. The separate public-demo Worker is outside this relay acceptance matrix.
 
-Before any expansion beyond the approved 1–3 person group or any new device-route acceptance, recheck the current public materials and configuration, obtain separate approval, and enter the person's Global Connect URL and API Secret only in the browser UI. Never place them in commands, fixtures, screenshots, or documents.
+Before any expansion beyond the approved small group or any new device-route acceptance, complete the candidate activation sequence, recheck current public materials and configuration, obtain a separate rollout decision, and enter the person's Global Connect URL and API Secret only in the browser UI. Never place them in commands, fixtures, screenshots, or documents.
 
 The remaining operational observation must confirm:
 
 - entries-only behavior with no treatments, insulin, carbohydrate, medication, pump-setting, or device-status retrieval;
-- gentle handling of missing, delayed, duplicated, invalid, expired-ticket, and rate-limited states;
-- natural ticket expiry, full-Safari-quit restoration, and live limit behavior;
-- user-mode AI remains disabled and no relay data enters the AI Worker or shared cache;
+- gentle handling of missing, delayed, duplicated, invalid-session, source-mismatch, expired-session, and rate-limited states;
+- simulated 180-day idle expiry and alarm cleanup, full-Safari-quit restoration, Home Screen launch, and live limit behavior;
+- AI failures remain independent and no connection detail, raw glucose response, session identifier, or source fingerprint enters the AI Worker or shared cache;
 - direct Nightscout and the public demo remain independent;
 - an immediate return to `RELAY_ENABLED=false` works and produces the reviewed paused message.

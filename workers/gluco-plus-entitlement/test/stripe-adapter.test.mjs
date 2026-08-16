@@ -38,7 +38,7 @@ const PRICE_ID = `price_${"p".repeat(24)}`;
 const PRODUCT_ID = `prod_${"d".repeat(24)}`;
 const API_KEY = ["rk", "test", "k".repeat(32)].join("_");
 const WEBHOOK_SECRET = ["whsec", "w".repeat(32)].join("_");
-const ALLOWED_ORIGIN = "https://example.test";
+const ALLOWED_ORIGIN = "https://glucoscope.app";
 
 class NodeD1Statement {
   constructor(database, sql, bindings = []) {
@@ -160,16 +160,16 @@ function enabledHttpEnv() {
     PLUS_CHECKOUT_HTTP_ENABLED: "true",
     PLUS_STRIPE_WEBHOOK_ENABLED: "true",
     PLUS_ALLOWED_ORIGIN: ALLOWED_ORIGIN,
-    PLUS_CHECKOUT_SUCCESS_PATH: "/glucoscope/?mode=user&checkout=success#settings",
-    PLUS_CHECKOUT_CANCEL_PATH: "/glucoscope/?mode=user&checkout=cancelled#settings",
+    PLUS_CHECKOUT_SUCCESS_PATH: "/?mode=user&checkout=success#settings",
+    PLUS_CHECKOUT_CANCEL_PATH: "/?mode=user&checkout=cancelled#settings",
     PLUS_SALES_READINESS_CONFIRMED: "true",
     PLUS_FINAL_PRICE_DISPLAY: "total_300_confirmed",
     PLUS_TAX_TREATMENT_CONFIRMED: "true",
     PLUS_BUYER_POLICY: "adult_self_or_confirmed_guardian",
     PLUS_COMMERCIAL_DISCLOSURE_PATH:
-      "/glucoscope/pages/trust/commercial-transactions.html",
-    PLUS_REFUND_POLICY_PATH: "/glucoscope/pages/trust/plus-terms.html",
-    PLUS_SUPPORT_PATH: "/glucoscope/pages/trust/plus-support.html",
+      "/pages/trust/commercial-transactions.html",
+    PLUS_REFUND_POLICY_PATH: "/pages/trust/plus-terms.html",
+    PLUS_SUPPORT_PATH: "/pages/trust/plus-support.html",
     PLUS_TERMS_VERSION: "2026-08-15",
     PLUS_BUYER_CONFIRMATION_VERSION: "2026-08-15",
     STRIPE_WEBHOOK_SECRET: WEBHOOK_SECRET,
@@ -181,7 +181,7 @@ test("commerce readiness requires final tax, buyer, terms, and same-site public 
   assert.equal(ready.ready, true);
   assert.equal(
     ready.commercialDisclosureUrl,
-    `${ALLOWED_ORIGIN}/glucoscope/pages/trust/commercial-transactions.html`,
+    `${ALLOWED_ORIGIN}/pages/trust/commercial-transactions.html`,
   );
 
   for (const override of [
@@ -196,7 +196,8 @@ test("commerce readiness requires final tax, buyer, terms, and same-site public 
     { PLUS_TERMS_VERSION: "2026-13-01" },
     { PLUS_COMMERCIAL_DISCLOSURE_PATH: "https://attacker.invalid/terms" },
     { PLUS_REFUND_POLICY_PATH: "/outside-project.html" },
-    { PLUS_SUPPORT_PATH: "/glucoscope/pages/trust/" },
+    { PLUS_SUPPORT_PATH: "/pages/trust/" },
+    { PLUS_SUPPORT_PATH: "/glucoscope/pages/trust/plus-support.html" },
   ]) {
     assert.equal(
       readCommerceReadiness({ ...enabledHttpEnv(), ...override }, ALLOWED_ORIGIN).ready,
@@ -381,15 +382,18 @@ test("checked-in Stripe HTTP and webhook switches stay off with no identifiers o
   assert.equal(config.vars.PLUS_SUPPORT_PATH, "");
   assert.equal(config.vars.PLUS_TERMS_VERSION, "");
   assert.equal(config.vars.PLUS_BUYER_CONFIRMATION_VERSION, "");
-  assert.equal(config.vars.PLUS_ALLOWED_ORIGIN, "https://afterglow21.github.io");
+  assert.equal(config.vars.PLUS_ALLOWED_ORIGIN, "https://glucoscope.app");
   assert.equal(
     config.vars.PLUS_CHECKOUT_SUCCESS_PATH,
-    "/glucoscope/?mode=user&checkout=success#settings",
+    "/?mode=user&checkout=success#settings",
   );
   assert.equal(
     config.vars.PLUS_CHECKOUT_CANCEL_PATH,
-    "/glucoscope/?mode=user&checkout=cancelled#settings",
+    "/?mode=user&checkout=cancelled#settings",
   );
+  assert.equal(config.env.staging.vars.PLUS_ALLOWED_ORIGIN, "https://glucoscope.app");
+  assert.equal(config.env.staging.vars.PLUS_CHECKOUT_SUCCESS_PATH, "/?mode=user&checkout=success#settings");
+  assert.equal(config.env.staging.vars.PLUS_CHECKOUT_CANCEL_PATH, "/?mode=user&checkout=cancelled#settings");
   for (const forbidden of [
     "STRIPE_RESTRICTED_API_KEY",
     "STRIPE_WEBHOOK_SECRET",
@@ -419,14 +423,14 @@ test("Stripe-hosted Checkout is a test-mode one-time payment with dynamic method
   const result = await client.createPlusCheckout({
     accountId: ACCOUNT_ID,
     requestId: REQUEST_ID,
-    successUrl: `${ALLOWED_ORIGIN}/glucoscope/?mode=user&checkout=success#settings`,
-    cancelUrl: `${ALLOWED_ORIGIN}/glucoscope/?mode=user&checkout=cancelled#settings`,
+    successUrl: `${ALLOWED_ORIGIN}/?mode=user&checkout=success#settings`,
+    cancelUrl: `${ALLOWED_ORIGIN}/?mode=user&checkout=cancelled#settings`,
   });
   await client.createPlusCheckout({
     accountId: ACCOUNT_ID,
     requestId: REQUEST_ID,
-    successUrl: `${ALLOWED_ORIGIN}/glucoscope/?mode=user&checkout=success#settings`,
-    cancelUrl: `${ALLOWED_ORIGIN}/glucoscope/?mode=user&checkout=cancelled#settings`,
+    successUrl: `${ALLOWED_ORIGIN}/?mode=user&checkout=success#settings`,
+    cancelUrl: `${ALLOWED_ORIGIN}/?mode=user&checkout=cancelled#settings`,
   });
 
   assert.deepEqual(result, {
@@ -725,11 +729,11 @@ test("Checkout route enforces exact Origin, bounded JSON, authentication, and no
         assert.equal(input.requestId, REQUEST_ID);
         assert.equal(
           input.successUrl,
-          `${ALLOWED_ORIGIN}/glucoscope/?mode=user&checkout=success#settings`,
+          `${ALLOWED_ORIGIN}/?mode=user&checkout=success#settings`,
         );
         assert.equal(
           input.cancelUrl,
-          `${ALLOWED_ORIGIN}/glucoscope/?mode=user&checkout=cancelled#settings`,
+          `${ALLOWED_ORIGIN}/?mode=user&checkout=cancelled#settings`,
         );
         return {
           checkoutUrl: `https://checkout.stripe.com/c/pay/${CHECKOUT_ID}`,

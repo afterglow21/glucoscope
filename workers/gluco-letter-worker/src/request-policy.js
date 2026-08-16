@@ -1,6 +1,6 @@
 export const PUBLIC_DEMO_PAGE_MODE = "kazuma-public-demo";
 export const USER_DATA_PAGE_MODE = "glucoscope-user-foundation";
-export const DEFAULT_TURNSTILE_EXPECTED_HOSTNAME = "afterglow21.github.io";
+export const DEFAULT_TURNSTILE_EXPECTED_HOSTNAME = "glucoscope.app";
 export const DEFAULT_TURNSTILE_EXPECTED_ACTION = "glucoscope-ai-letter";
 export const SHARED_AI_CACHE_ENABLED = false;
 

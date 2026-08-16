@@ -47,7 +47,7 @@ This section describes the Version 29 and Pages behavior now used for personal-u
 - The generation guard is still one singleton, infrastructure-wide guard shared by the public demo and every user. `AI_SLOT_GENERATION_LIMIT=10` and `AI_DAILY_GENERATION_LIMIT=30` are not per-person allowances. Browser-local displays do not consume a new-generation count; current production has no shared-cache display path.
 - AI failure affects only the AI panel. It must not stop, clear, or replace an already verified CGM connection or the normal glucose display.
 - AI generation `POST /api/gluco-letter` requires an `Origin` header that passes the existing allowlist. Originless `GET /api/gluco-letter/usage` remains available for existing operational checks.
-- A successful Turnstile Siteverify response must match both `hostname=afterglow21.github.io` and `action=glucoscope-ai-letter`. The production variables are `TURNSTILE_EXPECTED_HOSTNAME` and `TURNSTILE_EXPECTED_ACTION`.
+- A successful Turnstile Siteverify response must match both `hostname=glucoscope.app` and `action=glucoscope-ai-letter`. The production variables are `TURNSTILE_EXPECTED_HOSTNAME` and `TURNSTILE_EXPECTED_ACTION`.
 - The Worker-first, Pages-second release is complete. Version 28 is historical and must never be restored while user AI remains enabled because its spoofable `pageMode` boundary would reopen shared-KV writes. Keep AI fail-closed on Version 29 or later, or first publish and verify Pages with user AI disabled before Worker recovery. CGM display remains independent.
 
 - `mode=user`では、現在の案内Versionで初めてAI分析を使う前に、TurnstileやAIへの `POST` より先に、短く明示的な確認を求めます。画面で集計した血糖情報をOpenAIへ送ることを伝えます。表示名、接続先URL、接続用の合言葉、元の血糖データ一覧は送りません。
@@ -59,7 +59,7 @@ This section describes the Version 29 and Pages behavior now used for personal-u
 - 生成上限は、公開デモとすべての利用者で共用する1つの全体カウンターのままです。`AI_SLOT_GENERATION_LIMIT=10` と `AI_DAILY_GENERATION_LIMIT=30` は個人別の上限ではありません。端末内の保存済み表示は新しい生成回数を使わず、現在の本番には共有キャッシュ表示経路がありません。
 - AI分析の失敗はAI欄だけで完結させます。確認済みCGM接続や通常の血糖表示を停止、削除、デモデータへ置換しません。
 - AI生成の `POST /api/gluco-letter` は、既存allowlistを通る `Origin` headerを必須にします。既存運用確認用のOriginなし `GET /api/gluco-letter/usage` は維持します。
-- Turnstile Siteverifyの成功時は、`hostname=afterglow21.github.io` と `action=glucoscope-ai-letter` の両方の一致を必須にします。本番の変数名は `TURNSTILE_EXPECTED_HOSTNAME` と `TURNSTILE_EXPECTED_ACTION` です。
+- Turnstile Siteverifyの成功時は、`hostname=glucoscope.app` と `action=glucoscope-ai-letter` の両方の一致を必須にします。本番の変数名は `TURNSTILE_EXPECTED_HOSTNAME` と `TURNSTILE_EXPECTED_ACTION` です。
 - Worker先行、Pages後続の公開は完了しました。Version 28は履歴であり、ユーザーAIがONのまま戻してはいけません。偽装できる `pageMode` 境界から共有KV書き込みが再開し得るためです。Version 29以降でAIをfail-closedに保つか、先にPages側のユーザーAIを停止して公開確認してからWorkerを復旧します。CGM表示は継続します。
 
 ## Historical Version 28 v14 behavior / 旧Version 28のv14動作
@@ -182,7 +182,7 @@ Version 28は共有キャッシュschema `gluco-ai-letter-cache-v14` を使っ�
 Production variables:
 
 ```text
-CORS_ALLOWED_ORIGINS=https://afterglow21.github.io
+CORS_ALLOWED_ORIGINS=https://glucoscope.app
 CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN=true
 ```
 
@@ -197,7 +197,7 @@ Behavior:
 - AI-generation `POST` requires an approved, present Origin, while originless Usage `GET` remains available for operational checks, and
 - `Access-Control-Allow-Origin: *` is not used.
 
-The GitHub Pages repository path is not part of an Origin. For example, pages under `https://afterglow21.github.io/glucoscope/` send the Origin `https://afterglow21.github.io`.
+A URL path is not part of an Origin. For example, every page under `https://glucoscope.app/` sends the Origin `https://glucoscope.app`.
 
 For local frontend development, create the ignored file `workers/gluco-letter-worker/.dev.vars` and add only the local origins you need:
 
@@ -376,7 +376,7 @@ AI_STOP_BUDGET_JPY=80
 AI_DAILY_GENERATION_LIMIT=30
 AI_SLOT_GENERATION_LIMIT=10
 TURNSTILE_REQUIRED=true
-CORS_ALLOWED_ORIGINS=https://afterglow21.github.io
+CORS_ALLOWED_ORIGINS=https://glucoscope.app
 CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN=true
 ```
 

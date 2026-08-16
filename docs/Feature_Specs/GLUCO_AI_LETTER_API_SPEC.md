@@ -658,7 +658,7 @@ The production Worker does not use wildcard CORS. Browser access is restricted t
 Current production configuration:
 
 ```text
-CORS_ALLOWED_ORIGINS=https://afterglow21.github.io
+CORS_ALLOWED_ORIGINS=https://glucoscope.app
 CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN=true
 ```
 

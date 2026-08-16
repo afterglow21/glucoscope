@@ -8,6 +8,9 @@ const usageDashboardUrl = new URL("../pages/about/usage-dashboard.html", import.
 const trustDirUrl = new URL("../pages/trust/", import.meta.url);
 const plusSpecUrl = new URL("../docs/Feature_Specs/PLUS_30_DAY_PASS.md", import.meta.url);
 const projectBibleUrl = new URL("../docs/Project_Bible/PROJECT_BIBLE_v1.0_DRAFT.md", import.meta.url);
+const relaySpecUrl = new URL("../docs/Feature_Specs/LIMITED_DATA_RELAY.md", import.meta.url);
+const dataSourceSpecUrl = new URL("../docs/Feature_Specs/USER_DATA_SOURCE_FOUNDATION.md", import.meta.url);
+const relayReadmeUrl = new URL("../workers/gluco-data-relay/README.md", import.meta.url);
 
 async function read(url) {
   return readFile(url, "utf8");
@@ -149,6 +152,60 @@ test("Roadmap stays simple for users while technical evidence stays internal", a
   assert.doesNotMatch(roadmap, /Phase [A-E]|現在の技術課題|historical checkpoint|過去のチェックポイント/i);
 });
 
+test("long-lived relay session is documented consistently without exposing technical copy to users", async () => {
+  const [privacy, roadmap, relaySpec, dataSourceSpec, relayReadme, bible] = await Promise.all([
+    read(new URL("privacy-notes.html", trustDirUrl)),
+    read(new URL("roadmap.html", trustDirUrl)),
+    read(relaySpecUrl),
+    read(dataSourceSpecUrl),
+    read(relayReadmeUrl),
+    read(projectBibleUrl),
+  ]);
+
+  for (const internal of [relaySpec, dataSourceSpec, relayReadme, bible]) {
+    assert.match(internal, /__Host-glucoscope_relay_session/);
+    assert.match(internal, /Secure/);
+    assert.match(internal, /HttpOnly/);
+    assert.match(internal, /SameSite=Strict/);
+    assert.match(internal, /180 days|180日/);
+    assert.match(internal, /HMAC/);
+    assert.match(internal, /https:\/\/glucoscope\.app/);
+    assert.match(internal, /https:\/\/relay\.glucoscope\.app/);
+  }
+
+  assert.match(relaySpec, /It is not deployed or published/);
+  assert.match(relaySpec, /raw session token, raw Gluroo URL, credential, glucose data, display name,[\s\S]*email address, IP address, or User-Agent/);
+  assert.match(relaySpec, /not[\s\S]*joined to the optional Usage profile or Plus identity/);
+  assert.match(relaySpec, /first removes the locally saved[\s\S]*The local deletion must not wait for or depend on that network request/);
+  assert.match(relayReadme, /no legacy `\/v1\/session` endpoint/);
+  assert.match(relayReadme, /historical ticket Version is not a compatible rollback target/);
+  assert.match(relayReadme, /A failed replacement leaves the existing working session intact/);
+  assert.doesNotMatch(relayReadme.match(/## Required Secret bindings[\s\S]*?## Local verification/)?.[0] || "", /RELAY_TICKET_SECRET/);
+
+  assert.match(privacy, /次からもつながるための安全確認（準備中）/);
+  assert.match(privacy, /180日使わなければ、その印は使えなくなります/);
+  assert.match(privacy, /元の接続先URL、合言葉、血糖データ、氏名、メールアドレス、IPアドレス、端末やブラウザの名前は保存しません/);
+  assert.match(privacy, /利用状況の記録やPlusの本人確認とも結びつけません/);
+  assert.match(privacy, /接続先URLと合言葉を先に消し/);
+  assert.match(privacy, /削除が終わる正確な時刻は約束しません/);
+  assert.match(privacy, /まずSafariでGlucoScopeを開いて「ホーム画面に追加」し、追加したアイコンから開いて初回接続/);
+  assert.match(privacy, /This change has not been published to the live site yet/);
+  assert.match(privacy, /The relay keeps only a one-way form of the device marker/);
+  assert.match(privacy, /not joined to optional usage recording or Plus identity/);
+  assert.match(privacy, /removes the URL and passphrase from the device first/);
+  assert.match(privacy, /does not promise an exact physical-deletion time/);
+  assert.match(privacy, /first open GlucoScope in Safari and choose Add to Home Screen/);
+  assert.doesNotMatch(privacy, /180日後までに消えます|disappears no later than 180 days/);
+  assert.doesNotMatch(privacy, /__Host-glucoscope|HttpOnly|SameSite|HMAC|Durable Object/);
+
+  assert.match(roadmap, /この変更はまだ公開していません/);
+  assert.match(roadmap, /180日使わなければ接続は切れ/);
+  assert.match(roadmap, /まずSafariからホーム画面に追加し、そのアイコンを開いてから初回接続/);
+  assert.match(roadmap, /This change is not live yet/);
+  assert.match(roadmap, /add GlucoScope to the Home Screen from Safari, open the new icon, and then make the first connection/);
+  assert.doesNotMatch(roadmap, /__Host-glucoscope|HttpOnly|SameSite|HMAC|Durable Object/);
+});
+
 
 test("Trust Pack internal links and local assets resolve", async () => {
   const pages = [trustPackUrl, ...await trustPageUrls()];
@@ -193,8 +250,10 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(data, /Libre 2も、FreeStyle LibreLink、LibreLinkUp、Gluroo、限定中継、GlucoScopeまでの基本経路/);
   assert.match(data, /現在血糖、グラフ、再読み込み、iOSホーム画面からの復帰/);
   assert.match(data, /一般利用者向け限定中継のDexcom G7経路をiPhoneのSafariで確認し、接続、現在血糖、グラフの今日・昨日・7日・30日切替、再読み込み、接続削除後に設定画面へ戻ることまで合格しました/);
-  assert.match(data, /Dexcom G7の一般利用者向け限定中継の受け入れは完了しました/);
-  assert.match(data, /チケットの自然失効、通常タブでSafariを完全終了した後の保存、実通信での上限到達は運用確認として残します/);
+  assert.match(data, /現在は、最初に1回安全確認をした後、ふだんは同じ端末でつながり続ける方式を準備しています/);
+  assert.match(data, /入力ミスや一時的な障害では今までの接続を壊さない設計です/);
+  assert.match(data, /ホーム画面のアイコンから開いた時に、接続し直さず使えることを実機で確認します/);
+  assert.match(data, /We are preparing a replacement that performs one safety check and then normally keeps the same device connected/);
   assert.match(data, /2026年8月6日、Glurooから/);
   assert.match(data, /医療相談や医療判断には使えません/);
   assert.match(data, /CGMデータ再共有が適法かどうかをGlucoScopeが判断するものではなく/);
@@ -287,8 +346,9 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.doesNotMatch(developerStatus, /<code>|\b(?:D1|deployment|Version|CORS|Cron|sessionStorage|adapter|RELAY_ENABLED)\b|\b(?:200|204|401|403|503)\b/i);
   assert.match(readme, /Guardian route completed its first iPhone Safari acceptance/);
   assert.match(readme, /general-user Dexcom G7 route completed a supervised iPhone Safari acceptance/);
-  assert.match(readme, /approved `workers\.dev` target is fixed in the checked-in frontend/);
-  assert.match(readme, /`preview_urls=false`, `observability\.enabled=false`, and the checked-in `RELAY_ENABLED=false`/);
+  assert.match(readme, /currently deployed historical Version still uses the approved `workers\.dev` target/);
+  assert.match(readme, /checked-in, unpublished candidate instead targets only `relay\.glucoscope\.app`/);
+  assert.match(readme, /`RELAY_ENABLED=false`, `RELAY_DEVICE_SESSIONS_ENABLED=false`, `workers_dev=false`, Preview URLs off, and observability off/);
   assert.match(readme, /comparison lab is now a continuous public live demo/);
   assert.match(readme, /public-demo Worker first completed source-specific G7 and Libre checks, then one approved Guardian\/Libre\/G7 public-page acceptance/);
   assert.match(readme, /global `DEMO_FEED_ENABLED=false`, source gates `DEMO_LIBRE_FEED_ENABLED=false` and `DEMO_G7_FEED_ENABLED=false`/);

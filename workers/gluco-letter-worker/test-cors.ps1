@@ -1,6 +1,6 @@
 param(
   [string]$BaseUrl = "https://gluco-letter-worker.afterglow21.workers.dev",
-  [string]$AllowedOrigin = "https://afterglow21.github.io",
+  [string]$AllowedOrigin = "https://glucoscope.app",
   [string]$BlockedOrigin = "https://example.invalid"
 )
 

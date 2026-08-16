@@ -9,6 +9,35 @@ const css = await readFile(new URL("../style.css", import.meta.url), "utf8");
 const localProfile = await readFile(new URL("../js/local-profile.js", import.meta.url), "utf8");
 const usageClient = await readFile(new URL("../js/usage-client.js", import.meta.url), "utf8");
 
+test("a missing relay asset never turns a saved Gluroo connection into a direct browser adapter", () => {
+  const initializationEnd = app.indexOf("let dataRefreshTimer");
+  assert.ok(initializationEnd > 0);
+  let createAdapterCalls = 0;
+  const context = {
+    window: {
+      GlucoScopeDataSource: {
+        getActiveConfig: () => ({ provider: "gluroo", baseUrl: "https://saved.ns.gluroo.com" }),
+        createAdapter: () => {
+          createAdapterCalls += 1;
+          return { unsafeDirectAdapter: true };
+        }
+      },
+      GlucoScopeLocalProfile: null,
+      GlucoScopeUsage: null,
+      GlucoScopePlusEntitlement: null,
+      GlucoScopePlusFeatures: null
+    }
+  };
+  vm.runInNewContext(`
+    ${app.slice(0, initializationEnd)}
+    this.result = { activeDataSourceConfig, activeDataSourceAdapter };
+  `, context);
+  assert.equal(createAdapterCalls, 0);
+  assert.equal(context.result.activeDataSourceConfig, null);
+  assert.equal(context.result.activeDataSourceAdapter, null);
+  assert.match(app, /savedConfig\.provider === "gluroo" && !isGlurooRelayClientAvailable\(\)/);
+});
+
 test("supervised usage recording keeps its frontend and analytics gates in lockstep", () => {
   assert.match(index, /name="glucoscope-usage-profile-enabled" content="true"/);
   assert.match(index, /id="usageProfileCard"[^>]*hidden/);
@@ -496,7 +525,7 @@ test("an already-user-mode connection starts in place without losing its relay s
   const navigateEnd = app.indexOf("async function completePendingDataSourceSave", navigateStart);
   const navigateHandler = app.slice(navigateStart, navigateEnd);
 
-  assert.match(activateHandler, /savedConfig\.provider === "gluroo"[\s\S]*readRelaySession\?\.\(\)/);
+  assert.doesNotMatch(activateHandler, /readRelaySession/);
   assert.match(activateHandler, /activeDataSourceConfig = savedConfig/);
   assert.match(activateHandler, /activeDataSourceAdapter = savedAdapter/);
   assert.match(activateHandler, /dialog\.dataset\.required = "false"[\s\S]*dialog\.hidden = true/);
@@ -556,6 +585,7 @@ test("in-place user activation keeps the relay session and starts data refresh a
       requestAnimationFrame: (callback) => callback()
     },
     isUserDataSourceMode: () => true,
+    isGlurooRelayClientAvailable: () => true,
     resetDataSourceDerivedUi: () => { calls.reset += 1; },
     updatePageModeIdentity: () => { calls.identity += 1; },
     updateDataSourceUiLabels: () => { calls.labels += 1; },
@@ -708,6 +738,7 @@ test("in-place activation clears the former source before a pending or failed re
         elements.get("batteryStatus").textContent = "--";
         elements.get("cloudStatus").textContent = "--";
       },
+      isGlurooRelayClientAvailable: () => true,
       updateScoreMetaDisplay: () => {
         elements.get("scoreYesterdayDelta").textContent = "--";
         elements.get("scoreSevenDayAverage").textContent = "--";
@@ -917,7 +948,7 @@ test("busy connection saves block destructive controls and stale callbacks", () 
   assert.match(app, /let dataSourceSaveGeneration = 0;/);
   assert.match(app, /let dataSourceTestGeneration = 0;/);
   assert.match(app, /function invalidatePendingDataSourceSave\(\) \{\s*nextDataSourceSaveGeneration\(\);\s*pendingDataSourceSave = null;/s);
-  assert.match(app, /function handleDataSourceDelete\(\) \{\s*if \(!dataSourceManager \|\| isDataSourceSaveBusy\(\)\) return;[\s\S]*?invalidateAiLetterRequest\(\);\s*invalidateDataSourceTest\(\);\s*invalidatePendingDataSourceSave\(\);/);
+  assert.match(app, /async function handleDataSourceDelete\(\) \{\s*if \(!dataSourceManager \|\| isDataSourceSaveBusy\(\) \|\| dataSourceDeleteInFlight\) return;[\s\S]*?invalidateAiLetterRequest\(\);\s*invalidateDataSourceTest\(\);\s*invalidatePendingDataSourceSave\(\);/);
   for (const id of [
     "dataSourceDeleteButton",
     "dataSourceBackButton",
@@ -1002,7 +1033,7 @@ test("local display-name storage remains network-free and server sync is separat
   assert.match(index, /js\/usage-client\.js\?v=20260815-guardian-confirmation-1/);
   assert.match(index, /js\/plus-feature-access\.js\?v=20260815-guardian-confirmation-1/);
   assert.match(index, /style\.css\?v=20260815-guardian-confirmation-1/);
-  assert.match(index, /js\/app\.js\?v=20260815-guardian-confirmation-1/);
+  assert.match(index, /js\/app\.js\?v=20260816-device-session-1/);
   assert.match(app, /updateUsageProfileDisplayName\(result\.profile\.displayName\)/);
   assert.doesNotMatch(app, /handleLocalProfileDelete|localProfileDeleteButton/);
   assert.match(app, /if \(!state\.enabled \|\| !state\.registered\) return;/);

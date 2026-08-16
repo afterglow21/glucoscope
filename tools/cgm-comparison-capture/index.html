@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
-  <meta name="glucoscope-data-relay-endpoint" content="https://glucoscope-data-relay.afterglow21.workers.dev">
+  <meta name="glucoscope-data-relay-endpoint" content="https://relay.glucoscope.app">
   <title>Owner CGM Capture Helper | GlucoScope</title>
   <link rel="stylesheet" href="../../demos/cgm-comparison/comparison.css?v=20260806-cgm-lab-1">
   <link rel="stylesheet" href="capture.css?v=20260806-cgm-capture-1">
@@ -77,6 +77,7 @@
             <p class="comparison-kicker">Step 3</p>
             <h2>安全確認と匿名化ファイル</h2>
           </div>
+          <p>Libre 2とDexcom G7は接続先が異なるため、それぞれに1回ずつ、合計2回の安全確認を行います。1つの端末セッションで2つの接続情報を共用しません。</p>
         </div>
         <label class="capture-consent">
           <input id="captureConsent" type="checkbox">
@@ -86,7 +87,7 @@
         <div class="capture-actions">
           <button id="prepareCaptureButton" type="button" class="capture-primary">安全確認を行う</button>
           <button id="downloadCaptureButton" type="button" class="capture-primary" disabled>3系統を取得して匿名化JSONを保存</button>
-          <button id="clearCaptureButton" type="button" class="capture-secondary">入力とチケットを消す</button>
+          <button id="clearCaptureButton" type="button" class="capture-secondary">入力と端末セッションを消す</button>
         </div>
         <p id="captureStatus" class="capture-status" role="status" aria-live="polite">まだ通信していません。</p>
       </section>
@@ -103,7 +104,7 @@
   </main>
 
   <script src="../../js/data-source.js?v=20260721-user-foundation-3-2"></script>
-  <script src="../../js/data-relay-client.js?v=20260806-turnstile-server-code-1"></script>
-  <script type="module" src="capture.mjs?v=20260806-cgm-capture-2"></script>
+  <script src="../../js/data-relay-client.js?v=20260816-device-session-1"></script>
+  <script type="module" src="capture.mjs?v=20260816-device-session-1"></script>
 </body>
 </html>

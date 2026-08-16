@@ -43,6 +43,59 @@ export function validateCaptureRange(startInput, endInput, maxRangeDays = 31) {
   return { startMs, endMs, durationMinutes: durationMs / 60_000 };
 }
 
+export async function collectCaptureEntries({
+  range,
+  relayConfigs,
+  preparedRelaySourceId = null,
+  prepareRelaySource,
+  createPublicAdapter,
+  createRelayAdapter,
+  onProgress = () => {},
+  onPreparedRelaySource = () => {}
+}) {
+  if (!Number.isFinite(range?.startMs) || !Number.isFinite(range?.endMs)) {
+    throw new Error("取得期間を確認してください。");
+  }
+  if (
+    typeof prepareRelaySource !== "function"
+    || typeof createPublicAdapter !== "function"
+    || typeof createRelayAdapter !== "function"
+  ) {
+    throw new Error("取得機能を開始できませんでした。");
+  }
+
+  let activeRelaySourceId = preparedRelaySourceId;
+  const entriesBySource = {};
+
+  for (let index = 0; index < SOURCE_DEFINITIONS.length; index += 1) {
+    const source = SOURCE_DEFINITIONS[index];
+    onProgress(source, index, SOURCE_DEFINITIONS.length);
+
+    let adapter;
+    if (source.id === "guardian-4") {
+      adapter = createPublicAdapter(source);
+    } else {
+      const config = relayConfigs?.[source.id];
+      if (!config) throw new Error(`${source.shortLabel}の接続情報を確認してください。`);
+
+      // A persistent device session is bound to exactly one Gluroo source.
+      // Rotate it before touching the next source so two credentials can never
+      // share one anonymous server-side session.
+      if (activeRelaySourceId !== source.id) {
+        await prepareRelaySource(config, source);
+        activeRelaySourceId = source.id;
+        onPreparedRelaySource(source.id);
+      }
+      adapter = createRelayAdapter(config, source);
+    }
+
+    const result = await adapter.fetchEntries(range.startMs, range.endMs, 12_000);
+    entriesBySource[source.id] = Array.isArray(result?.data) ? result.data : [];
+  }
+
+  return { entriesBySource, preparedRelaySourceId: activeRelaySourceId };
+}
+
 export function anonymizeEntries(entries, startMs, endMs) {
   const unique = new Map();
   for (const entry of entries || []) {

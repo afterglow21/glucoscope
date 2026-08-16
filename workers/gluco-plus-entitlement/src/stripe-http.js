@@ -29,9 +29,9 @@ import { readCommerceReadiness } from "./commerce-readiness.js";
 class RequestBodyTooLargeError extends Error {}
 
 const CHECKOUT_SUCCESS_RETURN_PATH =
-  "/glucoscope/?mode=user&checkout=success#settings";
+  "/?mode=user&checkout=success#settings";
 const CHECKOUT_CANCEL_RETURN_PATH =
-  "/glucoscope/?mode=user&checkout=cancelled#settings";
+  "/?mode=user&checkout=cancelled#settings";
 
 function readBoolean(value, fallback = false) {
   if (value === true || value === "true" || value === "1") return true;

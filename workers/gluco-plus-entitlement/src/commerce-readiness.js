@@ -25,7 +25,7 @@ function readSameSitePublicUrl(origin, value) {
       || url.password
       || url.search
       || url.hash
-      || !url.pathname.startsWith("/glucoscope/")
+      || !url.pathname.startsWith("/pages/trust/")
       || url.pathname.endsWith("/")) {
       return null;
     }

@@ -11,7 +11,7 @@ import {
 } from "../src/usage-core.js";
 import { verifyTurnstileToken } from "../src/turnstile.js";
 
-const ORIGIN = "https://afterglow21.github.io";
+const ORIGIN = "https://glucoscope.app";
 const NOW = Date.parse("2026-08-11T03:00:00.000Z");
 const PROFILE_ID = "11111111-1111-4111-8111-111111111111";
 const PROFILE_TOKEN = "A".repeat(43);
@@ -36,7 +36,7 @@ const ENABLED_ENV = Object.freeze({
 function turnstileEnv(overrides = {}) {
   return {
     TURNSTILE_SECRET_KEY: TURNSTILE_SECRET,
-    TURNSTILE_EXPECTED_HOSTNAME: "afterglow21.github.io",
+    TURNSTILE_EXPECTED_HOSTNAME: "glucoscope.app",
     TURNSTILE_EXPECTED_ACTION: "glucoscope-usage-profile",
     TURNSTILE_TIMEOUT_MS: "100",
     ...overrides,
@@ -251,6 +251,7 @@ test("checked-in config is paused and declares D1, cron, privacy settings, and r
   assert.equal(config.vars.USAGE_NOTICE_VERSION, "2026-08-12-simple-connection-1");
   assert.equal(readUsageConfig({}).noticeVersion, config.vars.USAGE_NOTICE_VERSION);
   assert.equal(config.vars.CORS_ALLOWED_ORIGIN, ORIGIN);
+  assert.equal(config.vars.TURNSTILE_EXPECTED_HOSTNAME, "glucoscope.app");
   assert.equal(config.vars.CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN, "false");
   assert.deepEqual(config.secrets.required, ["TURNSTILE_SECRET_KEY"]);
   assert.equal(config.d1_databases[0].binding, "USAGE_DB");
@@ -286,7 +287,7 @@ test("Turnstile Siteverify sends only URL-encoded secret and response fields", a
     seenInit = init;
     return Response.json({
       success: true,
-      hostname: "afterglow21.github.io",
+      hostname: "glucoscope.app",
       action: "glucoscope-usage-profile",
     });
   });
@@ -369,9 +370,9 @@ test("Turnstile Siteverify rejects missing secrets and verification mismatches",
   assert.equal(fetchCalls, 0);
 
   const mismatches = [
-    { success: false, hostname: "afterglow21.github.io", action: "glucoscope-usage-profile" },
+    { success: false, hostname: "glucoscope.app", action: "glucoscope-usage-profile" },
     { success: true, hostname: "other.example", action: "glucoscope-usage-profile" },
-    { success: true, hostname: "afterglow21.github.io", action: "other-action" },
+    { success: true, hostname: "glucoscope.app", action: "other-action" },
   ];
   for (const siteverifyResult of mismatches) {
     await assert.rejects(
@@ -401,7 +402,7 @@ test("global kill switch rejects profile creation before Turnstile or D1", async
   assert.equal(context.store.createCalls, 0);
 });
 
-test("CORS requires the exact GitHub Pages origin and limits preflight", async () => {
+test("CORS requires the exact public app origin and limits preflight", async () => {
   const context = createContext();
   const missing = await handleUsageRequest(request("/v1/me/export", {
     origin: null,

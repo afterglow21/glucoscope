@@ -1,9 +1,23 @@
+function isGlurooRelayClientAvailable() {
+  const relay = window.GlucoScopeDataRelay;
+  return Boolean(
+    relay
+    && typeof relay.prepareConnection === "function"
+    && typeof relay.probeDeviceSession === "function"
+    && typeof relay.revokeDeviceSession === "function"
+  );
+}
+
 const dataSourceManager = window.GlucoScopeDataSource || null;
 const localProfileManager = window.GlucoScopeLocalProfile || null;
 const usageProfileManager = window.GlucoScopeUsage || null;
 const plusEntitlementClient = window.GlucoScopePlusEntitlement || null;
 const plusFeatureAccessManager = window.GlucoScopePlusFeatures || null;
-let activeDataSourceConfig = dataSourceManager?.getActiveConfig?.() || null;
+const storedDataSourceConfig = dataSourceManager?.getActiveConfig?.() || null;
+let activeDataSourceConfig = storedDataSourceConfig?.provider === "gluroo"
+  && !isGlurooRelayClientAvailable()
+  ? null
+  : storedDataSourceConfig;
 let activeDataSourceAdapter = activeDataSourceConfig && dataSourceManager
   ? dataSourceManager.createAdapter(activeDataSourceConfig)
   : null;
@@ -18,6 +32,7 @@ let dataSourceSaveGeneration = 0;
 let dataSourceSaveInFlightGeneration = 0;
 let dataSourceTestGeneration = 0;
 let dataSourceTestAbortController = null;
+let dataSourceDeleteInFlight = false;
 let usageProfileTurnstileTimeoutId = null;
 let usageProfileTurnstileTimeoutGeneration = 0;
 let plusAccountTurnstileWidgetId = null;
@@ -97,6 +112,8 @@ let aiLetterCacheRefreshTimer = null;
 let aiLetterUserConsentGrantedThisSession = false;
 let pendingAiLetterModeAfterConsent = null;
 let liveStatsRequestSequence = 0;
+let liveStatsRangeCache = null;
+const LIVE_STATS_RANGE_CACHE_TTL_MS = 5 * 60 * 1000;
 let lastUnicornEvaluatedMeasurementKey = null;
 let activeUnicornGlucoDecision = null;
 
@@ -373,20 +390,17 @@ const translations = {
     dataSourceLocalOnlyLine1: "接続先URLと接続用の合言葉は、選んだ場合だけこのブラウザへ保存します。",
     dataSourceLocalOnlyLine2: "家族などと共用している端末では、「この端末に保存する」をオフにしてください。",
     dataSourceRelayNoticeTitle: "Glurooのかんたん接続について",
-    dataSourceRelayNoticeLead: "接続に必要な情報と、表示する血糖データがGlucoScopeの限定中継機能を一時的に通ります。接続情報や血糖データを保存したり、AIへ送ったり、他の利用者と共有したりしません。",
-    dataSourceRelayConsentLabel: "限定中継について確認しました",
-    dataSourceRelayConsentHelp: "上の説明を読み、接続情報と表示に必要な血糖データが限定中継機能を一時的に通ることに同意します。",
-    dataSourceRelayConsentRequired: "接続する前に、限定中継についての説明を読み、チェックを入れてください。",
+    dataSourceRelayNoticeLead: "接続に必要な情報と、表示する血糖データがGlucoScopeの限定中継機能を一時的に通ります。接続先URL・合言葉・血糖データは保存せず、AIへ送ったり、他の利用者と共有したりしません。",
     dataSourceDirectNoticeTitle: "自分のNightscoutへ直接つなぎます",
     dataSourceDirectNoticeLead: "Nightscoutを選ぶと、このブラウザがあなたのNightscoutへ直接つながります。接続先URL・合言葉・血糖データを、GlucoScopeの中継サーバーへ送ることはありません。",
     dataSourceRelayCheckTitle: "安全確認",
-    dataSourceRelayCheckLead: "Glurooへつなぐ前に、短い安全確認を行います。確認後に発行される接続用チケットは、このタブの中だけで使い、約1時間で期限が切れます。",
-    dataSourceRelayPreparing: "Glurooのかんたん接続は、現在公開前の準備中です。Nightscoutの直接接続と公開デモは引き続き使えます。",
+    dataSourceRelayCheckLead: "初めてGlurooへつなぐときだけ、短い安全確認を行います。その後は、この端末を普段使っている間は自動的につながります。接続を削除したとき、サイトデータを消したとき、長く使わなかったとき、安全のために必要なときは、もう一度確認します。",
+    dataSourceRelayUnavailable: "Glurooとの接続を確認できませんでした。通信を確認して、少し待ってからもう一度試してね。Nightscoutの直接接続と公開デモは引き続き使えます。",
     dataSourceRelayCheckFailed: "安全確認を完了できませんでした。少し時間をおいて、もう一度試してみてね。",
     dataSourceRelayCheckFailedWithCode: "安全確認を完了できませんでした。確認コード：{code}。この6桁の数字だけを教えてください。",
-    dataSourceRelaySessionRequired: "Glurooへつなぐための安全確認が必要です。「つながるか確認する」をもう一度押してね。",
+    dataSourceRelaySessionRequired: "この端末で、もう一度だけ安全確認が必要です。保存済みの接続情報を確認して、「つながるか確認する」を押してね。",
     dataSourceRelayPaused: "Glurooのかんたん接続は、現在一時停止しています。接続情報や血糖データは保存していません。",
-    dataSourceRelayLimited: "このタブからの今日の確認回数が上限に達しました。時間をおいてから、また確認してみてね。",
+    dataSourceRelayLimited: "この端末からの今日の接続回数が上限に達しました。時間をおいてから、また確認してみてね。",
     dataSourceUrlLabel: "接続先URL",
     dataSourceUrlHelp: "Glurooでは「Nightscout URL」と表示されています。",
     dataSourceSecretLabel: "接続用の合言葉",
@@ -412,6 +426,8 @@ const translations = {
     dataSourceSetupRequired: "最初にデータ接続を設定してね🍀",
     dataSourceConnectedLabel: "接続中",
     dataSourceDeleted: "保存した接続を削除しました。",
+    dataSourceDeletedRelayPending: "この端末の接続情報は削除しました。中継に残る匿名の確認情報も、有効期限が来ると自動で消えます。",
+    dataSourceDeleteStorageError: "この端末の接続情報を削除できませんでした。ブラウザの保存設定を確認して、もう一度試してみてね。",
     aiLetterStatusUserFoundation: "ユーザー版のAI分析は一時停止しています。いつものグルコのお話とChatGPTコピーは使えます🍀",
     mobileSimpleModeButton: "🍀 やさしい表示",
     mobileDetailModeButton: "📊 詳しく見る",
@@ -738,20 +754,17 @@ const translations = {
     dataSourceLocalOnlyLine1: "The connection URL and passphrase are saved in this browser only when you choose to save them.",
     dataSourceLocalOnlyLine2: "On a device shared with family or others, turn off Save on this device.",
     dataSourceRelayNoticeTitle: "About the Gluroo easy connection",
-    dataSourceRelayNoticeLead: "The connection information and glucose entries needed for display pass temporarily through the GlucoScope limited relay. They are not stored, sent to AI, or shared with another user.",
-    dataSourceRelayConsentLabel: "I understand the limited relay",
-    dataSourceRelayConsentHelp: "I have read the explanation above and agree that the connection information and glucose entries needed for display will pass temporarily through the limited relay.",
-    dataSourceRelayConsentRequired: "Before connecting, read the limited-relay explanation and select the checkbox.",
+    dataSourceRelayNoticeLead: "The connection information and glucose entries needed for display pass temporarily through the GlucoScope limited relay. The connection URL, passphrase, and glucose data are not stored, sent to AI, or shared with another user.",
     dataSourceDirectNoticeTitle: "Connect directly to your Nightscout",
     dataSourceDirectNoticeLead: "When Nightscout is selected, this browser connects directly to your Nightscout. The connection URL, passphrase, and glucose data are not sent to the GlucoScope relay server.",
     dataSourceRelayCheckTitle: "Safety check",
-    dataSourceRelayCheckLead: "A brief safety check is completed before connecting to Gluroo. The resulting connection ticket stays in this tab and expires after about one hour.",
-    dataSourceRelayPreparing: "The Gluroo easy connection is still being prepared for release. Direct Nightscout and the public demo remain available.",
+    dataSourceRelayCheckLead: "GlucoScope performs a short safety check only the first time this device connects to Gluroo. It then reconnects automatically while you keep using this device. A new check is needed after you delete the connection or site data, after a long period without use, or when a safety change requires it.",
+    dataSourceRelayUnavailable: "We could not confirm the Gluroo connection. Check your connection, wait a moment, and try again. Direct Nightscout and the public demo remain available.",
     dataSourceRelayCheckFailed: "The safety check could not be completed. Please wait a little and try again.",
     dataSourceRelayCheckFailedWithCode: "The safety check could not be completed. Confirmation code: {code}. Please share only this six-digit code.",
-    dataSourceRelaySessionRequired: "A new safety check is needed for the Gluroo connection. Press Check the connection again.",
+    dataSourceRelaySessionRequired: "This device needs one more safety check. Review the saved connection details, then select Check the connection.",
     dataSourceRelayPaused: "The Gluroo easy connection is temporarily paused. Connection details and glucose data have not been stored.",
-    dataSourceRelayLimited: "This tab has reached today’s connection-check limit. Please try again later.",
+    dataSourceRelayLimited: "This device has reached today’s connection limit. Please try again later.",
     dataSourceUrlLabel: "Connection URL",
     dataSourceUrlHelp: "Gluroo labels this Nightscout URL.",
     dataSourceSecretLabel: "Connection passphrase",
@@ -777,6 +790,8 @@ const translations = {
     dataSourceSetupRequired: "Connect a data source first 🍀",
     dataSourceConnectedLabel: "Connected",
     dataSourceDeleted: "The saved connection was deleted.",
+    dataSourceDeletedRelayPending: "The connection details were deleted from this device. Any anonymous relay check that remains will be removed automatically when it expires.",
+    dataSourceDeleteStorageError: "The connection details could not be removed from this device. Check the browser storage settings and try again.",
     aiLetterStatusUserFoundation: "AI analysis for the user version is temporarily paused. Gluco’s local story and ChatGPT copy remain available 🍀",
     mobileSimpleModeButton: "🍀 Simple view",
     mobileDetailModeButton: "📊 Details",
@@ -1049,11 +1064,10 @@ function getDataSourceErrorMessage(error) {
     request_timeout: "dataSourceTestCorsError",
     no_glucose_data: "dataSourceTestNoData",
     incompatible_entry_format: "dataSourceTestFormatError",
-    relay_consent_required: "dataSourceRelayConsentRequired",
-    relay_unavailable: "dataSourceRelayPreparing",
+    relay_unavailable: "dataSourceRelayUnavailable",
     turnstile_failed: "dataSourceRelayCheckFailed",
-    relay_ticket_required: "dataSourceRelaySessionRequired",
-    relay_ticket_invalid: "dataSourceRelaySessionRequired",
+    device_session_invalid: "dataSourceRelaySessionRequired",
+    device_session_source_mismatch: "dataSourceRelaySessionRequired",
     relay_temporarily_paused: "dataSourceRelayPaused",
     rate_limited: "dataSourceRelayLimited"
   };
@@ -1065,15 +1079,11 @@ function updateDataSourceProviderHelp() {
   const glurooHelp = document.getElementById("dataSourceGlurooHelp");
   const nightscoutHelp = document.getElementById("dataSourceNightscoutHelp");
   const relayNotice = document.getElementById("dataSourceRelayNotice");
-  const relayConsentOption = document.getElementById("dataSourceRelayConsentOption");
-  const relayConsent = document.getElementById("dataSourceRelayConsent");
   const directNotice = document.getElementById("dataSourceNightscoutDirectNotice");
   const relayCheck = document.getElementById("dataSourceRelayCheck");
   if (glurooHelp) glurooHelp.hidden = provider !== "gluroo";
   if (nightscoutHelp) nightscoutHelp.hidden = provider !== "nightscout";
   if (relayNotice) relayNotice.hidden = provider !== "gluroo";
-  if (relayConsentOption) relayConsentOption.hidden = provider !== "gluroo";
-  if (provider !== "gluroo" && relayConsent) relayConsent.checked = false;
   if (directNotice) directNotice.hidden = provider !== "nightscout";
   if (relayCheck) relayCheck.hidden = provider !== "gluroo";
   window.GlucoScopeDataRelay?.updateUi?.(provider);
@@ -1206,7 +1216,6 @@ function populateDataSourceForm(config = null) {
   const secretInput = document.getElementById("dataSourceSecret");
   const displayNameInput = document.getElementById("dataSourceDisplayName");
   const persistInput = document.getElementById("dataSourcePersist");
-  const relayConsentInput = document.getElementById("dataSourceRelayConsent");
   const deleteButton = document.getElementById("dataSourceDeleteButton");
 
   if (displayNameInput) {
@@ -1219,7 +1228,6 @@ function populateDataSourceForm(config = null) {
     secretInput.type = "password";
   }
   if (persistInput) persistInput.checked = resolved?.mode === "user" ? resolved.persist !== false : true;
-  if (relayConsentInput) relayConsentInput.checked = false;
   if (deleteButton) deleteButton.hidden = !dataSourceManager?.readUserConfig?.();
 
   testedDataSourceConfig = null;
@@ -1333,11 +1341,6 @@ async function handleDataSourceTest() {
   try {
     const candidate = dataSourceManager.sanitizeConfig(getDataSourceFormConfig());
     if (candidate.provider === "gluroo") {
-      if (document.getElementById("dataSourceRelayConsent")?.checked !== true) {
-        const consentError = new Error("The limited relay consent is required.");
-        consentError.code = "relay_consent_required";
-        throw consentError;
-      }
       const relay = window.GlucoScopeDataRelay;
       if (!relay || typeof relay.prepareConnection !== "function") {
         const relayError = new Error("The Gluroo relay client is unavailable.");
@@ -1483,6 +1486,7 @@ function resetDataSourceDerivedUi() {
   // unavailable, so none of its provider label may sit beside the former
   // source's glucose, graph, reflection, Gluco, or AI result while we wait.
   liveStatsRequestSequence += 1;
+  liveStatsRangeCache = null;
 
   const chartToDestroy = glucoseChart;
   glucoseChart = null;
@@ -1581,13 +1585,9 @@ function activateSavedDataSourceInPlace(savedConfig) {
     error.code = "data_source_storage_failed";
     throw error;
   }
-
-  if (
-    savedConfig.provider === "gluroo"
-    && !window.GlucoScopeDataRelay?.readRelaySession?.()
-  ) {
-    const error = new Error("The Gluroo relay session is no longer available.");
-    error.code = "relay_ticket_required";
+  if (savedConfig.provider === "gluroo" && !isGlurooRelayClientAvailable()) {
+    const error = new Error("The Gluroo relay client is unavailable.");
+    error.code = "relay_unavailable";
     throw error;
   }
 
@@ -1642,8 +1642,7 @@ function activateSavedDataSourceInPlace(savedConfig) {
 
 function navigateToSavedDataSource(savedConfig) {
   // The normal guide flow is already in user mode. Starting in place keeps
-  // the short-lived Gluroo ticket in the same Safari page lifecycle instead
-  // of depending on sessionStorage surviving an otherwise unnecessary reload.
+  // the connection handoff simple and avoids an unnecessary Safari reload.
   if (isUserDataSourceMode()) {
     activateSavedDataSourceInPlace(savedConfig);
     return false;
@@ -1762,27 +1761,65 @@ function handleDataSourceSave(event) {
   prepareUsageProfileTurnstile(generation);
 }
 
-function handleDataSourceDelete() {
-  if (!dataSourceManager || isDataSourceSaveBusy()) return;
+async function handleDataSourceDelete() {
+  if (!dataSourceManager || isDataSourceSaveBusy() || dataSourceDeleteInFlight) return;
   // Stop any personal-data analysis before storage cleanup. This stays safe
   // even when the browser refuses a later storage operation.
   invalidateAiLetterRequest();
   invalidateDataSourceTest();
   invalidatePendingDataSourceSave();
-  if (getUsageProfileState().registered) {
-    void usageProfileManager?.updateProfile?.({ collectionEnabled: false });
+  dataSourceDeleteInFlight = true;
+  setDataSourceSaveControlsDisabled(true);
+  const savedConfig = dataSourceManager.readUserConfig?.() || activeDataSourceConfig;
+  let relayRevokePending = false;
+  let localClearFailed = false;
+
+  // Remove the URL and passphrase first. They are more sensitive than the
+  // anonymous server-side session record and deletion must not wait for the
+  // network to respond.
+  try {
+    dataSourceManager.clearUserConfig();
+  } catch (error) {
+    localClearFailed = true;
+    console.warn("Could not clear local data-source storage", error?.code || error?.name || "storage_error");
   }
-  dataSourceManager.clearUserConfig();
   clearDataSourceSpecificBrowserState();
+  liveStatsRangeCache = null;
   activeDataSourceConfig = null;
   activeDataSourceAdapter = null;
   testedDataSourceConfig = null;
-  setDataSourceTestStatus(t("dataSourceDeleted"), "success");
+
+  if (savedConfig?.provider === "gluroo") {
+    try {
+      const revokeDeviceSession = window.GlucoScopeDataRelay?.revokeDeviceSession;
+      if (typeof revokeDeviceSession !== "function") throw new Error("relay_unavailable");
+      await revokeDeviceSession({ timeoutMs: 5000 });
+    } catch (error) {
+      // The relay stores no URL, passphrase, or glucose data. Always remove
+      // those sensitive browser values even when an offline revoke cannot
+      // clear the anonymous server-side session immediately.
+      relayRevokePending = true;
+      console.warn("Could not revoke anonymous relay session", error?.code || "relay_unavailable");
+    }
+  }
+  if (getUsageProfileState().registered) {
+    void usageProfileManager?.updateProfile?.({ collectionEnabled: false });
+  }
+  setDataSourceTestStatus(
+    t(localClearFailed
+      ? "dataSourceDeleteStorageError"
+      : relayRevokePending
+        ? "dataSourceDeletedRelayPending"
+        : "dataSourceDeleted"),
+    localClearFailed ? "error" : "success"
+  );
   const deleteButton = document.getElementById("dataSourceDeleteButton");
   const saveButton = document.getElementById("dataSourceSaveButton");
-  if (deleteButton) deleteButton.hidden = true;
+  if (deleteButton) deleteButton.hidden = !localClearFailed;
+  dataSourceDeleteInFlight = false;
+  setDataSourceSaveControlsDisabled(false);
   if (saveButton) saveButton.disabled = true;
-  if (isUserDataSourceMode()) {
+  if (!localClearFailed && isUserDataSourceMode()) {
     window.setTimeout(() => window.location.reload(), 1500);
   }
 }
@@ -1848,7 +1885,6 @@ function setupDataSourceFoundation() {
   document.getElementById("dataSourceDisplayName")?.addEventListener("input", (event) => {
     event.currentTarget?.setAttribute("aria-invalid", "false");
   });
-  document.getElementById("dataSourceRelayConsent")?.addEventListener("change", invalidateDataSourceTest);
 
   document.getElementById("dataSourceSecretToggle")?.addEventListener("click", () => {
     const input = document.getElementById("dataSourceSecret");
@@ -1898,19 +1934,6 @@ function setupDataSourceFoundation() {
 
   updateDataSourceUiLabels();
   updatePageModeIdentity();
-
-  const glurooRelaySessionRequired = Boolean(
-    isUserDataSourceMode()
-      && activeDataSourceConfig?.provider === "gluroo"
-      && !window.GlucoScopeDataRelay?.readRelaySession?.()
-  );
-
-  if (glurooRelaySessionRequired) {
-    showDataSourceSetupRequiredState();
-    openDataSourceDialog({ required: true });
-    setDataSourceTestStatus(t("dataSourceRelaySessionRequired"));
-    return false;
-  }
 
   if (isUserDataSourceMode() && !hasActiveDataSource()) {
     showDataSourceSetupRequiredState();
@@ -7531,19 +7554,48 @@ async function loadDailyStats() {
     updatePeriodButtons();
     updateChartRangeLabel(rangeStart, rangeEnd);
 
-    const [entriesRaw, previousEntriesRaw, sevenDayEntriesRaw, treatmentsRaw] = await Promise.all([
-      fetchEntriesInRange(rangeStart, rangeEnd, periodRange.count, requestedAdapter),
-      fetchEntriesInRange(
-        previousRangeStart,
-        previousRangeEnd,
-        Math.min(periodRange.count, 3000),
-        requestedAdapter
-      ),
-      fetchEntriesInRange(sevenDaysAgo, now, 3000, requestedAdapter),
-      showTreatmentsForRange
-        ? loadTreatmentEvents(rangeStart, rangeEnd, requestedAdapter)
-        : Promise.resolve([])
-    ]);
+    const rangeCacheKey = `${requestedPeriod}:${requestedCacheRangeKey}`;
+    let rangePayload = (
+      liveStatsRangeCache?.adapter === requestedAdapter
+      && liveStatsRangeCache?.key === rangeCacheKey
+      && Number.isFinite(liveStatsRangeCache?.cachedAt)
+      && now - liveStatsRangeCache.cachedAt < LIVE_STATS_RANGE_CACHE_TTL_MS
+    ) ? liveStatsRangeCache : null;
+
+    if (!rangePayload) {
+      const [entriesRaw, previousEntriesRaw, sevenDayEntriesRaw, treatmentsRaw] = await Promise.all([
+        fetchEntriesInRange(rangeStart, rangeEnd, periodRange.count, requestedAdapter),
+        fetchEntriesInRange(
+          previousRangeStart,
+          previousRangeEnd,
+          Math.min(periodRange.count, 3000),
+          requestedAdapter
+        ),
+        fetchEntriesInRange(sevenDaysAgo, now, 3000, requestedAdapter),
+        showTreatmentsForRange
+          ? loadTreatmentEvents(rangeStart, rangeEnd, requestedAdapter)
+          : Promise.resolve([])
+      ]);
+
+      if (isStaleRequest()) return;
+      rangePayload = {
+        adapter: requestedAdapter,
+        key: rangeCacheKey,
+        cachedAt: now,
+        entriesRaw,
+        previousEntriesRaw,
+        sevenDayEntriesRaw,
+        treatmentsRaw
+      };
+      liveStatsRangeCache = rangePayload;
+    }
+
+    const {
+      entriesRaw,
+      previousEntriesRaw,
+      sevenDayEntriesRaw,
+      treatmentsRaw
+    } = rangePayload;
 
     if (isStaleRequest()) return;
 
@@ -7658,6 +7710,7 @@ async function loadDailyStats() {
     if (isStaleRequest()) return;
 
     console.error(error);
+    liveStatsRangeCache = null;
     const sourceErrorMessage = getDataSourceErrorMessage(error);
     setLiveStatus("error", "OFFLINE", sourceErrorMessage);
     updateHealthBar(null, null, "error");
@@ -7669,6 +7722,17 @@ async function loadDailyStats() {
     setAiLetterSummary(null, "error");
     latestRuleCommentMetrics = null;
     document.getElementById("comment").textContent = sourceErrorMessage;
+
+    if (
+      isUserDataSourceMode()
+      && activeDataSourceConfig?.provider === "gluroo"
+      && ["device_session_invalid", "device_session_source_mismatch"].includes(error?.code)
+    ) {
+      if (dataRefreshTimer) window.clearInterval(dataRefreshTimer);
+      dataRefreshTimer = null;
+      openDataSourceDialog({ required: true });
+      setDataSourceTestStatus(t("dataSourceRelaySessionRequired"), "error");
+    }
   }
 }
 

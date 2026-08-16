@@ -85,7 +85,7 @@ test("public data connection remains clickable and clearly marked as early acces
   assert.match(index, /データ接続（先行体験）/);
   assert.match(index, /Gluroo接続は少人数で確認しながら提供しています/);
   assert.match(index, /style\.css\?v=20260815-guardian-confirmation-1/);
-  assert.match(index, /js\/app\.js\?v=20260815-guardian-confirmation-1/);
+  assert.match(index, /js\/app\.js\?v=20260816-device-session-1/);
   assert.match(app, /dataSourceButtonDemo: "データ接続（先行体験）"/);
   assert.match(app, /dataSourceDialogTitle: "Data connection \(early access\)"/);
   assert.doesNotMatch(index, /id="dataSourceButton"[^>]+disabled/);
@@ -562,7 +562,11 @@ test("connection deletion confirmation remains visible before reload", () => {
   const deleteStart = app.indexOf("function handleDataSourceDelete");
   const deleteEnd = app.indexOf("function showDataSourceSetupRequiredState", deleteStart);
   const deleteHandler = app.slice(deleteStart, deleteEnd);
-  assert.match(deleteHandler, /setDataSourceTestStatus\(t\("dataSourceDeleted"\), "success"\)/);
+  assert.match(deleteHandler, /const revokeDeviceSession = window\.GlucoScopeDataRelay\?\.revokeDeviceSession/);
+  assert.ok(deleteHandler.indexOf("dataSourceManager.clearUserConfig()") < deleteHandler.indexOf("await revokeDeviceSession"));
+  assert.match(deleteHandler, /timeoutMs: 5000/);
+  assert.match(deleteHandler, /dataSourceDeleteStorageError/);
+  assert.match(deleteHandler, /dataSourceDeletedRelayPending/);
   assert.match(deleteHandler, /window\.setTimeout\(\(\) => window\.location\.reload\(\), 1500\)/);
 });
 
@@ -599,8 +603,9 @@ test("field feedback copy and red-frame navigation are reflected", () => {
 });
 
 test("current cache and CSS markers are present", () => {
-  assert.match(index, /js\/data-source\.js\?v=20260812-safari-save-1/);
-  assert.match(index, /js\/data-relay-client\.js\?v=20260812-connection-lifecycle-1/);
+  assert.match(index, /js\/data-source\.js\?v=20260816-device-session-1/);
+  assert.match(index, /js\/data-relay-client\.js\?v=20260816-device-session-1/);
+  assert.match(index, /js\/app\.js\?v=20260816-device-session-1/);
   assert.match(guideCss, /User Foundation 0\.3\.3/);
   assert.match(css, /Limited Data Relay Paused Acceptance/);
 });
@@ -617,8 +622,8 @@ test("Turnstile diagnostics show only a validated six-digit confirmation code", 
 });
 
 
-test("limited relay frontend uses only the approved paused production endpoint", () => {
-  assert.match(index, /name="glucoscope-data-relay-endpoint" content="https:\/\/glucoscope-data-relay\.afterglow21\.workers\.dev"/);
+test("limited relay frontend uses only the dedicated same-site production endpoint", () => {
+  assert.match(index, /name="glucoscope-data-relay-endpoint" content="https:\/\/relay\.glucoscope\.app"/);
   assert.match(index, /js\/data-relay-client\.js/);
   assert.match(index, /dataSourceRelayTurnstile/);
   assert.match(app, /candidate\.provider === "gluroo"/);
@@ -626,21 +631,30 @@ test("limited relay frontend uses only the approved paused production endpoint",
   assert.match(app, /await relay\.prepareConnection\(candidate, \{\s*signal: testAbortController\.signal\s*\}\)/);
 });
 
-test("Gluroo relay requires explicit consent before any relay request", () => {
-  assert.match(index, /id="dataSourceRelayConsent" type="checkbox"/);
-  assert.match(index, /限定中継機能を一時的に通ることに同意します/);
+test("live refresh keeps the newest value current while reusing heavy ranges for five minutes", () => {
+  assert.match(app, /let liveStatsRangeCache = null;/);
+  assert.match(app, /const LIVE_STATS_RANGE_CACHE_TTL_MS = 5 \* 60 \* 1000;/);
+  assert.match(app, /liveStatsRangeCache\?\.adapter === requestedAdapter/);
+  assert.match(app, /now - liveStatsRangeCache\.cachedAt < LIVE_STATS_RANGE_CACHE_TTL_MS/);
+  assert.match(app, /if \(!rangePayload\) \{[\s\S]*Promise\.all\(\[/);
+  assert.match(app, /cachedAt: now,[\s\S]*liveStatsRangeCache = rangePayload;/);
+  assert.match(app, /function resetDataSourceDerivedUi\(\) \{[\s\S]*liveStatsRangeCache = null;/);
+});
+
+test("Gluroo relay uses a plain explanation instead of a confusing checkbox", () => {
+  assert.doesNotMatch(index, /id="dataSourceRelayConsent"/);
+  assert.match(index, /接続先URL・合言葉・血糖データは保存せず/);
   const testStart = app.indexOf("async function handleDataSourceTest");
   const testEnd = app.indexOf("function clearDataSourceSpecificBrowserState", testStart);
   const handler = app.slice(testStart, testEnd);
-  assert.match(handler, /dataSourceRelayConsent/);
-  assert.match(handler, /relay_consent_required/);
-  assert.ok(handler.indexOf("relay_consent_required") < handler.indexOf("await relay.prepareConnection(candidate, {"));
-  assert.match(app, /relay_consent_required: "dataSourceRelayConsentRequired"/);
+  assert.doesNotMatch(handler, /dataSourceRelayConsent/);
+  assert.doesNotMatch(handler, /relay_consent_required/);
+  assert.match(handler, /await relay\.prepareConnection\(candidate, \{/);
 });
 
 test("Gluroo relay copy never claims that credentials bypass the Worker", () => {
   assert.doesNotMatch(index, /Gluroo[\s\S]{0,500}GlucoScopeのサーバーには保存しません/);
-  assert.match(index, /接続情報や血糖データを保存したり、AIへ送ったり、他の利用者と共有したりしません/);
+  assert.match(index, /接続先URL・合言葉・血糖データは保存せず、AIへ送ったり、他の利用者と共有したりしません/);
 });
 
 test("Guardian Monitor guide has no analytics or real credentials", () => {
@@ -658,7 +672,7 @@ test("Guardian Monitor top navigation returns to the route chooser", () => {
   assert.doesNotMatch(topbar, /source=gluroo/);
 });
 
-test("a successful save does not clear the current relay ticket before in-place start", () => {
+test("a successful save does not revoke the current device session before in-place start", () => {
   const clearStart = app.indexOf("function clearDataSourceSpecificBrowserState");
   const clearEnd = app.indexOf("function buildUserModeUrl", clearStart);
   const clearHandler = app.slice(clearStart, clearEnd);

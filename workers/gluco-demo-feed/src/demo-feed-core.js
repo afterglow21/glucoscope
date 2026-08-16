@@ -1,5 +1,5 @@
 const DEFAULTS = Object.freeze({
-  allowedOrigin: "https://afterglow21.github.io",
+  allowedOrigin: "https://glucoscope.app",
   cacheKey: "public:libre-2:v1",
   g7CacheKey: "public:dexcom-g7:v1",
   cacheTtlSeconds: 129_600,

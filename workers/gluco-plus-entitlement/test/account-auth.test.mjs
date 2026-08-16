@@ -23,7 +23,7 @@ import { verifyAccountTurnstile } from "../src/account-auth-turnstile.js";
 import { hashSessionToken } from "../src/credentials.js";
 
 const NOW = Date.parse("2026-08-15T03:00:00.000Z");
-const ORIGIN = "https://afterglow21.github.io";
+const ORIGIN = "https://glucoscope.app";
 const EMAIL_SECRET = "email-lookup-secret-for-local-tests-0001";
 const NEW_EMAIL_SECRET = "email-lookup-secret-for-local-tests-0002";
 const CODE_SECRET = "verification-code-secret-local-tests-0001";
@@ -59,7 +59,7 @@ const VERIFICATION_GRANTS = [
 const ENABLED_ENV = Object.freeze({
   PLUS_ACCOUNT_AUTH_HTTP_ENABLED: "true",
   ACCOUNT_AUTH_ALLOWED_ORIGIN: ORIGIN,
-  ACCOUNT_AUTH_EXPECTED_HOSTNAME: "afterglow21.github.io",
+  ACCOUNT_AUTH_EXPECTED_HOSTNAME: "glucoscope.app",
   ACCOUNT_AUTH_REQUEST_CODE_ACTION: "glucoscope-plus-request-code",
   ACCOUNT_AUTH_DELETE_ACTION: "glucoscope-plus-delete-account",
   ACCOUNT_EMAIL_LOOKUP_HMAC_KEY: EMAIL_SECRET,
@@ -237,6 +237,7 @@ test("checked-in auth configuration is disabled and contains no runtime bindings
   ));
   assert.equal(config.vars.PLUS_ACCOUNT_AUTH_HTTP_ENABLED, "false");
   assert.equal(config.vars.ACCOUNT_AUTH_ALLOWED_ORIGIN, ORIGIN);
+  assert.equal(config.vars.ACCOUNT_AUTH_EXPECTED_HOSTNAME, "glucoscope.app");
   assert.equal(
     config.vars.ACCOUNT_AUTH_REQUEST_CODE_ACTION,
     "glucoscope-plus-request-code",
@@ -1347,7 +1348,7 @@ test("HTTP contract enforces exact Origin, bounded JSON, CORS, route methods, an
     verificationGrant: VERIFICATION_GRANTS[0],
   });
   assert.equal(turnstileCalls[0].expectedAction, "glucoscope-plus-request-code");
-  assert.equal(turnstileCalls[0].expectedHostname, "afterglow21.github.io");
+  assert.equal(turnstileCalls[0].expectedHostname, "glucoscope.app");
   assert.deepEqual(calls[0], ["requestCode", {
     ...confirmedSelf(),
     turnstileToken: "token-one",
@@ -1799,20 +1800,20 @@ test("Turnstile verification checks both the exact action and hostname", async (
   const base = {
     token: "turnstile-token",
     expectedAction: "glucoscope-plus-delete-account",
-    expectedHostname: "afterglow21.github.io",
+    expectedHostname: "glucoscope.app",
     env: { TURNSTILE_SECRET_KEY: "turnstile-secret-for-local-tests" },
   };
   const success = await verifyAccountTurnstile(base, async () => new Response(JSON.stringify({
     success: true,
     action: "glucoscope-plus-delete-account",
-    hostname: "afterglow21.github.io",
+    hostname: "glucoscope.app",
   }), { status: 200 }));
   assert.deepEqual(success, { verified: true });
 
   for (const result of [
-    { success: true, action: "wrong-action", hostname: "afterglow21.github.io" },
+    { success: true, action: "wrong-action", hostname: "glucoscope.app" },
     { success: true, action: "glucoscope-plus-delete-account", hostname: "evil.example" },
-    { success: false, action: "glucoscope-plus-delete-account", hostname: "afterglow21.github.io" },
+    { success: false, action: "glucoscope-plus-delete-account", hostname: "glucoscope.app" },
   ]) {
     await assert.rejects(
       verifyAccountTurnstile(base, async () => new Response(JSON.stringify(result), {

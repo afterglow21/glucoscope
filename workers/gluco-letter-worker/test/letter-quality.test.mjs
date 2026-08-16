@@ -52,6 +52,7 @@ test("AI generation POST requires an Origin while the usage GET remains operatio
 });
 
 test("Turnstile success is bound to the expected production hostname and AI action", () => {
+  assert.equal(DEFAULT_TURNSTILE_EXPECTED_HOSTNAME, "glucoscope.app");
   const expectedResult = {
     success: true,
     hostname: DEFAULT_TURNSTILE_EXPECTED_HOSTNAME,

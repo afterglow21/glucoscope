@@ -1,5 +1,5 @@
 const DEFAULTS = Object.freeze({
-  allowedOrigins: ["https://afterglow21.github.io"],
+  allowedOrigins: ["https://glucoscope.app"],
   allowRequestsWithoutOrigin: false,
   enabled: false,
   glurooHostSuffix: ".ns.gluroo.com",
@@ -8,11 +8,12 @@ const DEFAULTS = Object.freeze({
   maxRequestBytes: 8_192,
   maxUpstreamBytes: 6 * 1024 * 1024,
   upstreamTimeoutMs: 15_000,
-  turnstileExpectedHostname: "afterglow21.github.io",
+  turnstileExpectedHostname: "glucoscope.app",
   turnstileExpectedAction: "glucoscope-data-relay",
   turnstileTimeoutMs: 10_000,
-  ticketTtlSeconds: 3_600,
-  sessionDailyLimit: 250,
+  deviceSessionsEnabled: false,
+  deviceSessionIdleTtlSeconds: 180 * 24 * 60 * 60,
+  deviceSessionDailyLimit: 3_000,
   globalWarningDaily: 20_000,
   globalHardDaily: 50_000,
 });
@@ -20,9 +21,10 @@ const DEFAULTS = Object.freeze({
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_CREDENTIAL_LENGTH = 4_096;
 const MAX_SOURCE_URL_LENGTH = 2_048;
-const MAX_TICKET_LENGTH = 2_048;
 const MAX_TURNSTILE_TOKEN_LENGTH = 2_048;
-const TICKET_CLOCK_SKEW_SECONDS = 30;
+const DEVICE_SESSION_COOKIE_NAME = "__Host-glucoscope_relay_session";
+const DEVICE_SESSION_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/u;
+const DEVICE_SESSION_PATHS = new Set(["/v1/device-session", "/v1/device-session/status"]);
 const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 const TURNSTILE_DIAGNOSTIC_CODES = Object.freeze({
   networkOrTimeout: "710001",
@@ -49,9 +51,9 @@ const TURNSTILE_SITEVERIFY_ERROR_CODES = new Map([
   ["internal-error", TURNSTILE_DIAGNOSTIC_CODES.internalError],
 ]);
 const SAFE_TURNSTILE_DIAGNOSTIC_PATTERN = /^71\d{4}$/u;
-const ENTRY_KEYS = new Set(["sourceUrl", "credential", "from", "to", "limit", "relayTicket"]);
-const SESSION_KEYS = new Set(["turnstileToken"]);
-const TICKET_KEYS = new Set(["v", "sid", "iat", "exp", "scope", "origin"]);
+const ENTRY_KEYS = new Set(["sourceUrl", "credential", "from", "to", "limit"]);
+const SESSION_KEYS = new Set(["turnstileToken", "sourceUrl", "credential"]);
+const DEVICE_SESSION_STATUS_KEYS = new Set();
 const ALLOWED_DIRECTIONS = new Set([
   "DoubleUp",
   "SingleUp",
@@ -148,15 +150,19 @@ export function readConfig(env = {}) {
       DEFAULTS.turnstileTimeoutMs,
       { max: 30_000 },
     ),
-    ticketTtlSeconds: parsePositiveInteger(
-      env.RELAY_TICKET_TTL_SECONDS,
-      DEFAULTS.ticketTtlSeconds,
-      { min: 300, max: 7_200 },
+    deviceSessionsEnabled: parseBoolean(
+      env.RELAY_DEVICE_SESSIONS_ENABLED,
+      DEFAULTS.deviceSessionsEnabled,
     ),
-    sessionDailyLimit: parsePositiveInteger(
-      env.SESSION_DAILY_LIMIT,
-      DEFAULTS.sessionDailyLimit,
-      { max: 10_000 },
+    deviceSessionIdleTtlSeconds: parsePositiveInteger(
+      env.RELAY_DEVICE_SESSION_IDLE_TTL_SECONDS,
+      DEFAULTS.deviceSessionIdleTtlSeconds,
+      { min: 60, max: 366 * 24 * 60 * 60 },
+    ),
+    deviceSessionDailyLimit: parsePositiveInteger(
+      env.RELAY_DEVICE_SESSION_DAILY_LIMIT,
+      DEFAULTS.deviceSessionDailyLimit,
+      { max: 1_000_000 },
     ),
     globalWarningDaily,
     globalHardDaily,
@@ -210,19 +216,7 @@ function parseIsoDate(value) {
   return { timestamp, iso: new Date(timestamp).toISOString() };
 }
 
-function validateTicketString(value) {
-  if (
-    typeof value !== "string" ||
-    value.length < 20 ||
-    value.length > MAX_TICKET_LENGTH ||
-    /[\u0000-\u0020\u007f]/u.test(value)
-  ) {
-    throw new RelayError("relay_ticket_invalid", 403);
-  }
-  return value;
-}
-
-export function validateRelayPayload(payload, config = readConfig(), { requireTicket = false } = {}) {
+export function validateRelayPayload(payload, config = readConfig()) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new RelayError("invalid_request");
   }
@@ -263,36 +257,54 @@ export function validateRelayPayload(payload, config = readConfig(), { requireTi
     to = parsedTo.iso;
   }
 
-  let relayTicket;
-  if (payload.relayTicket !== undefined) relayTicket = validateTicketString(payload.relayTicket);
-  if (requireTicket && !relayTicket) throw new RelayError("relay_ticket_invalid", 403);
-
   return Object.freeze({
     sourceUrl,
     credential: payload.credential,
     limit,
     from,
     to,
-    relayTicket,
   });
 }
 
-export function validateSessionPayload(payload) {
+function validateTurnstileTokenValue(value) {
+  if (
+    typeof value !== "string" ||
+    value.length < 1 ||
+    value.length > MAX_TURNSTILE_TOKEN_LENGTH ||
+    /[\u0000-\u001f\u007f]/u.test(value)
+  ) {
+    throw new RelayError("turnstile_failed", 403);
+  }
+  return value;
+}
+
+export function validateDeviceSessionCreationPayload(payload, config = readConfig()) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new RelayError("invalid_request");
   }
   for (const key of Object.keys(payload)) {
     if (!SESSION_KEYS.has(key)) throw new RelayError("invalid_request");
   }
-  if (
-    typeof payload.turnstileToken !== "string" ||
-    payload.turnstileToken.length < 1 ||
-    payload.turnstileToken.length > MAX_TURNSTILE_TOKEN_LENGTH ||
-    /[\u0000-\u001f\u007f]/u.test(payload.turnstileToken)
-  ) {
-    throw new RelayError("turnstile_failed", 403);
+  const connection = validateRelayPayload({
+    sourceUrl: payload.sourceUrl,
+    credential: payload.credential,
+    limit: 2,
+  }, config);
+  return Object.freeze({
+    turnstileToken: validateTurnstileTokenValue(payload.turnstileToken),
+    sourceUrl: connection.sourceUrl,
+    credential: connection.credential,
+  });
+}
+
+export function validateDeviceSessionStatusPayload(payload) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new RelayError("invalid_request");
   }
-  return Object.freeze({ turnstileToken: payload.turnstileToken });
+  for (const key of Object.keys(payload)) {
+    if (!DEVICE_SESSION_STATUS_KEYS.has(key)) throw new RelayError("invalid_request");
+  }
+  return Object.freeze({});
 }
 
 export function buildUpstreamUrl(payload, config = readConfig()) {
@@ -492,20 +504,6 @@ function bytesToBase64Url(bytes) {
   return btoa(binary).replace(/\+/gu, "-").replace(/\//gu, "_").replace(/=+$/gu, "");
 }
 
-function base64UrlToBytes(value) {
-  if (typeof value !== "string" || !/^[A-Za-z0-9_-]+$/u.test(value)) {
-    throw new RelayError("relay_ticket_invalid", 403);
-  }
-  const padded = value.replace(/-/gu, "+").replace(/_/gu, "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
-  let binary;
-  try {
-    binary = atob(padded);
-  } catch {
-    throw new RelayError("relay_ticket_invalid", 403);
-  }
-  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
-}
-
 async function importHmacKey(secret, usages) {
   return crypto.subtle.importKey(
     "raw",
@@ -516,99 +514,192 @@ async function importHmacKey(secret, usages) {
   );
 }
 
-export async function issueRelayTicket({
-  origin,
-  secret,
-  config = readConfig(),
-  nowMs = Date.now(),
-  randomUUID = () => crypto.randomUUID(),
-}) {
-  const signingSecret = requireSecret(secret, 32);
-  if (!config.allowedOrigins.includes(origin)) throw new RelayError("invalid_request", 403);
-
-  const issuedAt = Math.floor(nowMs / 1000);
-  const payload = Object.freeze({
-    v: 1,
-    sid: randomUUID(),
-    iat: issuedAt,
-    exp: issuedAt + config.ticketTtlSeconds,
-    scope: "entries",
-    origin,
-  });
-  const encodedPayload = bytesToBase64Url(new TextEncoder().encode(JSON.stringify(payload)));
-  const key = await importHmacKey(signingSecret, ["sign"]);
-  const signature = new Uint8Array(
-    await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(encodedPayload)),
-  );
-
-  return Object.freeze({
-    ticket: `${encodedPayload}.${bytesToBase64Url(signature)}`,
-    expiresAt: new Date(payload.exp * 1000).toISOString(),
-    expiresInSeconds: config.ticketTtlSeconds,
-  });
+function validateDeviceSessionToken(value) {
+  if (typeof value !== "string" || !DEVICE_SESSION_TOKEN_PATTERN.test(value)) {
+    throw new RelayError("device_session_invalid", 401);
+  }
+  return value;
 }
 
-export async function verifyRelayTicket({
-  ticket,
-  origin,
+async function deriveDeviceHmac(value, secret, purpose) {
+  const hmacSecret = requireSecret(secret, 32);
+  const key = await importHmacKey(hmacSecret, ["sign"]);
+  const message = new TextEncoder().encode(`${purpose}\u0000${value}`);
+  return bytesToBase64Url(
+    new Uint8Array(await crypto.subtle.sign("HMAC", key, message)),
+  );
+}
+
+export function generateDeviceSessionToken(randomBytes = (bytes) => crypto.getRandomValues(bytes)) {
+  const bytes = new Uint8Array(32);
+  const generated = randomBytes(bytes);
+  if (!(generated instanceof Uint8Array) || generated.byteLength !== bytes.byteLength) {
+    throw new RelayError("relay_temporarily_paused", 503);
+  }
+  return bytesToBase64Url(generated);
+}
+
+export async function deriveDeviceSessionId(token, secret) {
+  return deriveDeviceHmac(validateDeviceSessionToken(token), secret, "device-session-token-v1");
+}
+
+export async function deriveSourceCredentialFingerprint(
+  sourceUrl,
+  credential,
+  tokenId,
   secret,
   config = readConfig(),
+) {
+  validateDeviceSessionToken(tokenId);
+  const validated = validateRelayPayload({ sourceUrl, credential, limit: 1 }, config);
+  return deriveDeviceHmac(
+    `${tokenId}\u0000${validated.sourceUrl}\u0000${validated.credential}`,
+    secret,
+    "device-session-source-v1",
+  );
+}
+
+export function readDeviceSessionCookie(request) {
+  const cookieHeader = request.headers.get("cookie");
+  if (!cookieHeader) return null;
+  const matches = [];
+  for (const part of cookieHeader.split(";")) {
+    const trimmed = part.trim();
+    const separator = trimmed.indexOf("=");
+    if (separator < 1) continue;
+    if (trimmed.slice(0, separator) === DEVICE_SESSION_COOKIE_NAME) {
+      matches.push(trimmed.slice(separator + 1));
+    }
+  }
+  if (matches.length === 0) return null;
+  if (matches.length !== 1) throw new RelayError("device_session_invalid", 401);
+  return validateDeviceSessionToken(matches[0]);
+}
+
+export function buildDeviceSessionCookie(token, config = readConfig()) {
+  validateDeviceSessionToken(token);
+  return [
+    `${DEVICE_SESSION_COOKIE_NAME}=${token}`,
+    "Path=/",
+    `Max-Age=${config.deviceSessionIdleTtlSeconds}`,
+    "Secure",
+    "HttpOnly",
+    "SameSite=Strict",
+  ].join("; ");
+}
+
+export function buildDeviceSessionClearCookie() {
+  return [
+    `${DEVICE_SESSION_COOKIE_NAME}=`,
+    "Path=/",
+    "Max-Age=0",
+    "Secure",
+    "HttpOnly",
+    "SameSite=Strict",
+  ].join("; ");
+}
+
+function getDeviceSessionStub(env, tokenId) {
+  const binding = env.RELAY_DEVICE_SESSION;
+  if (!binding || typeof binding.getByName !== "function") {
+    throw new RelayError("relay_temporarily_paused", 503);
+  }
+  try {
+    return binding.getByName(tokenId);
+  } catch {
+    throw new RelayError("relay_temporarily_paused", 503);
+  }
+}
+
+function assertDeviceSessionInfrastructure(env) {
+  requireSecret(env.RELAY_DEVICE_SESSION_SECRET, 32);
+  if (!env.RELAY_DEVICE_SESSION || typeof env.RELAY_DEVICE_SESSION.getByName !== "function") {
+    throw new RelayError("relay_temporarily_paused", 503);
+  }
+}
+
+function validateDeviceSessionResult(result) {
+  const allowedStatuses = new Set(["active", "invalid", "source_mismatch", "rate_limited"]);
+  if (!result || typeof result !== "object" || !allowedStatuses.has(result.status)) {
+    throw new RelayError("relay_temporarily_paused", 503);
+  }
+  return result;
+}
+
+export async function issueDeviceSession({ env, config = readConfig(env), nowMs = Date.now(), randomBytes }) {
+  const token = generateDeviceSessionToken(randomBytes);
+  const tokenId = await deriveDeviceSessionId(token, env.RELAY_DEVICE_SESSION_SECRET);
+  const stub = getDeviceSessionStub(env, tokenId);
+  let result;
+  try {
+    result = await stub.create({
+      tokenId,
+      nowMs,
+      idleTtlMs: config.deviceSessionIdleTtlSeconds * 1000,
+    });
+  } catch {
+    throw new RelayError("relay_temporarily_paused", 503);
+  }
+  validateDeviceSessionResult(result);
+  if (result.status !== "active") throw new RelayError("relay_temporarily_paused", 503);
+  return Object.freeze({ token, tokenId });
+}
+
+export async function authorizeDeviceSession({
+  env,
+  token,
+  sourceUrl = null,
+  credential = null,
+  consume = false,
+  config = readConfig(env),
   nowMs = Date.now(),
 }) {
-  const signingSecret = requireSecret(secret, 32);
-  validateTicketString(ticket);
-  const parts = ticket.split(".");
-  if (parts.length !== 2 || !parts[0] || !parts[1]) {
-    throw new RelayError("relay_ticket_invalid", 403);
-  }
-
-  const payloadBytes = base64UrlToBytes(parts[0]);
-  const signatureBytes = base64UrlToBytes(parts[1]);
-  let payload;
+  const tokenId = await deriveDeviceSessionId(token, env.RELAY_DEVICE_SESSION_SECRET);
+  const sourceFingerprint = sourceUrl === null && credential === null
+    ? null
+    : await deriveSourceCredentialFingerprint(
+      sourceUrl,
+      credential,
+      tokenId,
+      env.RELAY_DEVICE_SESSION_SECRET,
+      config,
+    );
+  const stub = getDeviceSessionStub(env, tokenId);
+  let result;
   try {
-    payload = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(payloadBytes));
+    result = await stub.authorize({
+      tokenId,
+      sourceFingerprint,
+      consume,
+      dailyLimit: config.deviceSessionDailyLimit,
+      nowMs,
+      idleTtlMs: config.deviceSessionIdleTtlSeconds * 1000,
+    });
   } catch {
-    throw new RelayError("relay_ticket_invalid", 403);
+    throw new RelayError("relay_temporarily_paused", 503);
   }
+  validateDeviceSessionResult(result);
+  if (result.status === "invalid") throw new RelayError("device_session_invalid", 401);
+  if (result.status === "source_mismatch") {
+    throw new RelayError("device_session_source_mismatch", 401);
+  }
+  if (result.status === "rate_limited") throw new RelayError("rate_limited", 429);
+  return Object.freeze({ tokenId, result });
+}
 
-  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-    throw new RelayError("relay_ticket_invalid", 403);
+export async function revokeDeviceSession({ env, token }) {
+  const tokenId = await deriveDeviceSessionId(token, env.RELAY_DEVICE_SESSION_SECRET);
+  const stub = getDeviceSessionStub(env, tokenId);
+  try {
+    const result = await stub.revoke({ tokenId });
+    if (!result || (result.status !== "revoked" && result.status !== "absent")) {
+      throw new RelayError("relay_temporarily_paused", 503);
+    }
+    return result;
+  } catch (error) {
+    if (error instanceof RelayError) throw error;
+    throw new RelayError("relay_temporarily_paused", 503);
   }
-  if (Object.keys(payload).length !== TICKET_KEYS.size) {
-    throw new RelayError("relay_ticket_invalid", 403);
-  }
-  for (const key of Object.keys(payload)) {
-    if (!TICKET_KEYS.has(key)) throw new RelayError("relay_ticket_invalid", 403);
-  }
-
-  const key = await importHmacKey(signingSecret, ["verify"]);
-  const validSignature = await crypto.subtle.verify(
-    "HMAC",
-    key,
-    signatureBytes,
-    new TextEncoder().encode(parts[0]),
-  );
-  if (!validSignature) throw new RelayError("relay_ticket_invalid", 403);
-
-  const nowSeconds = Math.floor(nowMs / 1000);
-  if (
-    payload.v !== 1 ||
-    payload.scope !== "entries" ||
-    payload.origin !== origin ||
-    !config.allowedOrigins.includes(payload.origin) ||
-    typeof payload.sid !== "string" ||
-    !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(payload.sid) ||
-    !Number.isSafeInteger(payload.iat) ||
-    !Number.isSafeInteger(payload.exp) ||
-    payload.iat > nowSeconds + TICKET_CLOCK_SKEW_SECONDS ||
-    payload.exp <= nowSeconds ||
-    payload.exp <= payload.iat ||
-    payload.exp - payload.iat > config.ticketTtlSeconds
-  ) {
-    throw new RelayError("relay_ticket_invalid", 403);
-  }
-
-  return Object.freeze(payload);
 }
 
 export async function verifyTurnstileToken(
@@ -617,11 +708,11 @@ export async function verifyTurnstileToken(
   config = readConfig(env),
   fetchImpl = fetch,
 ) {
-  const validated = validateSessionPayload({ turnstileToken });
+  const validatedToken = validateTurnstileTokenValue(turnstileToken);
   const secret = requireSecret(env.TURNSTILE_SECRET_KEY, 16);
   const siteverifyBody = new URLSearchParams({
     secret,
-    response: validated.turnstileToken,
+    response: validatedToken,
   });
 
   let response;
@@ -706,17 +797,8 @@ async function consumeCounter(binding, objectName, bucket, limit) {
   return result;
 }
 
-export async function consumeRelayLimits(env, claims, config = readConfig(env), nowMs = Date.now()) {
+export async function consumeGlobalRelayLimit(env, config = readConfig(env), nowMs = Date.now()) {
   const bucket = new Date(nowMs).toISOString().slice(0, 10);
-  // Reject an exhausted ticket before it can consume the Worker-wide budget.
-  const sessionResult = await consumeCounter(
-    env.RELAY_USAGE_COUNTER,
-    `session:${claims.sid}`,
-    bucket,
-    config.sessionDailyLimit,
-  );
-  if (!sessionResult.allowed) throw new RelayError("rate_limited", 429);
-
   const globalResult = await consumeCounter(
     env.RELAY_USAGE_COUNTER,
     "global",
@@ -724,10 +806,8 @@ export async function consumeRelayLimits(env, claims, config = readConfig(env), 
     config.globalHardDaily,
   );
   if (!globalResult.allowed) throw new RelayError("relay_temporarily_paused", 503);
-
   return Object.freeze({
     globalCount: globalResult.count,
-    sessionCount: sessionResult.count,
     warning: globalResult.count >= config.globalWarningDaily,
   });
 }
@@ -743,14 +823,17 @@ function buildCorsHeaders(origin, config) {
   });
   if (origin && config.allowedOrigins.includes(origin)) {
     headers.set("Access-Control-Allow-Origin", origin);
+    headers.set("Access-Control-Allow-Credentials", "true");
   }
   return headers;
 }
 
-function jsonResponse(body, status, origin, config) {
+function jsonResponse(body, status, origin, config, extraHeaders = {}) {
+  const headers = buildCorsHeaders(origin, config);
+  for (const [name, value] of Object.entries(extraHeaders)) headers.set(name, value);
   return new Response(JSON.stringify(body), {
     status,
-    headers: buildCorsHeaders(origin, config),
+    headers,
   });
 }
 
@@ -770,27 +853,54 @@ export async function handleRelayRequest(request, env = {}, services = {}) {
   const upstreamFetch = services.upstreamFetch || fetch;
   const turnstileFetch = services.turnstileFetch || fetch;
   const verifyTurnstile = services.verifyTurnstile || verifyTurnstileToken;
-  const issueTicket = services.issueTicket || issueRelayTicket;
-  const verifyTicket = services.verifyTicket || verifyRelayTicket;
-  const consumeLimits = services.consumeLimits || consumeRelayLimits;
-  const randomUUID = services.randomUUID || (() => crypto.randomUUID());
+  const consumeGlobalLimit = services.consumeGlobalLimit || consumeGlobalRelayLimit;
+  const issuePersistentSession = services.issueDeviceSession || issueDeviceSession;
+  const authorizePersistentSession = services.authorizeDeviceSession || authorizeDeviceSession;
+  const revokePersistentSession = services.revokeDeviceSession || revokeDeviceSession;
+  const randomBytes = services.randomBytes;
   let origin = null;
+  let clearDeviceCookieOnError = false;
 
   try {
     origin = assertAllowedOrigin(request, config);
 
     const url = new URL(request.url);
-    if (url.pathname !== "/v1/session" && url.pathname !== "/v1/entries") {
+    if (
+      url.pathname !== "/v1/entries" &&
+      !DEVICE_SESSION_PATHS.has(url.pathname)
+    ) {
       throw new RelayError("invalid_request", 404);
     }
+    if (url.search) throw new RelayError("invalid_request");
 
     if (request.method === "OPTIONS") {
       const headers = buildCorsHeaders(origin, config);
-      headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+      headers.set(
+        "Access-Control-Allow-Methods",
+        url.pathname === "/v1/device-session" ? "POST, DELETE, OPTIONS" : "POST, OPTIONS",
+      );
       headers.set("Access-Control-Allow-Headers", "Content-Type");
       headers.set("Access-Control-Max-Age", "600");
       headers.delete("Content-Type");
       return new Response(null, { status: 204, headers });
+    }
+
+    if (url.pathname === "/v1/device-session" && request.method === "DELETE") {
+      clearDeviceCookieOnError = true;
+      let token = null;
+      try {
+        token = readDeviceSessionCookie(request);
+      } catch (error) {
+        if (!(error instanceof RelayError) || error.code !== "device_session_invalid") throw error;
+      }
+      if (token) await revokePersistentSession({ env, token });
+      return jsonResponse(
+        { ok: true },
+        200,
+        origin,
+        config,
+        { "Set-Cookie": buildDeviceSessionClearCookie() },
+      );
     }
 
     if (request.method !== "POST") throw new RelayError("invalid_request", 405);
@@ -798,40 +908,99 @@ export async function handleRelayRequest(request, env = {}, services = {}) {
 
     const payload = await parseJsonRequest(request, config);
 
-    if (url.pathname === "/v1/session") {
-      const session = validateSessionPayload(payload);
+    if (url.pathname === "/v1/device-session") {
+      if (!config.deviceSessionsEnabled) throw new RelayError("relay_temporarily_paused", 503);
+      const session = validateDeviceSessionCreationPayload(payload, config);
       await verifyTurnstile(session.turnstileToken, env, config, turnstileFetch);
-      const issued = await issueTicket({
-        origin,
-        secret: env.RELAY_TICKET_SECRET,
-        config,
-        nowMs,
-        randomUUID,
-      });
+      assertDeviceSessionInfrastructure(env);
+
+      let previousToken = null;
+      try {
+        previousToken = readDeviceSessionCookie(request);
+      } catch (error) {
+        if (!(error instanceof RelayError) || error.code !== "device_session_invalid") throw error;
+      }
+
+      // Prove the candidate source before replacing a working browser session.
+      // A typo or provider outage therefore leaves the previous connection usable.
+      await consumeGlobalLimit(env, config, nowMs);
+      const verifiedEntries = await fetchGlurooEntries({
+        sourceUrl: session.sourceUrl,
+        credential: session.credential,
+        limit: 2,
+      }, config, upstreamFetch);
+      if (verifiedEntries.length === 0) throw new RelayError("no_glucose_data", 422);
+
+      let issued = null;
+      try {
+        issued = await issuePersistentSession({ env, config, nowMs, randomBytes });
+        await authorizePersistentSession({
+          env,
+          token: issued.token,
+          sourceUrl: session.sourceUrl,
+          credential: session.credential,
+          consume: true,
+          config,
+          nowMs,
+        });
+        if (previousToken) await revokePersistentSession({ env, token: previousToken });
+      } catch (error) {
+        if (issued?.token) {
+          try {
+            await revokePersistentSession({ env, token: issued.token });
+          } catch {
+            // The unused anonymous candidate remains bounded by its alarm.
+          }
+        }
+        throw error;
+      }
       return jsonResponse(
-        {
-          ok: true,
-          relayTicket: issued.ticket,
-          expiresAt: issued.expiresAt,
-          expiresInSeconds: issued.expiresInSeconds,
-        },
-        200,
+        { ok: true, session: { status: "active" }, entries: verifiedEntries },
+        201,
         origin,
         config,
+        { "Set-Cookie": buildDeviceSessionCookie(issued.token, config) },
       );
     }
 
-    const validated = validateRelayPayload(payload, config, { requireTicket: true });
-    const claims = await verifyTicket({
-      ticket: validated.relayTicket,
-      origin,
-      secret: env.RELAY_TICKET_SECRET,
+    if (url.pathname === "/v1/device-session/status") {
+      if (!config.deviceSessionsEnabled) throw new RelayError("relay_temporarily_paused", 503);
+      validateDeviceSessionStatusPayload(payload);
+      const token = readDeviceSessionCookie(request);
+      if (!token) throw new RelayError("device_session_invalid", 401);
+      await authorizePersistentSession({ env, token, config, nowMs, consume: false });
+      return jsonResponse(
+        { ok: true, session: { status: "active" } },
+        200,
+        origin,
+        config,
+        { "Set-Cookie": buildDeviceSessionCookie(token, config) },
+      );
+    }
+
+    if (!config.deviceSessionsEnabled) throw new RelayError("relay_temporarily_paused", 503);
+    const cookieToken = readDeviceSessionCookie(request);
+    if (!cookieToken) throw new RelayError("device_session_invalid", 401);
+    const validated = validateRelayPayload(payload, config);
+    // The stable device counter is consumed before the Worker-wide counter.
+    await authorizePersistentSession({
+      env,
+      token: cookieToken,
+      sourceUrl: validated.sourceUrl,
+      credential: validated.credential,
+      consume: true,
       config,
       nowMs,
     });
-    await consumeLimits(env, claims, config, nowMs);
+    await consumeGlobalLimit(env, config, nowMs);
     const entries = await fetchGlurooEntries(validated, config, upstreamFetch);
-    return jsonResponse({ ok: true, entries }, 200, origin, config);
+    return jsonResponse(
+      { ok: true, entries },
+      200,
+      origin,
+      config,
+      { "Set-Cookie": buildDeviceSessionCookie(cookieToken, config) },
+    );
   } catch (error) {
     const relayError = error instanceof RelayError ? error : new RelayError("upstream_unavailable", 502);
     const body = { ok: false, error: relayError.code };
@@ -841,6 +1010,10 @@ export async function handleRelayRequest(request, env = {}, services = {}) {
     ) {
       body.turnstileErrorCode = relayError.turnstileErrorCode;
     }
-    return jsonResponse(body, relayError.status, origin, config);
+    const extraHeaders = {};
+    if (origin && (relayError.code === "device_session_invalid" || clearDeviceCookieOnError)) {
+      extraHeaders["Set-Cookie"] = buildDeviceSessionClearCookie();
+    }
+    return jsonResponse(body, relayError.status, origin, config, extraHeaders);
   }
 }

@@ -1,0 +1,20 @@
+{
+  "id": "/",
+  "name": "GlucoScope",
+  "short_name": "GlucoScope",
+  "description": "血糖データを、責められることなくやさしく振り返るための血糖みまもりパートナー。",
+  "lang": "ja",
+  "start_url": "/?mode=user",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#0f172a",
+  "background_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/assets/gluco/about/gluco-small-notice.png",
+      "sizes": "768x768",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

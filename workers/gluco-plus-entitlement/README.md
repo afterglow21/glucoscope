@@ -318,8 +318,8 @@ The local adapter defines two future routes. Both remain disabled:
   `integration_identifier`. It never sends `payment_method_types`, `automatic_tax`, or
   subscription parameters. The browser receives only the hosted Checkout URL. The
   checked-in return paths are
-  `/glucoscope/?mode=user&checkout=success#settings` and
-  `/glucoscope/?mode=user&checkout=cancelled#settings`; both only return to the user settings UI.
+  `/?mode=user&checkout=success#settings` and
+  `/?mode=user&checkout=cancelled#settings`; both only return to the user settings UI.
   The Worker accepts only those two configured path/query/hash combinations. Neither
   path can grant an entitlement.
 - `POST /v1/stripe/webhook` is independent of browser Origin. It reads at most 256 KiB

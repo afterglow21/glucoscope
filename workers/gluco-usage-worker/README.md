@@ -87,14 +87,14 @@ The JSON usage payload must not contain glucose values, reading times, TIR/TAR/T
 Every request, including preflight, must carry the exact origin:
 
 ```text
-https://afterglow21.github.io
+https://glucoscope.app
 ```
 
 Originless and other-origin requests are rejected. JSON bodies are limited to 8 KiB. All responses use `Cache-Control: no-store`, `Pragma: no-cache`, and `Vary: Origin`.
 
 ### Create a device profile
 
-`POST /v1/profiles` requires a valid Turnstile token for action `glucoscope-usage-profile` and hostname `afterglow21.github.io`.
+`POST /v1/profiles` requires a valid Turnstile token for action `glucoscope-usage-profile` and hostname `glucoscope.app`.
 
 ```json
 {

@@ -24,10 +24,18 @@ import { createLiveRefreshController } from "../demos/cgm-comparison/live-refres
 import {
   anonymizeEntries,
   buildAnonymizedDataset,
+  collectCaptureEntries,
   validateCaptureRange
 } from "../tools/cgm-comparison-capture/capture-core.mjs";
 
 const sampleUrl = new URL("../demos/cgm-comparison/data/sample.json", import.meta.url);
+
+test("GitHub Pages custom domain is fixed to the public app hostname", async () => {
+  assert.equal(
+    (await readFile(new URL("../CNAME", import.meta.url), "utf8")).trim(),
+    "glucoscope.app",
+  );
+});
 
 test("public sample is explicitly synthetic, three-source, and privacy-safe", async () => {
   const sampleText = await readFile(sampleUrl, "utf8");
@@ -309,7 +317,7 @@ test("optional G7 feed failures return pending input without affecting required 
 });
 
 test("optional public feed endpoint accepts HTTPS and local HTTP only", () => {
-  const baseUrl = "https://afterglow21.github.io/glucoscope/demos/cgm-comparison/";
+  const baseUrl = "https://glucoscope.app/demos/cgm-comparison/";
   assert.equal(normalizePublicFeedEndpoint("", baseUrl), "");
   assert.equal(normalizePublicFeedEndpoint("https://example.com/v1/dexcom-g7", baseUrl), "https://example.com/v1/dexcom-g7");
   assert.equal(normalizePublicFeedEndpoint("http://localhost:8787/v1/dexcom-g7", baseUrl), "http://localhost:8787/v1/dexcom-g7");
@@ -481,6 +489,83 @@ test("candidate dataset includes only the anonymized publication schema", () => 
   assert.doesNotMatch(serialized, /2026-08-01|https?:\/\/|secret|dateString|device/i);
 });
 
+test("capture helper rotates the device session before reading the second Gluroo source", async () => {
+  const calls = [];
+  let activeRelaySourceId = "libre-2";
+  const makeAdapter = (sourceId) => ({
+    async fetchEntries(startMs, endMs, limit) {
+      calls.push(`fetch:${sourceId}`);
+      if (sourceId !== "guardian-4") assert.equal(activeRelaySourceId, sourceId);
+      assert.equal(startMs, 1000);
+      assert.equal(endMs, 2000);
+      assert.equal(limit, 12_000);
+      return { data: [{ sgv: 100, date: startMs }] };
+    }
+  });
+
+  const result = await collectCaptureEntries({
+    range: { startMs: 1000, endMs: 2000 },
+    relayConfigs: {
+      "libre-2": { id: "libre-config" },
+      "dexcom-g7": { id: "dexcom-config" }
+    },
+    preparedRelaySourceId: "libre-2",
+    prepareRelaySource: async (config, source) => {
+      calls.push(`prepare:${source.id}:${config.id}`);
+      activeRelaySourceId = source.id;
+    },
+    createPublicAdapter: () => makeAdapter("guardian-4"),
+    createRelayAdapter: (_config, source) => makeAdapter(source.id)
+  });
+
+  assert.deepEqual(calls, [
+    "fetch:guardian-4",
+    "fetch:libre-2",
+    "prepare:dexcom-g7:dexcom-config",
+    "fetch:dexcom-g7"
+  ]);
+  assert.equal(result.preparedRelaySourceId, "dexcom-g7");
+  assert.deepEqual(Object.keys(result.entriesBySource), ["guardian-4", "libre-2", "dexcom-g7"]);
+});
+
+test("capture helper prepares each Gluroo source when no session was prepared", async () => {
+  const calls = [];
+  let activeRelaySourceId = null;
+  const result = await collectCaptureEntries({
+    range: { startMs: 1000, endMs: 2000 },
+    relayConfigs: {
+      "libre-2": { id: "libre-config" },
+      "dexcom-g7": { id: "dexcom-config" }
+    },
+    prepareRelaySource: async (_config, source) => {
+      calls.push(`prepare:${source.id}`);
+      activeRelaySourceId = source.id;
+    },
+    createPublicAdapter: () => ({
+      async fetchEntries() {
+        calls.push("fetch:guardian-4");
+        return { data: [] };
+      }
+    }),
+    createRelayAdapter: (_config, source) => ({
+      async fetchEntries() {
+        assert.equal(activeRelaySourceId, source.id);
+        calls.push(`fetch:${source.id}`);
+        return { data: [] };
+      }
+    })
+  });
+
+  assert.deepEqual(calls, [
+    "fetch:guardian-4",
+    "prepare:libre-2",
+    "fetch:libre-2",
+    "prepare:dexcom-g7",
+    "fetch:dexcom-g7"
+  ]);
+  assert.equal(result.preparedRelaySourceId, "dexcom-g7");
+});
+
 test("public demo is linked while the capture helper stays unlinked and noindex", async () => {
   const rootIndex = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const demo = await readFile(new URL("../demos/cgm-comparison/index.html", import.meta.url), "utf8");
@@ -509,6 +594,12 @@ test("public demo is linked while the capture helper stays unlinked and noindex"
   assert.match(capture, /Azure Nightscout/);
   assert.match(captureModule, /createAdapter\(\{ mode: "public-demo" \}\)/);
   assert.match(captureModule, /prepareConnection\(relayConfigs\["libre-2"\]\)/);
+  assert.match(capture, /https:\/\/relay\.glucoscope\.app/);
+  assert.match(capture, /合計2回の安全確認/);
+  assert.match(capture, /入力と端末セッションを消す/);
+  assert.match(captureModule, /collectCaptureEntries\(\{/);
+  assert.match(captureModule, /revokeDeviceSession\(\)/);
+  assert.doesNotMatch(captureModule, /readRelaySession\(\)|約1時間|relayTicket|\/v1\/session/);
   assert.match(liveConfig, /libreFeedEndpoint:\s*"https:\/\/glucoscope-demo-feed\.afterglow21\.workers\.dev\/v1\/libre"/);
   assert.match(liveConfig, /dexcomFeedEndpoint:\s*"https:\/\/glucoscope-demo-feed\.afterglow21\.workers\.dev\/v1\/dexcom-g7"/);
   assert.match(liveConfig, /dexcomRouteVerified:\s*true/);

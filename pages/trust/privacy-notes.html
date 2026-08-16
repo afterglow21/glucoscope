@@ -49,6 +49,15 @@
       </section>
 
       <section class="trust-section">
+        <h2>次からもつながるための安全確認（準備中）</h2>
+        <p>Glurooは、最初につなぐ時だけ安全確認をします。その後は、この端末だけで使える保護された印をブラウザに持たせ、ふだんは安全確認をやり直さずにつなげる方式へ切り替える予定です。この変更はまだ公開サイトへ反映していません。切り替え後、今使っている方には1回だけ接続し直していただきます。</p>
+        <p>180日使わなければ、その印は使えなくなります。ふだん使っている間は期限を先へ延ばしますが、ずっと使えることを約束するものではありません。ブラウザの保存を消した時、安全のための変更をした時、または運営側で止めた時は、もう一度安全確認をお願いします。</p>
+        <p>中継側に残すのは、元に戻せない形へ変えた端末の印、作った日時、最後に使った日時、使えなくなる日時、無効にしたかどうか、同じ接続先と合言葉かを確かめる元に戻せない印、その日の利用回数だけです。元の接続先URL、合言葉、血糖データ、氏名、メールアドレス、IPアドレス、端末やブラウザの名前は保存しません。利用状況の記録やPlusの本人確認とも結びつけません。</p>
+        <p>接続を削除するときは、この端末の接続先URLと合言葉を先に消し、その後で中継側の印も使えないようにします。通信できない時でも、端末内の削除は待たずに完了します。その場合、中継側に残った匿名の印は、最後に使った時から180日で使えなくなり、その後自動削除の対象になります。削除が終わる正確な時刻は約束しません。元のURLと合言葉は中継側にないため、その印だけで血糖データを読むことはできません。</p>
+        <p>iPhoneでは、まずSafariでGlucoScopeを開いて「ホーム画面に追加」し、追加したアイコンから開いて初回接続をしてください。Safariで先に接続してからアイコンを作ると、接続先URLと合言葉がアイコン側へ移らず、もう一度だけ入力が必要になることがあります。</p>
+      </section>
+
+      <section class="trust-section">
         <h2>表示名と利用状況</h2>
         <p>公開デモを見るだけなら、名前は必要ありません。自分のデータをつなぐときは、本名でなくてよい表示名を使います。</p>
         <p>GlucoScopeをよくするため、表示名、使った日、AI分析を使った回数、通常のグルコの想い出の数を記録します。血糖値、接続情報、AIお手紙の本文は記録しません。</p>
@@ -112,6 +121,15 @@
         <p>Your connection URL and passphrase are saved on this phone or computer only if you choose to save them. On a shared device, do not save them, or remove them when you finish.</p>
         <p>Nightscout is read directly by this device. With Gluroo easy connection, the information needed for display passes briefly through the GlucoScope relay. GlucoScope does not save, log, send to AI, or share your connection details or glucose data. The screen tells you before this connection begins.</p>
         <p>GlucoScope never asks you to enter your Apple, Google, Gluroo, Dexcom, Libre, or other service login password.</p>
+      </section>
+
+      <section class="trust-section">
+        <h2>A safety check that keeps Gluroo connected (in preparation)</h2>
+        <p>Gluroo will ask for a safety check only when you first connect. After that, the browser will keep a protected marker that works only on this device, so ordinary visits can reconnect without repeating the check. This change has not been published to the live site yet. After the change, the existing early-access user will need to connect once more.</p>
+        <p>The marker stops working after 180 days without use. Successful everyday use moves that date forward, but GlucoScope does not promise permanent access. Erasing browser data, a security change, or an operator revocation can require another safety check.</p>
+        <p>The relay keeps only a one-way form of the device marker, when it was created and last used, when it expires, whether it was revoked, a one-way marker used to confirm the same connection URL and passphrase, and the current day's request count. It does not keep the original URL, passphrase, glucose data, name, email address, IP address, or device or browser name. These relay records are not joined to optional usage recording or Plus identity.</p>
+        <p>When you delete the connection, GlucoScope removes the URL and passphrase from the device first, then tries to revoke the relay marker. Local deletion finishes without waiting for the network. If the device cannot reach the relay, the anonymous marker becomes unusable 180 days after its last use and is then eligible for automatic cleanup. GlucoScope does not promise an exact physical-deletion time. The relay does not have the original URL or passphrase, so the marker alone cannot read glucose data.</p>
+        <p>On iPhone, first open GlucoScope in Safari and choose Add to Home Screen. Then open the new icon and complete the first connection there. If you connect in Safari before creating the icon, the URL and passphrase may not move into the Home Screen app, so one more connection may be required.</p>
       </section>
 
       <section class="trust-section">
