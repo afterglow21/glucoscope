@@ -116,17 +116,18 @@ test("aggregate query includes only recording profiles and completed daily activ
   assert.match(publicAggregateTesting.PUBLIC_AGGREGATE_SQL, /GROUP BY profile_id/u);
 });
 
-test("real SQL keeps public AI telemetry on the consented usage_daily cohort", async (t) => {
+test("real SQL works on the production 0001-only schema", async (t) => {
   const database = new DatabaseSync(":memory:");
   t.after(() => database.close());
   database.exec(await readFile(
     new URL("../migrations/0001_initial_usage_schema.sql", import.meta.url),
     "utf8",
   ));
-  database.exec(await readFile(
-    new URL("../migrations/0002_ai_quota.sql", import.meta.url),
-    "utf8",
-  ));
+
+  const quotaTable = database.prepare(`
+    SELECT name FROM sqlite_schema WHERE name = 'ai_quota_days'
+  `).get();
+  assert.equal(quotaTable, undefined);
 
   const insertProfile = database.prepare(`
     INSERT INTO profiles (
@@ -145,13 +146,6 @@ test("real SQL keeps public AI telemetry on the consented usage_daily cohort", a
     insertProfile.run(profileId, String(index).padStart(43, "T"));
     insertUsage.run(profileId, index === 1 ? 3 : 0);
   }
-  database.prepare(`
-    INSERT INTO ai_quota_days (
-      subject_key, subject_kind, device_profile_id, day, success_count,
-      last_completed_reservation_id, updated_at
-    ) VALUES (?, 'account', NULL, '2026-08-14', 5, NULL, 1)
-  `).run("Q".repeat(43));
-
   const report = await readPublicUsageAggregate(new SqliteD1Database(database), {
     nowMs: Date.parse("2026-08-15T01:00:00.000Z"),
   });

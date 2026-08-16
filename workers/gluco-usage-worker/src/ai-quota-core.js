@@ -388,6 +388,12 @@ export async function getAggregateAiUsage(env = {}, services = {}) {
 
 export async function runAiQuotaCleanup(store, env = {}, nowMs = Date.now()) {
   const config = readAiQuotaConfig(env);
+  if (!config.enabled) {
+    return {
+      attemptsDeleted: 0,
+      daysDeleted: 0,
+    };
+  }
   const cutoffMs = nowMs - config.retentionDays * DAY_MS;
   return store.cleanup({
     attemptCutoff: cutoffMs,

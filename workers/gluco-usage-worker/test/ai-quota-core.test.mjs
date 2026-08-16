@@ -291,6 +291,28 @@ test("disabled enforcement performs no authentication or quota write", async () 
   assert.equal(harness.store.reserveCalls, 0);
 });
 
+test("disabled quota cleanup performs no D1 operation", async () => {
+  let cleanupCalls = 0;
+  const store = {
+    async cleanup() {
+      cleanupCalls += 1;
+      throw new Error("disabled cleanup must not touch quota tables");
+    },
+  };
+
+  const result = await runAiQuotaCleanup(
+    store,
+    { AI_PER_USER_QUOTA_ENABLED: "false" },
+    NOW,
+  );
+
+  assert.deepEqual(result, {
+    attemptsDeleted: 0,
+    daysDeleted: 0,
+  });
+  assert.equal(cleanupCalls, 0);
+});
+
 test("a free device profile consumes one successful generation per JST day", async () => {
   const harness = createHarness();
   const first = await reserveAiGeneration(deviceRequest(uuid(1)), harness.env, harness.services);
@@ -475,7 +497,11 @@ test("aggregate totals count only completed attempts and cleanup uses retention 
 
   const cleanup = await runAiQuotaCleanup(
     harness.store,
-    { AI_QUOTA_RETENTION_DAYS: "1", AI_QUOTA_TIMEZONE_OFFSET_HOURS: "9" },
+    {
+      AI_PER_USER_QUOTA_ENABLED: "true",
+      AI_QUOTA_RETENTION_DAYS: "1",
+      AI_QUOTA_TIMEZONE_OFFSET_HOURS: "9",
+    },
     NOW + 2 * 24 * 60 * 60 * 1000,
   );
   assert.deepEqual(cleanup, { attemptsDeleted: 1, daysDeleted: 1 });
