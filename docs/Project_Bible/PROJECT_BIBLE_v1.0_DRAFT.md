@@ -1889,7 +1889,7 @@ Visible labels use everyday language such as connection URL, connection passphra
 
 Gluroo is an external service. GlucoScope must state that its availability, pricing, screens, features, and connection behavior may change, and that GlucoScope does not operate Gluroo.
 
-The beginner route must state its device boundary honestly. Guardian (MiniMed 780G) may use the verified iPhone route from Guardian Monitor to Gluroo Global Connect. Guardian Monitor remains an external uploader and its one-destination limitation is shown only as a conditional note. Dexcom Share, LibreLinkUp, and Guardian Monitor receive separate preparation guides, and CGM manufacturer passwords are never entered into GlucoScope.
+The beginner route must state its device boundary honestly. Guardian (MiniMed 780G) may use the verified iPhone route from Guardian Monitor to Gluroo Global Connect. Guardian Monitor remains an external uploader and its one-destination limitation is shown only as a conditional note. The Guardian Monitor guide must also state before setup that, although the app can be downloaded without charge, its current Full Access subscription is required for the Nightscout-sync workflow, that this cost is separate from GlucoScope, and that current App Store and in-app terms must be checked because they may change. Dexcom Share, LibreLinkUp, and Guardian Monitor receive separate preparation guides, and CGM manufacturer passwords are never entered into GlucoScope.
 
 The beginner guides incorporate every supplied device-preparation capture as one screen per step: 27 LibreLink / LibreLinkUp screens and 10 Dexcom Share screens. Personal fields in the supplied captures are masked. Both their return and completion actions resume the shared Gluroo flow at screen 22 after device preparation, where the prepared CGM is selected and connected; they do not skip ahead to Global Connect at screen 30. Both guides warn that app updates may change screens, wording, and order.
 
@@ -1947,6 +1947,7 @@ GlucoScopeはGlurooの運営や変更へ関与しません。
 対応範囲は正直に示します。
 Guardian（MiniMed 780G）は、iPhoneのGuardian MonitorからGluroo Global Connectへ送る実機確認済みルートを案内できます。
 Guardian Monitorは外部の送信アプリであり、送信先が1つだけという制約は該当する人にだけ小さく補足します。
+Guardian Monitorは無料でダウンロードできますが、現在この手順で使うNightscout同期には有料のFull Accessサブスクリプションが必要です。準備ガイドでは、これはGlucoScopeとは別料金であること、料金や条件は変わり得るため開始前にApp Storeとアプリ内の最新表示を確認することを、手順より前に明記します。
 Dexcom Share、LibreLinkUp、Guardian Monitorは別の準備ガイドを用意し、
 CGMメーカーのパスワードをGlucoScopeへ入力させません。
 

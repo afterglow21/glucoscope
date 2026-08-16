@@ -219,6 +219,10 @@ test("Guardian uses the verified Guardian Monitor to Gluroo route", () => {
   assert.match(glurooGuide, /Guardian MonitorからGluroo Global ConnectへNightscout同期/);
   assert.match(guardianGuide, /実機確認しています/);
   assert.match(guardianGuide, /バックグラウンド更新をオン/);
+  assert.match(guardianGuide, /Nightscout同期を含むフル機能には、アプリ内の有料サブスクリプション（Full Access）が必要/);
+  assert.match(guardianGuide, /GlucoScopeとは別の料金/);
+  assert.match(guardianGuide, /apps\.apple\.com\/jp\/app\/guardian-monitor\/id1546989938/);
+  assert.match(nightscoutGuide, /Nightscout同期を含むフル機能にはアプリ内の有料サブスクリプション（Full Access）が必要/);
   assert.doesNotMatch(index, /Guardianは現在のかんたん接続では利用できません/);
 });
 
