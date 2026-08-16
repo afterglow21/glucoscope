@@ -42,7 +42,7 @@ test("server-renders the allowlisted dashboard with no-store security headers", 
   assert.equal(response.headers.get("x-robots-tag"), "noindex, nofollow, noarchive");
   assert.match(html, /利用者の利用状況/u);
   assert.match(html, /&lt;グルコ &amp; ともだち&gt;/u);
-  assert.match(html, /1行は「1人」ではなく「1つの端末プロフィール」です/u);
+  assert.match(html, /1枚は「1人」ではなく「1つの端末プロフィール」です/u);
   assert.match(html, /取得: 2026\/08\/14 10:02:03 JST/u);
   assert.match(html, /href="\/">更新<\/a>/u);
   assert.match(html, /利用した日数<\/dt><dd>3日/u);
@@ -53,8 +53,66 @@ test("server-renders the allowlisted dashboard with no-store security headers", 
   assert.match(html, /購入者ごとの情報、メールアドレス、Stripe ID、購入履歴は表示しません/u);
   assert.match(html, /\.refresh\{display:inline-flex;min-height:44px/u);
   assert.match(html, /class="profiles"/u);
+  assert.doesNotMatch(html, /class="same-name"/u);
   assert.doesNotMatch(html, /<table/iu);
   assert.doesNotMatch(html, /<script/iu);
+});
+
+test("keeps repeated display names as separate device-profile cards and labels each occurrence", async () => {
+  const duplicateNameReport = Object.freeze({
+    profiles: Object.freeze([
+      Object.freeze({
+        displayName: "カズマ",
+        collectionEnabled: true,
+        activeDays: 2,
+        aiGenerationSuccessTotal: 1,
+        ordinaryGlucoMemoryCount: 4,
+      }),
+      Object.freeze({
+        displayName: "あやか",
+        collectionEnabled: true,
+        activeDays: 3,
+        aiGenerationSuccessTotal: 2,
+        ordinaryGlucoMemoryCount: 5,
+      }),
+      Object.freeze({
+        displayName: "カズマ",
+        collectionEnabled: false,
+        activeDays: 5,
+        aiGenerationSuccessTotal: 6,
+        ordinaryGlucoMemoryCount: 7,
+      }),
+      Object.freeze({
+        displayName: "カズマ",
+        collectionEnabled: true,
+        activeDays: 9,
+        aiGenerationSuccessTotal: 10,
+        ordinaryGlucoMemoryCount: 11,
+      }),
+    ]),
+    truncated: false,
+  });
+  const response = await handleAdminRequest(
+    new Request("https://admin.example.test/"),
+    {},
+    acceptedServices({ readAdminUsage: async () => duplicateNameReport }),
+  );
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.equal((html.match(/<article class="profile">/gu) || []).length, 4);
+  assert.equal((html.match(/<h3>カズマ<\/h3>/gu) || []).length, 3);
+  assert.match(html, /同じ表示名 1 \/ 3/u);
+  assert.match(html, /同じ表示名 2 \/ 3/u);
+  assert.match(html, /同じ表示名 3 \/ 3/u);
+  assert.equal((html.match(/class="same-name"/gu) || []).length, 3);
+  assert.doesNotMatch(html, /<h3>あやか<\/h3><p class="same-name">/u);
+  assert.match(html, /同じ表示名が付いていても、同じ人だとは判断できません/u);
+  assert.match(html, /プロフィールをまとめたり、回数を合算したりしません/u);
+  assert.match(html, /接続先URLや合言葉は利用記録に保存していないため、同じ接続先かどうかもこの画面では比較できません/u);
+  assert.match(html, /<h3>カズマ<\/h3><p class="same-name">同じ表示名 1 \/ 3<\/p><\/div>[\s\S]*?<dt>利用した日数<\/dt><dd>2日<\/dd>/u);
+  assert.match(html, /<h3>カズマ<\/h3><p class="same-name">同じ表示名 2 \/ 3<\/p><\/div>[\s\S]*?<dt>利用した日数<\/dt><dd>5日<\/dd>/u);
+  assert.match(html, /<h3>カズマ<\/h3><p class="same-name">同じ表示名 3 \/ 3<\/p><\/div>[\s\S]*?<dt>利用した日数<\/dt><dd>9日<\/dd>/u);
 });
 
 test("authentication failure is fail-closed and never reads D1", async () => {

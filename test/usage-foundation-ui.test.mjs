@@ -49,7 +49,7 @@ test("supervised usage recording keeps its frontend and analytics gates in locks
   assert.match(app, /const USAGE_PROFILE_ENABLED = true;/);
   assert.match(app, /dataSourceUsageNotePaused: "表示名はこの端末に保存します。利用記録は現在停止中です。"/);
   assert.match(app, /dataSourceUsageNotePaused: "The display name is saved on this device\. Usage recording is currently paused\."/);
-  assert.match(app, /const usageNoteKey = USAGE_PROFILE_ENABLED \? "dataSourceUsageNote" : "dataSourceUsageNotePaused";/);
+  assert.match(app, /const usageNoteKey = !USAGE_PROFILE_ENABLED\s*\? "dataSourceUsageNotePaused"\s*: !usageState\.registered && !shouldCreateNewUsageProfile\(getDataSourceBrowserContext\(\)\)\s*\? "dataSourceUsageNoteSafari"\s*: "dataSourceUsageNote";/s);
   assert.match(app, /usageNote\.dataset\.i18nKey = usageNoteKey;\s*usageNote\.textContent = t\(usageNoteKey\);/s);
   const metaEnabled = index.match(/name="glucoscope-usage-profile-enabled" content="(true|false)"/)?.[1];
   const appEnabled = app.match(/const USAGE_PROFILE_ENABLED = (true|false);/)?.[1];
@@ -424,6 +424,8 @@ test("data connection asks for a required display name with one short usage note
   assert.match(form, /表示名と基本的な利用回数を、GlucoScopeをよくするために記録します。血糖値や接続情報は記録しません。/);
   assert.match(form, /href="pages\/trust\/privacy-notes\.html"[^>]*data-i18n-key="dataSourceUsageDetails"/);
   assert.match(app, /dataSourceTestWaiting: "入力できたら、接続と保存をまとめて行います。"/);
+  assert.match(app, /dataSourceUsageNoteSafari: "Safariでこのまま続ける場合、表示名はこのブラウザにだけ保存し、新しい利用記録は作りません。血糖値や接続情報も記録しません。"/);
+  assert.match(app, /!usageState\.registered && !shouldCreateNewUsageProfile\(getDataSourceBrowserContext\(\)\)/);
   assert.doesNotMatch(form, /ランダムな番号|90日を上限|この端末の利用状況を共有する|今はしない/);
 });
 

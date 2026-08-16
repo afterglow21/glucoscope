@@ -9,7 +9,7 @@ const css = await readFile(new URL("../style.css", import.meta.url), "utf8");
 
 function loadBrowserDetector() {
   const start = app.indexOf("function getDataSourceBrowserContext");
-  const end = app.indexOf("function setVisibleDataSourceEntryPanel", start);
+  const end = app.indexOf("function shouldCreateNewUsageProfile", start);
   assert.ok(start >= 0 && end > start);
   return vm.runInNewContext(`(${app.slice(start, end).trim()})`, {
     window: {
@@ -19,6 +19,13 @@ function loadBrowserDetector() {
       }
     }
   });
+}
+
+function loadUsageEnrollmentPolicy() {
+  const start = app.indexOf("function shouldCreateNewUsageProfile");
+  const end = app.indexOf("function setVisibleDataSourceEntryPanel", start);
+  assert.ok(start >= 0 && end > start);
+  return vm.runInNewContext(`(${app.slice(start, end).trim()})`);
 }
 
 test("Instagram and non-Safari iPhone browsers are separated from Safari and Home Screen launches", () => {
@@ -61,6 +68,30 @@ test("the in-app browser is a hard stop and ordinary Safari gets install-first g
   assert.match(index, /id="dataSourceContinueInSafariButton"/);
   assert.match(app, /if \(context\.isInAppBrowser\) \{\s*showDataSourceInAppBrowserStep\(\);\s*return true;/s);
   assert.match(app, /context\.isIphoneSafari && !context\.isStandalone/);
+});
+
+test("optional Usage enrollment happens only in the iPhone Home Screen app", () => {
+  assert.match(index, /js\/app\.js\?v=20260816-device-session-1-onboarding-flow-2-usage-profile-1/);
+  const shouldCreate = loadUsageEnrollmentPolicy();
+  assert.equal(shouldCreate({ isIphone: true, isStandalone: false }), false);
+  assert.equal(shouldCreate({ isIphone: true, isStandalone: true }), true);
+  assert.equal(shouldCreate({ isIphone: false, isStandalone: false }), true);
+
+  const saveStart = app.indexOf("async function handleDataSourceSave");
+  const saveEnd = app.indexOf("async function handleDataSourceDelete", saveStart);
+  const saveFlow = app.slice(saveStart, saveEnd);
+  assert.match(
+    saveFlow,
+    /if \(!shouldCreateNewUsageProfile\(getDataSourceBrowserContext\(\)\)\) \{\s*void completePendingDataSourceSave\("", generation, \{ skipUsageProfile: true \}\);\s*return;\s*\}/s
+  );
+  assert.ok(
+    saveFlow.indexOf("if (state.registered)")
+      < saveFlow.indexOf("shouldCreateNewUsageProfile(getDataSourceBrowserContext())")
+  );
+  assert.ok(
+    saveFlow.indexOf("shouldCreateNewUsageProfile(getDataSourceBrowserContext())")
+      < saveFlow.indexOf("prepareUsageProfileTurnstile(generation)")
+  );
 });
 
 test("connection confirmation and save use one guarded primary operation", () => {

@@ -21,6 +21,8 @@ Version `d17e89e9-bc15-40fb-90a0-2e85cb19cf42` was deployed through deployment `
 - Profile IDs, bearer tokens and hashes, created/last-seen times, daily rows, glucose data, AI-letter contents, CGM details, and connection information are not selected or rendered.
 - Every response is `no-store`, disallows framing and referrers, uses a restrictive Content Security Policy, and sends `X-Robots-Tag: noindex, nofollow, noarchive`.
 - Device profiles are presented as responsive cards that remain readable in one column at 320px. The page has a manual refresh link and shows only the server-render time in JST; no profile timestamp is selected or returned.
+- Every result row remains one separate device-profile card. Cards with the same normalized display name receive visible `同じ表示名 1 / 3`-style position labels; they are never merged and their counts are never summed.
+- A repeated display name is not evidence that the cards belong to the same person. Connection URLs and passphrases are not stored in Usage records, so the dashboard cannot and does not compare whether two cards use the same connection.
 - Application and invocation logging remain disabled. Do not add display names or production rows to logs, screenshots, fixtures, Git, or support messages.
 
 The D1 binding itself does not expose a read-only permission setting. Least privilege is therefore enforced by using a separate Worker, omitting every mutation route, keeping exactly one fixed `SELECT`, and testing that no write SQL exists. The existing Usage Worker, D1 schema, collection switch, and public frontend do not need to change for this initial dashboard.
@@ -67,6 +69,7 @@ The current Access session duration is 15 minutes. Retain browser-only cookie ha
 - Before and after the smoke check, the counts in `profiles`, `usage_daily`, and `event_receipts` are unchanged.
 - No Secret value, Access token, email address, display name, profile row, or database content is copied into the deployment record.
 - No Plus account row, purchaser email, Stripe identifier, payment history, or device-profile-to-Plus relationship appears in HTML, logs, fixtures, screenshots, or deployment records.
+- Repeated normalized display names stay as separate cards, each receives the correct occurrence label, and no per-card count is merged or summed.
 
 The 2026-08-15 browser acceptance directly confirmed the unauthenticated Access redirect, the allowed administrator's read-only empty state, `404` handling for a query string and an unknown path, and the absence of scripts, images, and external links. JWT signature, issuer, audience, expiry, required issued-at claim, email, method, header, escaping, and no-write boundaries remain covered by the local acceptance suite. Record the production D1 check only as “row counts unchanged”; never copy the counts or row contents into Git.
 

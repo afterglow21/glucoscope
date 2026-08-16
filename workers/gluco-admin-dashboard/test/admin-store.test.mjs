@@ -58,6 +58,42 @@ test("allowlists fields and drops identifiers, timestamps, and daily data", asyn
   assert.equal(JSON.stringify(report).includes("2026-08-14"), false);
 });
 
+test("normalizes repeated names but keeps every device-profile row separate", async () => {
+  const report = await readAdminUsage(fakeDatabase([
+    {
+      displayName: "  カズマ  ",
+      collectionEnabled: 1,
+      activeDays: 2,
+      aiGenerationSuccessTotal: 1,
+      ordinaryGlucoMemoryCount: 4,
+    },
+    {
+      displayName: "カズマ",
+      collectionEnabled: 0,
+      activeDays: 9,
+      aiGenerationSuccessTotal: 10,
+      ordinaryGlucoMemoryCount: 11,
+    },
+  ]));
+
+  assert.deepEqual(report.profiles, [
+    {
+      displayName: "カズマ",
+      collectionEnabled: true,
+      activeDays: 2,
+      aiGenerationSuccessTotal: 1,
+      ordinaryGlucoMemoryCount: 4,
+    },
+    {
+      displayName: "カズマ",
+      collectionEnabled: false,
+      activeDays: 9,
+      aiGenerationSuccessTotal: 10,
+      ordinaryGlucoMemoryCount: 11,
+    },
+  ]);
+});
+
 test("shows at most 100 device profiles", async () => {
   const rows = Array.from({ length: 101 }, (_, index) => ({
     displayName: `端末 ${index + 1}`,

@@ -3404,6 +3404,16 @@ sent. The same person on two browsers appears as two profiles, and erasing brows
 storage prevents recovery or cross-device merging. This identity must not be reused for
 Plus, payment, or medical data.
 
+iPhone Safari, in-app browsers such as Instagram, and an installed Home Screen web app
+do not necessarily share one storage context. Usage must not store or compare the CGM
+connection URL, passphrase, or relay identity to infer that two profiles belong to one
+person. The standard iPhone path is to leave an in-app or non-Safari browser, add
+GlucoScope to the Home Screen from Safari before connecting, and make the first
+connection inside the Home Screen app. If someone explicitly continues in Safari, the
+verified CGM connection may still be saved there, but no new optional Usage device
+profile is created. Existing profiles with the same display name remain separate and
+must not be merged or have their counts summed automatically.
+
 A failure limited to the usage-profile Turnstile or Usage Worker must not block an
 otherwise verified CGM connection. Save the required display name and connection in the
 browser, start user mode, and leave the usage profile unregistered with collection off.
@@ -3679,6 +3689,14 @@ Cloudflareで一時処理する別の境界として維持します。送って�
 Lucky Gluco No.51〜70とUnicorn Glucoは除外し、想い出IDや出会った日も送りません。
 同じ人が2つのブラウザで使うと2件になり、ブラウザ保存を消すと復旧・端末統合はできません。
 この識別情報をPlus、決済、医療データへ流用しません。
+
+iPhoneのSafari、Instagram等のアプリ内ブラウザ、ホーム画面Webアプリは、同じ端末でも
+保存領域が同じとは限りません。接続URL、合言葉、限定中継の識別情報をUsageへ保存・照合して、
+2つのプロフィールを同一人物と推測することは禁止します。iPhoneの標準導線は、アプリ内または
+Safari以外のブラウザを離れ、Safariから接続前にホーム画面へ追加し、ホーム画面アプリ内で
+初回接続する順序とします。本人がSafariでそのまま続けることを明示的に選んだ場合、検証済みの
+CGM接続は保存できますが、新しい任意Usage端末プロフィールは作りません。同じ表示名の既存
+プロフィールは別々に保ち、自動統合や回数の合算をしません。
 
 利用プロフィール専用のTurnstileまたはUsage Workerだけが失敗した場合は、検証済みの
 CGM接続を止めません。必須表示名と接続情報をブラウザへ保存してユーザーモードを開始し、

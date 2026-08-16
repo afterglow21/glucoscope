@@ -40,7 +40,7 @@ const STYLE = `
   .card{margin-top:1rem;border:1px solid #dbe9df;border-radius:1rem;background:#fff;box-shadow:0 .45rem 1.4rem rgba(31,77,48,.06)}.notice,.message{padding:1rem 1.1rem}.notice p{margin:.25rem 0 0;color:#53675b}
   .header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}.refresh{display:inline-flex;min-height:44px;align-items:center;border:1px solid #bfd7c7;border-radius:999px;padding:.55rem .85rem;background:#fff;color:#28643b;font-weight:700;text-decoration:none;white-space:nowrap}.refresh:focus-visible{outline:3px solid #2563eb;outline-offset:3px}.updated{margin:.5rem 0 0;color:#617568;font-size:.85rem}
   .summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.75rem;margin-top:1rem}.metric{padding:1rem}.metric span{display:block;color:#617568;font-size:.82rem}.metric strong{display:block;margin-top:.2rem;font-size:1.65rem;font-variant-numeric:tabular-nums}.metric-note{display:block;margin-top:.3rem;color:#617568;font-size:.76rem;line-height:1.45}
-  .list-card{padding:1rem}.list-head p{margin:.2rem 0 .5rem;color:#617568;font-size:.9rem}.profiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr));gap:.75rem;margin-top:1rem}.profile{border:1px solid #e0ebe3;border-radius:.85rem;padding:.9rem;background:#fbfdfb}.profile h3{margin:0 0 .75rem;font-size:1rem;overflow-wrap:anywhere}.profile dl{margin:0}.profile dl div{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.48rem 0;border-top:1px solid #e8efe9}.profile dt{color:#5a6d60;font-size:.82rem}.profile dd{margin:0;font-weight:750;font-variant-numeric:tabular-nums}
+  .list-card{padding:1rem}.list-head p{margin:.2rem 0 .5rem;color:#617568;font-size:.9rem}.profiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr));gap:.75rem;margin-top:1rem}.profile{border:1px solid #e0ebe3;border-radius:.85rem;padding:.9rem;background:#fbfdfb}.profile-name{margin-bottom:.75rem}.profile h3{margin:0;font-size:1rem;overflow-wrap:anywhere}.same-name{display:inline-block;margin:.45rem 0 0;border:1px solid #e6c97a;border-radius:999px;padding:.25rem .58rem;background:#fff8df;color:#765716;font-size:.76rem;font-weight:750}.profile dl{margin:0}.profile dl div{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.48rem 0;border-top:1px solid #e8efe9}.profile dt{color:#5a6d60;font-size:.82rem}.profile dd{margin:0;font-weight:750;font-variant-numeric:tabular-nums}
   .badge{display:inline-block;border-radius:999px;padding:.28rem .62rem;font-size:.78rem;font-weight:750;white-space:nowrap}.on{background:#e3f5e8;color:#23653a}.off{background:#f1f3f1;color:#5d6860}.empty{padding:1rem 0;color:#5d6f63}.footnote{margin-top:1rem;color:#5d6f63;font-size:.88rem}
   @media(max-width:42rem){main{width:min(100% - 1rem,72rem)}.summary{grid-template-columns:1fr;gap:.5rem}.metric{display:flex;align-items:center;justify-content:space-between;padding:.8rem 1rem}.metric strong{margin:0;font-size:1.35rem}.plus-metric{display:grid;grid-template-columns:1fr auto}.plus-metric .metric-note{grid-column:1/-1}}
 `;
@@ -68,6 +68,25 @@ function formatJst(nowMs) {
   }).format(date)} JST`;
 }
 
+function annotateSameDisplayNames(profiles) {
+  const totals = new Map();
+  const positions = new Map();
+  for (const profile of profiles) {
+    const displayName = String(profile?.displayName ?? "");
+    totals.set(displayName, (totals.get(displayName) || 0) + 1);
+  }
+  return profiles.map((profile) => {
+    const displayName = String(profile?.displayName ?? "");
+    const position = (positions.get(displayName) || 0) + 1;
+    positions.set(displayName, position);
+    return {
+      profile,
+      sameNamePosition: position,
+      sameNameTotal: totals.get(displayName) || 1,
+    };
+  });
+}
+
 function renderDashboard(report, plusSummary = {}, nowMs = Date.now()) {
   const profiles = Array.isArray(report?.profiles) ? report.profiles : [];
   const enabledCount = profiles.filter((profile) => profile.collectionEnabled).length;
@@ -76,15 +95,20 @@ function renderDashboard(report, plusSummary = {}, nowMs = Date.now()) {
     && plusSummary.activePlusCount >= 0;
   const plusCount = plusAvailable ? plusSummary.activePlusCount : "--";
   const plusNote = plusAvailable ? "有効な30日パス" : "確認できません";
-  const cards = profiles.map((profile) => `<article class="profile">
-    <h3>${escapeHtml(profile.displayName)}</h3>
+  const cards = annotateSameDisplayNames(profiles).map(({ profile, sameNamePosition, sameNameTotal }) => {
+    const sameNameLabel = sameNameTotal > 1
+      ? `<p class="same-name">同じ表示名 ${escapeHtml(sameNamePosition)} / ${escapeHtml(sameNameTotal)}</p>`
+      : "";
+    return `<article class="profile">
+    <div class="profile-name"><h3>${escapeHtml(profile.displayName)}</h3>${sameNameLabel}</div>
     <dl>
       <div><dt>利用記録</dt><dd><span class="badge ${profile.collectionEnabled ? "on" : "off"}">${profile.collectionEnabled ? "記録中" : "停止中"}</span></dd></div>
       <div><dt>利用した日数</dt><dd>${escapeHtml(profile.activeDays)}日</dd></div>
       <div><dt>新しいAI分析</dt><dd>${escapeHtml(profile.aiGenerationSuccessTotal)}回</dd></div>
       <div><dt>グルコの想い出</dt><dd>${escapeHtml(profile.ordinaryGlucoMemoryCount)} / 50</dd></div>
     </dl>
-  </article>`).join("");
+  </article>`;
+  }).join("");
   const list = cards
     ? `<div class="profiles">${cards}</div>`
     : '<div class="empty">まだ端末プロフィールはありません。登録が完了するとここに表示されます。</div>';
@@ -94,7 +118,7 @@ function renderDashboard(report, plusSummary = {}, nowMs = Date.now()) {
 
   return shell("利用者の利用状況", `
     <header><p class="eyebrow">ADMIN ONLY · GLUCOSCOPE 🍀</p><div class="header-row"><div><h1>利用者の利用状況</h1><p class="updated">取得: ${escapeHtml(formatJst(nowMs))}</p></div><a class="refresh" href="/">更新</a></div><p class="lead">GlucoScopeを安心して続け、少しずつよくするために、説明済みの最小限の回数だけを確認します。</p></header>
-    <section class="card notice"><h2>1行は「1人」ではなく「1つの端末プロフィール」です</h2><p>同じ人が別の端末やブラウザで使うと、別々に表示されます。</p></section>
+    <section class="card notice"><h2>1枚は「1人」ではなく「1つの端末プロフィール」です</h2><p>同じ人が別の端末やブラウザで使うと、別々に表示されます。同じ表示名が付いていても、同じ人だとは判断できません。</p><p>表示名だけを手がかりにプロフィールをまとめたり、回数を合算したりしません。接続先URLや合言葉は利用記録に保存していないため、同じ接続先かどうかもこの画面では比較できません。</p></section>
     <section class="summary" aria-label="利用状況の概要">
       <article class="card metric"><span>端末プロフィール</span><strong>${profiles.length}</strong></article>
       <article class="card metric"><span>利用記録中</span><strong>${enabledCount}</strong></article>

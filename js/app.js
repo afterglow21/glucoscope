@@ -403,6 +403,7 @@ const translations = {
     dataSourceDisplayNameHelp: "本名でなくて大丈夫です。GlucoScopeで呼ばれたい名前を入力してね（最大30文字）。",
     dataSourceDisplayNameRequired: "表示名を入力してね。",
     dataSourceUsageNote: "表示名と基本的な利用回数を、GlucoScopeをよくするために記録します。血糖値や接続情報は記録しません。",
+    dataSourceUsageNoteSafari: "Safariでこのまま続ける場合、表示名はこのブラウザにだけ保存し、新しい利用記録は作りません。血糖値や接続情報も記録しません。",
     dataSourceUsageNotePaused: "表示名はこの端末に保存します。利用記録は現在停止中です。",
     dataSourceUsageDetails: "詳しく見る",
     dataSourceUsageSafetyCheck: "最後の安全確認をしています…",
@@ -788,6 +789,7 @@ const translations = {
     dataSourceDisplayNameHelp: "It does not need to be your real name. Enter the name you want GlucoScope to use (up to 30 characters).",
     dataSourceDisplayNameRequired: "Enter a display name.",
     dataSourceUsageNote: "GlucoScope records your display name and basic usage counts to improve the service. Glucose values and connection details are not recorded.",
+    dataSourceUsageNoteSafari: "When you continue in Safari, the display name is saved only in this browser and no new usage profile is created. Glucose values and connection details are not recorded.",
     dataSourceUsageNotePaused: "The display name is saved on this device. Usage recording is currently paused.",
     dataSourceUsageDetails: "Learn more",
     dataSourceUsageSafetyCheck: "Completing one last safety check…",
@@ -1067,6 +1069,15 @@ function getDataSourceBrowserContext(environment = {}) {
     isIphoneSafari,
     isStandalone
   };
+}
+
+function shouldCreateNewUsageProfile(browserContext = getDataSourceBrowserContext()) {
+  // Safari and a Home Screen web app use separate storage on iPhone. Creating
+  // the optional Usage profile in ordinary Safari and then again in the Home
+  // Screen app would make one person look like two device profiles. Keep the
+  // CGM connection available in Safari, but enroll Usage only inside the
+  // installed Home Screen app. Desktop browsers keep the existing behavior.
+  return !browserContext?.isIphone || browserContext?.isStandalone === true;
 }
 
 function setVisibleDataSourceEntryPanel(panelId) {
@@ -1448,7 +1459,12 @@ function updateDataSourceUiLabels() {
 
   const usageNote = document.getElementById("dataSourceUsageNoteText");
   if (usageNote) {
-    const usageNoteKey = USAGE_PROFILE_ENABLED ? "dataSourceUsageNote" : "dataSourceUsageNotePaused";
+    const usageState = getUsageProfileState();
+    const usageNoteKey = !USAGE_PROFILE_ENABLED
+      ? "dataSourceUsageNotePaused"
+      : !usageState.registered && !shouldCreateNewUsageProfile(getDataSourceBrowserContext())
+        ? "dataSourceUsageNoteSafari"
+        : "dataSourceUsageNote";
     usageNote.dataset.i18nKey = usageNoteKey;
     usageNote.textContent = t(usageNoteKey);
   }
@@ -1945,6 +1961,10 @@ async function handleDataSourceSave(event) {
   }
   if (state.registered) {
     void completePendingDataSourceSave("", generation);
+    return;
+  }
+  if (!shouldCreateNewUsageProfile(getDataSourceBrowserContext())) {
+    void completePendingDataSourceSave("", generation, { skipUsageProfile: true });
     return;
   }
 
