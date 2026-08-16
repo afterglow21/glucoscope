@@ -3647,6 +3647,11 @@ account deletion, a test-mode Stripe Checkout/Webhook adapter, and a per-account
 unfinished-Checkout guard that prevents a second payable Session. The matching settings UI is
 checked in but hidden.
 
+Stripe API requests use `redirect: "manual"` and reject every `3xx` after one request.
+They never follow a redirect with the restricted-key Authorization header or Checkout body.
+Focused tests cover both `302` and `307`; this is a local safety boundary only and does not
+authorize a Stripe key, deployment, public Checkout, or sales.
+
 Code checkpoint `b5669df` is deployed only as the stopped
 `glucoscope-plus-entitlement-staging` Worker. Version
 `bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9` receives 100% of that Worker's traffic, but
@@ -3963,6 +3968,10 @@ Plus利用権はブラウザの利用記録プロフィールから分離し、�
 アカウント削除、StripeテストモードのCheckout/Webhook adapter、未完了の支払い画面をアカウントごとに
 再利用または停止して二重の支払い画面を作らない仕組みを含みます。対応する設定画面も追加しましたが
 非表示です。
+
+Stripe APIへの通信は `redirect: "manual"` とし、`3xx`は1回の通信で拒否して追跡しません。
+制限付きキーのAuthorization headerやCheckout本文をredirect先へ転送せず、`302`と`307`のテストで
+固定します。これはローカルの安全境界だけであり、Stripe key、配置、公開Checkout、販売を承認しません。
 
 commit `b5669df` は、停止中の `glucoscope-plus-entitlement-staging` Workerだけへ配置しました。
 Version `bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9`へ通信の100%を向けていますが、

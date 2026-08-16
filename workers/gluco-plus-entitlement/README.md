@@ -335,6 +335,12 @@ one-time pricing, and the server-created account metadata before calling
 `applyVerifiedPlusPayment()`. Provider event IDs and validated Checkout Session IDs are
 deduplicated, and every grant is exactly 2,592,000,000 milliseconds.
 
+Stripe API requests use `redirect: "manual"`. Every `3xx` response is rejected after
+one request and is never followed, so the restricted-key Authorization header and
+Checkout request body are not forwarded to a redirect destination. Focused tests cover
+both `302` and `307` responses. This matches the provider boundary already accepted for
+Resend after `redirect: "error"` proved incompatible with the Workers runtime path.
+
 For `checkout.session.async_payment_failed`, the signed payload is likewise only a
 pointer: the Session is re-fetched and the same test mode, account, request, product,
 and amount facts are validated. The exact open attempt then moves to `failed` in one D1

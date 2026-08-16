@@ -447,7 +447,7 @@ test("Stripe-hosted Checkout is a test-mode one-time payment with dynamic method
   );
   assert.equal(captured.url.href, "https://api.stripe.com/v1/checkout/sessions");
   assert.equal(captured.init.method, "POST");
-  assert.equal(captured.init.redirect, "error");
+  assert.equal(captured.init.redirect, "manual");
   assert.equal(captured.init.headers.get("authorization"), `Bearer ${API_KEY}`);
   assert.equal(captured.init.headers.get("stripe-version"), STRIPE_API_VERSION);
   assert.equal(captured.form.get("mode"), "payment");
@@ -463,6 +463,41 @@ test("Stripe-hosted Checkout is a test-mode one-time payment with dynamic method
     captured.init.headers.get("idempotency-key"),
     `glucoscope-plus:${ACCOUNT_ID}:${REQUEST_ID}`,
   );
+});
+
+test("Stripe redirects are rejected without following or retrying", async () => {
+  for (const status of [302, 307]) {
+    const calls = [];
+    const client = createStripeTestClient(stripeConfigEnv(), {
+      fetch: async (url, init) => {
+        calls.push({ url, init });
+        return new Response("provider redirect body must stay private", {
+          status,
+          headers: { Location: "https://redirect.invalid/collect" },
+        });
+      },
+      now: () => NOW,
+    });
+
+    await assert.rejects(
+      client.createPlusCheckout({
+        accountId: ACCOUNT_ID,
+        requestId: REQUEST_ID,
+        successUrl: `${ALLOWED_ORIGIN}/?mode=user&checkout=success#settings`,
+        cancelUrl: `${ALLOWED_ORIGIN}/?mode=user&checkout=cancelled#settings`,
+      }),
+      (error) => error instanceof StripeAdapterError
+        && error.code === "stripe_api_rejected"
+        && error.status === 502,
+    );
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url.href, "https://api.stripe.com/v1/checkout/sessions");
+    assert.equal(calls[0].init.redirect, "manual");
+    assert.equal(
+      calls[0].init.headers.get("authorization"),
+      `Bearer ${API_KEY}`,
+    );
+  }
 });
 
 test("Checkout client rejects a non-restricted or live-mode key before network access", async () => {

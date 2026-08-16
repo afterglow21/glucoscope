@@ -355,7 +355,11 @@ export function createStripeTestClient(env = {}, dependencies = {}) {
         method,
         headers,
         body,
-        redirect: "error",
+        // Manual mode keeps the request single-hop; readStripeJson rejects
+        // every 3xx without forwarding the Authorization header or request
+        // body elsewhere. It also avoids relying on redirect:"error", which
+        // proved incompatible with the accepted Workers-to-Resend path.
+        redirect: "manual",
       });
     } catch {
       throw new StripeAdapterError("stripe_api_unavailable", 503);
