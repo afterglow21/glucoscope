@@ -2874,9 +2874,14 @@ The current implementation and release-readiness order as of 2026-08-16 is:
 1. Keep the accepted atomic Worker counter and privacy-protected public Usage Dashboard under
    routine operational monitoring. Their production acceptance passed with a supervised
    real-browser visual check and one real AI generation with an exact one-count delta.
-2. Finish the connection and manual improvements from Friends & Family feedback, then complete
-   the site-wide Trust/About link and wording review.
-3. Because Plus is intended to launch with the public announcement, complete its contact,
+2. Keep the accepted Friends & Family connection screen, Safari/Home Screen guidance, and
+   device-specific G7/Libre manuals under small-group observation. This checkpoint completes the
+   site-wide Trust/About link and wording review. It also restores the public Guardian demo after
+   the `glucoscope.app` move by adding only that exact Origin to the existing Azure App Service
+   CORS allowlist while retaining the existing localhost and old Pages origins. Both approved-origin
+   preflights, Nightscout status, and a fresh public-browser `LIVE` / connected display passed without
+   recording glucose values or exact measurement times.
+3. Before deciding whether Plus can launch with the public announcement, complete its contact,
    refund-operation, tax, receipt, recovery, delivery-failure, payment, and production-acceptance
    blockers while keeping every public sales and feature switch off.
 4. Make the first announcement only after those readiness checks. Add the opt-in landscape-graph
@@ -2926,8 +2931,13 @@ Guardian 4、FreeStyle Libre 2、Dexcom G7を、
 
 1. 受入済みのatomic Worker利用カウンターとprivacy保護した公開Usage Dashboardを通常監視する。
    監督下の実ブラウザ表示と、実際のAI生成1件による正確な1件差分で本番受入に合格した。
-2. Friends & Familyの声に沿って接続画面とマニュアルを改善し、Trust/About全体のリンクと文面を確認する。
-3. Plusを初回告知と同時に販売するため、公開問い合わせ、返金運用、税・領収書、復旧、メール不達、
+2. Friends & Familyの声に沿って改善した接続画面、Safari・ホーム画面案内、G7・Libre別マニュアルを
+   少人数で継続確認する。このcheckpointでTrust/About全体のリンクと文面確認を完了した。
+   `glucoscope.app`移行時に漏れたGuardian公開デモは、Azure App Serviceの既存CORS許可一覧へ
+   `https://glucoscope.app`だけを追加し、localhostと旧PagesのOriginを残したまま復旧した。
+   新旧の許可Originのpreflight、Nightscout status、公開ブラウザの`LIVE`・接続中表示に合格し、
+   血糖値や正確な測定時刻は確認記録へ残していない。
+3. Plusを初回告知と同時に販売できるか判断する前に、公開問い合わせ、返金運用、税・領収書、復旧、メール不達、
    決済、本番受入の残件を完了する。完了までは公開販売・個人上限・特典のswitchを停止したままにする。
 4. 上の公開準備を終えてから最初のお知らせを行う。横向きグラフの任意の常時表示は、その後の機能とする。
 

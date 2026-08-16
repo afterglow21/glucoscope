@@ -253,10 +253,9 @@ test("public relay wording preserves the current verification and privacy bounda
   const readme = await read(new URL("../README.md", import.meta.url));
 
   assert.match(index, /Nightscoutへの直接接続と、Gluroo限定中継の現在地・安全境界/);
-  assert.match(data, /Guardianは、iPhoneのGuardian MonitorからGluroo Global Connect、限定中継、GlucoScopeまでの最初の全経路確認を完了しました/);
-  assert.match(data, /Libre 2も、FreeStyle LibreLink、LibreLinkUp、Gluroo、限定中継、GlucoScopeまでの基本経路/);
-  assert.match(data, /現在血糖、グラフ、再読み込み、iOSホーム画面からの復帰/);
-  assert.match(data, /一般利用者向け限定中継のDexcom G7経路をiPhoneのSafariで確認し、接続、現在血糖、グラフの今日・昨日・7日・30日切替、再読み込み、接続削除後に設定画面へ戻ることまで合格しました/);
+  assert.match(data, /GuardianとLibre 2は、アプリからGluroo、限定中継、GlucoScopeまでの基本経路を実機で確認しました/);
+  assert.match(data, /Dexcom G7は、接続、現在血糖、今日・昨日・7日・30日のグラフ、再読み込み、接続削除/);
+  assert.match(data, /現在の端末セッション方式でiPhoneのホーム画面から開き直しても再接続せず表示できることを確認しています/);
   assert.match(data, /現在は、最初に1回安全確認をした後、ふだんは同じ端末でつながり続ける方式を少人数の先行体験で使っています/);
   assert.match(data, /入力ミスや一時的な障害では今までの接続を壊さない設計です/);
   assert.match(data, /Dexcom G7で最初の安全確認を行い、その後iPhoneのホーム画面のアイコンから開き直しても、接続し直さず表示できることを実機で確認しました/);

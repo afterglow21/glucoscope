@@ -39,7 +39,7 @@
 <section class="trust-section">
   <h2>方法①はGluroo、方法②はNightscout</h2>
   <p>どちらか1つを選べばよいことを明記し、方法のカードを押すと直接次へ進めます。GlurooはLibre・Dexcom G7・Guardian（MiniMed 780G）からつなぐ方へ案内し、Nightscoutは自分の環境をすでに使っている方や、構築・保守できる上級者向けとして分けます。</p>
-  <p>Guardianは、iPhoneのGuardian MonitorからGluroo Global Connect、限定中継、GlucoScopeまでの最初の全経路確認を完了しました。Libre 2も、FreeStyle LibreLink、LibreLinkUp、Gluroo、限定中継、GlucoScopeまでの基本経路で、現在血糖、グラフ、再読み込み、iOSホーム画面からの復帰を確認しています。2026年8月12日には、一般利用者向け限定中継のDexcom G7経路をiPhoneのSafariで確認し、接続、現在血糖、グラフの今日・昨日・7日・30日切替、再読み込み、接続削除後に設定画面へ戻ることまで合格しました。これらは過去の短時間チケット方式で行った確認です。別系統の公開デモWorkerでも、G7の定期取得と安全な公開応答を確認済みです。</p>
+  <p>GuardianとLibre 2は、アプリからGluroo、限定中継、GlucoScopeまでの基本経路を実機で確認しました。Dexcom G7は、接続、現在血糖、今日・昨日・7日・30日のグラフ、再読み込み、接続削除に加え、現在の端末セッション方式でiPhoneのホーム画面から開き直しても再接続せず表示できることを確認しています。別系統の公開デモWorkerでも、G7の定期取得と安全な公開応答を確認済みです。</p>
 </section>
 <section class="trust-section">
   <h2>Guardian（MiniMed 780G）</h2>
@@ -58,7 +58,7 @@
   <h2>公開比較は一般利用者向け中継と分ける</h2>
   <p>3CGM比較ラボでは、GuardianをKazumaの公開Nightscoutから直接読み、LibreとG7は公開デモ専用Workerが定期取得した期限付きKVだけを読みます。Kazumaは自分自身のLibreとG7の血糖値・測定更新時刻の公開へ別々に明示同意しました。この公開・非匿名の選択はKazuma自身のデモデータだけに適用します。安全対応と別の継続公開判断後、現在はGuardian・Libre・G7を継続公開中です。約3時間の継続稼働を確認しました。開いたままの既存ブラウザタブでも、約5分後の自動更新を別の機会にもう1回確認し、これまでの確認は合計2回になりました。表示エラーはありませんでした。正常な5分更新中は、成功するたびにKVの最長36時間の期限が更新されるため、自然失効は起きません。自然失効は、更新が止まった場合の別の安全確認として扱い、公開継続の妨げにはしません。`dexcomRouteVerified=true`はG7表示経路の確認記録で、Workerの有効化ではありません。一般利用者向け限定中継は別Workerで、現在は1〜3人の先行体験に限って有効です。</p>
   <p>次の3段落は、一時確認後に停止へ戻した過去のチェックポイントです。現在の継続ライブ状態は、その後の段落に記録しています。</p>
-  <p>デモ専用Workerは、一般利用者向け限定中継とは別です。一般利用者向けリレーは停止したままで、一般利用者の接続情報や血糖データを保存しません。デモ用KVへ入れるのはKazumaが公開を選んだ直近24時間以内の血糖値、測定時刻、許可した方向情報だけで、最長36時間で期限切れになります。G7だけを一時有効にしたVersion `3b796eb5-11be-466f-83ea-7710279f49c1`では、Libreを停止したまま1回のCronで`public:dexcom-g7:v1`を作成し、公開応答190件の項目、型、範囲、時系列順、更新の新しさ、非公開情報を示す項目がないことを、血糖値や測定時刻を表示せず確認しました。許可OriginのGETは`200`、preflightは`204`、不許可Originは`403`、Libreは`503`でした。直後にdeployment `8de64190-7558-43c6-83c1-1e29a2cf80de`で停止Version `9994a142-a4ca-4885-9077-952ec8e7e8d2`へ100%戻し、両経路は再び`503`です。次の停止中Cron後もG7キーの有効期限は延長されませんでした。KVの生データは直接読み出しておらず、残ったキーは停止中の経路から配信せず、既存の36時間TTLで失効します。Secret値、Gluroo URL、実血糖値、測定時刻は画面出力やGitへ入れていません。停止中のG7接続先は`dexcomRouteVerified=false`のままGitHub Pagesへ反映し、合成データへの切替を確認済みです。このG7単独確認時点では、G7ライブ表示、3機種同時ライブ比較、ページ全体のライブ経路、複数回の定期更新と一般利用者向け限定中継のG7経路は未確認でした。</p>
+  <p>デモ専用Workerは、一般利用者向け限定中継とは別です。この過去の確認時点では一般利用者向けリレーを停止しており、現在も一般利用者の接続情報や血糖データを保存しません。デモ用KVへ入れるのはKazumaが公開を選んだ直近24時間以内の血糖値、測定時刻、許可した方向情報だけで、最長36時間で期限切れになります。G7だけを一時有効にしたVersion `3b796eb5-11be-466f-83ea-7710279f49c1`では、Libreを停止したまま1回のCronで`public:dexcom-g7:v1`を作成し、公開応答190件の項目、型、範囲、時系列順、更新の新しさ、非公開情報を示す項目がないことを、血糖値や測定時刻を表示せず確認しました。許可OriginのGETは`200`、preflightは`204`、不許可Originは`403`、Libreは`503`でした。直後にdeployment `8de64190-7558-43c6-83c1-1e29a2cf80de`で停止Version `9994a142-a4ca-4885-9077-952ec8e7e8d2`へ100%戻し、両経路は再び`503`です。次の停止中Cron後もG7キーの有効期限は延長されませんでした。KVの生データは直接読み出しておらず、残ったキーは停止中の経路から配信せず、既存の36時間TTLで失効します。Secret値、Gluroo URL、実血糖値、測定時刻は画面出力やGitへ入れていません。停止中のG7接続先は`dexcomRouteVerified=false`のままGitHub Pagesへ反映し、合成データへの切替を確認済みです。このG7単独確認時点では、G7ライブ表示、3機種同時ライブ比較、ページ全体のライブ経路、複数回の定期更新と一般利用者向け限定中継のG7経路は未確認でした。</p>
   <p>同じく2026年8月7日、別の明示確認後、Libreだけを一時有効にしたVersion `2e72847d-5011-47c5-80e6-8cb931a1b141`を1回の定期更新に限って本番通信へ反映しました。19:25 JSTのCronで公開`/v1/libre`応答が合計523件になったことを確認しました。件数と構造結果だけを使い、上位スキーマ、許可した項目、型、範囲、時系列順、更新の新しさ、確認対象の非公開項目がないこと、CORS境界を確認しました。実際の血糖値、測定時刻、Gluroo URL、Secret、tokenは検査出力やGitへ入れていません。G7は`503`のままでした。確認後すぐ停止Version `9994a142-a4ca-4885-9077-952ec8e7e8d2`へ戻し、両経路が`503`であることを確認しました。次の停止中Cron後もLibreキーの有効期限は延長されませんでした。確認できたのはLibreの1回の定期取得と安全な公開Worker応答までです。</p>
   <p>その後、別の明示確認を得て、LibreとG7を同時に有効にしたVersion `4069bca4-e8cf-474a-9e9d-d7ffa42b7567`をdeployment `9738343a-fc1d-4f02-aff1-1bae3d7cbe57`として20:58:02 JSTに本番通信へ反映しました。公開応答はLibre 527件、G7 276件で、許可した項目、型、範囲、時系列順、更新の新しさ、CORS境界を満たしました。実際の血糖値、測定時刻、接続先、Secret値は検査出力やGitへ入れていません。GitHub PagesではGuardian・Libre・G7の3つのライブカードを確認し、利用者自身も3本のグラフを目視しました。目視確認を待つ間に複数の定期実行が行われ、両KVキーの期限は21:15頃まで進みました。21:16:31 JST、deployment `e45b6547-33a4-4196-9efe-1fffd412bcd4`で停止Version `9994a142-a4ca-4885-9077-952ec8e7e8d2`へ100%戻し、両経路の`503`と、新しく開いた公開ページが「準備中・合成データ」へ戻ることを確認しました。21:25 JSTの停止中Cron後も両KVキーの期限は停止後の基準から変わらず、想定した2キーだけでmetadataもありませんでした。`dexcomRouteVerified=true`はフロント側の表示ゲートで、Workerの有効化ではありません。今回確認できたのは1回の公開ページ受け入れです。継続運用、複数回のブラウザ表示更新、古いデータ表示・自然失効は未確認で、一般利用者向け限定中継も停止中です。</p>
   <p>その後、フロント安全commit `6f13ed8c9c4b4b5cda1bdaddc7b90a02bbff1265`をPages run `31181233497`で公開し、継続公開の別判断後、22:10:05 JSTにdeployment `e96fb11c-a2e0-4097-b54c-a1d638bbffc8`で同じ確認済みライブVersionを100%へ反映しました。定期集計確認はLibre 528件・G7 290件、次にLibre 526件・G7 290件で、両経路の`200`、`stale=false`、新しさ、許可した構造・型・範囲・順序・CORS・cache・応答サイズを満たしました。値、正確な測定時刻、接続情報、Secretは表示していません。その後、開始から約3時間の継続稼働を確認しました。開いたままの既存ブラウザタブでも、約5分後の自動更新を別の機会にもう1回確認し、これまでの確認は合計2回になりました。3機種のライブ状態を保ち、表示エラーはありませんでした。各ソースは15分境界で新しさを判定し、前回ライブの保持も15分までです。正常な5分更新中は、成功するたびにKVの最長36時間の期限が更新されるため、自然失効は起きません。自然失効は、更新が止まった場合の別の安全確認として扱い、公開継続の妨げにはしません。停止Version `9994a142-a4ca-4885-9077-952ec8e7e8d2`を復旧先として維持します。</p>
@@ -66,7 +66,7 @@
 </section>
 <section class="trust-section">
   <h2>複数の連携ルート</h2>
-  <p>将来はMiniMed、Dexcom、Libre、CSV、手入力など、複数の方法を検討します。機器やサービスごとの差は、アダプター方式で吸収する設計を目指します。</p>
+  <p>現在はNightscout直接接続と、Glurooを経由するGuardian・Dexcom G7・Libreの限定中継を使えます。CSVや手入力などは、安全性と続けやすさを確かめながら今後検討します。</p>
 </section>
 <section class="trust-section">
   <h2>個人クラウドへ預からない</h2>
@@ -101,7 +101,7 @@
 <section class="trust-section">
   <h2>Beginner-first setup</h2>
   <p>The screen says that only one route is needed. Method 1 uses Gluroo for Libre, Dexcom G7, and Guardian (MiniMed 780G). Method 2 is for people who already use or maintain their own Nightscout environment.</p>
-  <p>Guardian has completed its first iPhone end-to-end acceptance from Guardian Monitor through Gluroo Global Connect, the limited relay, and GlucoScope. FreeStyle Libre 2 has separately completed its first basic path from FreeStyle LibreLink through LibreLinkUp, Gluroo, the relay, and GlucoScope. On 2026-08-12, the general-user Dexcom G7 path also passed connection, graph-period, reload, and deletion checks. These checks used the historical short-lived-ticket design. Separately, the public-demo Worker has passed G7 scheduled-retrieval and sanitized-response checks.</p>
+  <p>Guardian and FreeStyle Libre 2 have passed supervised basic routes from their apps through Gluroo, the limited relay, and GlucoScope. Dexcom G7 has passed connection, current-glucose, today/yesterday/7-day/30-day graph, reload, and deletion checks, plus a Home Screen relaunch without reconnecting under the current device-session design. Separately, the public-demo Worker has passed G7 scheduled-retrieval and sanitized-response checks.</p>
 </section>
 <section class="trust-section">
   <h2>Gluroo limited relay is in 1–3 person early access</h2>
@@ -123,7 +123,7 @@
 </section>
 <section class="trust-section">
   <h2>Multiple paths</h2>
-  <p>Future adapters may support MiniMed, Dexcom, Libre, CSV, and manual input.</p>
+  <p>Nightscout direct access and the Gluroo-based Guardian, Dexcom G7, and Libre relay are available now within their stated scope. CSV and manual entry remain possible future routes.</p>
 </section>
 <section class="trust-section">
   <h2>No personal data hub</h2>
