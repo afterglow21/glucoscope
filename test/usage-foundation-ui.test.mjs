@@ -423,7 +423,7 @@ test("data connection asks for a required display name with one short usage note
   assert.match(form, /id="dataSourceUsageNoteText"[^>]*data-i18n-key="dataSourceUsageNote"/);
   assert.match(form, /表示名と基本的な利用回数を、GlucoScopeをよくするために記録します。血糖値や接続情報は記録しません。/);
   assert.match(form, /href="pages\/trust\/privacy-notes\.html"[^>]*data-i18n-key="dataSourceUsageDetails"/);
-  assert.match(app, /dataSourceTestWaiting: "表示名と接続情報を入力して、つながるか確認します。"/);
+  assert.match(app, /dataSourceTestWaiting: "入力できたら、接続と保存をまとめて行います。"/);
   assert.doesNotMatch(form, /ランダムな番号|90日を上限|この端末の利用状況を共有する|今はしない/);
 });
 
@@ -960,7 +960,7 @@ test("busy connection saves block destructive controls and stale callbacks", () 
   assert.match(app, /function showDataSourceChooseStep\(\) \{\s*if \(isDataSourceSaveBusy\(\)\) return;/s);
   assert.match(app, /destroyUsageProfileTurnstile\(generation\)/);
   assert.match(app, /const generation = nextDataSourceTestGeneration\(\)/);
-  assert.ok((app.match(/if \(!isCurrentDataSourceTest\(generation\)\) return;/g) || []).length >= 3);
+  assert.ok((app.match(/if \(!isCurrentDataSourceTest\(generation\)\) return(?: false)?;/g) || []).length >= 3);
   assert.match(app, /dataSourceTestGeneration \+= 1;\s*testedDataSourceConfig = null;/s);
   for (const id of ["dataSourceUsageDetailsLink", "dataSourceDemoLink", "dataSourceNightscoutAboutLink"]) {
     assert.match(index, new RegExp(`id="${id}"`), id);

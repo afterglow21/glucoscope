@@ -7731,7 +7731,7 @@ body.local-profile-dialog-open {
   -webkit-backdrop-filter:blur(14px);
 }
 
-.data-source-dialog[hidden],.data-source-choose-panel[hidden],.data-source-gluroo-prep-panel[hidden],.data-source-connect-panel[hidden],.data-source-help[hidden] {
+.data-source-dialog[hidden],.data-source-entry-guide[hidden],.data-source-choose-panel[hidden],.data-source-gluroo-prep-panel[hidden],.data-source-connect-panel[hidden],.data-source-help[hidden],.data-source-welcome[hidden] {
   display:none;
 }
 
@@ -7789,6 +7789,111 @@ body.local-profile-dialog-open {
 .data-source-dialog-hero p,.data-source-notice p,.data-source-safety-note,.data-source-external-note p {
   color:#c1cee0;
   line-height:1.8;
+}
+
+.data-source-entry-guide {
+  display:grid;
+  gap:14px;
+  margin-top:22px;
+  padding:20px;
+  border:1px solid rgba(134,239,172,.28);
+  border-radius:19px;
+  background:linear-gradient(145deg,rgba(20,83,45,.18),rgba(15,23,42,.38));
+}
+
+.data-source-entry-guide h3,
+.data-source-entry-guide p {
+  margin:0;
+}
+
+.data-source-entry-guide h3 {
+  color:#f0fdf4;
+  font-size:23px;
+  line-height:1.45;
+}
+
+.data-source-entry-guide>p:not(.data-source-entry-eyebrow):not(.data-source-entry-copy-status) {
+  color:#c7d5e4;
+  line-height:1.75;
+}
+
+.data-source-entry-eyebrow {
+  color:#86efac;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.08em;
+}
+
+.data-source-entry-steps {
+  display:grid;
+  gap:9px;
+  margin:0;
+  padding:14px 16px 14px 38px;
+  border-radius:14px;
+  background:rgba(15,23,42,.48);
+  color:#e5edf7;
+  line-height:1.65;
+}
+
+.data-source-entry-steps li::marker {
+  color:#86efac;
+  font-weight:900;
+}
+
+.data-source-entry-note {
+  padding:11px 13px;
+  border-radius:12px;
+  background:rgba(59,130,246,.10);
+  color:#dbeafe !important;
+  font-size:13px;
+}
+
+.data-source-entry-url {
+  display:grid;
+  gap:7px;
+  color:#dce8f6;
+  font-size:13px;
+  font-weight:850;
+}
+
+.data-source-entry-url-row {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:9px;
+}
+
+.data-source-entry-url input {
+  min-width:0;
+  min-height:50px;
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:12px;
+  padding:11px 12px;
+  background:rgba(8,15,29,.68);
+  color:#e5edf7;
+  font:inherit;
+  font-size:15px;
+}
+
+.data-source-entry-copy-status {
+  min-height:22px;
+  color:#b9c9dc;
+  font-size:13px;
+  line-height:1.6;
+}
+
+.data-source-entry-copy-status.success {
+  color:#bbf7d0;
+}
+
+.data-source-entry-copy-status.error {
+  color:#fecaca;
+}
+
+.data-source-entry-actions {
+  display:flex;
+  align-items:center;
+  gap:14px;
+  flex-wrap:wrap;
 }
 
 .data-source-step-lead {
@@ -8272,6 +8377,59 @@ body.local-profile-dialog-open {
   font-size:13px;
 }
 
+.data-source-welcome {
+  position:fixed;
+  left:50%;
+  bottom:max(24px,calc(env(safe-area-inset-bottom,0px) + 18px));
+  z-index:10020;
+  width:min(520px,calc(100% - 28px));
+  transform:translateX(-50%);
+  pointer-events:none;
+}
+
+.data-source-welcome-card {
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:13px;
+  padding:16px 15px;
+  border:1px solid rgba(134,239,172,.42);
+  border-radius:18px;
+  background:linear-gradient(145deg,rgba(20,83,45,.97),rgba(15,34,50,.98));
+  box-shadow:0 20px 56px rgba(0,0,0,.42);
+  color:#f0fdf4;
+  pointer-events:auto;
+}
+
+.data-source-welcome-icon {
+  font-size:28px;
+}
+
+.data-source-welcome-card strong {
+  display:block;
+  margin-bottom:3px;
+  font-size:16px;
+}
+
+.data-source-welcome-card p {
+  margin:0;
+  color:#c7f9d5;
+  font-size:13px;
+  line-height:1.55;
+}
+
+.data-source-welcome-close {
+  width:38px;
+  height:38px;
+  border:0;
+  border-radius:999px;
+  background:rgba(15,23,42,.55);
+  color:#dcfce7;
+  font-size:22px;
+  line-height:1;
+  cursor:pointer;
+}
+
 .mobile-data-source-button {
   display:none;
 }
@@ -8444,6 +8602,29 @@ body.local-profile-dialog-open {
 
   .data-source-choose-actions,.data-source-prep-actions {
     display:grid;
+  }
+
+  .data-source-entry-guide {
+    padding:17px 15px;
+  }
+
+  .data-source-entry-guide h3 {
+    font-size:20px;
+  }
+
+  .data-source-entry-url-row,
+  .data-source-entry-actions {
+    display:grid;
+    grid-template-columns:1fr;
+  }
+
+  .data-source-entry-url-row .data-source-secondary-button,
+  .data-source-entry-actions .data-source-secondary-button {
+    width:100%;
+  }
+
+  .data-source-welcome {
+    bottom:max(104px,calc(env(safe-area-inset-bottom,0px) + 94px));
   }
 
   .data-source-prep-actions .data-source-primary-button {

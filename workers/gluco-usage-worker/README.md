@@ -2,7 +2,7 @@
 
 This directory contains a dedicated, dependency-light Cloudflare Worker and D1 schema for minimal device-profile usage counts.
 
-The stopped production foundation was created and verified on 2026-08-11. On 2026-08-12 JST, corrected Version `858cf438-b3d2-4a8c-801c-344503e0c58e` was used for a supervised device check. Profile creation succeeded, but a repeated callback after Turnstile reset produced a false error display after that success. The 2 known test profiles were later deleted, and the cascading deletion left `profiles`, `usage_daily`, and `event_receipts` at `0 / 0 / 0`. After the subsequent fixes, the full Create, reload deduplication and daily record, Stop, Resume, export, and Delete lifecycle passed on iPhone. After separate explicit approval, deployment `4fbf0e2c-5f5c-4f4f-98a9-ae57d73b4824` routed accepted Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` to 100% for a 1–3 person early-access group. Initial D1 counts remained `0 / 0 / 0`; invalid Turnstile and unapproved-origin requests returned `403` with no-store boundaries. The checked-in `USAGE_COLLECTION_ENABLED=false` remains unchanged, and stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` remains the immediate rollback target.
+The stopped production foundation was created and verified on 2026-08-11. On 2026-08-12 JST, corrected Version `858cf438-b3d2-4a8c-801c-344503e0c58e` was used for a supervised device check. Profile creation succeeded, but a repeated callback after Turnstile reset produced a false error display after that success. The 2 known test profiles were later deleted, and the cascading deletion left `profiles`, `usage_daily`, and `event_receipts` at `0 / 0 / 0`. After the subsequent fixes, the full Create, reload deduplication and daily record, Stop, Resume, export, and Delete lifecycle passed on iPhone. Historical deployment `4fbf0e2c-5f5c-4f4f-98a9-ae57d73b4824` then routed accepted Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` to 100% for a 1–3 person early-access group. Current Version `137ee815-ecf3-4e5a-856a-44eeda8b6eff` receives 100% of Usage traffic for that approved small group. The checked-in `USAGE_COLLECTION_ENABLED=false` remains the fail-closed baseline. Historical stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` was the rollback at the 2026-08-12 checkpoint; it is not asserted here as the current direct rollback.
 
 ## Stopped production checkpoint (2026-08-11)
 
@@ -28,12 +28,12 @@ This checkpoint verifies a reachable but stopped production shell. It does not a
 ## Clean stopped production checkpoint (2026-08-12 JST)
 
 - The 2 known test profiles were deleted. Cascading deletion removed their related rows, after which `profiles`, `usage_daily`, and `event_receipts` returned `0 / 0 / 0`.
-- New stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` receives 100% of production traffic through deployment `25be2258-b72a-4e2c-8bf1-ab47781c48dc`.
+- New stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` received 100% of production traffic through deployment `25be2258-b72a-4e2c-8bf1-ab47781c48dc` at this historical checkpoint.
 - Runtime `USAGE_COLLECTION_ENABLED=false` was verified. Allowed-origin preflight returned `204`; allowed-origin profile `POST` returned `503 usage_collection_paused`; wrong-origin and originless requests returned `403`.
 - D1 was rechecked after deployment and remained `0 / 0 / 0` for `profiles`, `usage_daily`, and `event_receipts`.
-- The general-user relay remains independently stopped at `RELAY_ENABLED=false`.
+- The general-user relay was independently stopped at `RELAY_ENABLED=false` at this checkpoint; it now uses the accepted long-lived device-session Version for the approved small group.
 
-## Latest supervised re-acceptance checkpoint (2026-08-12 JST)
+## Historical supervised re-acceptance checkpoint (2026-08-12 JST)
 
 - Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` received 100% of production traffic with runtime `USAGE_COLLECTION_ENABLED=true` during the supervised attempt.
 - Allowed-origin preflight returned `204`; an allowed-origin profile request with an invalid dummy Turnstile token returned `403 turnstile_failed`; wrong-origin and originless requests returned `403`.
@@ -274,7 +274,7 @@ The scheduled handler runs daily and applies these maximum application-level per
 - AI quota attempts and daily counters: 90 days; deleting a device profile cascades its
   quota rows immediately.
 
-Migration `0001_initial_usage_schema.sql` also creates the D1-only `admin_device_usage` view. It provides profile ID, display name, collection state, created/last-seen timestamps, active days, total successful AI generations, and current ordinary memory count. There is no HTTP admin API in this phase. The view is for the authenticated Cloudflare D1 console only; an authenticated administrator dashboard remains a separate phase.
+Migration `0001_initial_usage_schema.sql` also creates the D1-only `admin_device_usage` view. It provides profile ID, display name, collection state, created/last-seen timestamps, active days, total successful AI generations, and current ordinary memory count. There is no public HTTP admin API. A separate Access-protected, read-only administrator Worker now consumes the reviewed view through a fixed query and has completed one-administrator production acceptance.
 
 ## Local verification
 
@@ -297,8 +297,8 @@ There is intentionally no real `deploy` npm script.
 
 ## Current early-access operations
 
-1. Keep Usage limited to the approved 1–3 person group through deployment `4fbf0e2c-5f5c-4f4f-98a9-ae57d73b4824`; do not describe it as a broad public rollout.
+1. Keep Usage limited to the approved small early-access group through current Version `137ee815-ecf3-4e5a-856a-44eeda8b6eff`; do not describe it as a broad public rollout.
 2. Monitor only the reviewed allowlisted counts and lifecycle state. Do not copy display names, profile tokens, or production rows into operational notes.
-3. If a privacy, safety, traffic, or provider-condition concern appears, route 100% back to stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb`. Usage and the general-user relay remain independently stoppable.
+3. If a privacy, safety, traffic, or provider-condition concern appears, use a separately reviewed stopped Version from the current configuration. Historical stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` is evidence from the 2026-08-12 checkpoint, not an automatically approved current rollback. Usage and the general-user relay remain independently stoppable.
 
 Secret values, profile tokens, display names, and production database content must never be copied into Git, command arguments, screenshots, logs, fixtures, or support messages.

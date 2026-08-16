@@ -16,6 +16,52 @@ GlucoScopeとともに成長し、更新され続けます。
 
 ---
 
+## Current operational snapshot — 2026-08-16 JST
+## 現在の運用スナップショット — 2026-08-16 JST
+
+This list is the canonical current-state record. Dated rollout passages elsewhere in this
+document are historical evidence unless they explicitly say that they remain current.
+
+- GitHub Pages serves `https://glucoscope.app/`. The base long-lived-session release is
+  commit `64a92932a592dda1b6eb9d6dd7700279b1c7a47a`; accepted frontend and iPhone
+  Home Screen evidence is recorded through commit
+  `746116043b8d7ad0ad60c8af5eb27ad4d661d94d`.
+- AI Worker new-origin Version `7ea0cfef-5322-4370-b72d-e2885f129f38` receives 100% of AI
+  traffic. Version 29 is historical personal-user AI acceptance evidence.
+- Usage Worker Version `137ee815-ecf3-4e5a-856a-44eeda8b6eff` receives 100% of Usage
+  traffic for the approved small early-access group. The checked-in configuration remains
+  fail-closed.
+- Demo-feed new-origin Version `97b14023-f9dd-440a-8b79-e2bb2b471697` receives 100% of
+  continuous public-demo traffic. Version `4069bca4-e8cf-474a-9e9d-d7ffa42b7567`
+  records the earlier continuous three-source acceptance.
+- Relay live Version 22 (`b4b2064d-6dd4-4de6-8a68-3d0d39aea2ec`) receives 100% of the
+  approved small-group relay traffic. Unserved stopped Version 23
+  (`10d0a825-c098-462e-89fd-a69937c47a9b`) is the reviewed direct rollback.
+- The Access-protected administrator dashboard is live and accepted for one administrator.
+  Plus remains a stopped, non-public staging foundation; public account, purchase, quota,
+  and feature switches remain off.
+
+この一覧を、現在状態の正本とします。この文書内に残す日付付きの公開・受入記録は、
+「現在も有効」と明記したものを除き、その時点の履歴証拠です。
+
+- GitHub Pagesで `https://glucoscope.app/` を公開しています。長期端末sessionへの切替本体は
+  commit `64a92932a592dda1b6eb9d6dd7700279b1c7a47a`、現在のフロントとiPhoneホーム画面の
+  受入記録はcommit `746116043b8d7ad0ad60c8af5eb27ad4d661d94d` までです。
+- AI Workerはnew-origin Version `7ea0cfef-5322-4370-b72d-e2885f129f38`へ通信の100%を
+  向けています。Version 29は、ユーザー版AI境界を最初に受け入れた履歴です。
+- Usage WorkerはVersion `137ee815-ecf3-4e5a-856a-44eeda8b6eff`へ、承認済みの少人数先行体験の
+  通信を100%向けています。Gitへ保存した設定は停止側を初期値にします。
+- 公開デモWorkerはnew-origin Version `97b14023-f9dd-440a-8b79-e2bb2b471697`へ100%を
+  向けています。Version `4069bca4-e8cf-474a-9e9d-d7ffa42b7567`は、以前の3機種継続公開を
+  受け入れた履歴です。
+- 限定中継はlive Version 22（`b4b2064d-6dd4-4de6-8a68-3d0d39aea2ec`）へ、承認済みの
+  少人数通信を100%向けています。未配信の停止Version 23
+  （`10d0a825-c098-462e-89fd-a69937c47a9b`）が確認済みの直接rollbackです。
+- Accessで保護した管理者画面は、管理者1名で本番受入済みです。Plusは公開URLのない停止中staging
+  基盤であり、公開アカウント、購入、個人上限、特典のswitchはすべて停止しています。
+
+---
+
 # Understand today.
 # Improve tomorrow.
 
@@ -1574,9 +1620,9 @@ GlucoScopeが今後もNightscoutだけに対応する、
 ## Historical User Foundation 0.1 Decision
 ## 過去のUser Foundation 0.1方針
 
-> Historical note: this section records the earlier browser-direct proof of concept. For the current route, use **Current Limited Data Relay 0.2 Decision** below.
+> Historical note: this section records the earlier browser-direct proof of concept. For the current route, use **Current Limited Data Relay 0.3 Decision** below.
 >
-> 過去の記録：この節は、以前のブラウザ直接接続PoCの方針です。現在の接続ルートは、後ろの **現在の限定データリレー0.2方針** を正本として扱います。
+> 過去の記録：この節は、以前のブラウザ直接接続PoCの方針です。現在の接続ルートは、後ろの **現在の限定データリレー0.3方針** を正本として扱います。
 
 ### EN
 
@@ -1613,19 +1659,19 @@ or historical-data range will work.
 Connection failures, CORS restrictions, missing data,
 and incompatible response formats must be shown honestly and gently.
 
-The current shared AI-letter cache was designed for Kazuma's public demo.
+At that historical checkpoint, the shared AI-letter cache was designed for Kazuma's public demo.
 Until per-user cache isolation, usage limits, privacy boundaries,
 and cost controls are complete,
 Worker-generated AI letters remain disabled in user mode.
 The local rule-based Gluco message and the copy-to-ChatGPT path may remain available.
 
-This remains the deployed production status until the coordinated release described in
-**Unpublished personal-user AI boundary candidate — 2026-08-14** below.
-That later candidate adds an all-mode temporary shared-KV shutdown, treats browser-provided
-`pageMode` as untrusted metadata, and adds explicit first-use confirmation;
-it does not rewrite this historical decision as though it had already been published.
+This remained the deployed production status until the coordinated release later recorded in
+**Historical Version 29 personal-user AI boundary acceptance — 2026-08-14** below.
+That later release added an all-mode shared-KV shutdown, treated browser-provided
+`pageMode` as untrusted metadata, and added explicit first-use confirmation;
+it does not rewrite this historical decision as though it had already been published then.
 
-This decision is the current standard path for testing.
+This decision was the standard test path at that checkpoint.
 Manual Azure and Nightscout construction may remain an advanced option,
 but it is not the default onboarding path for general users.
 
@@ -1668,7 +1714,7 @@ Gluroo連携は、
 接続失敗、CORS制限、データ欠損、未対応形式は、
 隠さず、やさしく伝えます。
 
-現在のAIお手紙共有キャッシュは、
+この履歴時点のAIお手紙共有キャッシュは、
 Kazumaの公開デモを前提に設計されています。
 利用者ごとのキャッシュ分離、利用上限、プライバシー境界、費用管理が整うまでは、
 ユーザー版からWorkerによるAIお手紙生成を行いません。
@@ -1681,7 +1727,7 @@ Kazumaの公開デモを前提に設計されています。
 信頼しない境界と、初回明示確認を追加するもので、
 この過去の判断を「すでに公開済み」だったかのように書き換えるものではありません。
 
-これを、現在の検証における標準ルートとします。
+これは、その時点の検証における標準ルートでした。
 AzureやNightscoutを自分で構築する方法は上級者向けの選択肢として残せますが、
 一般利用者の標準導線にはしません。
 
@@ -2477,10 +2523,11 @@ The historical 3CGM delivery sequence was:
    continuous operation; the existing paused-Cron, `503`, and fallback evidence remains
    the current safety basis.
 
-The former follow-up items for general-user relay acceptance and the old Usage Dashboard
-priority are no longer the current implementation order. The general-user relay remains
-stopped; its remaining period, expiry, deletion, and limit checks are required only if a
-separate rollout decision resumes that work. The current four-step order is recorded below.
+The former follow-up order for general-user relay acceptance and the early Usage Dashboard
+work is historical. The general-user relay now uses the accepted long-lived device session
+for the approved small group. The current readiness order is recorded below; browser-data
+removal, 180-day idle expiry, emergency revocation, and live limit exhaustion remain later
+operational observations rather than blockers for the accepted Home Screen relaunch path.
 
 On 2026-08-06, Kazuma explicitly chose to publish his own Libre glucose values
 and their measurement/update timing as part of the public demo.
@@ -2582,8 +2629,10 @@ The checked-in source gates are also disabled as
 `DEMO_LIBRE_FEED_ENABLED=false` and `DEMO_G7_FEED_ENABLED=false`.
 The source-specific KV keys are `public:libre-2:v1` and `public:dexcom-g7:v1`,
 and the public read routes are `/v1/libre` and `/v1/dexcom-g7`.
-The checked-in delivery gates remain stopped, while current production traffic
-uses the separately reviewed continuous-live Version described below.
+The checked-in delivery gates remain stopped, while current production traffic uses
+new-origin Version `97b14023-f9dd-440a-8b79-e2bb2b471697`. The Version
+`4069bca4-e8cf-474a-9e9d-d7ffa42b7567` rollout described below is historical
+continuous-publication acceptance evidence.
 
 The comparison page must fall back to a clearly labelled synthetic dataset
 when the live feeds are not configured or cannot be loaded.
@@ -2785,25 +2834,30 @@ existing paused-Cron no-extension, paused-route `503`, and labelled fallback evi
 Pause immediately if Kazuma
 withdraws consent, Gluroo objects or its
 applicable terms materially change, unexpected data or abnormal traffic appears, or a
-privacy or safety concern is found. Stopped Version
-`9994a142-a4ca-4885-9077-952ec8e7e8d2` remains the rollback target. From
-`workers/gluco-demo-feed/`, use `$env:WRANGLER_WRITE_LOGS='false';
+privacy or safety concern is found. At the historical old-origin checkpoint, stopped Version
+`9994a142-a4ca-4885-9077-952ec8e7e8d2` was the rollback target and the recorded command from
+`workers/gluco-demo-feed/` was `$env:WRANGLER_WRITE_LOGS='false';
 .\node_modules\.bin\wrangler.cmd versions deploy
 '9994a142-a4ca-4885-9077-952ec8e7e8d2@100%' --yes --message
-'Restore stopped public demo feed'`. The general-user Limited Data Relay remains
-independently stopped at `RELAY_ENABLED=false` with 100% of its traffic on its stopped
-Version.
+'Restore stopped public demo feed'`. This is retained as historical evidence, not a current
+rollback instruction for the new-origin Version. Before any current traffic change, review a
+stopped Version from the same new-origin configuration. The general-user Limited Data Relay
+now runs the accepted long-lived device-session Version for the approved small group and
+remains independently stoppable.
 
-The implementation order chosen on 2026-08-08 is:
+The current implementation and release-readiness order as of 2026-08-16 is:
 
-1. Design the user foundation and minimal usage analytics.
-2. Build the administrator dashboard on that reviewed foundation. Production deployment
-   and one-administrator acceptance with Cloudflare Access and Worker-side verification are complete.
-3. Design and implement the Plus 30-day pass and clearer optional-support paths.
-4. After user rollout begins, add an opt-in always-on mode only for the landscape graph.
+1. Verify the Worker usage counter and public Usage Dashboard against production behavior.
+2. Finish the connection and manual improvements from Friends & Family feedback, then complete
+   the site-wide Trust/About link and wording review.
+3. Because Plus is intended to launch with the public announcement, complete its contact,
+   refund-operation, tax, receipt, recovery, delivery-failure, payment, and production-acceptance
+   blockers while keeping every public sales and feature switch off.
+4. Make the first announcement only after those readiness checks. Add the opt-in landscape-graph
+   always-on mode later; it is not a launch blocker.
 
-This order does not authorize re-enabling the general-user Limited Data Relay. It remains
-stopped until a separate rollout decision and explicit operational approval.
+This order does not authorize widening the general-user Limited Data Relay beyond the approved
+small group or enabling any Plus sale. Both changes remain separately reviewed rollout decisions.
 
 All treatment decisions, alerts, and current device-state checks
 must continue to use the original approved CGM or pump application.
@@ -2823,7 +2877,7 @@ Guardian 4、FreeStyle Libre 2、Dexcom G7を、
 別の継続公開判断とフロントの安全対応を経て、22:10:05 JSTに
 3CGMの継続公開ライブデモを開始しました。
 
-現在の作業順は次のとおりです。
+3CGM継続公開を始めるまでの履歴順は次のとおりです。
 
 1. 完了：別の明示確認後、Libre公開デモWorkerの定期取得と
    安全な公開応答を1回だけ確認し、停止Workerへ戻して、
@@ -2842,18 +2896,16 @@ Guardian 4、FreeStyle Libre 2、Dexcom G7を、
    更新を意図的に止めるか失敗させた状態で別途確認する。現時点の安全根拠は、
    停止中Cronで期限が延びないこと、`503`、合成データへの復帰の既存確認とする。
 
-2026年8月8日以降の実装優先順位は次のとおりです。
+2026年8月16日時点の実装・公開準備の優先順位は次のとおりです。
 
-1. ユーザー基盤・最小限の利用分析の設計
-   - Phase 1Aとして、任意の表示名だけを端末内へ保存する準備画面を実装した。
-   - Phase 1Bとして、収集項目と目的の説明、簡単な停止方法、90日保存、書き出し・削除、利用回数API、D1とWorkerを実装した。2026年8月12日JSTの実機確認では最初のprofile作成と日別記録に成功したが、成功後の再callbackで誤エラーを表示した。この時点でD1に試験用profile 2件と日別記録2件が残り、Workerとフロントは停止へ戻した。その後、既知の試験用profile 2件を削除し、cascade後の `profiles`、`usage_daily`、`event_receipts` が `0 / 0 / 0` であることを確認した。停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb` とdeployment `25be2258-b72a-4e2c-8bf1-ab47781c48dc` をclean stopped checkpoint兼rollback先として残し、active Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` へ通信の100%を向け、runtimeの `USAGE_COLLECTION_ENABLED=true` とフロントの開始画面を監督下一時受け入れのため有効にした。許可Originのpreflight `204`、無効ダミーTurnstileの `403 turnstile_failed`、不許可OriginとOriginなしの `403` を確認し、D1は引き続き `0 / 0 / 0` である。Gitに保存する `wrangler.jsonc` は `false` のまま維持する。接続開始への表示名・profile作成統合と再callback防止を使い、次は開始・停止・再開・削除、補助的な書き出しを監督下で確認する。
-2. その設計を前提にした管理者ダッシュボード
-   - 専用Workerの本番反映と、Cloudflare Access・Worker内再検証を使った管理者1名での受け入れを完了した。公開サイトからはリンクしない。
-3. Plus 30日パスと、任意の開発支援への分かりやすい導線
-4. ユーザー展開開始後に、横向きグラフだけへ追加する任意の常時表示モード
+1. Workerの利用回数と公開Usage Dashboardが、本番で正しく一致することを確認する。
+2. Friends & Familyの声に沿って接続画面とマニュアルを改善し、Trust/About全体のリンクと文面を確認する。
+3. Plusを初回告知と同時に販売するため、公開問い合わせ、返金運用、税・領収書、復旧、メール不達、
+   決済、本番受入の残件を完了する。完了までは公開販売・個人上限・特典のswitchを停止したままにする。
+4. 上の公開準備を終えてから最初のお知らせを行う。横向きグラフの任意の常時表示は、その後の機能とする。
 
-この順番は、一般利用者向け限定リレーの再有効化を意味しません。
-限定リレーは、別の展開判断と明示的な運用確認まで停止状態を保ちます。
+この順番は、一般利用者向け限定リレーを承認済みの少人数より広げることや、Plus販売を有効にする
+承認ではありません。どちらも別に確認する公開判断とします。
 
 2026年8月6日、Kazumaは、自分自身のLibreの血糖値と
 測定・更新時刻を公開デモとして表示することを明示的に選びました。
@@ -2894,8 +2946,8 @@ Dexcom G7は公開比較ページで1回のライブ表示確認を完了しま�
 継続公開ライブデモでは、Libreと分離した期限付きKV経路から表示します。
 
 デモ専用Workerと、一般利用者向け限定データリレーは別の仕組みです。
-一般利用者向けリレーは`RELAY_ENABLED=false`の停止状態を保ち、
-血糖データを保存しない境界も変えません。
+一般利用者向けリレーは、承認済みの少人数だけで長期端末session版を有効にしています。
+Gitへ保存した停止側の初期値と、血糖データを保存しない境界は変えません。
 一般利用者のURL、接続情報、血糖値を、デモ用WorkerやKVへ入れません。
 
 この比較では、
@@ -2955,8 +3007,9 @@ G7は2026年8月17日ごろまでと表示し、どちらも予定より早く�
 `DEMO_G7_FEED_ENABLED=false`も停止状態でチェックインします。
 KVキーは`public:libre-2:v1`と`public:dexcom-g7:v1`へ分け、
 公開読み取り経路は`/v1/libre`と`/v1/dexcom-g7`です。
-Gitへ保存した配信ゲートは停止状態のままですが、現在の本番通信は、
-後述する別途確認済みの継続ライブVersionを使用しています。
+Gitへ保存した配信ゲートは停止状態のままですが、現在の本番通信はnew-origin Version
+`97b14023-f9dd-440a-8b79-e2bb2b471697`を使用しています。後述するVersion
+`4069bca4-e8cf-474a-9e9d-d7ffa42b7567`は、以前の継続公開受入の履歴です。
 
 ライブデータが未設定または読み込めない場合は、
 合成データであることを明記してフォールバックします。
@@ -3153,12 +3206,14 @@ console errorなしを保ったまま、新しさ表示がリセットされま�
 既存確認を安全根拠とします。
 Kazumaが同意を取り下げた場合、Glurooから停止要請または利用条件の重要変更が
 あった場合、想定外データ、異常通信、プライバシーまたは安全上の懸念が見つかった
-場合はすぐ停止します。停止Version `9994a142-a4ca-4885-9077-952ec8e7e8d2`を
-復旧先として維持し、`workers/gluco-demo-feed/`から
+場合はすぐ停止します。以前のoriginで受け入れた履歴時点では、停止Version
+`9994a142-a4ca-4885-9077-952ec8e7e8d2`を復旧先とし、`workers/gluco-demo-feed/`から
 `$env:WRANGLER_WRITE_LOGS='false'; .\node_modules\.bin\wrangler.cmd versions deploy
 '9994a142-a4ca-4885-9077-952ec8e7e8d2@100%' --yes --message
-'Restore stopped public demo feed'`で戻します。一般利用者向け限定リレーは独立して
-`RELAY_ENABLED=false`の停止Versionへ通信の100%を向けたままです。
+'Restore stopped public demo feed'`で戻していました。この手順は履歴証拠であり、new-origin Versionの
+現在の復旧手順ではありません。現在のtrafficを変える前に、同じnew-origin設定から作った停止Versionを
+別途確認します。一般利用者向け限定リレーは、承認済みの少人数だけで長期端末session版を有効にし、
+公開デモWorkerとは独立して停止できる状態を維持します。
 
 この公開はKazuma自身が明示同意した公開・非匿名のデモデータだけに適用します。
 GlucoScopeはGlurooと提携しておらず、医療判断には使いません。Gluroo Global Connectを
@@ -5149,7 +5204,8 @@ and a `today` or `yesterday` hint containing GMI cannot reintroduce GMI.
 This reduces avoidable contradictions and output rejection;
 it does not weaken the medical-safety or factual checks.
 
-Current Version 29 uses only `glucoscope.aiLetterLocalCache.v14`, with up to
+The personal-user boundary first accepted in Version 29, and retained by the current
+new-origin Version, uses only `glucoscope.aiLetterLocalCache.v14`, with up to
 30 browser entries. Browser cache v13, v12, and v11 data is retired and removed
 during cache reading and saved-connection deletion. Historical Version 28 also
 used shared schema `gluco-ai-letter-cache-v14` with up to 24-hour retention and
@@ -5176,10 +5232,10 @@ prototypeまたはOpenAIで文章を作る前に外します。
 これは不要な矛盾や出力失敗を減らすためであり、
 医療安全や事実確認の境界を弱める変更ではありません。
 
-現在のVersion 29では、端末内のお手紙キャッシュ
+Version 29で最初に受け入れ、現在のnew-origin Versionでも維持する境界では、端末内のお手紙キャッシュ
 `glucoscope.aiLetterLocalCache.v14`だけを最大30件使います。
 端末内v13、v12、v11は退役し、キャッシュ読み取り時と保存済み接続の削除時に消します。
-旧Version 28では共有cache `gluco-ai-letter-cache-v14` を最大24時間保持し、共有v13は読み書きしませんでした。保持中の共有entryは現在のVersion 29では読まず、既存の24時間以内の期限で自然に失効します。
+旧Version 28では共有cache `gluco-ai-letter-cache-v14` を最大24時間保持し、共有v13は読み書きしませんでした。保持中の共有entryは現在の本番では読まず、既存の24時間以内の期限で自然に失効します。
 Git commit `66f9b207d65c17130287b555920c115a9a963e1f` を、
 deployment `5b099641-a818-4d14-ba9d-18aebb7e7ec2` で本番へ反映し、
 その履歴時点では通信の100%をVersion 28（`f2565bc3-1f49-4f3f-b119-6ec2683f0607`）へ向け、
@@ -5189,14 +5245,17 @@ bindingとSecretの名前、OpenAI model、生成上限、budget設定、CORS po
 Durable Object migrationは変更していません。公開後の境界確認は、許可preflight、
 不許可OriginのUsage `GET`、許可OriginのUsage `GET` の順に `204 / 403 / 200` でした。
 
-### Production personal-user AI boundary — 2026-08-14
+### Historical Version 29 personal-user AI boundary acceptance — 2026-08-14
 
-Deployment `a5b57a76-954b-4bb9-bbba-c23bfd0fa516` routes 100% of AI Worker traffic to
-Version 29 (`235cdf03-31d7-40fd-ab58-5c1c6aa2d923`). The matching frontend was published
-through Pages merge `a4497ab1a5d303c8a16b7d0aad999bf0dc1bde5d`. Version 28 is historical
-and must not be restored while user AI remains enabled.
+At this historical checkpoint, deployment `a5b57a76-954b-4bb9-bbba-c23bfd0fa516` routed
+100% of AI Worker traffic to Version 29 (`235cdf03-31d7-40fd-ab58-5c1c6aa2d923`). The
+matching frontend was published through Pages merge
+`a4497ab1a5d303c8a16b7d0aad999bf0dc1bde5d`. The current new-origin Version recorded in
+the canonical snapshot retains this accepted boundary. Version 28 is historical and must
+not be restored while user AI remains enabled.
 
-Current Version 29 and the published frontend enforce the following personal-user AI boundary:
+The boundary first accepted in Version 29 and retained by the current new-origin Version and
+published frontend is:
 
 - In `mode=user`, the first AI request for the current notice version requires a short,
   explicit confirmation before Turnstile or any AI `POST`. Cancelling sends nothing.
@@ -5246,14 +5305,16 @@ Current Version 29 and the published frontend enforce the following personal-use
   verify Pages with user AI disabled before Worker recovery. CGM connection and ordinary
   glucose display remain independent.
 
-### ユーザー版AI安全境界の本番反映 — 2026-08-14
+### 旧Version 29でのユーザー版AI安全境界受入 — 2026-08-14
 
-AI Worker deployment `a5b57a76-954b-4bb9-bbba-c23bfd0fa516` はVersion 29
-（`235cdf03-31d7-40fd-ab58-5c1c6aa2d923`）へ本番通信の100%を向けています。
+この履歴時点では、AI Worker deployment `a5b57a76-954b-4bb9-bbba-c23bfd0fa516` がVersion 29
+（`235cdf03-31d7-40fd-ab58-5c1c6aa2d923`）へ本番通信の100%を向けていました。
 対応するフロントはPages merge `a4497ab1a5d303c8a16b7d0aad999bf0dc1bde5d` で公開しました。
+現在のnew-origin Versionは、正本スナップショットに記録したとおり、この受入済み境界を維持します。
 Version 28は履歴であり、ユーザーAIがONの間は直接戻してはいけません。
 
-現在のVersion 29と公開フロントは、ユーザー版AIの境界を次のように固定します。
+Version 29で最初に受け入れ、現在のnew-origin Versionと公開フロントでも維持する
+ユーザー版AIの境界は次のとおりです。
 
 - `mode=user`では、現在の案内Versionで初めてAI分析を使う時に、TurnstileとAIへの
   `POST` より先に、短く明示的な確認を求めます。「今はしない」なら何も送りません。
@@ -5332,30 +5393,30 @@ CORS policy、Durable Object migrationは変更していません。
 
 ---
 
-## 1–3 Person Early Access Activation — 2026-08-12
+## Historical 1–3 Person Early Access Activation — 2026-08-12
 
 After the supervised Usage lifecycle and general-user Dexcom G7 Limited Relay acceptances passed, separate explicit approval started continuous early access for a group of 1–3 people. This is not a broad public rollout.
 
-- Usage deployment `4fbf0e2c-5f5c-4f4f-98a9-ae57d73b4824` routes 100% to accepted Version `5d160aed-7b27-48e6-b0a8-783534f97b6f`.
-- Limited Relay deployment `5f8d00d9-9d68-4b2a-99cd-c58c26123684` routes 100% to accepted Version `a398d59e-54c1-4b8d-a9a4-b779af360a54`.
+- At that checkpoint, Usage deployment `4fbf0e2c-5f5c-4f4f-98a9-ae57d73b4824` routed 100% to accepted Version `5d160aed-7b27-48e6-b0a8-783534f97b6f`.
+- At that checkpoint, Limited Relay deployment `5f8d00d9-9d68-4b2a-99cd-c58c26123684` routed 100% to accepted ticket Version `a398d59e-54c1-4b8d-a9a4-b779af360a54`.
 - Approved-origin preflights returned `204`; invalid Turnstile, unapproved-origin, and originless requests returned `403`; no-store and `Vary: Origin` boundaries remained intact.
 - Usage D1 remained `profiles / usage_daily / event_receipts = 0 / 0 / 0` after boundary probes. The audit wrote no user row.
-- Checked-in `USAGE_COLLECTION_ENABLED=false` and `RELAY_ENABLED=false` remain unchanged. Usage stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` and relay stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` remain immediate rollback targets.
+- Checked-in `USAGE_COLLECTION_ENABLED=false` and relay fail-closed defaults remain unchanged. The stopped Usage and ticket-relay Versions listed here were the immediate rollback targets at that historical checkpoint; current traffic and relay rollback are recorded in the canonical snapshot above.
 - The public 3CGM demo remains live through its separate Worker and is not coupled to either early-access Worker.
 
 On 2026-08-14 JST, two people were invited to try GlucoScope within this existing early-access scope. This records the invitation only; it does not yet confirm onboarding, CGM connection, use, feedback, or successful operation. No names or other identifying information are recorded.
 
 The early-access observation list now covers long-lived device-session continuity after Safari or Home Screen relaunch, browser-data removal, 180-day idle expiry and emergency revocation boundaries, live limit exhaustion, abnormal traffic, provider-condition changes, and support questions. A problem in Usage recording must not block a verified CGM connection. Either Worker may be paused independently. The approximately one-hour ticket-expiry item is historical and no longer applies to the live relay.
 
-## 1〜3人向け先行体験の継続有効化 — 2026-08-12
+## 旧方式での1〜3人向け先行体験の継続有効化 — 2026-08-12
 
 Usage lifecycleと、一般利用者向け限定中継のDexcom G7実機受け入れに合格した後、別の明示承認を得て、1〜3人の先行体験として継続有効化しました。広い一般公開ではありません。
 
-- Usage deployment `4fbf0e2c-5f5c-4f4f-98a9-ae57d73b4824` は、受け入れ済みVersion `5d160aed-7b27-48e6-b0a8-783534f97b6f` へ通信の100%を向けます。
-- 限定中継deployment `5f8d00d9-9d68-4b2a-99cd-c58c26123684` は、受け入れ済みVersion `a398d59e-54c1-4b8d-a9a4-b779af360a54` へ通信の100%を向けます。
+- この履歴時点では、Usage deployment `4fbf0e2c-5f5c-4f4f-98a9-ae57d73b4824` は、受け入れ済みVersion `5d160aed-7b27-48e6-b0a8-783534f97b6f` へ通信の100%を向けていました。
+- この履歴時点では、限定中継deployment `5f8d00d9-9d68-4b2a-99cd-c58c26123684` は、受け入れ済みの旧ticket Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` へ通信の100%を向けていました。
 - 許可Originの事前確認は `204`、不正なTurnstile、不許可Origin、Originなしは `403` で、no-storeと `Vary: Origin` の境界を維持しました。
 - 境界確認後もUsage D1は `profiles / usage_daily / event_receipts = 0 / 0 / 0` で、監査による利用者行の書き込みはありません。
-- Gitに保存する `USAGE_COLLECTION_ENABLED=false` と `RELAY_ENABLED=false` は変更しません。Usage停止Version `7cb71965-74c3-47f9-b589-75cf6d669edb` と限定中継停止Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` を即時復帰先として保持します。
+- Gitに保存する `USAGE_COLLECTION_ENABLED=false` と限定中継の停止側初期値は変更しません。ここに記録したUsage停止Versionと旧ticket限定中継停止Versionは、その履歴時点の即時復帰先でした。現在のtrafficと限定中継rollbackは、上の正本スナップショットを参照します。
 - 公開3CGMデモは別Workerで独立してライブを継続し、先行体験用の2つのWorkerと連動させません。
 
 2026年8月14日JST、既存の先行体験の範囲で2名へGlucoScopeの利用をお願いしました。これは案内を行った事実だけを記録するもので、登録、CGM接続、利用、フィードバック、正常動作が確認済みという意味ではありません。氏名その他の識別情報は記録しません。

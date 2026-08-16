@@ -330,7 +330,7 @@ test("Dexcom Share guide uses every supplied screen in one-screen steps", async 
   assert.match(dexcomGuide, /本人側（Sharer）のユーザーIDとパスワード/);
   assert.match(dexcomGuide, /画像例とご自身の画面でオン・オフが違っても問題ありません/);
   assert.match(dexcomGuide, /guide\.css\?v=20260812-step22-real-icons-1/);
-  assert.equal((dexcomGuide.match(/\.\.\/gluroo-setup\/#screen-22/g) || []).length, 2);
+  assert.equal((dexcomGuide.match(/\.\.\/gluroo-setup\/\?device=g7#screen-28/g) || []).length, 2);
   assert.doesNotMatch(dexcomGuide, /\.\.\/gluroo-setup\/#(?:step-cgm|screen-30)/);
   assert.match(dexcomGuide, /images\/app-icons\/dexcom-g7-app\.png/);
   assert.match(dexcomGuide, /Dexcom G7の白地に緑のマークのアプリアイコン/);
@@ -386,7 +386,7 @@ test("LibreLinkUp guide uses every supplied screen and separates both phones", a
   assert.match(libreGuide, /「必須です」と出ても大丈夫です/);
   assert.match(libreGuide, /「最近のデータなし」と表示されることがあります/);
   assert.match(libreGuide, /「許可」または「許可しない」/);
-  assert.equal((libreGuide.match(/\.\.\/gluroo-setup\/#screen-22/g) || []).length, 2);
+  assert.equal((libreGuide.match(/\.\.\/gluroo-setup\/\?device=libre#screen-29/g) || []).length, 2);
   assert.doesNotMatch(libreGuide, /\.\.\/gluroo-setup\/#(?:step-cgm|screen-30)/);
   for (const relativePath of stepImages) {
     await access(new URL(`../guides/librelinkup/${relativePath}`, import.meta.url));

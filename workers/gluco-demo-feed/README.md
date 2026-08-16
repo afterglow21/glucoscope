@@ -1,6 +1,6 @@
 # GlucoScope Public Demo Feed
 
-This Worker is a public-demo-only, multi-source feed for Kazuma's data. It is separate from the general-user Limited Data Relay. Publication consent is recorded separately for Kazuma's public, non-anonymous Libre and G7 glucose values and measurement/update timing. After source-specific checks and one temporary Guardian/Libre/G7 GitHub Pages acceptance, a separate continuing-publication decision started continuous public operation at 22:10:05 JST on 2026-08-07. The frontend keeps `dexcomRouteVerified=true` as a record of the verified G7 display path, but this flag does not enable the Worker. Repeated scheduled aggregate checks, about three hours of continued live operation, and two browser auto-refresh checks at separate checkpoints have passed. This is not an overnight observation. Natural expiry remains a separate, non-blocking stopped/failure-path test because healthy five-minute refreshes reset the 36-hour snapshot TTL.
+This Worker is a public-demo-only, multi-source feed for Kazuma's data. It is separate from the general-user Limited Data Relay. Publication consent is recorded separately for Kazuma's public, non-anonymous Libre and G7 glucose values and measurement/update timing. Current new-origin Version `97b14023-f9dd-440a-8b79-e2bb2b471697` receives 100% of demo-feed traffic. After source-specific checks and one temporary Guardian/Libre/G7 GitHub Pages acceptance, a separate continuing-publication decision started continuous public operation at 22:10:05 JST on 2026-08-07. The frontend keeps `dexcomRouteVerified=true` as a record of the verified G7 display path, but this flag does not enable the Worker. Repeated scheduled aggregate checks, about three hours of continued live operation, and two browser auto-refresh checks at separate checkpoints have passed. This is not an overnight observation. Natural expiry remains a separate, non-blocking stopped/failure-path test because healthy five-minute refreshes reset the 36-hour snapshot TTL.
 
 The prepared routes use source-specific Gluroo Global Connect slots:
 
@@ -22,13 +22,13 @@ Dexcom G7
 ## Checked-in safety state
 
 - `DEMO_FEED_ENABLED=false`, `DEMO_LIBRE_FEED_ENABLED=false`, and `DEMO_G7_FEED_ENABLED=false`.
-- The dedicated `DEMO_FEED_CACHE` KV namespace was created after explicit approval on 2026-08-06, and its non-secret namespace id is recorded in `wrangler.jsonc`. It was empty through the initial stopped-deployment checks. Later temporary acceptances created the two source-specific keys. The current live Version refreshes and serves those sanitized keys; stopped Version `9994a142-a4ca-4885-9077-952ec8e7e8d2` remains the immediate rollback target.
+- The dedicated `DEMO_FEED_CACHE` KV namespace was created after explicit approval on 2026-08-06, and its non-secret namespace id is recorded in `wrangler.jsonc`. It was empty through the initial stopped-deployment checks. Later temporary acceptances created the two source-specific keys. The current new-origin Version refreshes and serves those sanitized keys. Stopped Version `9994a142-a4ca-4885-9077-952ec8e7e8d2` is historical old-origin rollback evidence; it is not asserted as the current direct rollback for the new-origin Version.
 - After a second explicit approval, stopped Version `4c8d40de-8877-4d70-800e-1607e1940b96` was deployed to `https://glucoscope-demo-feed.afterglow21.workers.dev`. A later explicit approval registered exactly `GLUROO_DEMO_SOURCE_URL` and `GLUROO_DEMO_API_SECRET` as Cloudflare Secrets. Another explicit approval reapplied the stopped configuration as Version `f8801d58-67bd-4cf9-8cb1-dd227c879446`; it received 100% of traffic at that stage. The five-minute Cron is present but exits while disabled, before Secret access, upstream fetch, or KV write.
 - The existing Libre Secret values remain Cloudflare-only. After separate explicit approval on 2026-08-07, the G7 values for `GLUROO_DEMO_G7_SOURCE_URL` and `GLUROO_DEMO_G7_API_SECRET` were entered through masked prompts with `wrangler versions secret put`, creating unpublished Secret-only Versions `0e095e0a-63de-4b01-8c0f-2dd8f1e169a1` and `834019da-0cd1-41d8-8cff-41eab1062a00`. After another separate approval, reviewed multi-source Version `9994a142-a4ca-4885-9077-952ec8e7e8d2` inherited exactly the four Libre/G7 Secret names and was deployed to 100% of production traffic with all three feed gates still `false`.
 - Secret values must never enter Git, terminal arguments, screenshots, logs, fixtures, or support messages.
 - `DEMO_G7_FEED_CACHE_KEY=public:dexcom-g7:v1` is a non-secret, source-specific KV key. Temporary checks first wrote this key without directly reading or printing its raw KV value. The current live Cron refreshes the sanitized snapshot, which expires within 36 hours after the last successful refresh.
 - `DEMO_FEED_CACHE_KEY=public:libre-2:v1` is the corresponding non-secret Libre key. Temporary checks produced its sanitized public response without directly reading or printing its raw KV value.
-- `GET /v1/libre` and `GET /v1/dexcom-g7` now continuously serve the reviewed sanitized snapshots from deployed live Version `4069bca4-e8cf-474a-9e9d-d7ffa42b7567`. `dexcomRouteVerified=true` records frontend verification only and does not bypass Worker gates.
+- `GET /v1/libre` and `GET /v1/dexcom-g7` now continuously serve the reviewed sanitized snapshots from current new-origin Version `97b14023-f9dd-440a-8b79-e2bb2b471697`. Earlier Version `4069bca4-e8cf-474a-9e9d-d7ffa42b7567` records the original continuous-publication acceptance. `dexcomRouteVerified=true` records frontend verification only and does not bypass Worker gates.
 - Observability is disabled to reduce health-data logging. Cloudflare's route-level subdomain API reports `enabled=true` and `previews_enabled=false`; version-level `has_preview` metadata does not mean the public Preview route is enabled.
 - There is intentionally no real `deploy` npm script.
 
@@ -40,7 +40,7 @@ Dexcom G7
 - An enabled source refresh constructs only its approved Gluroo `/api/v1/entries.json` request in memory.
 - Redirects are not followed, upstream time and response size are bounded, and only glucose value, numeric timestamp, and an allowlisted direction are retained.
 - The rolling public snapshot covers at most 24 hours and expires from KV after 36 hours without a successful refresh.
-- Once a reviewed source route is enabled, public visitors read only its source-specific KV snapshot and never cause a Gluroo request or receive a Gluroo URL or API Secret. Production currently routes 100% to the reviewed live Version with both source gates enabled; the five-minute Cron performs the upstream refresh separately from visitor requests.
+- Once a reviewed source route is enabled, public visitors read only its source-specific KV snapshot and never cause a Gluroo request or receive a Gluroo URL or API Secret. Production currently routes 100% to the reviewed new-origin Version with both source gates enabled; the five-minute Cron performs the upstream refresh separately from visitor requests.
 - A stale snapshot may remain visible with a stale flag so the page can explain that updates stopped without implying that a CGM stopped.
 
 ## First G7-only scheduled acceptance
@@ -75,6 +75,8 @@ The feed is public by design when a source is enabled. CORS limits normal browse
 
 ## Continuous public operation
 
+Current traffic routes 100% to new-origin Version `97b14023-f9dd-440a-8b79-e2bb2b471697`. The dated Version `4069bca4-e8cf-474a-9e9d-d7ffa42b7567` deployment and checks below are preserved as the earlier continuous-publication acceptance record.
+
 Frontend safety commit `6f13ed8c9c4b4b5cda1bdaddc7b90a02bbff1265` was published successfully by Pages run `31181233497` before continuing publication began. Deployment `e96fb11c-a2e0-4097-b54c-a1d638bbffc8` assigned 100% of demo-Worker traffic to existing reviewed live Version `4069bca4-e8cf-474a-9e9d-d7ffa42b7567` at `2026-08-07T13:10:05Z` (22:10:05 JST). The checked-in global, Libre, and G7 gates remain `false`; only this deployed Version has all three delivery gates enabled. Application logging is absent and Worker observability remains disabled.
 
 After the 22:15 JST Cron, aggregate-only validation observed 528 Libre entries and 290 G7 entries. A second scheduled check observed 526 Libre entries and 290 G7 entries. Both checks returned `200` for both routes with `stale=false`, fresh snapshots and latest readings, exact reviewed source identifiers, and passing schema, field-allowlist, type, range, chronological-order, CORS, cache, and response-size boundaries. No glucose value, exact measurement timestamp, source credential, Gluroo URL, Secret, or token was printed or added to Git.
@@ -87,13 +89,13 @@ The existing public browser tab was inspected without reload at about 01:05 JST 
 
 The frontend evaluates every source independently from the latest reading or upstream stale state using a 15-minute boundary. A previously live view may be preserved for at most 15 minutes during transient failures and then falls back to clearly labelled synthetic data. The publication is public and non-anonymous and applies only to Kazuma's expressly consented demo data. GlucoScope is not affiliated with Gluroo, the demo is not for medical advice or medical decisions, and Gluroo Global Connect is not marketed as a free alternative to subscription Nightscout services.
 
-Pause the affected source or the entire Worker immediately if Kazuma withdraws consent, Gluroo objects or materially changes applicable terms, unexpected data or abnormal traffic appears, or a privacy or safety concern is found. From this directory, the reviewed rollback is:
+Pause the affected source or the entire Worker immediately if Kazuma withdraws consent, Gluroo objects or materially changes applicable terms, unexpected data or abnormal traffic appears, or a privacy or safety concern is found. At the historical old-origin checkpoint, the reviewed rollback command was:
 
 ```powershell
 $env:WRANGLER_WRITE_LOGS='false'; .\node_modules\.bin\wrangler.cmd versions deploy '9994a142-a4ca-4885-9077-952ec8e7e8d2@100%' --yes --message 'Restore stopped public demo feed'
 ```
 
-The general-user Limited Data Relay remains independently stopped at `RELAY_ENABLED=false` with 100% of its traffic on its stopped Version.
+Keep that command as historical evidence, not as the current rollback instruction for the new-origin Version. Before any current traffic change, review a stopped Version from the same new-origin configuration. The general-user Limited Data Relay now runs the accepted long-lived device-session Version for the approved small group and remains independently stoppable.
 
 ## Local verification
 
@@ -135,7 +137,7 @@ Each change below requires a separate explicit approval:
 22. Completed after separate continuing-publication approval: deploy reviewed live Version `4069bca4-e8cf-474a-9e9d-d7ffa42b7567` to 100% through deployment `e96fb11c-a2e0-4097-b54c-a1d638bbffc8`, then verify the first post-activation scheduled aggregate check and a new three-source browser session.
 23. Completed: verify a second scheduled aggregate-only check and one five-minute browser auto-refresh without exposing glucose values, exact measurement timestamps, credentials, or Secrets.
 24. Completed: confirm about three hours of continued live operation, one further five-minute browser auto-refresh at a later checkpoint for two confirmed refreshes in total, the same live Version at 100%, both sanitized routes healthy, and exactly two recently refreshed KV keys without exposing glucose values, exact measurement timestamps, credentials, or Secrets.
-25. Current project step: complete the general-user Limited Data Relay period, expiry, deletion, and limit acceptance before any Friends & Family continuing-enablement decision. Keep `RELAY_ENABLED=false` outside separately approved temporary test windows.
+25. Current project step: verify the Worker usage counter and public Usage Dashboard in production, finish the connection/manual feedback and Trust/About review, then complete Plus sales blockers before the intended simultaneous public launch. The already accepted relay remains limited to the approved small group.
 26. Non-blocking later: exercise demo-snapshot natural expiry during a deliberately stopped/failure-path window. Healthy five-minute refreshes reset the 36-hour TTL, so natural expiry is not expected during normal continuous operation.
 
 If Gluroo objects, terms materially change, unexpected data appears, abnormal traffic is detected, or Kazuma no longer wants the data public, disable the affected source or restore `DEMO_FEED_ENABLED=false` immediately and remove only the affected KV snapshot.

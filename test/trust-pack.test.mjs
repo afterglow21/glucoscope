@@ -129,9 +129,10 @@ test("Roadmap stays simple for users while technical evidence stays internal", a
   assert.match(roadmap, /グラフのカスタム期間とShare StudioはPlus特典/);
   assert.match(roadmap, /確認済みの利用者ごとに1回だけ無料で試せる/);
   assert.match(roadmap, /この保護者確認のために、子どもの名前や血糖値は集めません/);
-  assert.match(roadmap, /確認メールは、Resendというメール送信サービスで準備します/);
+  assert.match(roadmap, /確認メールにはResendというメール送信サービスを使う予定です/);
   assert.match(roadmap, /10分で使えなくなる6桁の確認コード、コードの入力方法を伝える短い案内/);
-  assert.match(roadmap, /少人数で実際に届くこととプライバシーの説明を確認するまで、販売は始めません/);
+  assert.match(roadmap, /運営者本人の受信箱まで届き、確認後にアカウントを削除できる最初の非公開確認は完了しました/);
+  assert.match(roadmap, /復旧、メールが届かなかった時の対応、追加の少人数確認、問い合わせ・返金・税・決済の準備が整うまで、販売は始めません/);
   assert.match(roadmap, /GlucoScopeをよくするため、表示名、利用した日/);
   assert.match(roadmap, /血糖値、接続情報、AIお手紙の内容は記録しません/);
   assert.match(roadmap, /GlucoScopeは医療機器ではなく、診断、治療、インスリン量の判断をしません/);

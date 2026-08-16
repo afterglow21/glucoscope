@@ -33,6 +33,8 @@ let dataSourceSaveInFlightGeneration = 0;
 let dataSourceTestGeneration = 0;
 let dataSourceTestAbortController = null;
 let dataSourceDeleteInFlight = false;
+let dataSourceHomeScreenGuidanceDismissed = false;
+let dataSourceWelcomeTimerId = null;
 let usageProfileTurnstileTimeoutId = null;
 let usageProfileTurnstileTimeoutGeneration = 0;
 let plusAccountTurnstileWidgetId = null;
@@ -351,6 +353,24 @@ const translations = {
     plusAccountSafety: "カード番号はStripeの画面だけで入力します。Stripeへ血糖値や接続情報を送ることはありません。",
     dataSourceDialogTitle: "データ接続（先行体験）",
     dataSourceDialogLead: "自分の血糖データをGlucoScopeで表示できます。Gluroo接続は少人数で確認しながら提供しています。",
+    dataSourceBeforeStart: "はじめる前に",
+    dataSourceInAppBrowserTitle: "Safariで開いてください",
+    dataSourceInAppBrowserLead: "Instagramなどのアプリ内画面や、Safari以外のiPhoneブラウザでは、安全なデータ接続を始められません。",
+    dataSourceInAppBrowserStep1: "共有または「…」メニューを開きます。",
+    dataSourceInAppBrowserStep2: "「Safariで開く」を選びます。",
+    dataSourceInAppBrowserStep3: "Safariへ移ると、ホーム画面への追加手順が表示されます。",
+    dataSourceInAppBrowserNote: "この画面では接続先URLや合言葉を入力しないで大丈夫です。",
+    dataSourceEntryUrlLabel: "Safariへ貼り付けるURL",
+    dataSourceCopyEntryUrlButton: "URLをコピー",
+    dataSourceEntryUrlCopied: "URLをコピーしました。Safariのアドレス欄へ貼り付けて開いてね。",
+    dataSourceEntryUrlCopyFailed: "コピーできない場合は、上のURLを長押ししてコピーしてください。",
+    dataSourceHomeScreenTitle: "先にホーム画面へ追加します",
+    dataSourceHomeScreenLead: "追加したGlucoScopeのアイコンから初回接続すると、次からそのまま開きやすくなります。",
+    dataSourceHomeScreenStep1: "Safariの共有ボタン、または「…」を押して「共有」を選びます。",
+    dataSourceHomeScreenStep2: "共有画面を下へ進み、「ホーム画面に追加」を押します。",
+    dataSourceHomeScreenStep3: "右上の「追加」を押したら、ホーム画面のGlucoScopeアイコンから開きます。",
+    dataSourceHomeScreenNote: "ここではまだ接続情報を入力しなくて大丈夫です。ブラウザから自動で追加することはできません。",
+    dataSourceContinueInSafariButton: "ホーム画面に追加できないときは、Safariでこのまま続ける",
     dataSourceChooseLead: "血糖データのつなぎ方を、どちらか1つ選びます。",
     dataSourceChooseHint: "方法①または方法②のカードを押すと、次へ進みます。",
     dataSourceProviderLegend: "つなぎ方を選ぶ",
@@ -398,7 +418,7 @@ const translations = {
     dataSourceRelayUnavailable: "Glurooとの接続を確認できませんでした。通信を確認して、少し待ってからもう一度試してね。Nightscoutの直接接続と公開デモは引き続き使えます。",
     dataSourceRelayCheckFailed: "安全確認を完了できませんでした。少し時間をおいて、もう一度試してみてね。",
     dataSourceRelayCheckFailedWithCode: "安全確認を完了できませんでした。確認コード：{code}。この6桁の数字だけを教えてください。",
-    dataSourceRelaySessionRequired: "この端末で、もう一度だけ安全確認が必要です。保存済みの接続情報を確認して、「つながるか確認する」を押してね。",
+    dataSourceRelaySessionRequired: "この端末で、もう一度だけ安全確認が必要です。保存済みの接続情報を確認して、「接続してGlucoScopeを始める」を押してね。",
     dataSourceRelayPaused: "Glurooのかんたん接続は、現在一時停止しています。接続情報や血糖データは保存していません。",
     dataSourceRelayLimited: "この端末からの今日の接続回数が上限に達しました。時間をおいてから、また確認してみてね。",
     dataSourceUrlLabel: "接続先URL",
@@ -409,9 +429,9 @@ const translations = {
     dataSourceSecretHelp: "Glurooでは「API Secret Token」と表示されています。Apple・Google・CGMメーカーのパスワードは入力しません。",
     dataSourcePersistLabel: "この端末に保存する",
     dataSourcePersistHelp: "オフにすると、画面を閉じたあとにもう一度入力が必要です。",
-    dataSourceTestButton: "つながるか確認する",
-    dataSourceTesting: "つながるか確認しているよ…",
-    dataSourceTestWaiting: "表示名と接続情報を入力して、つながるか確認します。",
+    dataSourceTestButton: "接続してGlucoScopeを始める",
+    dataSourceTesting: "接続を確認しているよ…",
+    dataSourceTestWaiting: "入力できたら、接続と保存をまとめて行います。",
     dataSourceTestSuccess: "つながりました。最新の血糖データを確認できたよ🍀",
     dataSourceTestNoData: "接続先には届きましたが、血糖データはまだ見つかりませんでした。まずGlurooに血糖値が表示されているか確認してみてね。",
     dataSourceTestAuthError: "接続用の情報を確認できませんでした。2つの情報をもう一度コピーして貼り付けてみてね。",
@@ -419,7 +439,10 @@ const translations = {
     dataSourceTestFormatError: "届いたデータを、GlucoScopeではまだ読み取れませんでした。対応状況を確認します。",
     dataSourceTestGenericError: "つながるか確認できませんでした。少し時間をおいて、もう一度試してみてね。",
     dataSourceSaveStorageError: "この端末に接続を保存できませんでした。プライベートブラウズを使っている場合は、通常のタブで開き直してみてね。",
-    dataSourceSaveButton: "GlucoScopeを始める",
+    dataSourceSaveButton: "接続してGlucoScopeを始める",
+    dataSourceWelcomeTitle: "ようこそ、GlucoScopeへ",
+    dataSourceWelcomeLead: "接続できました。最新の血糖データを表示しています。",
+    dataSourceWelcomeCloseLabel: "ようこそ表示を閉じる",
     dataSourceDeleteButton: "この端末に保存した接続を削除",
     dataSourceDemoLink: "まず公開デモを見る",
     dataSourceSafetyNote: "GlucoScopeは日々の振り返りを支えるサポートツールです。治療判断、アラート、最新の機器状態は、元のCGM・ポンプアプリを確認してください。",
@@ -715,6 +738,24 @@ const translations = {
     plusAccountSafety: "Card details are entered only on Stripe’s page. GlucoScope does not send glucose values or connection details to Stripe.",
     dataSourceDialogTitle: "Data connection (early access)",
     dataSourceDialogLead: "You can display your own glucose data in GlucoScope. Gluroo connections are available to a small group while we confirm everything works.",
+    dataSourceBeforeStart: "Before you begin",
+    dataSourceInAppBrowserTitle: "Open this page in Safari",
+    dataSourceInAppBrowserLead: "A secure data connection cannot be started inside Instagram, another in-app browser, or a non-Safari iPhone browser.",
+    dataSourceInAppBrowserStep1: "Open the Share or More (…) menu.",
+    dataSourceInAppBrowserStep2: "Choose Open in Safari.",
+    dataSourceInAppBrowserStep3: "Safari will then show the steps for adding GlucoScope to your Home Screen.",
+    dataSourceInAppBrowserNote: "You do not need to enter a connection URL or passphrase on this screen.",
+    dataSourceEntryUrlLabel: "URL to paste into Safari",
+    dataSourceCopyEntryUrlButton: "Copy URL",
+    dataSourceEntryUrlCopied: "URL copied. Paste it into Safari's address bar and open it.",
+    dataSourceEntryUrlCopyFailed: "If it does not copy, touch and hold the URL above to copy it.",
+    dataSourceHomeScreenTitle: "Add GlucoScope to your Home Screen first",
+    dataSourceHomeScreenLead: "Making the first connection from the new GlucoScope icon makes it easier to reopen next time.",
+    dataSourceHomeScreenStep1: "In Safari, tap the Share button, or tap More (…) and choose Share.",
+    dataSourceHomeScreenStep2: "Scroll down in the Share sheet and choose Add to Home Screen.",
+    dataSourceHomeScreenStep3: "Tap Add at the top right, then open the new GlucoScope icon on your Home Screen.",
+    dataSourceHomeScreenNote: "You do not need to enter connection details here yet. A browser cannot add the icon automatically.",
+    dataSourceContinueInSafariButton: "If you cannot add it, continue in Safari",
     dataSourceChooseLead: "Choose one way to connect your glucose data.",
     dataSourceChooseHint: "Tap Method 1 or Method 2 to continue.",
     dataSourceProviderLegend: "Choose how to connect",
@@ -762,7 +803,7 @@ const translations = {
     dataSourceRelayUnavailable: "We could not confirm the Gluroo connection. Check your connection, wait a moment, and try again. Direct Nightscout and the public demo remain available.",
     dataSourceRelayCheckFailed: "The safety check could not be completed. Please wait a little and try again.",
     dataSourceRelayCheckFailedWithCode: "The safety check could not be completed. Confirmation code: {code}. Please share only this six-digit code.",
-    dataSourceRelaySessionRequired: "This device needs one more safety check. Review the saved connection details, then select Check the connection.",
+    dataSourceRelaySessionRequired: "This device needs one more safety check. Review the saved connection details, then select Connect and start GlucoScope.",
     dataSourceRelayPaused: "The Gluroo easy connection is temporarily paused. Connection details and glucose data have not been stored.",
     dataSourceRelayLimited: "This device has reached today’s connection limit. Please try again later.",
     dataSourceUrlLabel: "Connection URL",
@@ -773,9 +814,9 @@ const translations = {
     dataSourceSecretHelp: "Gluroo labels this API Secret Token. Do not enter an Apple, Google, or CGM manufacturer password.",
     dataSourcePersistLabel: "Save on this device",
     dataSourcePersistHelp: "When off, you will need to enter it again after closing the page.",
-    dataSourceTestButton: "Check the connection",
+    dataSourceTestButton: "Connect and start GlucoScope",
     dataSourceTesting: "Checking the connection…",
-    dataSourceTestWaiting: "Enter a display name and the connection details, then check the connection.",
+    dataSourceTestWaiting: "When the fields are ready, connection and saving happen together.",
     dataSourceTestSuccess: "Connected. The latest glucose entry was found 🍀",
     dataSourceTestNoData: "The source responded, but no glucose data was found. First check that Gluroo is displaying a glucose value.",
     dataSourceTestAuthError: "The connection information could not be confirmed. Copy and paste both items again.",
@@ -783,7 +824,10 @@ const translations = {
     dataSourceTestFormatError: "GlucoScope received data that it cannot read yet. Compatibility needs review.",
     dataSourceTestGenericError: "The connection could not be confirmed. Please try again later.",
     dataSourceSaveStorageError: "The connection could not be saved on this device. If you are using private browsing, reopen it in a regular tab and try again.",
-    dataSourceSaveButton: "Start GlucoScope",
+    dataSourceSaveButton: "Connect and start GlucoScope",
+    dataSourceWelcomeTitle: "Welcome to GlucoScope",
+    dataSourceWelcomeLead: "Connected. Your latest glucose data is being displayed.",
+    dataSourceWelcomeCloseLabel: "Dismiss the welcome message",
     dataSourceDeleteButton: "Delete the connection saved on this device",
     dataSourceDemoLink: "View the public demo first",
     dataSourceSafetyNote: "GlucoScope supports everyday reflection. Check the original CGM or pump app for treatment decisions, alerts, and current device status.",
@@ -996,6 +1040,129 @@ function hasActiveDataSource() {
   return Boolean(activeDataSourceAdapter && activeDataSourceConfig);
 }
 
+function getDataSourceBrowserContext(environment = {}) {
+  const navigatorObject = environment.navigator || window.navigator || {};
+  const userAgent = String(navigatorObject.userAgent || "");
+  const isIphone = /iPhone|iPod/iu.test(userAgent);
+  const knownInAppBrowser = /Instagram|FBAN|FBAV|FB_IAB|Line\/|MicroMessenger/iu.test(userAgent);
+  const iosWebView = isIphone
+    && /AppleWebKit/iu.test(userAgent)
+    && !/Version\/[\d.]+.*Safari|CriOS|FxiOS|EdgiOS|OPiOS/iu.test(userAgent);
+  const isStandalone = navigatorObject.standalone === true
+    || environment.displayModeStandalone === true
+    || (
+      environment.displayModeStandalone === undefined
+      && window.matchMedia?.("(display-mode: standalone)")?.matches === true
+    );
+  const isIphoneSafari = isIphone
+    && !knownInAppBrowser
+    && !iosWebView
+    && /Version\/[\d.]+.*Safari/iu.test(userAgent);
+  const isInAppBrowser = !isStandalone
+    && (knownInAppBrowser || iosWebView || (isIphone && !isIphoneSafari));
+
+  return {
+    isIphone,
+    isInAppBrowser,
+    isIphoneSafari,
+    isStandalone
+  };
+}
+
+function setVisibleDataSourceEntryPanel(panelId) {
+  [
+    "dataSourceInAppBrowserPanel",
+    "dataSourceHomeScreenPanel",
+    "dataSourceChoosePanel",
+    "dataSourceGlurooPrepPanel",
+    "dataSourceConnectPanel"
+  ].forEach((id) => {
+    const panel = document.getElementById(id);
+    if (panel) panel.hidden = id !== panelId;
+  });
+}
+
+function setDataSourceEntryUrlStatus(messageKey = "", type = "") {
+  const status = document.getElementById("dataSourceEntryUrlStatus");
+  if (!status) return;
+  status.classList.remove("success", "error");
+  if (type) status.classList.add(type);
+  status.dataset.messageKey = messageKey;
+  status.textContent = messageKey ? t(messageKey) : "";
+}
+
+function updateDataSourceEntryUrl() {
+  const input = document.getElementById("dataSourceEntryUrl");
+  if (input) input.value = buildUserModeUrl("glucose");
+}
+
+async function copyDataSourceEntryUrl() {
+  const input = document.getElementById("dataSourceEntryUrl");
+  if (!input) return;
+  updateDataSourceEntryUrl();
+
+  let copied = false;
+  try {
+    if (window.navigator?.clipboard?.writeText) {
+      await window.navigator.clipboard.writeText(input.value);
+      copied = true;
+    }
+  } catch (error) {
+    console.warn("Could not copy the Safari entry URL with Clipboard API", error?.name || "copy_failed");
+  }
+
+  if (!copied) {
+    try {
+      input.focus();
+      input.select();
+      input.setSelectionRange?.(0, input.value.length);
+      copied = document.execCommand?.("copy") === true;
+    } catch (error) {
+      console.warn("Could not copy the Safari entry URL with selection fallback", error?.name || "copy_failed");
+    }
+  }
+
+  setDataSourceEntryUrlStatus(
+    copied ? "dataSourceEntryUrlCopied" : "dataSourceEntryUrlCopyFailed",
+    copied ? "success" : "error"
+  );
+}
+
+function showDataSourceInAppBrowserStep() {
+  if (isDataSourceSaveBusy()) return;
+  setVisibleDataSourceEntryPanel("dataSourceInAppBrowserPanel");
+  updateDataSourceEntryUrl();
+  setDataSourceEntryUrlStatus();
+  invalidateDataSourceTest();
+  focusCurrentDataSourceStep();
+}
+
+function showDataSourceHomeScreenStep() {
+  if (isDataSourceSaveBusy()) return;
+  setVisibleDataSourceEntryPanel("dataSourceHomeScreenPanel");
+  invalidateDataSourceTest();
+  focusCurrentDataSourceStep();
+}
+
+function showInitialDataSourceEntryGuidance() {
+  const context = getDataSourceBrowserContext();
+  if (context.isInAppBrowser) {
+    showDataSourceInAppBrowserStep();
+    return true;
+  }
+  if (context.isIphoneSafari && !context.isStandalone && !dataSourceHomeScreenGuidanceDismissed) {
+    showDataSourceHomeScreenStep();
+    return true;
+  }
+  return false;
+}
+
+function continueDataSourceSetupInSafari() {
+  if (isDataSourceSaveBusy()) return;
+  dataSourceHomeScreenGuidanceDismissed = true;
+  showDataSourceChooseStep();
+}
+
 function updatePageModeIdentity() {
   const userMode = isUserDataSourceMode();
   document.body.classList.toggle("user-data-source-mode", userMode);
@@ -1090,7 +1257,7 @@ function updateDataSourceProviderHelp() {
 }
 
 function isDataSourceSaveBusy() {
-  return Boolean(pendingDataSourceSave || dataSourceSaveInFlight);
+  return Boolean(pendingDataSourceSave || dataSourceSaveInFlight || dataSourceTestAbortController);
 }
 
 function queueDataSourceFocus(element) {
@@ -1114,9 +1281,23 @@ function getDataSourceDialogFocusableElements() {
 }
 
 function focusCurrentDataSourceStep() {
+  const inAppBrowserPanel = document.getElementById("dataSourceInAppBrowserPanel");
+  const homeScreenPanel = document.getElementById("dataSourceHomeScreenPanel");
   const choosePanel = document.getElementById("dataSourceChoosePanel");
   const prepPanel = document.getElementById("dataSourceGlurooPrepPanel");
   const connectPanel = document.getElementById("dataSourceConnectPanel");
+  if (inAppBrowserPanel && !inAppBrowserPanel.hidden) {
+    const heading = document.getElementById("dataSourceInAppBrowserTitle");
+    if (heading) heading.tabIndex = -1;
+    queueDataSourceFocus(heading);
+    return;
+  }
+  if (homeScreenPanel && !homeScreenPanel.hidden) {
+    const heading = document.getElementById("dataSourceHomeScreenTitle");
+    if (heading) heading.tabIndex = -1;
+    queueDataSourceFocus(heading);
+    return;
+  }
   if (connectPanel && !connectPanel.hidden) {
     queueDataSourceFocus(document.getElementById("dataSourceDisplayName"));
     return;
@@ -1137,36 +1318,21 @@ function focusCurrentDataSourceStep() {
 
 function showDataSourceChooseStep() {
   if (isDataSourceSaveBusy()) return;
-  const choosePanel = document.getElementById("dataSourceChoosePanel");
-  const prepPanel = document.getElementById("dataSourceGlurooPrepPanel");
-  const connectPanel = document.getElementById("dataSourceConnectPanel");
-  if (choosePanel) choosePanel.hidden = false;
-  if (prepPanel) prepPanel.hidden = true;
-  if (connectPanel) connectPanel.hidden = true;
+  setVisibleDataSourceEntryPanel("dataSourceChoosePanel");
   invalidateDataSourceTest();
   focusCurrentDataSourceStep();
 }
 
 function showDataSourceGlurooPrepStep() {
   if (isDataSourceSaveBusy()) return;
-  const choosePanel = document.getElementById("dataSourceChoosePanel");
-  const prepPanel = document.getElementById("dataSourceGlurooPrepPanel");
-  const connectPanel = document.getElementById("dataSourceConnectPanel");
-  if (choosePanel) choosePanel.hidden = true;
-  if (prepPanel) prepPanel.hidden = false;
-  if (connectPanel) connectPanel.hidden = true;
+  setVisibleDataSourceEntryPanel("dataSourceGlurooPrepPanel");
   invalidateDataSourceTest();
   focusCurrentDataSourceStep();
 }
 
 function showDataSourceConnectStep() {
   if (isDataSourceSaveBusy()) return;
-  const choosePanel = document.getElementById("dataSourceChoosePanel");
-  const prepPanel = document.getElementById("dataSourceGlurooPrepPanel");
-  const connectPanel = document.getElementById("dataSourceConnectPanel");
-  if (choosePanel) choosePanel.hidden = true;
-  if (prepPanel) prepPanel.hidden = true;
-  if (connectPanel) connectPanel.hidden = false;
+  setVisibleDataSourceEntryPanel("dataSourceConnectPanel");
   updateDataSourceProviderHelp();
   invalidateDataSourceTest();
   focusCurrentDataSourceStep();
@@ -1191,9 +1357,7 @@ function invalidateDataSourceTest() {
   dataSourceTestGeneration += 1;
   testedDataSourceConfig = null;
   const saveButton = document.getElementById("dataSourceSaveButton");
-  const testButton = document.getElementById("dataSourceTestButton");
-  if (saveButton) saveButton.disabled = true;
-  if (testButton && !isDataSourceSaveBusy()) testButton.disabled = false;
+  if (saveButton && !isDataSourceSaveBusy()) saveButton.disabled = false;
   setDataSourceTestStatus(t("dataSourceTestWaiting"));
 }
 
@@ -1232,9 +1396,13 @@ function populateDataSourceForm(config = null) {
 
   testedDataSourceConfig = null;
   const saveButton = document.getElementById("dataSourceSaveButton");
-  if (saveButton) saveButton.disabled = true;
+  if (saveButton) saveButton.disabled = false;
   if (resolved?.mode === "user") {
     showDataSourceConnectStep();
+  } else if (showInitialDataSourceEntryGuidance()) {
+    // The in-app browser stop or iPhone install-first guidance owns the first
+    // step. Connection fields remain hidden until the person reaches Safari
+    // or explicitly chooses the ordinary-Safari fallback.
   } else {
     const sourceFromGuide = new URLSearchParams(window.location.search).get("source");
     if (sourceFromGuide === "gluroo" || sourceFromGuide === "nightscout") {
@@ -1320,14 +1488,13 @@ function closeDataSourceDialog() {
 }
 
 async function handleDataSourceTest() {
-  if (isDataSourceSaveBusy()) return;
-  const testButton = document.getElementById("dataSourceTestButton");
+  if (isDataSourceSaveBusy()) return false;
   const saveButton = document.getElementById("dataSourceSaveButton");
   if (!dataSourceManager) {
     setDataSourceTestStatus(t("dataSourceTestGenericError"), "error");
-    return;
+    return false;
   }
-  if (!requireDataSourceDisplayName()) return;
+  if (!requireDataSourceDisplayName()) return false;
 
   dataSourceTestAbortController?.abort?.();
   const testAbortController = new AbortController();
@@ -1335,7 +1502,6 @@ async function handleDataSourceTest() {
   const generation = nextDataSourceTestGeneration();
   testedDataSourceConfig = null;
   if (saveButton) saveButton.disabled = true;
-  if (testButton) testButton.disabled = true;
   setDataSourceTestStatus(t("dataSourceTesting"), "pending");
 
   try {
@@ -1348,30 +1514,31 @@ async function handleDataSourceTest() {
         throw relayError;
       }
       await relay.prepareConnection(candidate, { signal: testAbortController.signal });
-      if (!isCurrentDataSourceTest(generation)) return;
+      if (!isCurrentDataSourceTest(generation)) return false;
     }
     const result = await dataSourceManager.createAdapter(candidate).testConnection({
       signal: testAbortController.signal
     });
-    if (!isCurrentDataSourceTest(generation)) return;
+    if (!isCurrentDataSourceTest(generation)) return false;
     testedDataSourceConfig = dataSourceManager.sanitizeConfig({
       ...candidate,
       authStrategy: result.strategy
     });
-    if (saveButton) saveButton.disabled = false;
     const measuredAt = new Date(result.latest.measuredAt);
     const detail = Number.isFinite(measuredAt.getTime())
       ? ` ${result.latest.glucose} mg/dL · ${formatDateTime(measuredAt)}`
       : "";
     setDataSourceTestStatus(`${t("dataSourceTestSuccess")}${detail}`, "success");
+    return true;
   } catch (error) {
-    if (!isCurrentDataSourceTest(generation)) return;
+    if (!isCurrentDataSourceTest(generation)) return false;
     console.warn("Data source connection test failed", error?.code || error?.message);
     setDataSourceTestStatus(getDataSourceErrorMessage(error), "error");
+    return false;
   } finally {
     if (isCurrentDataSourceTest(generation)) {
       if (dataSourceTestAbortController === testAbortController) dataSourceTestAbortController = null;
-      if (testButton) testButton.disabled = false;
+      if (saveButton && !isDataSourceSaveBusy()) saveButton.disabled = false;
     }
   }
 }
@@ -1439,7 +1606,6 @@ function setDataSourceSaveControlsDisabled(disabled) {
     "dataSourceUrl",
     "dataSourceSecret",
     "dataSourcePersist",
-    "dataSourceTestButton",
     "dataSourceSaveButton",
     "dataSourceDeleteButton",
     "dataSourceBackButton",
@@ -1447,6 +1613,8 @@ function setDataSourceSaveControlsDisabled(disabled) {
     "dataSourceGlurooChoice",
     "dataSourceNightscoutChoice",
     "dataSourceGlurooConnectButton",
+    "dataSourceContinueInSafariButton",
+    "dataSourceCopyEntryUrlButton",
     "dataSourceSecretToggle",
     "dataSourceDialogClose"
   ].forEach((id) => {
@@ -1654,6 +1822,26 @@ function navigateToSavedDataSource(savedConfig) {
   return true;
 }
 
+function hideDataSourceWelcome() {
+  if (dataSourceWelcomeTimerId !== null) {
+    window.clearTimeout(dataSourceWelcomeTimerId);
+    dataSourceWelcomeTimerId = null;
+  }
+  const welcome = document.getElementById("dataSourceWelcome");
+  if (welcome) welcome.hidden = true;
+}
+
+function showDataSourceWelcome() {
+  const welcome = document.getElementById("dataSourceWelcome");
+  if (!welcome) return;
+  hideDataSourceWelcome();
+  welcome.hidden = false;
+  dataSourceWelcomeTimerId = window.setTimeout(() => {
+    dataSourceWelcomeTimerId = null;
+    welcome.hidden = true;
+  }, 6000);
+}
+
 async function completePendingDataSourceSave(
   turnstileToken = "",
   generation = pendingDataSourceSave?.generation,
@@ -1703,6 +1891,7 @@ async function completePendingDataSourceSave(
 
     if (!isCurrentPendingDataSourceSave(generation) || dataSourceSaveInFlightGeneration !== generation) return;
     navigationStarted = navigateToSavedDataSource(savedConfig);
+    if (!navigationStarted && snapshot.showWelcome) showDataSourceWelcome();
     pendingDataSourceSave = null;
   } catch (error) {
     console.warn("Could not save required data source setup", error?.code || error?.message);
@@ -1727,13 +1916,15 @@ async function completePendingDataSourceSave(
   }
 }
 
-function handleDataSourceSave(event) {
+async function handleDataSourceSave(event) {
   event?.preventDefault?.();
   if (dataSourceSaveInFlight || pendingDataSourceSave) return;
-  if (!testedDataSourceConfig || !dataSourceManager) {
-    setDataSourceTestStatus(t("dataSourceTestWaiting"), "error");
-    return;
-  }
+  if (!dataSourceManager) return;
+
+  const firstConnection = !hasActiveDataSource() && !dataSourceManager.readUserConfig?.();
+  const connectionVerified = await handleDataSourceTest();
+  if (!connectionVerified || dataSourceSaveInFlight || pendingDataSourceSave) return;
+  if (!testedDataSourceConfig) return;
 
   const displayName = requireDataSourceDisplayName();
   if (!displayName) return;
@@ -1743,7 +1934,8 @@ function handleDataSourceSave(event) {
     generation,
     config: testedDataSourceConfig,
     displayName,
-    persist: document.getElementById("dataSourcePersist")?.checked !== false
+    persist: document.getElementById("dataSourcePersist")?.checked !== false,
+    showWelcome: firstConnection
   };
 
   const state = getUsageProfileState();
@@ -1871,9 +2063,13 @@ function setupDataSourceFoundation() {
   document.getElementById("dataSourceGlurooChoice")?.addEventListener("click", () => selectDataSourceProvider("gluroo"));
   document.getElementById("dataSourceNightscoutChoice")?.addEventListener("click", () => selectDataSourceProvider("nightscout"));
   document.getElementById("dataSourceGlurooConnectButton")?.addEventListener("click", showDataSourceConnectStep);
+  document.getElementById("dataSourceContinueInSafariButton")?.addEventListener("click", continueDataSourceSetupInSafari);
+  document.getElementById("dataSourceCopyEntryUrlButton")?.addEventListener("click", () => {
+    void copyDataSourceEntryUrl();
+  });
+  document.getElementById("dataSourceWelcomeClose")?.addEventListener("click", hideDataSourceWelcome);
   document.getElementById("dataSourceGlurooPrepBackButton")?.addEventListener("click", showDataSourceChooseStep);
   document.getElementById("dataSourceBackButton")?.addEventListener("click", showDataSourceChooseStep);
-  document.getElementById("dataSourceTestButton")?.addEventListener("click", handleDataSourceTest);
   document.getElementById("dataSourceDeleteButton")?.addEventListener("click", handleDataSourceDelete);
   form?.addEventListener("submit", handleDataSourceSave);
 
@@ -4694,6 +4890,10 @@ function applyLanguage() {
     const key = element.dataset.i18nKey;
     element.textContent = t(key);
   });
+  document.querySelectorAll("[data-i18n-aria-label]").forEach((element) => {
+    const key = element.dataset.i18nAriaLabel;
+    element.setAttribute("aria-label", t(key));
+  });
 
   document.querySelectorAll(".language-button").forEach((button) => {
     button.classList.toggle("active", button.dataset.language === currentLanguage);
@@ -4711,6 +4911,10 @@ function applyLanguage() {
   const localProfileStatus = document.getElementById("localProfileStatus");
   if (localProfileStatus?.dataset.messageKey) {
     localProfileStatus.textContent = t(localProfileStatus.dataset.messageKey);
+  }
+  const dataSourceEntryUrlStatus = document.getElementById("dataSourceEntryUrlStatus");
+  if (dataSourceEntryUrlStatus?.dataset.messageKey) {
+    dataSourceEntryUrlStatus.textContent = t(dataSourceEntryUrlStatus.dataset.messageKey);
   }
   renderUsageProfileState();
   const usageProfileStatus = document.getElementById("usageProfileStatus");

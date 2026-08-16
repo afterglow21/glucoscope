@@ -4,66 +4,83 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex">
-  <title>全画面でたどる Glurooの準備 | GlucoScope</title>
-  <link rel="stylesheet" href="../guide.css?v=20260723-user-foundation-3-8">
+  <title>Glurooの準備ガイド | GlucoScope</title>
+  <link rel="stylesheet" href="../guide.css?v=20260816-split-gluroo-guide-1">
 </head>
 <body>
   <main class="guide-wrap">
     <nav class="guide-topbar" aria-label="ガイドのナビゲーション">
       <a class="guide-brand" href="../../?mode=user#glucose">🍀 GlucoScope</a>
-      <a class="guide-back" href="../../?mode=user#glucose">GlucoScopeの接続画面へ戻る</a>
+      <a class="guide-back" id="glurooGuideBack" href="../../?mode=user#glucose">GlucoScopeの接続画面へ戻る</a>
     </nav>
 
+    <div id="glurooGuideLanding">
+      <header class="guide-hero">
+        <p class="guide-kicker">迷わないように、機器ごとに分けました</p>
+        <h1>使っているCGMを選んでください</h1>
+        <p class="guide-lead">選んだあとは、その機器に必要なSTEPだけを上から順番に進めます。</p>
+      </header>
+
+      <section class="guide-card guide-device-entry" aria-labelledby="glurooDeviceHeading">
+        <h2 id="glurooDeviceHeading">Glurooでつなぐ機器</h2>
+        <div class="guide-sensor-links guide-device-entry-grid">
+          <a class="guide-sensor-link" href="?device=g7">
+            <strong>Dexcom G7</strong>
+            <span>Dexcom ShareからGlurooへつなぐ手順</span>
+          </a>
+          <a class="guide-sensor-link" href="?device=libre">
+            <strong>FreeStyle Libre 2</strong>
+            <span>LibreLinkUpからGlurooへつなぐ手順</span>
+          </a>
+        </div>
+        <p class="guide-note">どちらのガイドも、最初にGlucoScopeをiPhoneのホーム画面へ追加します。接続後にサイトが分からなくなるのを防ぐためです。</p>
+      </section>
+
+      <section class="guide-callout">
+        <h2>Guardian（MiniMed 780G）を使っている方</h2>
+        <p>Guardianは、Guardian MonitorからGluroo Global ConnectへNightscout同期する専用ガイドを使います。</p>
+        <a class="guide-primary-link" href="../guardian-monitor/">Guardian Monitorの専用ガイドを開く</a>
+      </section>
+    </div>
+
+    <div id="glurooDeviceGuide" hidden>
     <header class="guide-hero">
-      <p class="guide-kicker">表示される画面を、1画面ずつ</p>
-      <h1>Glurooを準備する方法</h1>
-      <p class="guide-lead">App Storeで探すところから、Nightscout URLとAPI Secret Tokenを確認するところまで、実際に表示された34画面を順番に案内します。</p>
+      <p class="guide-kicker">表示された順に、そのまま進めます</p>
+      <h1 id="glurooDeviceTitle">Glurooを準備する方法</h1>
+      <p class="guide-lead" id="glurooDeviceLead">使っている機器に必要な画面だけを、上から順番に案内します。</p>
       <div class="guide-meta">
         <span class="guide-chip">確認端末：iPhone</span>
         <span class="guide-chip">確認版：Gluroo 2.0.5</span>
         <span class="guide-chip">画面確認：2026年7月23日</span>
-        <span class="guide-chip">全34画面</span>
       </div>
+      <p class="guide-note">アプリ更新で文言や順番が少し変わることがあります。治療に関する数値は、このガイドを見て入力・変更しません。</p>
     </header>
 
-    <section class="guide-callout guide-version-warning">
-      <h2>はじめに：画面が変わることがあります</h2>
-      <p>このガイドは、2026年7月23日に確認したiPhone版Gluroo 2.0.5の画面をもとにしています。</p>
-      <p><strong>Glurooのバージョンや仕様、使用しているCGM、選んだ回答、言語・地域によって、画面の見た目、文言、順番、表示される画面が変わる可能性があります。</strong></p>
-      <p class="guide-note">同じ画面が見つからないときは、急いで入力せず、見出しやボタン名が近いSTEPを探します。治療に関する数値は、このガイドを見て入力・変更しません。</p>
+    <section class="guide-callout guide-existing-user">
+      <h2>すでにGlurooを使っている方</h2>
+      <p>Glurooにログイン済みなら、最初の設定は繰り返さなくて大丈夫です。</p>
+      <a class="guide-primary-link" href="#screen-26">設定メニューを開くSTEPから始める</a>
     </section>
 
-    <section class="guide-callout guide-warning">
-      <h2>このガイドで使う「SKIP」の考え方</h2>
-      <div class="guide-skip-grid">
-        <div class="guide-skip-card guide-skip-ok"><strong>SKIPしてよい</strong><p>インスリン設定、基礎インスリンのリマインダー、服薬リマインダー、Apple Health。</p></div>
-        <div class="guide-skip-card guide-skip-required"><strong>飛ばさない</strong><p>CGM選択、ログイン、利用規約の確認、CGM接続、Global Connect。</p></div>
+    <section class="guide-chapter"><p>最初に</p><h2>GlucoScopeをホーム画面へ追加します</h2></section><section class="guide-card guide-step" id="home-screen-share">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">1</span><span class="guide-step-badge">接続する前に</span></div>
+        <p class="guide-progress">STEP 1</p>
+        <h2>共有メニューを開きます</h2>
+        <p>Instagramなどのアプリ内でこのページを開いている場合は、画面の「…」から共有メニューを開きます。Safariで開いている場合は、四角から上向き矢印が出ている共有ボタンを押します。</p>
       </div>
-      <p class="guide-note">通知はあとから変更できます。利用規約は内容を確認し、同意できる場合だけ進みます。</p>
-    </section>
-
-    <section class="guide-callout">
-      <h2>この案内の対象</h2>
-      <p><strong>FreeStyle Libre 2</strong>または<strong>Dexcom G7</strong>を使っている方のGluroo準備を、画面付きで案内します。</p>
-      <p class="guide-note">Guardian（MiniMed 780G）は、iPhoneのGuardian MonitorからGluroo Global ConnectへNightscout同期する方法を実機確認済みです。</p>
-      <a href="../guardian-monitor/">Guardian MonitorからGlurooへつなぐガイドを見る</a>
-    </section>
-
-    <section class="guide-callout">
-      <h2>接続情報を守ります</h2>
-      <p><strong>Nightscout URL</strong>と<strong>API Secret Token</strong>は、GlucoScopeへ接続するための秘密の情報です。ほかの人へ送ったり、スクリーンショットへ写したりせず、自分の端末で直接コピー＆ペーストします。</p>
-      <p class="guide-note">公開用画像では、秘密の接続情報を隠しています。</p>
-    </section>
-
-    <section class="guide-card guide-toc">
-      <h2>途中から見返す</h2>
-      <ol>
-        <li><a href="#screen-01">App Storeから入れる</a></li>
-        <li><a href="#screen-04">初回設定を進める</a></li>
-        <li><a href="#step-cgm">CGMをつなぐ</a></li>
-        <li><a href="#screen-26">設定を開く</a></li>
-        <li><a href="#screen-33">URLと合言葉をコピーする</a></li>
-      </ol>
+      <figure class="guide-shot guide-shot-full"><div class="guide-shot-image"><img src="images/home-screen/01-open-share-menu.jpg" width="634" height="1280" alt="GlucoScopeを開いたブラウザのメニューで、共有を選ぶ場所" loading="eager" decoding="async"></div><figcaption>「共有」を押して、次のメニューを開きます。</figcaption></figure>
+    </section><section class="guide-card guide-step" id="home-screen-add">
+      <div class="guide-step-copy">
+        <div class="guide-step-heading"><span class="guide-step-number">2</span><span class="guide-step-badge">接続する前に</span></div>
+        <p class="guide-progress">STEP 2</p>
+        <h2>Safariで開いて、ホーム画面へ追加します</h2>
+        <p>「Safariで開く」が表示されたら、先にそれを押します。Safariでもう一度共有メニューを開き、「ホーム画面に追加」→右上の「追加」を押します。</p>
+        <p><strong>「ブックマークに追加」ではありません。</strong>必ず「ホーム画面に追加」を選びます。</p>
+        <div class="guide-step-action"><strong>ここを確認</strong><span>ホーム画面にGlucoScopeのアイコンができたら準備完了です。</span></div>
+        <p class="guide-note">すでに同じGlucoScopeアイコンがある場合は、追加し直さず次へ進めます。初回のデータ接続は、最後にこのアイコンを開いて行います。</p>
+      </div>
+      <figure class="guide-shot guide-shot-full"><div class="guide-shot-image"><img src="images/home-screen/02-open-in-safari-add-home-screen.jpg" width="630" height="1280" alt="iPhoneの共有メニューにある、Safariで開くとホーム画面に追加の操作" loading="lazy" decoding="async"></div><figcaption>アプリ内ブラウザでは「Safariで開く」を先に選び、Safariから「ホーム画面に追加」を押します。</figcaption></figure>
     </section>
 
     <section class="guide-chapter"><p>第1章</p><h2>App StoreからGlurooを入れます</h2></section><section class="guide-card guide-step" id="screen-01">
@@ -160,8 +177,9 @@
   <div class="guide-step-copy">
     <div class="guide-step-heading"><span class="guide-step-number">11</span><span class="guide-step-badge">飛ばさない</span></div>
     <p class="guide-progress">34画面中 11</p>
-    <h2>使っているCGMを選びます</h2>
-    <p>FreeStyle Libre 2を使っている方は「アボット フリースタイル リブレのバリエーション」の項目を、Dexcom G7を使っている方は「Dexcom G7」を選びます。</p>
+    <h2><span data-device-copy="g7">「Dexcom G7」を選びます</span><span data-device-copy="libre">Libreの項目を選びます</span></h2>
+    <p data-device-copy="g7">一覧から「Dexcom G7」を選びます。この画面では機器の種類を選ぶだけです。Dexcom Shareとの接続は、初回設定が終わってから1回だけ行います。</p>
+    <p data-device-copy="libre">「アボット フリースタイル リブレのバリエーション」の項目を選びます。この画面では機器の種類を選ぶだけです。LibreLinkUpとの接続は、初回設定が終わってから1回だけ行います。</p>
 
   </div>
   <figure class="guide-shot guide-shot-full"><div class="guide-shot-image"><img src="images/steps/11-choose-cgm.webp" width="760" height="1651" alt="Glurooで使用中のCGMを選ぶ画面" loading="lazy" decoding="async"></div><figcaption>赤枠で示した場所を確認して進みます。画面が少し違う場合は、見出しとボタン名が近い場所を探します。</figcaption></figure>
@@ -255,13 +273,13 @@
 
   </div>
   <figure class="guide-shot guide-shot-full"><div class="guide-shot-image"><img src="images/steps/21-nickname.webp" width="760" height="1651" alt="Glurooのプロフィール画面。ニックネームは公開用に非表示" loading="lazy" decoding="async"></div><figcaption>赤枠で示した場所を確認して進みます。画面が少し違う場合は、見出しとボタン名が近い場所を探します。</figcaption></figure>
-</section><span id="step-5" class="guide-anchor"></span><span id="step-10" class="guide-anchor"></span><span id="step-cgm" class="guide-anchor"></span><section class="guide-chapter"><p>第3章</p><h2>CGMをGlurooへつなぎます</h2></section><section class="guide-card guide-step" id="screen-22">
+</section><span id="step-5" class="guide-anchor"></span><span id="step-10" class="guide-anchor"></span><span id="step-cgm" class="guide-anchor"></span><section class="guide-chapter"><p>第3章</p><h2>CGM接続は後にして、初回設定を終えます</h2></section><section class="guide-card guide-step" id="screen-22">
   <div class="guide-step-copy">
-    <div class="guide-step-heading"><span class="guide-step-number">22</span><span class="guide-step-badge">分岐する</span></div>
+    <div class="guide-step-heading"><span class="guide-step-number">22</span><span class="guide-step-badge">必ず後で行う</span></div>
     <p class="guide-progress">34画面中 22</p>
-    <h2>CGM接続画面を確認します</h2>
-    <p>選んだCGMによって入力欄が変わります。Libre 2の方は下のLibreLinkUpガイドを先に開きます。CGM接続をあとで行う場合は「これは後で行います」を押して初期設定を先へ進められます。</p>
-    <div class="guide-sensor-links"><a class="guide-sensor-link" href="../librelinkup/"><strong>FreeStyle Libre 2の方</strong><span>Libreアプリ・LibreLinkUp・Glurooを見分けながら準備する</span></a><a class="guide-sensor-link" href="../dexcom-share/"><strong>Dexcom G7の方</strong><span>Dexcom Shareの準備を確認する</span></a></div>
+    <h2>「これは後で行います」を押します</h2>
+    <p>ここではCGMのメールアドレスやパスワードを入力しません。必ず「これは後で行います」を押して、初回設定を先へ進めます。CGMとの接続は、設定画面からあとで1回だけ行います。</p>
+    <div class="guide-step-action"><strong>押すボタン</strong><span>これは後で行います</span></div>
   </div>
   <figure class="guide-shot guide-shot-full"><div class="guide-shot-image"><img src="images/steps/22-connect-cgm-later.webp" width="760" height="1651" alt="GlurooのCGM接続画面。選んだCGMのログイン欄と、これは後で行いますが表示されている" loading="lazy" decoding="async"></div><figcaption>赤枠で示した場所を確認して進みます。画面が少し違う場合は、見出しとボタン名が近い場所を探します。</figcaption></figure>
 </section><section class="guide-card guide-step" id="screen-23">
@@ -305,26 +323,26 @@
     <div class="guide-step-heading"><span class="guide-step-number">27</span><span class="guide-step-badge">必ず進める</span></div>
     <p class="guide-progress">34画面中 27</p>
     <h2>設定画面の「CGM」を開きます</h2>
-    <p>CGMの接続がまだの場合は「CGM」を押します。すでにGlurooへ血糖値が表示されている場合は、設定画面を下へスクロールしてSTEP 30へ進めます。</p>
+    <p>CGMの接続がまだの場合は「CGM」を押します。すでにGlurooへ血糖値が表示されている場合は、設定画面を下へスクロールして「グルローグローバルコネクト」のSTEPへ進めます。</p>
 
   </div>
   <figure class="guide-shot guide-shot-full"><div class="guide-shot-image"><img src="images/steps/27-settings.webp" width="760" height="1651" alt="Glurooの設定画面上部にあるCGMなどの項目" loading="lazy" decoding="async"></div><figcaption>赤枠で示した場所を確認して進みます。画面が少し違う場合は、見出しとボタン名が近い場所を探します。</figcaption></figure>
-</section><section class="guide-card guide-step" id="screen-28">
+</section><section class="guide-card guide-step" id="screen-28" data-device="g7">
   <div class="guide-step-copy">
-    <div class="guide-step-heading"><span class="guide-step-number">28</span><span class="guide-step-badge">Dexcomの方だけ</span></div>
+    <div class="guide-step-heading"><span class="guide-step-number">28</span><span class="guide-step-badge">CGMをここで設定</span></div>
     <p class="guide-progress">34画面中 28</p>
-    <h2>Dexcom G7の方：Dexcom Shareを接続します</h2>
-    <p>Dexcom G7を使う方だけ進めます。Dexcom Shareのユーザー名とパスワードはGlurooへ入力します。GlucoScopeへは入力しません。Libre 2の方は次のSTEP 29へ進みます。</p>
+    <h2>Dexcom Shareを接続します</h2>
+    <p>Dexcom Shareのユーザー名とパスワードをGlurooへ入力します。GlucoScopeへDexcomのパスワードを入力することはありません。Shareの準備がまだなら、下のガイドを上から順番に進めます。</p>
     <a class="guide-primary-link" href="../dexcom-share/">Dexcom G7の準備ガイドを開く</a>
 
   </div>
   <figure class="guide-shot guide-shot-full"><div class="guide-shot-image"><img src="images/steps/28-cgm-dexcom.webp" width="760" height="1651" alt="Gluroo設定のCGM画面でDexcom G7とDexcom Shareの入力欄が表示されている" loading="lazy" decoding="async"></div><figcaption>赤枠で示した場所を確認して進みます。画面が少し違う場合は、見出しとボタン名が近い場所を探します。</figcaption></figure>
-</section><section class="guide-card guide-step" id="screen-29">
+</section><section class="guide-card guide-step" id="screen-29" data-device="libre">
   <div class="guide-step-copy">
-    <div class="guide-step-heading"><span class="guide-step-number">29</span><span class="guide-step-badge">Libre 2の方だけ</span></div>
+    <div class="guide-step-heading"><span class="guide-step-number">29</span><span class="guide-step-badge">CGMをここで設定</span></div>
     <p class="guide-progress">34画面中 29</p>
-    <h2>Libre 2の方：LibreLinkUpを接続します</h2>
-    <p>「Freestyle Libre 2 経由 Link-Up」を選び、LibreLinkUpへ登録したメールアドレスとパスワードをGlurooへ入力します。先にLibreLinkUpの共有準備が必要です。</p>
+    <h2>LibreLinkUpを接続します</h2>
+    <p>「Freestyle Libre 2 経由 Link-Up」を選び、LibreLinkUpへ登録したメールアドレスとパスワードをGlurooへ入力します。GlucoScopeへLibreLinkUpのパスワードを入力することはありません。共有準備がまだなら、下のガイドを上から順番に進めます。</p>
     <a class="guide-primary-link" href="../librelinkup/">LibreLinkUpの準備ガイドを開く</a>
   </div>
   <figure class="guide-shot guide-shot-full"><div class="guide-shot-image"><img src="images/steps/29-cgm-librelinkup.webp" width="760" height="1651" alt="Gluroo設定のCGM画面でFreestyle Libre 2とLibreLinkUpの入力欄が表示されている" loading="lazy" decoding="async"></div><figcaption>赤枠で示した場所を確認して進みます。画面が少し違う場合は、見出しとボタン名が近い場所を探します。</figcaption></figure>
@@ -362,14 +380,23 @@
     <h2>Nightscout URLとAPI Secret Tokenをコピーします</h2>
     <p>各欄の右端にある重なった四角を押します。Nightscout URLはGlucoScopeの「接続先URL」へ、API Secret Tokenは「接続用の合言葉」へ貼ります。API Secret Header (SHA1)は使いません。</p>
     <div class="guide-callout guide-warning"><strong>この2つは秘密の接続情報です</strong><p>スクリーンショット、LINE、メール、SNSへ載せず、ご自身のGlucoScopeへ直接貼り付けてください。</p></div>
+    <p class="guide-note">公開用画像では、秘密の接続情報を隠しています。</p>
   </div>
   <figure class="guide-shot guide-shot-full"><div class="guide-shot-image"><img src="images/steps/33-copy-url-token.webp" width="942" height="2048" alt="Gluroo Global Connectに表示されたNightscout URLとAPI Secret Token。接続情報は公開用に非表示" loading="lazy" decoding="async"></div><figcaption>赤枠の2項目を使います。秘密の値は公開用画像では隠しています。</figcaption></figure>
 </section><section class="guide-card guide-step" id="screen-34">
   <div class="guide-step-copy">
     <div class="guide-step-heading"><span class="guide-step-number">34</span><span class="guide-step-badge">準備完了</span></div>
     <p class="guide-progress">34画面中 34</p>
-    <h2>GlucoScopeへ戻って貼り付けます</h2>
-    <p>SafariでGlucoScopeの接続画面へ戻ります。Nightscout URLを「接続先URL」へ、API Secret Tokenを「接続用の合言葉」へ貼り、「つながるか確認する」を押します。URLや合言葉をLINE・メール・SNSで他の人へ送りません。</p>
+    <h2>ホーム画面のアイコンからGlucoScopeを開きます</h2>
+    <a class="guide-primary-link guide-final-launch" href="../../?mode=user&amp;source=gluroo#glucose">🍀 GlucoScopeの接続画面へ戻る</a>
+    <ol class="guide-final-steps">
+      <li>iPhoneのホーム画面へ戻り、最初に追加したGlucoScopeのアイコンを押します。アイコンが見つからないときは、上の大きなリンクから開けます。</li>
+      <li>「データ接続（先行体験）」を押し、「Glurooでつなぐ」→「Glurooの準備ができたので、接続へ進む」の順に押します。</li>
+      <li>表示名を入力し、Nightscout URLを「接続先URL」へ、API Secret Tokenを「接続用の合言葉」へ貼ります。</li>
+      <li>「接続してGlucoScopeを始める」を1回押します。「接続を確認しているよ…」の間は、そのまま少し待ちます。</li>
+      <li>接続できると画面が自動で閉じ、「ようこそ、GlucoScopeへ 🍀」「接続できました。最新の血糖データを表示しています。」と短く表示されます。そのあと現在の血糖値画面が見えたら成功です。</li>
+    </ol>
+    <p class="guide-note">URLや合言葉は、LINE・メール・SNSでほかの人へ送りません。エラーが出た場合は、Glurooから2つの情報をもう一度コピーして、同じボタンからやり直せます。</p>
 
   </div>
   <figure class="guide-shot guide-shot-full"><div class="guide-shot-image"><img src="images/steps/34-home-finish.webp" width="760" height="1435" alt="GlucoScopeの接続画面。接続先URLと接続用の合言葉の入力欄が赤枠で示されている" loading="lazy" decoding="async"></div><figcaption>Nightscout URLは「接続先URL」へ、API Secret Tokenは「接続用の合言葉」へ貼り付けます。</figcaption></figure>
@@ -383,23 +410,81 @@
         <li>API Secret Tokenを「接続用の合言葉」へ貼った</li>
         <li>接続情報をほかの人へ送っていない</li>
       </ul>
+      <details class="guide-details guide-version-details">
+        <summary>画面が少し違うとき・SKIPの目安</summary>
+        <p>Glurooのバージョンや仕様、言語・地域によって、画面の見た目、文言、順番、表示される画面が変わる可能性があります。見出しやボタン名が近いSTEPを探してください。</p>
+        <p><strong>SKIPしてよい：</strong>インスリン設定、基礎インスリンのリマインダー、服薬リマインダー、Apple Health。<br><strong>飛ばさない：</strong>ログイン、利用規約の確認、後半のCGM接続、Global Connect。</p>
+      </details>
       <p class="guide-note">GlucoScopeは医療機器ではありません。治療判断、アラート、最新の機器状態は、元のCGM・ポンプアプリを確認してください。</p>
-      <a class="guide-primary-link guide-footer-return" href="../../?mode=user&amp;source=gluroo#glucose">GlucoScopeの接続画面へ戻る</a>
+      <a class="guide-primary-link guide-footer-return" href="../../?mode=user&amp;source=gluroo#glucose">🍀 GlucoScopeの接続画面へ戻る</a>
     </section>
+    </div>
   </main>
   <script>
     (() => {
+      const params = new URLSearchParams(window.location.search);
+      const device = params.get("device");
+      const supportedDevices = new Set(["g7", "libre"]);
+      const landing = document.getElementById("glurooGuideLanding");
+      const manual = document.getElementById("glurooDeviceGuide");
+      const backLink = document.getElementById("glurooGuideBack");
+      const isManual = supportedDevices.has(device);
+
+      landing.hidden = isManual;
+      manual.hidden = !isManual;
+
+      if (isManual) {
+        document.documentElement.dataset.guideDevice = device;
+        const deviceName = device === "g7" ? "Dexcom G7" : "FreeStyle Libre 2";
+        document.title = `${deviceName}からGlurooへつなぐ | GlucoScope`;
+        document.getElementById("glurooDeviceTitle").textContent = `${deviceName}からGlurooへつなぐ`;
+        document.getElementById("glurooDeviceLead").textContent = `${deviceName}に必要な画面だけを、上から順番に進めます。途中で別の機器を選ぶ必要はありません。`;
+        backLink.href = "./";
+        backLink.textContent = "使っている機器を選び直す";
+
+        manual.querySelectorAll("[data-device]").forEach((element) => {
+          element.hidden = element.dataset.device !== device;
+        });
+        manual.querySelectorAll("[data-device-copy]").forEach((element) => {
+          element.hidden = element.dataset.deviceCopy !== device;
+        });
+
+        const visibleSteps = Array.from(manual.querySelectorAll(".guide-step"))
+          .filter((step) => !step.hidden && !step.closest("[hidden]"));
+        const total = visibleSteps.length;
+        visibleSteps.forEach((step, index) => {
+          const number = index + 1;
+          const numberLabel = step.querySelector(".guide-step-number");
+          const progress = step.querySelector(".guide-progress");
+          if (numberLabel) numberLabel.textContent = String(number);
+          if (progress) progress.textContent = `全${total}STEP中 ${number}`;
+        });
+      } else {
+        document.title = "Glurooの準備ガイド | GlucoScope";
+      }
+
       let lastCorrection = 0;
       let settleTimer = 0;
+      let lateSettleTimer = 0;
       const correctAnchor = () => {
         const targetId = window.location.hash.slice(1);
         const target = targetId ? document.getElementById(targetId) : null;
-        if (!target) return;
+        if (!target || target.hidden || target.closest("[hidden]")) return;
         window.cancelAnimationFrame(lastCorrection);
         window.clearTimeout(settleTimer);
+        window.clearTimeout(lateSettleTimer);
         lastCorrection = window.requestAnimationFrame(() => target.scrollIntoView({ block: "start" }));
         settleTimer = window.setTimeout(() => target.scrollIntoView({ block: "start" }), 700);
+        lateSettleTimer = window.setTimeout(() => target.scrollIntoView({ block: "start" }), 2000);
       };
+      if (isManual && window.location.hash) {
+        manual.querySelectorAll(".guide-step:not([hidden]) img").forEach((image) => {
+          if (image.complete) return;
+          image.loading = "eager";
+          image.addEventListener("load", correctAnchor, { once: true });
+          image.addEventListener("error", correctAnchor, { once: true });
+        });
+      }
       window.addEventListener("load", correctAnchor, { once: true });
       window.addEventListener("hashchange", correctAnchor);
     })();
