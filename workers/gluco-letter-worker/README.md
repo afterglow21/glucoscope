@@ -19,7 +19,7 @@ Current traffic target — 2026-08-16 JST:
 - 100% of AI Worker traffic routes to atomic-counter Version `c0a31ac7-257c-4225-a8f1-3bf7669f6937`.
 - The only reviewed direct rollback after atomic activation is unserved atomic stopped Version `46f44888-002b-4847-8553-5cd12e3d7ac5` (`AI_USAGE_ATOMIC_COUNTER_ENABLED=true`, `AI_ENABLED=false`). Old new-origin Version `7ea0cfef-5322-4370-b72d-e2885f129f38`, Phase A, and the pre-activation quiesce Version must not receive rollback traffic after the schema marker was written.
 - Phase A returned the privacy-protected personal aggregate as `suppressed` with no exact totals. A quiet window longer than 130 seconds completed before activation. The zero-percent activation probe used a synthetic non-health summary and an invalid Turnstile token; it returned `403`, wrote the private atomic marker, increased only the failed-Turnstile count by one, and left generation, token, cost, and pending-reservation totals unchanged.
-- The atomic live Version's Usage `GET` passed. The public Dashboard's real-browser visual check and one supervised real AI generation with an exact counter delta remain pending; this checkpoint does not claim either acceptance yet.
+- The atomic live Version's Usage `GET` and the public Dashboard's supervised real-browser visual check passed. One supervised `letter` / `night` generation moved the daily count from `0` to `1`, the monthly count from `15` to `16`, and the daily verified-Turnstile count from `0` to `1` exactly once. Token and estimated-cost totals increased once, with no duplicate, cache hit, rate limit, or budget block.
 - It retains the personal-user AI, all-mode browser-local cache, CORS, Turnstile, and no-store boundaries first accepted below.
 
 Historical boundary acceptance — 2026-08-14:
@@ -36,7 +36,7 @@ Historical boundary acceptance — 2026-08-14:
 - AI Workerの通信100%はatomic-counter Version `c0a31ac7-257c-4225-a8f1-3bf7669f6937`へ向けています。
 - atomic有効化後に確認済みの直接rollbackは、未配信のatomic停止Version `46f44888-002b-4847-8553-5cd12e3d7ac5`（`AI_USAGE_ATOMIC_COUNTER_ENABLED=true`、`AI_ENABLED=false`）だけです。schema markerを書いた後は、旧new-origin Version `7ea0cfef-5322-4370-b72d-e2885f129f38`、Phase A、事前quiesce Versionへ戻しません。
 - Phase Aでは個人利用集計が `suppressed` となり、実数を返さないことを確認しました。130秒を超える静止時間の後、通信0%の有効化確認で健康情報ではない合成summaryと不正Turnstile tokenを使いました。応答は`403`で、非公開atomic markerを書き、Turnstile失敗数だけを1増やし、生成回数、token、費用、pending予約は変えませんでした。
-- atomic live VersionのUsage `GET`は合格しました。公開Dashboardの実ブラウザ表示確認と、実際のAI生成1件による正確なカウンター差分確認は未完了であり、この時点では受け入れ済みとしません。
+- atomic live VersionのUsage `GET`と、公開Dashboardの監督下実ブラウザ表示確認は合格しました。実際の`letter` / `night`生成1件で、1日生成回数は`0`から`1`、月間生成回数は`15`から`16`、1日のTurnstile確認成功数は`0`から`1`へ正確に1回だけ増えました。tokenと推定費用も1回分だけ増え、重複、cache hit、回数制限、予算停止はありませんでした。
 - 下記のVersion 29で最初に受け入れたユーザー版AI、全mode端末内cache、CORS、Turnstile、no-storeの境界を維持します。
 
 過去の境界受入記録 — 2026-08-14：

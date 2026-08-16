@@ -39,9 +39,11 @@ document are historical evidence unless they explicitly say that they remain cur
   configuration remains fail-closed.
 - The privacy-protected Usage-to-AI aggregate is live. The current completed 30-day window
   has fewer than 10 consenting device-profile contributors, so the response is `suppressed`
-  and contains no exact totals. Backend `GET` acceptance passed. The public Dashboard's
-  real-browser visual check and one supervised real AI generation with an exact counter delta
-  remain pending.
+  and contains no exact totals. Backend `GET` and supervised real-browser Dashboard visual
+  acceptance passed. One supervised `letter` / `night` generation moved the daily count from
+  `0` to `1`, the monthly count from `15` to `16`, and the daily verified-Turnstile count from
+  `0` to `1` exactly once; token and estimated-cost totals increased once, with no duplicate,
+  cache hit, rate limit, or budget block.
 - Demo-feed new-origin Version `97b14023-f9dd-440a-8b79-e2bb2b471697` receives 100% of
   continuous public-demo traffic. Version `4069bca4-e8cf-474a-9e9d-d7ffa42b7567`
   records the earlier continuous three-source acceptance.
@@ -69,8 +71,10 @@ document are historical evidence unless they explicitly say that they remain cur
   確認済みの直接rollbackです。Gitへ保存した設定は停止側を初期値にします。
 - privacy保護したUsage-to-AI集計は本番接続済みです。前日までの完了した30日間は、利用記録に
   同意した端末プロフィールが10件未満のため、応答を`suppressed`とし実数を含めません。
-  backendの`GET`受け入れは合格しました。公開Dashboardの実ブラウザ表示確認と、実際のAI生成
-  1件による正確なカウンター差分確認は未完了です。
+  backendの`GET`と、公開Dashboardの監督下実ブラウザ表示確認は合格しました。実際の
+  `letter` / `night`生成1件で、1日生成回数は`0`から`1`、月間生成回数は`15`から`16`、
+  1日のTurnstile確認成功数は`0`から`1`へ正確に1回だけ増えました。tokenと推定費用も
+  1回分だけ増え、重複、cache hit、回数制限、予算停止はありませんでした。
 - 公開デモWorkerはnew-origin Version `97b14023-f9dd-440a-8b79-e2bb2b471697`へ100%を
   向けています。Version `4069bca4-e8cf-474a-9e9d-d7ffa42b7567`は、以前の3機種継続公開を
   受け入れた履歴です。
@@ -2867,9 +2871,9 @@ remains independently stoppable.
 
 The current implementation and release-readiness order as of 2026-08-16 is:
 
-1. Finish the remaining production acceptance for the Worker usage counter and public Usage
-   Dashboard: one real-browser visual check and one supervised real AI generation with an exact
-   atomic counter delta.
+1. Keep the accepted atomic Worker counter and privacy-protected public Usage Dashboard under
+   routine operational monitoring. Their production acceptance passed with a supervised
+   real-browser visual check and one real AI generation with an exact one-count delta.
 2. Finish the connection and manual improvements from Friends & Family feedback, then complete
    the site-wide Trust/About link and wording review.
 3. Because Plus is intended to launch with the public announcement, complete its contact,
@@ -2920,8 +2924,8 @@ Guardian 4、FreeStyle Libre 2、Dexcom G7を、
 
 2026年8月16日時点の実装・公開準備の優先順位は次のとおりです。
 
-1. Workerの利用回数と公開Usage Dashboardについて、残る本番受入を完了する。実ブラウザ表示を1回確認し、
-   実際のAI生成1件でatomicカウンターの差分が正確に1増えることを確認する。
+1. 受入済みのatomic Worker利用カウンターとprivacy保護した公開Usage Dashboardを通常監視する。
+   監督下の実ブラウザ表示と、実際のAI生成1件による正確な1件差分で本番受入に合格した。
 2. Friends & Familyの声に沿って接続画面とマニュアルを改善し、Trust/About全体のリンクと文面を確認する。
 3. Plusを初回告知と同時に販売するため、公開問い合わせ、返金運用、税・領収書、復旧、メール不達、
    決済、本番受入の残件を完了する。完了までは公開販売・個人上限・特典のswitchを停止したままにする。
@@ -3679,7 +3683,7 @@ The privacy-protected public Usage aggregate is live through Usage Worker Versio
 completed days through yesterday, omits exact totals until at least 10 consenting device
 profiles contributed, and never returns names or device-level rows. Current backend checks
 returned `suppressed` with no totals because there were fewer than 10 contributors. The public
-Dashboard's real-browser visual check remains pending. Public accounts and sales remain no-go.
+Dashboard's supervised real-browser visual check passed. Public accounts and sales remain no-go.
 Do not enable individual quota or Plus feature gates until the remaining identity and recovery
 work, delivery-failure acceptance, refunds, tax and support, public-demo anti-bypass handling,
 deployment order, payment testing, and production acceptance are complete.
@@ -3990,7 +3994,7 @@ privacy保護した公開Usage集計は、Usage Worker Version
 `e1496203-ab4b-429f-acd3-4e862cff0c2f`を確認済みの直接rollbackとします。前日までの完了した
 30日間について、利用記録に同意した端末プロフィールが10件以上集まった時だけ全体の実数を表示し、
 名前や端末別の行は返しません。現在のbackend確認は10件未満のため`suppressed`で、実数を返しませんでした。
-公開Dashboardの実ブラウザ表示確認は未完了です。追加の本人確認・復旧と配信失敗時の受け入れ、返金、
+公開Dashboardの監督下実ブラウザ表示確認は合格しました。追加の本人確認・復旧と配信失敗時の受け入れ、返金、
 税とサポート、公開デモからの上限回避防止、公開順、決済試験、本番受け入れが完了するまで、
 個人上限とPlus特典の制限を有効にしません。
 
@@ -5339,9 +5343,10 @@ Activation is irreversible for rollback purposes. The only reviewed direct rollb
 unserved atomic stopped Version `46f44888-002b-4847-8553-5cd12e3d7ac5`, with atomic mutation
 enabled and AI generation disabled. Old Version `7ea0cfef-5322-4370-b72d-e2885f129f38`,
 Phase A, and the pre-activation quiesce Version must not receive rollback traffic. The public
-Dashboard's real-browser visual check and one supervised real AI generation with an exact
-counter delta remain pending; the current daily generation count was still zero at this
-checkpoint.
+Dashboard's supervised real-browser visual check passed. One supervised `letter` / `night`
+generation moved the daily count from `0` to `1`, the monthly count from `15` to `16`, and the
+daily verified-Turnstile count from `0` to `1` exactly once. Token and estimated-cost totals
+increased once, with no duplicate, cache hit, rate limit, or budget block.
 
 旧方式は、全stateを読み、provider通信後に全stateを書き戻していたため、通信が重なると回数、token、
 費用を取りこぼす可能性がありました。現在のAI Worker Version
@@ -5360,8 +5365,10 @@ Turnstile失敗数だけの1増加を確認しました。生成回数、token�
 rollback上は、この有効化を元に戻しません。確認済みの直接rollbackは、atomic有効・AI生成停止の未配信
 Version `46f44888-002b-4847-8553-5cd12e3d7ac5`だけです。旧Version
 `7ea0cfef-5322-4370-b72d-e2885f129f38`、Phase A、事前quiesce Versionへ通信を戻しません。
-公開Dashboardの実ブラウザ表示確認と、実際のAI生成1件による正確なカウンター差分確認は未完了です。
-この時点の1日生成回数は0のままです。
+公開Dashboardの監督下実ブラウザ表示確認は合格しました。実際の`letter` / `night`生成1件で、
+1日生成回数は`0`から`1`、月間生成回数は`15`から`16`、1日のTurnstile確認成功数は`0`から`1`へ
+正確に1回だけ増えました。tokenと推定費用も1回分だけ増え、重複、cache hit、回数制限、
+予算停止はありませんでした。
 
 ### Historical Version 29 personal-user AI boundary acceptance — 2026-08-14
 

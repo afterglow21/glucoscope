@@ -249,7 +249,7 @@ Production aggregate checkpoint — 2026-08-16 JST:
 - Version `e7b2a895-c418-4cb2-b565-d2a37bef8e1b` receives 100% of Usage traffic. It keeps collection enabled for the approved small group and adds only the reviewed service-binding aggregate; it remains compatible with the existing `0001` production schema and does not require the disabled per-user quota tables.
 - Unserved stopped Version `e1496203-ab4b-429f-acd3-4e862cff0c2f` is the direct Usage rollback.
 - The AI Worker's Phase A and atomic-live Usage `GET` checks returned the aggregate as `suppressed`, with `minimumContributors=10` and no exact totals because the completed 30-day window had fewer than 10 consenting contributors. No names or device-level rows were returned.
-- This accepts the service-binding response and suppression boundary. The public Dashboard's real-browser visual check and one supervised real AI generation with an exact counter delta remain pending.
+- This accepts the service-binding response and suppression boundary. The public Dashboard's supervised real-browser visual check passed. One supervised `letter` / `night` generation then moved the daily count from `0` to `1`, the monthly count from `15` to `16`, and the daily verified-Turnstile count from `0` to `1` exactly once, without a duplicate, cache hit, rate limit, or budget block.
 
 Before enforcement can be enabled, release in this order:
 
