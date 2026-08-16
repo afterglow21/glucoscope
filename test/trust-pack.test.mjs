@@ -173,7 +173,9 @@ test("long-lived relay session is documented consistently without exposing techn
     assert.match(internal, /https:\/\/relay\.glucoscope\.app/);
   }
 
-  assert.match(relaySpec, /It is not deployed or published/);
+  assert.match(relaySpec, /current live Version 22 is `b4b2064d-6dd4-4de6-8a68-3d0d39aea2ec` at 100%/);
+  assert.match(relaySpec, /stopped rollback Version 23 is `10d0a825-c098-462e-89fd-a69937c47a9b`/);
+  assert.match(relaySpec, /Versions 20 and earlier are prohibited direct rollback targets/);
   assert.match(relaySpec, /raw session token, raw Gluroo URL, credential, glucose data, display name,[\s\S]*email address, IP address, or User-Agent/);
   assert.match(relaySpec, /not[\s\S]*joined to the optional Usage profile or Plus identity/);
   assert.match(relaySpec, /first removes the locally saved[\s\S]*The local deletion must not wait for or depend on that network request/);
@@ -182,14 +184,16 @@ test("long-lived relay session is documented consistently without exposing techn
   assert.match(relayReadme, /A failed replacement leaves the existing working session intact/);
   assert.doesNotMatch(relayReadme.match(/## Required Secret bindings[\s\S]*?## Local verification/)?.[0] || "", /RELAY_TICKET_SECRET/);
 
-  assert.match(privacy, /次からもつながるための安全確認（準備中）/);
+  assert.match(privacy, /次からもつながるための安全確認/);
+  assert.match(privacy, /少人数の先行体験で使っています/);
+  assert.match(privacy, /Dexcom G7では、最初の安全確認後にiPhoneのホーム画面のアイコンから開き直しても、接続し直さず表示できることを確認しました/);
   assert.match(privacy, /180日使わなければ、その印は使えなくなります/);
   assert.match(privacy, /元の接続先URL、合言葉、血糖データ、氏名、メールアドレス、IPアドレス、端末やブラウザの名前は保存しません/);
   assert.match(privacy, /利用状況の記録やPlusの本人確認とも結びつけません/);
   assert.match(privacy, /接続先URLと合言葉を先に消し/);
   assert.match(privacy, /削除が終わる正確な時刻は約束しません/);
   assert.match(privacy, /まずSafariでGlucoScopeを開いて「ホーム画面に追加」し、追加したアイコンから開いて初回接続/);
-  assert.match(privacy, /This change has not been published to the live site yet/);
+  assert.match(privacy, /This design is live for the small early-access group/);
   assert.match(privacy, /The relay keeps only a one-way form of the device marker/);
   assert.match(privacy, /not joined to optional usage recording or Plus identity/);
   assert.match(privacy, /removes the URL and passphrase from the device first/);
@@ -198,11 +202,13 @@ test("long-lived relay session is documented consistently without exposing techn
   assert.doesNotMatch(privacy, /180日後までに消えます|disappears no later than 180 days/);
   assert.doesNotMatch(privacy, /__Host-glucoscope|HttpOnly|SameSite|HMAC|Durable Object/);
 
-  assert.match(roadmap, /この変更はまだ公開していません/);
+  assert.match(roadmap, /少人数の先行体験で使っています/);
   assert.match(roadmap, /180日使わなければ接続は切れ/);
   assert.match(roadmap, /まずSafariからホーム画面に追加し、そのアイコンを開いてから初回接続/);
-  assert.match(roadmap, /This change is not live yet/);
+  assert.match(roadmap, /is now live for the small early-access group/);
   assert.match(roadmap, /add GlucoScope to the Home Screen from Safari, open the new icon, and then make the first connection/);
+  assert.doesNotMatch(privacy, /準備中|not been published to the live site yet/);
+  assert.doesNotMatch(roadmap, /この変更はまだ公開していません|This change is not live yet/);
   assert.doesNotMatch(roadmap, /__Host-glucoscope|HttpOnly|SameSite|HMAC|Durable Object/);
 });
 
@@ -250,10 +256,11 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(data, /Libre 2も、FreeStyle LibreLink、LibreLinkUp、Gluroo、限定中継、GlucoScopeまでの基本経路/);
   assert.match(data, /現在血糖、グラフ、再読み込み、iOSホーム画面からの復帰/);
   assert.match(data, /一般利用者向け限定中継のDexcom G7経路をiPhoneのSafariで確認し、接続、現在血糖、グラフの今日・昨日・7日・30日切替、再読み込み、接続削除後に設定画面へ戻ることまで合格しました/);
-  assert.match(data, /現在は、最初に1回安全確認をした後、ふだんは同じ端末でつながり続ける方式を準備しています/);
+  assert.match(data, /現在は、最初に1回安全確認をした後、ふだんは同じ端末でつながり続ける方式を少人数の先行体験で使っています/);
   assert.match(data, /入力ミスや一時的な障害では今までの接続を壊さない設計です/);
-  assert.match(data, /ホーム画面のアイコンから開いた時に、接続し直さず使えることを実機で確認します/);
-  assert.match(data, /We are preparing a replacement that performs one safety check and then normally keeps the same device connected/);
+  assert.match(data, /Dexcom G7で最初の安全確認を行い、その後iPhoneのホーム画面のアイコンから開き直しても、接続し直さず表示できることを実機で確認しました/);
+  assert.match(data, /The small early-access group now uses a replacement that performs one safety check and then normally keeps the same device connected/);
+  assert.match(data, /Connection deletion and reconnection after deletion were not tested in that run/);
   assert.match(data, /2026年8月6日、Glurooから/);
   assert.match(data, /医療相談や医療判断には使えません/);
   assert.match(data, /CGMデータ再共有が適法かどうかをGlucoScopeが判断するものではなく/);
@@ -346,8 +353,9 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.doesNotMatch(developerStatus, /<code>|\b(?:D1|deployment|Version|CORS|Cron|sessionStorage|adapter|RELAY_ENABLED)\b|\b(?:200|204|401|403|503)\b/i);
   assert.match(readme, /Guardian route completed its first iPhone Safari acceptance/);
   assert.match(readme, /general-user Dexcom G7 route completed a supervised iPhone Safari acceptance/);
-  assert.match(readme, /currently deployed historical Version still uses the approved `workers\.dev` target/);
-  assert.match(readme, /checked-in, unpublished candidate instead targets only `relay\.glucoscope\.app`/);
+  assert.match(readme, /Current device-session checkpoint: the frontend uses only `relay\.glucoscope\.app`/);
+  assert.match(readme, /current live Version 22 is `b4b2064d-6dd4-4de6-8a68-3d0d39aea2ec` at 100%/);
+  assert.match(readme, /stopped rollback Version 23 is `10d0a825-c098-462e-89fd-a69937c47a9b`/);
   assert.match(readme, /`RELAY_ENABLED=false`, `RELAY_DEVICE_SESSIONS_ENABLED=false`, `workers_dev=false`, Preview URLs off, and observability off/);
   assert.match(readme, /comparison lab is now a continuous public live demo/);
   assert.match(readme, /public-demo Worker first completed source-specific G7 and Libre checks, then one approved Guardian\/Libre\/G7 public-page acceptance/);
@@ -379,7 +387,8 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(readme, /Stopped Version `9994a142-a4ca-4885-9077-952ec8e7e8d2` was restored at 100% as deployment `e45b6547-33a4-4196-9efe-1fffd412bcd4` at 21:16:31 JST/);
   assert.match(readme, /After the 21:25 JST stopped Cron, metadata showed only the two expected source keys, no metadata payload, and unchanged expirations for both keys/);
   assert.match(readme, /At that checkpoint this was one public-page acceptance; continued operation, repeated browser display refreshes, stale behavior, and natural expiry were still unverified/);
-  assert.match(readme, /deployment `e96fb11c-a2e0-4097-b54c-a1d638bbffc8` at 22:10:05 JST/);
+  assert.match(readme, /Current new-origin Version `97b14023-f9dd-440a-8b79-e2bb2b471697` receives 100% of traffic/);
+  assert.match(readme, /deployment `e96fb11c-a2e0-4097-b54c-a1d638bbffc8` record the earlier three-source acceptance at 22:10:05 JST/);
   assert.match(readme, /second scheduled aggregate check observed 526 Libre entries and 290 G7 entries/);
   assert.match(readme, /Libre displayed-point aggregate changing from 526 to 525/);
   assert.match(readme, /one further five-minute auto-refresh at a later checkpoint, bringing the total confirmed browser refreshes to two/);

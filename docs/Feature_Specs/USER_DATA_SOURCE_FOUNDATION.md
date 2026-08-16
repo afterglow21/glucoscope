@@ -23,7 +23,7 @@ On 2026-08-12, the general-user Dexcom G7 relay route also passed supervised iPh
 
 After the later Usage lifecycle and general-user Dexcom G7 acceptances passed, separate explicit approval started continuous 1–3 person early access. Usage deployment `4fbf0e2c-5f5c-4f4f-98a9-ae57d73b4824` routes 100% to Version `5d160aed-7b27-48e6-b0a8-783534f97b6f`, and relay deployment `5f8d00d9-9d68-4b2a-99cd-c58c26123684` routes 100% to Version `a398d59e-54c1-4b8d-a9a4-b779af360a54`. Initial D1 counts remained `0 / 0 / 0`; approved-origin preflights returned `204`, invalid Turnstile and unapproved-origin requests returned `403`, and no-store boundaries passed. Checked-in Worker kill switches remain `false`, and the reviewed stopped Versions remain immediate rollback targets. This is not a broad public rollout.
 
-The checked-in 2026-08-16 migration candidate replaces that historical one-hour ticket boundary with an anonymous long-lived device session. It targets `https://glucoscope.app` and `https://relay.glucoscope.app`, is not deployed or published, and intentionally does not preserve the old ticket connection. The existing early-access person will run the connection safety check once after the coordinated release.
+On 2026-08-16, the early-access path replaced that historical one-hour ticket boundary with an anonymous long-lived device session. The verified HTTPS site `https://glucoscope.app` uses only the HTTPS custom-domain relay `https://relay.glucoscope.app`; the old public `workers.dev` target is disabled. The existing early-access person completed the one-time connection safety check after the coordinated release. Relay Version 21 (`91a36e38-1fa4-4fe2-80cf-a74327ccef90`) was used for the G7 Home Screen relaunch acceptance, with stopped device-session Version 20 (`7e356782-976a-4e46-9692-70ea1689462a`) as the reviewed rollback at that checkpoint. After obsolete Secret cleanup, current live Version 22 is `b4b2064d-6dd4-4de6-8a68-3d0d39aea2ec` at 100%, and unserved stopped rollback Version 23 is `10d0a825-c098-462e-89fd-a69937c47a9b`. Versions 20 and earlier are historical evidence only and must not be used as direct rollback targets.
 
 1. Open `user.html` or `index.html?mode=user`.
 2. Choose exactly one numbered route.
@@ -74,7 +74,7 @@ A read-only token should be preferred when the data source offers one. GlucoScop
 
 Existing Nightscout still requires the data source to allow the person’s browser to read its API response.
 
-Gluroo Global Connect was reachable from a Cloudflare Worker but was not readable directly from the verified browser environment because of provider-side CORS. Limited Data Relay is therefore the only Gluroo route prepared by User Foundation 0.4.0.
+Gluroo Global Connect was reachable from a Cloudflare Worker but was not readable directly from the verified browser environment because of provider-side CORS. Limited Data Relay is therefore the only Gluroo route provided by User Foundation 0.4.0.
 
 The relay:
 
@@ -85,7 +85,7 @@ The relay:
 - accepts credentialed browser requests only from `https://glucoscope.app`, through `https://relay.glucoscope.app`, with exact-Origin CORS and the protected same-site cookie;
 - binds each new session to the HMAC fingerprint of its verified canonical source URL and credential before replacing the previous session, then enforces date, entry, byte, timeout, per-device daily, and Worker-wide limits;
 - fails closed when configuration, secrets, counters, or the relay endpoint are unavailable;
-- has a historical ticket Version currently available only to the approved small early-access group through its old `workers.dev` target. The checked-in device-session candidate is not deployed or published, targets only `relay.glucoscope.app`, and keeps both activation flags `false`. Current public wording, final security checks, a recorded rollout decision, and the accepted Guardian, Libre 2, and Dexcom G7 route checks remain the boundary for use. The Phase 3C public-policy review and the 2026-08-06 written Gluroo support response are recorded in `LIMITED_DATA_RELAY.md`; the response is conditional on continued compliance with Gluroo's EULA, terms, and other documents.
+- serves the approved small early-access group only through `relay.glucoscope.app`, with the old public `workers.dev` target disabled and no ticket compatibility path. The checked-in configuration keeps both activation flags `false` as a fail-closed baseline; reviewed production Versions use explicit runtime overrides. Guardian and Libre 2 ticket-era checks remain historical evidence, while the G7 device-session path has additionally passed one-time safety confirmation and iPhone Home Screen icon relaunch without reconnecting. Current public wording, final security checks, recorded rollout decisions, and each route's actual acceptance scope remain the boundary for use. The Phase 3C public-policy review and the 2026-08-06 written Gluroo support response are recorded in `LIMITED_DATA_RELAY.md`; the response is conditional on continued compliance with Gluroo's EULA, terms, and other documents.
 
 A direct Gluroo request must not be used as a silent fallback, and a failed relay request must never fall back to Kazuma’s public-demo data.
 

@@ -49,10 +49,12 @@ test("manifest icon is an existing square RGBA PNG suitable for iPhone scaling",
 });
 
 test("main page advertises the manifest and iPhone standalone metadata", () => {
+  assert.match(index, /<meta id="viewportMeta" name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">/u);
   assert.match(index, /<link rel="manifest" href="manifest\.webmanifest">/u);
   assert.match(index, /<meta name="theme-color" content="#0f172a">/u);
   assert.match(index, /<meta name="apple-mobile-web-app-capable" content="yes">/u);
-  assert.match(index, /<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">/u);
+  assert.match(index, /<meta name="apple-mobile-web-app-status-bar-style" content="black">/u);
+  assert.doesNotMatch(index, /<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">/u);
   assert.match(index, /<meta name="apple-mobile-web-app-title" content="GlucoScope">/u);
   assert.match(index, /<link rel="apple-touch-icon" href="assets\/gluco\/about\/gluco-small-notice\.png">/u);
 });

@@ -2,17 +2,17 @@
 
 ## Status
 
-- The checked-in 0.3 candidate replaces the one-hour browser ticket with a long-lived anonymous device session. It is not deployed or published, and no live Cloudflare route, DNS setting, Worker Version, or traffic allocation has been changed by this candidate.
-- The intended production origins are `https://glucoscope.app` for the site and `https://relay.glucoscope.app` for the relay. The relay custom domain must be created and verified before activation; the candidate does not retain a public `workers.dev` route.
-- Existing early-access connections use the old ticket system until the coordinated site-and-Worker release. Because backward compatibility is intentionally not required for this small group, each existing person will complete the connection safety check once after the migration.
+- The 0.3 device-session design was released to the 1–3 person early-access path on 2026-08-16, replacing the one-hour browser ticket with a long-lived anonymous device session.
+- The production site is `https://glucoscope.app` and the relay is the HTTPS custom domain `https://relay.glucoscope.app`. The GitHub Pages custom domain is verified with HTTPS enforced, the relay custom domain is active, and the old public `workers.dev` route is disabled.
+- The existing early-access connection completed the one-time connection safety check after the coordinated site-and-Worker release. Backward compatibility with the old ticket connection was intentionally not retained.
 - A replacement connection is accepted only after the proposed Gluroo URL and credential return at least one valid glucose entry. Invalid input, an empty response, or an upstream failure leaves the existing working device session intact.
 - The new session uses a host-only `__Host-glucoscope_relay_session` cookie with `Secure`, `HttpOnly`, `SameSite=Strict`, and `Path=/`. JavaScript never receives or stores the raw session token.
 - A session expires after 180 days without successful use. Successful use rolls the idle expiry forward, but this is not a promise of permanent access: browser-data removal, a security change, expiry, explicit deletion, or emergency revocation can require the safety check again.
 - Guardian, FreeStyle Libre 2, and the general-user Dexcom G7 relay path completed their recorded real-device acceptances under the historical ticket implementation.
-- The currently deployed early-access system uses the old `workers.dev` target and ticket Version. Production deployment `5f8d00d9-9d68-4b2a-99cd-c58c26123684` routes active Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` at 100% for the approved small group; stopped Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` remains its rollback target.
-- The checked-in candidate frontend points to `https://relay.glucoscope.app`, uses a plain processing explanation without a separate consent checkbox, and cannot connect until the matching Worker and custom domain are deliberately released.
-- After the migration, rollback uses a reviewed stopped Version of the same device-session implementation. The historical one-hour ticket Version remains evidence only and is not a compatible rollback target.
-- Historical post-enable checks for the old ticket implementation returned `204` for approved-origin preflight, `403` for invalid Turnstile and unapproved origins, and retained `Cache-Control: no-store` and `Vary: Origin`. Those checks do not accept the unpublished 0.3 session candidate.
+- Frontend commit `64a92932a592dda1b6eb9d6dd7700279b1c7a47a` points to `https://relay.glucoscope.app`, uses a plain processing explanation without a separate consent checkbox, and is published at `https://glucoscope.app`.
+- Real-device acceptance used relay Version 21 (`91a36e38-1fa4-4fe2-80cf-a74327ccef90`) at 100%. Version 20 (`7e356782-976a-4e46-9692-70ea1689462a`) was the reviewed stopped rollback at that acceptance checkpoint. After obsolete Secret cleanup, current live Version 22 is `b4b2064d-6dd4-4de6-8a68-3d0d39aea2ec` at 100%, and unserved stopped rollback Version 23 is `10d0a825-c098-462e-89fd-a69937c47a9b` with both activation flags `false`. Both retain the same two Durable Object bindings, custom domain, and exact Origin, and contain only the required `RELAY_DEVICE_SESSION_SECRET` and `TURNSTILE_SECRET_KEY` Secret bindings. Versions 20 and earlier are prohibited direct rollback targets.
+- Rollback uses a reviewed stopped Version of the same device-session implementation. The historical one-hour ticket Versions remain evidence only and are not compatible rollback targets.
+- Historical post-enable checks for the old ticket implementation returned `204` for approved-origin preflight, `403` for invalid Turnstile and unapproved origins, and retained `Cache-Control: no-store` and `Vary: Origin`. Those checks remain historical evidence and do not replace the 2026-08-16 device-session acceptance.
 - The final Trust Pack link, title, privacy, safety, verification-status, desktop, and mobile review is complete.
 - The final local and read-only Cloudflare configuration and security review is complete; required Secret names are declared in `wrangler.jsonc` without storing their values.
 - After separate explicit approval, commit `98def2e96065f1a801728e060673ea22d4ff9e44` was deployed as stopped Version `1a51631d-1e53-4f88-ac27-2125b43f1ab2`; all post-deployment stop, CORS, Secret-name, and Durable Object checks passed.
@@ -534,7 +534,7 @@ The rollout may proceed only when all other release gates pass and the following
 - GlucoScope makes no claim of Gluroo affiliation, endorsement, approval, or partnership, does not sell access to Gluroo, and does not market GGC as a free alternative to a subscription Nightscout service;
 - the relay is paused immediately if Gluroo objects, applicable terms materially change, abnormal traffic is detected, or a privacy or safety concern appears.
 
-Any provider inquiry must exclude a real Global Connect URL, API Secret, glucose payload, or identifying screenshot. Before candidate enablement, recheck the current public materials for material changes. Until the remaining release gates pass and a separate rollout decision is recorded, keep `RELAY_ENABLED=false` and `RELAY_DEVICE_SESSIONS_ENABLED=false`, keep the candidate frontend fixed to `https://relay.glucoscope.app`, keep `workers_dev=false`, and add no other target.
+Any provider inquiry must exclude a real Global Connect URL, API Secret, glucose payload, or identifying screenshot. Before widening beyond the current small early-access group, recheck the public materials for material changes. Keep the checked-in fail-closed baseline at `RELAY_ENABLED=false` and `RELAY_DEVICE_SESSIONS_ENABLED=false`, keep the frontend fixed to `https://relay.glucoscope.app`, keep `workers_dev=false`, and add no other target. Every live runtime override or traffic change requires its own recorded rollout decision.
 
 ## Worker separation
 
@@ -700,9 +700,9 @@ No Gluroo URL, credential, Turnstile token, relay ticket, or glucose value was p
 - honor kill switch;
 - ensure Wrangler observability is disabled.
 
-## Release gates
+## Release acceptance and continuing gates
 
-The relay cannot be publicly enabled until:
+The 2026-08-16 small-group release passed the stopped-state, Origin, custom-domain, legacy-route, device-session creation, and G7 Home Screen relaunch gates below. The same list remains mandatory before any wider rollout, and each additional device route may be described only to the extent of its own completed checks:
 
 - current Gluroo public materials are rechecked for material changes and no provider objection is known;
 - PROJECT_BIBLE and public Trust Pack wording are updated;
@@ -722,6 +722,8 @@ The relay cannot be publicly enabled until:
 - `https://relay.glucoscope.app` is verified as the only relay target, `https://glucoscope.app` is the only allowed site Origin, and the old `workers.dev` public route is disabled;
 - the one-time reconnect message for existing early-access users and the Home-Screen-first iPhone path are accepted;
 - no deployment, DNS change, Pages publication, routing change, or live enablement occurs without a separate recorded rollout step.
+
+At the accepted checkpoint, approved-origin credentialed preflight returned `204`, a request without a valid device session returned `401`, an invalid creation request returned `400`, the legacy `/v1/session` route returned `404`, an unapproved Origin returned `403`, and the old `workers.dev` public target returned `404`. The person completed the one-time safety check and then reopened the G7 display from the iPhone Home Screen icon without reconnecting. This does not claim a deletion/reconnection result for that run. No connection URL, credential, cookie value, Turnstile token, or glucose value was included in the acceptance output or Git.
 
 ---
 
