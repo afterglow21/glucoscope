@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex">
   <title>Guardian MonitorからGlurooへつなぐ | GlucoScope</title>
-  <link rel="stylesheet" href="../guide.css?v=20260803-guardian-monitor-1">
+  <link rel="stylesheet" href="../guide.css?v=20260817-manual-captures-1">
 </head>
 <body>
   <main class="guide-wrap guide-narrow">
@@ -39,8 +39,11 @@
     <section class="guide-simple-steps guide-card">
       <ol>
         <li>
-          <h2>Guardian Monitorで血糖値を確認します</h2>
-          <p>Guardian MonitorをCareLinkへ接続し、アプリ内に現在の血糖値が表示されていることを確認します。表示名や画面の位置は、アプリ更新で変わる場合があります。</p>
+          <h2>Guardian Monitorの「Preferences」を開きます</h2>
+          <p>Guardian MonitorをCareLinkへ接続し、アプリ内に現在の血糖値が表示されていることを確認してから、画面下の「Preferences」を押します。表示名や画面の位置は、アプリ更新で変わる場合があります。</p>
+          <div class="guide-shot-gallery">
+            <figure class="guide-shot"><div class="guide-shot-image"><img src="images/01-open-preferences.png" width="873" height="1801" alt="Guardian Monitorの画面下にあるPreferencesを赤枠で示した公開用画像。血糖などの数値は非表示" loading="eager" decoding="async"></div><figcaption>赤枠の「Preferences」を押します。公開用画像では血糖などの数値を隠しています。</figcaption></figure>
+          </div>
         </li>
         <li>
           <h2>Gluroo Global Connectの情報を開きます</h2>
@@ -48,11 +51,18 @@
         </li>
         <li>
           <h2>Guardian MonitorのNightscout同期先へ貼り付けます</h2>
-          <p>Guardian MonitorのNightscout設定を開き、Gluroo Global ConnectのURLとAPI Secret Tokenを入力します。余分な空白が入らないよう、そのままコピーして貼り付けます。</p>
+          <p>Preferencesの「Nightscout」を開き、Gluroo Global ConnectのURLとAPI Secret Tokenを入力します。余分な空白が入らないよう、そのままコピーして貼り付け、「Turn on sync」を押します。</p>
+          <div class="guide-shot-gallery">
+            <figure class="guide-shot"><div class="guide-shot-image"><img src="images/03-open-nightscout-full-access.png" width="877" height="1793" alt="Guardian MonitorのPreferencesにあるNightscoutとFull Accessの表示" loading="lazy" decoding="async"></div><figcaption>「Nightscout」を押します。画像の料金は撮影時の表示例です。最新の料金と条件はアプリ内で確認してください。</figcaption></figure>
+            <figure class="guide-shot"><div class="guide-shot-image"><img src="images/03-enter-nightscout-details.png" width="875" height="1798" alt="Guardian MonitorのNightscout設定にあるURL、Secret API Key、Turn on sync" loading="lazy" decoding="async"></div><figcaption>URLとSecret API Keyへ貼り付け、「Turn on sync」を押します。公開用画像では氏名を隠しています。</figcaption></figure>
+          </div>
         </li>
         <li>
           <h2>バックグラウンド更新をオンにします</h2>
           <p>Guardian Monitorのオプションでバックグラウンド更新をオンにすると、アプリを前面で開いていない間もGlurooへ更新されやすくなります。通信状況やiPhoneの省電力状態により、反映が遅れることがあります。</p>
+          <div class="guide-shot-gallery">
+            <figure class="guide-shot"><div class="guide-shot-image"><img src="images/04-enable-background-update.jpg" width="1320" height="2717" alt="Guardian MonitorのPreferencesにあるバックグラウンド更新の選択肢" loading="lazy" decoding="async"></div><figcaption>使い方に合うバックグラウンド更新を選びます。通信状況などにより更新が遅れる場合があります。</figcaption></figure>
+          </div>
         </li>
         <li>
           <h2>Glurooで複数回の更新を確認します</h2>

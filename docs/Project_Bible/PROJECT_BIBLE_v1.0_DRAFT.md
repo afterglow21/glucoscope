@@ -1893,6 +1893,8 @@ The beginner route must state its device boundary honestly. Guardian (MiniMed 78
 
 The beginner guides incorporate every supplied device-preparation capture as one screen per step: 27 LibreLink / LibreLinkUp screens and 10 Dexcom Share screens. Personal fields in the supplied captures are masked. Both their return and completion actions resume the shared Gluroo flow at screen 22 after device preparation, where the prepared CGM is selected and connected; they do not skip ahead to Global Connect at screen 30. Both guides warn that app updates may change screens, wording, and order.
 
+The August 17 manual refresh adds the supplied Home Screen, final GlucoScope connection-success, and Guardian Monitor captures. Public Guardian images mask the person's name, renewal date, and live medical values; connection controls and the Full Access boundary remain visible. A GlucoScope success example may show a glucose value only with a caption that it is an example display, not a target.
+
 The screenshots explain connection setup only. Glucose values, graphs, notification selections, and other settings visible in an example are not targets, medical advice, or instructions to change treatment or device settings. Treatment decisions, alerts, and current sensor state remain with the original CGM app and the person's medical guidance.
 
 Do not place fixed-position focus markers over guide screenshots. Their positions can drift across devices or after image replacement. Use numbered steps, short captions, and plain-language instructions; keep screenshots as replaceable assets.
@@ -1957,6 +1959,8 @@ LibreLink / LibreLinkUpは27画面、Dexcom Shareは10画面です。
 どちらの機器別ガイドも、上部の戻る操作と準備完了後の操作は共通GlurooガイドのSTEP 22へ続け、
 準備したCGMを選んで接続します。Global ConnectのSTEP 30へ飛ばしません。
 アプリ更新によって画面、言葉、順番が変わる可能性を伝えます。
+
+8月17日のマニュアル更新では、提供されたホーム画面追加、GlucoScope接続完了、Guardian Monitor設定の画像を追加します。Guardianの公開画像では氏名、更新日、リアルタイムの医療情報を隠し、操作箇所とFull Accessの境界だけを残します。GlucoScopeの完了例に血糖値が見える場合は、目標値ではなく表示例であることを画像説明へ明記します。
 
 画像は接続準備の案内だけに使います。
 画像に写る血糖値、グラフ、通知選択、その他の設定は、

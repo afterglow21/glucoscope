@@ -16,6 +16,38 @@ const libreGuide = await readFile(new URL("../guides/librelinkup/index.html", im
 const nightscoutGuide = await readFile(new URL("../guides/nightscout-about/index.html", import.meta.url), "utf8");
 const guardianGuide = await readFile(new URL("../guides/guardian-monitor/index.html", import.meta.url), "utf8");
 
+function getPngDimensions(bytes) {
+  assert.deepEqual(Array.from(bytes.subarray(0, 8)), [137, 80, 78, 71, 13, 10, 26, 10]);
+  return {
+    width: bytes.readUInt32BE(16),
+    height: bytes.readUInt32BE(20),
+  };
+}
+
+function getJpegDimensions(bytes) {
+  let offset = 2;
+  while (offset + 8 < bytes.length) {
+    if (bytes[offset] !== 0xff) {
+      offset += 1;
+      continue;
+    }
+    const marker = bytes[offset + 1];
+    if (marker === 0xd8 || marker === 0xd9) {
+      offset += 2;
+      continue;
+    }
+    const length = bytes.readUInt16BE(offset + 2);
+    if (marker >= 0xc0 && marker <= 0xc3) {
+      return {
+        height: bytes.readUInt16BE(offset + 5),
+        width: bytes.readUInt16BE(offset + 7),
+      };
+    }
+    offset += 2 + length;
+  }
+  throw new Error("JPEG dimensions were not found");
+}
+
 test("ChatGPT copy filters legacy score and short-range GMI hints defensively", () => {
   const filterStart = app.indexOf("function getSafeAiPatternHints");
   const promptStart = app.indexOf("function buildChatGptPrompt");
@@ -212,7 +244,7 @@ test("Gluroo beginner route covers Libre, Dexcom G7, and the verified Guardian M
   assert.match(glurooGuide, /Guardian Monitor/);
 });
 
-test("Guardian uses the verified Guardian Monitor to Gluroo route", () => {
+test("Guardian uses the verified Guardian Monitor to Gluroo route", async () => {
   assert.match(index, /Guardian（MiniMed 780G）/);
   assert.match(index, /Guardian Monitorの設定ガイドを見る/);
   assert.match(index, /guides\/guardian-monitor/);
@@ -222,8 +254,25 @@ test("Guardian uses the verified Guardian Monitor to Gluroo route", () => {
   assert.match(guardianGuide, /Nightscout同期を含むフル機能には、アプリ内の有料サブスクリプション（Full Access）が必要/);
   assert.match(guardianGuide, /GlucoScopeとは別の料金/);
   assert.match(guardianGuide, /apps\.apple\.com\/jp\/app\/guardian-monitor\/id1546989938/);
+  assert.match(guardianGuide, /Guardian Monitorの「Preferences」を開きます/);
+  assert.match(guardianGuide, /画像の料金は撮影時の表示例/);
+  assert.match(guardianGuide, /公開用画像では氏名を隠しています/);
+  assert.match(guardianGuide, /公開用画像では血糖などの数値を隠しています/);
   assert.match(nightscoutGuide, /Nightscout同期を含むフル機能にはアプリ内の有料サブスクリプション（Full Access）が必要/);
   assert.doesNotMatch(index, /Guardianは現在のかんたん接続では利用できません/);
+
+  const captures = [
+    ["01-open-preferences.png", 873, 1801],
+    ["03-open-nightscout-full-access.png", 877, 1793],
+    ["03-enter-nightscout-details.png", 875, 1798],
+    ["04-enable-background-update.jpg", 1320, 2717],
+  ];
+  for (const [name, width, height] of captures) {
+    const bytes = await readFile(new URL(`../guides/guardian-monitor/images/${name}`, import.meta.url));
+    const actual = name.endsWith(".png") ? getPngDimensions(bytes) : getJpegDimensions(bytes);
+    assert.deepEqual(actual, { width, height });
+    assert.doesNotMatch(bytes.toString("latin1"), /api-secret=|token=|GPSLatitude|GPSLongitude|DateTimeOriginal|Make|Model|kazuma tsunoda/i);
+  }
 });
 
 test("Nightscout wording identifies what the person already uses", () => {
@@ -273,12 +322,18 @@ test("field-test revision gives every optional screen an explicit SKIP rule", ()
 });
 
 
-test("Gluroo guide maps the reviewed 34-screen source set and warns about version changes", () => {
+test("Gluroo guide maps the reviewed step captures and warns about version changes", () => {
   const stepImages = glurooGuide.match(/images\/steps\/\d{2}-[a-z0-9-]+\.webp/g) || [];
   const stepImageTags = glurooGuide.match(/<img src="images\/steps\/[^>]+>/g) || [];
-  assert.equal(new Set(stepImages).size, 34);
-  assert.equal(stepImageTags.length, 34);
+  const finalCaptureTags = glurooGuide.match(/<img src="images\/manual-updates\/35-[^>]+>/g) || [];
+  assert.equal(new Set(stepImages).size, 33);
+  assert.equal(stepImageTags.length, 33);
+  assert.equal(finalCaptureTags.length, 3);
   stepImageTags.forEach((tag) => {
+    assert.match(tag, /\swidth="\d+"/);
+    assert.match(tag, /\sheight="\d+"/);
+  });
+  finalCaptureTags.forEach((tag) => {
     assert.match(tag, /\swidth="\d+"/);
     assert.match(tag, /\sheight="\d+"/);
   });
@@ -601,7 +656,9 @@ test("field feedback copy and red-frame navigation are reflected", () => {
   assert.match(glurooGuide, /Dexcom G7の準備ガイドを開く/);
   assert.match(glurooGuide, /上部の「コピー」を押します/);
   assert.match(glurooGuide, /背景の黒い部分をタップ/);
-  assert.match(glurooGuide, /34-home-finish\.webp/);
+  assert.match(glurooGuide, /35-connect-and-start\.jpg/);
+  assert.match(glurooGuide, /35-welcome-success\.jpg/);
+  assert.match(glurooGuide, /35-glucose-success\.jpg/);
   assert.doesNotMatch(glurooGuide, /URLと合言葉が表示されるまで待ちます/);
   assert.doesNotMatch(glurooGuide, /左上の「×」で閉じます/);
 });

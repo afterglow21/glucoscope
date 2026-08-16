@@ -48,6 +48,8 @@ p{margin:0 0 12px}
 .guide-shot{margin:0}
 .guide-shot img{display:block;width:100%;height:auto;border:1px solid var(--guide-border);border-radius:18px;background:#fff}
 .guide-shot figcaption{margin-top:8px;color:var(--guide-muted);font-size:.82rem;text-align:center}
+.guide-shot-gallery{display:grid;align-self:start;width:min(100%,380px);gap:18px;margin:0 auto}
+.guide-simple-steps .guide-shot-gallery{width:min(100%,430px);margin:16px 0 4px}
 .guide-note{color:var(--guide-muted);font-size:.9rem}
 .guide-footer{margin-top:22px;padding:22px;text-align:left}
 .guide-footer p:last-child{margin-bottom:0}
@@ -61,6 +63,7 @@ p{margin:0 0 12px}
   .guide-step{grid-template-columns:1fr;gap:16px}
   .guide-step-copy{order:1}
   .guide-shot{order:2;width:min(100%,430px);margin:0 auto}
+  .guide-shot-gallery{width:min(100%,430px)}
   .guide-topbar{padding:2px 4px}
 }
 @media(max-width:380px){html{font-size:16px}.guide-secondary-links{display:grid}}

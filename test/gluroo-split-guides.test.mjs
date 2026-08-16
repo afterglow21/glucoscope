@@ -155,24 +155,26 @@ test("the early CGM prompt is always postponed and each later setup block is dev
 
 test("Home Screen captures are action-labelled, sized, and used before first connection", async () => {
   const captures = [
-    ["01-open-share-menu.jpg", 634, 1280],
-    ["02-open-in-safari-add-home-screen.jpg", 630, 1280],
+    ["01-open-share-menu.jpg", 1320, 2661],
+    ["02-add-to-home-screen.jpg", 1320, 2679],
+    ["03-home-screen-icon.jpg", 1320, 2639],
   ];
   assert.ok(manual.indexOf('id="home-screen-share"') < manual.indexOf('id="screen-01"'));
   assert.match(manual, /「ブックマークに追加」ではありません/);
   assert.match(manual, /「Safariで開く」が表示されたら、先にそれを押します/);
-  assert.match(manual, /alt="GlucoScopeを開いたブラウザのメニューで、共有を選ぶ場所"/);
-  assert.match(manual, /alt="iPhoneの共有メニューにある、Safariで開くとホーム画面に追加の操作"/);
+  assert.match(manual, /alt="GlucoScopeを開いたブラウザのメニューで、赤枠の共有を選ぶ場所"/);
+  assert.match(manual, /alt="iPhoneの共有メニューで、赤枠のホーム画面に追加を選ぶ場所"/);
+  assert.match(manual, /alt="iPhoneのホーム画面に追加されたGlucoScopeのアイコン"/);
 
   for (const [name, width, height] of captures) {
-    const bytes = await readFile(new URL(`../guides/gluroo-setup/images/home-screen/${name}`, import.meta.url));
+    const bytes = await readFile(new URL(`../guides/gluroo-setup/images/manual-updates/${name}`, import.meta.url));
     assert.deepEqual(getJpegDimensions(bytes), { width, height });
     const ascii = bytes.toString("latin1");
-    assert.doesNotMatch(ascii, /api-secret=|token=|GPSLatitude|GPSLongitude/i);
+    assert.doesNotMatch(ascii, /api-secret=|token=|GPSLatitude|GPSLongitude|DateTimeOriginal|Make|Model/i);
   }
 });
 
-test("final handoff names the one-button flow and exact success state", () => {
+test("final handoff names the one-button flow and shows the supplied success captures", async () => {
   const finalStep = manual.slice(manual.indexOf('id="screen-34"'));
   assert.match(finalStep, /GlucoScopeの接続画面へ戻る/);
   assert.match(finalStep, /接続してGlucoScopeを始める/);
@@ -180,6 +182,18 @@ test("final handoff names the one-button flow and exact success state", () => {
   assert.match(finalStep, /ようこそ、GlucoScopeへ 🍀/);
   assert.match(finalStep, /接続できました。最新の血糖データを表示しています。/);
   assert.match(finalStep, /現在の血糖値画面が見えたら成功/);
+  assert.match(finalStep, /画像の数値は表示例で、目標値ではありません/);
+
+  const captures = [
+    ["35-connect-and-start.jpg", 1320, 2175],
+    ["35-welcome-success.jpg", 1320, 2720],
+    ["35-glucose-success.jpg", 1320, 2712],
+  ];
+  for (const [name, width, height] of captures) {
+    const bytes = await readFile(new URL(`../guides/gluroo-setup/images/manual-updates/${name}`, import.meta.url));
+    assert.deepEqual(getJpegDimensions(bytes), { width, height });
+    assert.doesNotMatch(bytes.toString("latin1"), /api-secret=|token=|GPSLatitude|GPSLongitude|DateTimeOriginal|Make|Model/i);
+  }
 });
 
 test("device preparation guides return to their matching later setup step", () => {
