@@ -3554,6 +3554,15 @@ no scripts, images, or external links. Preview URLs, application logging, and in
 logging remain disabled. Production D1 verification is recorded only as the boundary result
 “row counts unchanged”; counts, row contents, and display names are not copied into Git.
 
+On 2026-08-16 JST, administrator dashboard Version
+`b7c8c8d8-5fdf-4c94-9b9a-817c99f65c9a` was deployed at 100% through deployment
+`29bbaf0f-b118-4792-a8b6-ebc70cdefbae`; initial Version
+`d17e89e9-bc15-40fb-90a0-2e85cb19cf42` remains at 0% as the direct rollback. The
+update labels repeated normalized display names by card position but never merges cards or
+sums their counts. It retains the same Access Secret, D1, plain configuration, and security
+boundary, intentionally omits the not-yet-deployed Plus service binding, and still returns
+an Access `302` to an unauthenticated production request.
+
 The server-rendered page uses one fixed, read-only `SELECT` from `admin_device_usage` and
 may show only display name, usage-recording state, active-day count within the retained
 maximum 90 days, newly completed AI-analysis count, and ordinary Gluco-memory count
@@ -3863,6 +3872,14 @@ Accessへの`302`で停止し、許可された管理者の`GET /`はサーバ�
 表示しました。query付きURLと未知pathは`404`となり、script、画像、外部linkは0件でした。
 preview URL、application log、invocation logは無効のままです。本番D1確認は実数を残さず、
 「行数不変」という境界結果だけを記録します。
+
+2026年8月16日JST、管理者ダッシュボードVersion
+`b7c8c8d8-5fdf-4c94-9b9a-817c99f65c9a`をdeployment
+`29bbaf0f-b118-4792-a8b6-ebc70cdefbae`で100%へ反映し、初期Version
+`d17e89e9-bc15-40fb-90a0-2e85cb19cf42`を直接の切り戻し先として0%に残しました。
+この更新は、同じ正規化後表示名のカードへ順番を示すだけで、カードの統合や回数の合算を
+行いません。Access Secret、D1、公開設定、安全境界は維持し、未配備のPlus service bindingは
+含めていません。切替後も本番への未認証requestはAccessの`302`で停止しました。
 
 画面は `admin_device_usage` への固定された読取専用
 `SELECT` 1つからサーバー側で生成し、表示名、利用記録の状態、稼働D1に残る最大90日分の

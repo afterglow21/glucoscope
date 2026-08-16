@@ -1,12 +1,14 @@
 # GlucoScope administrator dashboard Worker
 
-Status: production deployed on 2026-08-14 JST / one-administrator browser acceptance completed on 2026-08-15 JST / local Plus aggregate receiver prepared but not deployed / not linked from the public site
+Status: production deployed on 2026-08-14 JST and updated on 2026-08-16 JST / one-administrator browser acceptance completed on 2026-08-15 JST / local Plus aggregate receiver prepared but not deployed / not linked from the public site
 
 This dedicated Cloudflare Worker renders the first read-only administrator view for the minimal device-profile usage foundation. It is deliberately separate from the public GitHub Pages site, the existing public AI Usage Dashboard, and the public Usage Worker API.
 
 ## One-administrator production checkpoint — 2026-08-14 to 2026-08-15
 
 Version `d17e89e9-bc15-40fb-90a0-2e85cb19cf42` was deployed through deployment `392fb7b5-792c-4990-b939-6ab97481beb1` on 2026-08-14 JST. Cloudflare Access protects the dedicated hostname for one exact administrator email, and the Worker independently rechecks the signed Access JWT and the same email held in a Secret before any D1 read. Authenticated browser acceptance completed on 2026-08-15 JST: an unauthenticated request received a `302` to Access, the allowed administrator reached the server-rendered read-only empty state, query strings and unknown paths returned `404`, and the page loaded no scripts, images, or external links. The public site remains unlinked.
+
+On 2026-08-16 JST, Version `b7c8c8d8-5fdf-4c94-9b9a-817c99f65c9a` was deployed at 100% through deployment `29bbaf0f-b118-4792-a8b6-ebc70cdefbae`; the initial Version remains at 0% as the direct rollback. The update only clarifies repeated display names while keeping each device-profile card and every count separate. It keeps the same Access Secret, D1, plain configuration, and security boundary, and intentionally omits the not-yet-deployed Plus service binding. An unauthenticated production request still stopped at Access with `302` after the switch.
 
 ## Fixed safety boundary
 
