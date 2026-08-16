@@ -35,6 +35,7 @@
   <!-- GlucoScope Limited Data Relay: the browser client uses an anonymous device session. -->
   <meta name="glucoscope-data-relay-endpoint" content="https://relay.glucoscope.app">
   <meta name="glucoscope-usage-profile-enabled" content="true">
+  <meta name="glucoscope-ai-per-user-quota-enabled" content="false">
   <meta name="glucoscope-plus-account-enabled" content="false">
   <meta name="glucoscope-plus-purchases-enabled" content="false">
   <meta name="glucoscope-plus-entitlement-endpoint" content="">
@@ -669,6 +670,7 @@
             <section id="aiLetterUserConsent" class="ai-letter-user-consent" aria-labelledby="aiLetterUserConsentTitle" hidden>
               <h3 id="aiLetterUserConsentTitle" tabindex="-1" data-i18n-key="aiLetterUserConsentTitle">AI分析を始める前に</h3>
               <p data-i18n-key="aiLetterUserConsentData">この画面にまとめた血糖情報をOpenAIへ送ります。氏名、接続先URL、合言葉、元の血糖データ一覧は送りません。</p>
+              <p data-i18n-key="aiLetterUserConsentQuota">利用上限の確認のため、成功したAI分析の日と回数だけを最大90日保存します。Freeは1日1回、Plusは1日5回までです。</p>
               <p data-i18n-key="aiLetterUserConsentSafety">AIの言葉は振り返りの参考です。治療の判断やアラートは、いつものCGMアプリと医療機関からの案内を優先してください。</p>
               <a class="ai-letter-consent-link" href="pages/trust/privacy-notes.html#ai-letters" target="_blank" rel="noopener noreferrer" data-i18n-key="aiLetterUserConsentDetails">詳しく見る</a>
               <div class="ai-letter-consent-actions">
@@ -985,7 +987,7 @@
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js?v=20260721-user-foundation-3"></script>
-<script src="js/app.js?v=20260816-device-session-1-onboarding-flow-2-usage-profile-1"></script>
+<script src="js/app.js?v=20260816-device-session-1-onboarding-flow-2-ai-quota-1"></script>
 <!-- Cloudflare Web Analytics: aggregate page-view and performance metrics only -->
 <script src="js/analytics-loader.js?v=20260811-usage-profile-stage-1"></script>
 <!-- End Cloudflare Web Analytics -->

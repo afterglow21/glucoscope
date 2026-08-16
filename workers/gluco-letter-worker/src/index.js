@@ -19,6 +19,10 @@ import {
   isExpectedTurnstileResult,
   shouldUseSharedCacheForSummary
 } from "./request-policy.js";
+import {
+  buildApprovedPublicDemoLetter,
+  classifyAiRequestAudience
+} from "./demo-letter.js";
 import { loadPublicUsageAggregate } from "./user-usage-summary.js";
 import {
   applyAtomicCacheHit,
@@ -49,6 +53,8 @@ const ANALYSIS_MODE_KEYS = ["letter", "deep"];
 const DEFAULT_GUARD_CONFIG = {
   aiEnabled: true,
   atomicUsageCounterEnabled: false,
+  sharedCountLimitsEnabled: true,
+  publicDemoApprovedSampleEnabled: false,
   provider: "prototype",
   openAiModel: "gpt-5.4-nano",
   openAiMaxOutputTokensLetter: 700,
@@ -338,6 +344,14 @@ function readGuardConfig(env = {}) {
       env.AI_USAGE_ATOMIC_COUNTER_ENABLED,
       DEFAULT_GUARD_CONFIG.atomicUsageCounterEnabled
     ),
+    sharedCountLimitsEnabled: readBoolean(
+      env.AI_SHARED_COUNT_LIMITS_ENABLED,
+      DEFAULT_GUARD_CONFIG.sharedCountLimitsEnabled
+    ),
+    publicDemoApprovedSampleEnabled: readBoolean(
+      env.AI_PUBLIC_DEMO_APPROVED_SAMPLE_ENABLED,
+      DEFAULT_GUARD_CONFIG.publicDemoApprovedSampleEnabled
+    ),
     provider,
     openAiModel: env.OPENAI_MODEL || DEFAULT_GUARD_CONFIG.openAiModel,
     openAiMaxOutputTokensLetter,
@@ -626,9 +640,14 @@ function buildCachedGenerationResult(cacheRead) {
 
 function buildCachePayload({ cacheResult = {}, config = DEFAULT_GUARD_CONFIG, fallbackReason = null }) {
   const timing = cacheResult.timing || null;
+  const approvedDemoSample = cacheResult.status === "approved-demo-sample";
   return {
     status: cacheResult.status || "unavailable",
-    storage: cacheResult.available ? "cloudflare-workers-kv" : "unavailable",
+    storage: approvedDemoSample
+      ? "human-reviewed-static-sample"
+      : cacheResult.available
+        ? "cloudflare-workers-kv"
+        : "unavailable",
     bindingAvailable: Boolean(cacheResult.available),
     key: cacheResult.key || null,
     fresh: Boolean(timing?.fresh),
@@ -2273,6 +2292,8 @@ function buildSlotRemainingCounts(state, config) {
 function buildModeSlotRemainingCounts(state, config) {
   ensureSlotCounters(state);
 
+  if (!config.sharedCountLimitsEnabled) return null;
+
   const remaining = {};
   for (const mode of ANALYSIS_MODE_KEYS) {
     remaining[mode] = {};
@@ -2286,6 +2307,7 @@ function buildModeSlotRemainingCounts(state, config) {
 
 function isAnyModeSlotRateLimited(state, config) {
   ensureSlotCounters(state);
+  if (!config.sharedCountLimitsEnabled) return false;
   return Object.values(state.dailySlotGenerationCounts || {}).some((count) => count >= config.slotGenerationLimit);
 }
 
@@ -2298,10 +2320,16 @@ function buildGuardPayload({ state, config, budgetBlocked = false, summary = {},
   const modeSlotGenerationCount = getModeSlotCount(state, analysisMode, slotKey);
   const monthlyEstimatedCostJpy = Number(state.estimatedCostJpy.toFixed(4));
   const budgetWarning = monthlyEstimatedCostJpy >= config.warningBudgetJpy;
-  const dailyGenerationRemaining = Math.max(0, config.dailyGenerationLimit - state.dailyGenerationCount);
-  const slotGenerationRemaining = Math.max(0, config.slotGenerationLimit - slotGenerationCount);
-  const totalRateLimited = state.dailyGenerationCount >= config.dailyGenerationLimit;
-  const slotRateLimited = slotGenerationCount >= config.slotGenerationLimit;
+  const dailyGenerationRemaining = config.sharedCountLimitsEnabled
+    ? Math.max(0, config.dailyGenerationLimit - state.dailyGenerationCount)
+    : null;
+  const slotGenerationRemaining = config.sharedCountLimitsEnabled
+    ? Math.max(0, config.slotGenerationLimit - slotGenerationCount)
+    : null;
+  const totalRateLimited = config.sharedCountLimitsEnabled
+    && state.dailyGenerationCount >= config.dailyGenerationLimit;
+  const slotRateLimited = config.sharedCountLimitsEnabled
+    && slotGenerationCount >= config.slotGenerationLimit;
 
   return {
     turnstileRequired: config.turnstileRequired,
@@ -2312,9 +2340,10 @@ function buildGuardPayload({ state, config, budgetBlocked = false, summary = {},
     budgetBlocked,
     budgetWarning,
     aiEnabled: config.aiEnabled,
-    dailyGenerationLimit: config.dailyGenerationLimit,
+    sharedCountLimitsEnabled: config.sharedCountLimitsEnabled,
+    dailyGenerationLimit: config.sharedCountLimitsEnabled ? config.dailyGenerationLimit : null,
     dailyGenerationRemaining,
-    slotGenerationLimit: config.slotGenerationLimit,
+    slotGenerationLimit: config.sharedCountLimitsEnabled ? config.slotGenerationLimit : null,
     slotGenerationRemaining,
     activeMode: {
       key: analysisMode,
@@ -2357,6 +2386,8 @@ function buildSuccessPayload({
   const generatedAt = generationResult.generatedAt || cacheResult?.timing?.generatedAt || new Date().toISOString();
   const source = servedFromSharedCache
     ? "cloudflare-kv"
+    : generationResult.provider === "approved-demo-sample"
+      ? "approved-demo-sample"
     : generationResult.provider === "openai"
       ? "openai"
       : "prototype-worker";
@@ -2548,6 +2579,7 @@ function getGuardBlock({ status, usageState, config, summary = {} }) {
   if (status === "cached") return null;
   if (!config.aiEnabled) return { status: "ai_disabled", reason: "ai_disabled" };
   if (usageState.estimatedCostJpy >= config.stopBudgetJpy) return { status: "budget_stopped", reason: "budget" };
+  if (!config.sharedCountLimitsEnabled) return null;
   if (usageState.dailyGenerationCount >= config.dailyGenerationLimit) return { status: "rate_limited", reason: "total" };
 
   const slotKey = normalizeSlot(summary.slot);
@@ -2619,7 +2651,7 @@ function buildUsageReport({ state, config, cacheAvailable = false, publicUserUsa
         modeSlotGenerationCounts: state.dailyModeSlotGenerationCounts,
         modeSlotCacheHitCounts: state.dailyModeSlotCacheHitCounts,
         modeSlotRateLimitedCounts: state.dailyModeSlotRateLimitedCounts,
-        slotGenerationLimit: config.slotGenerationLimit
+        slotGenerationLimit: config.sharedCountLimitsEnabled ? config.slotGenerationLimit : null
       },
       month: {
         monthKey: state.monthKey,
@@ -2645,16 +2677,23 @@ function buildUsageReport({ state, config, cacheAvailable = false, publicUserUsa
         turnstileStatus: config.turnstileRequired ? "not_applicable_for_usage_report" : "not_required",
         turnstileVerifiedCount: state.dailyTurnstileVerifiedCount || 0,
         turnstileFailedCount: state.dailyTurnstileFailedCount || 0,
-        rateLimited: state.dailyGenerationCount >= config.dailyGenerationLimit,
-        totalRateLimited: state.dailyGenerationCount >= config.dailyGenerationLimit,
+        sharedCountLimitsEnabled: config.sharedCountLimitsEnabled,
+        rateLimited: config.sharedCountLimitsEnabled
+          && state.dailyGenerationCount >= config.dailyGenerationLimit,
+        totalRateLimited: config.sharedCountLimitsEnabled
+          && state.dailyGenerationCount >= config.dailyGenerationLimit,
         slotRateLimited: isAnyModeSlotRateLimited(state, config),
         budgetBlocked: state.estimatedCostJpy >= config.stopBudgetJpy,
         budgetWarning: state.estimatedCostJpy >= config.warningBudgetJpy,
         aiEnabled: config.aiEnabled,
-        dailyGenerationLimit: config.dailyGenerationLimit,
-        dailyGenerationRemaining: Math.max(0, config.dailyGenerationLimit - state.dailyGenerationCount),
-        slotGenerationLimit: config.slotGenerationLimit,
-        slotGenerationRemainingBySlot: buildSlotRemainingCounts(state, config),
+        dailyGenerationLimit: config.sharedCountLimitsEnabled ? config.dailyGenerationLimit : null,
+        dailyGenerationRemaining: config.sharedCountLimitsEnabled
+          ? Math.max(0, config.dailyGenerationLimit - state.dailyGenerationCount)
+          : null,
+        slotGenerationLimit: config.sharedCountLimitsEnabled ? config.slotGenerationLimit : null,
+        slotGenerationRemainingBySlot: config.sharedCountLimitsEnabled
+          ? buildSlotRemainingCounts(state, config)
+          : null,
         modeSlotGenerationRemainingBySlot: buildModeSlotRemainingCounts(state, config),
         dailyModeGenerationCounts: state.dailyModeGenerationCounts,
         dailySlotGenerationCounts: state.dailySlotGenerationCounts,
@@ -2955,6 +2994,116 @@ function buildAtomicProviderErrorResponse({
   }, 502);
 }
 
+async function handleApprovedPublicDemoRequest({
+  request,
+  env,
+  config,
+  usageState,
+  payload,
+  summary
+}) {
+  const turnstileVerification = await verifyTurnstileToken({
+    payload,
+    request,
+    env,
+    config
+  });
+  let currentUsageState = usageState;
+
+  if (config.atomicUsageCounterEnabled) {
+    const turnstileEvent = await invokeRequiredAtomicUsageCounter({
+      env,
+      config,
+      method: "recordTurnstileEvent",
+      input: {
+        required: config.turnstileRequired,
+        verified: turnstileVerification.verified === true
+      }
+    });
+    if (!turnstileEvent.ok || turnstileEvent.result?.ok !== true) {
+      return buildUsageCounterUnavailableResponse();
+    }
+    currentUsageState = turnstileEvent.result.state;
+  } else {
+    recordTurnstileVerification({
+      usageState: currentUsageState,
+      config,
+      turnstileVerification
+    });
+  }
+
+  if (config.turnstileRequired && !turnstileVerification.verified) {
+    if (!config.atomicUsageCounterEnabled) {
+      await persistUsageState(env, currentUsageState, config);
+    }
+    return errorResponse(
+      buildTurnstileError(turnstileVerification),
+      turnstileVerification.code === "missing_turnstile_secret" ? 500 : 403
+    );
+  }
+
+  const generationResult = buildApprovedPublicDemoLetter(summary);
+  if (!generationResult) {
+    return errorResponse({
+      code: "invalid_demo_request",
+      message: "The approved public-demo sample could not be selected.",
+      userMessage: summary.language === "en"
+        ? "The public-demo sample could not be displayed. Please try again later 🍀"
+        : "公開デモのサンプルを表示できませんでした。少し時間をおいて、もう一度試してね🍀",
+      retryable: false
+    }, 400);
+  }
+
+  if (config.atomicUsageCounterEnabled) {
+    const sampleEvent = await invokeRequiredAtomicUsageCounter({
+      env,
+      config,
+      method: "recordCacheHit",
+      input: {
+        slot: normalizeSlot(summary.slot),
+        analysisMode: normalizeAnalysisMode(summary.analysisMode)
+      }
+    });
+    if (!sampleEvent.ok || sampleEvent.result?.ok !== true) {
+      return buildUsageCounterUnavailableResponse();
+    }
+    currentUsageState = sampleEvent.result.state;
+  } else {
+    recordSuccess({
+      usageState: currentUsageState,
+      status: "cached",
+      requestUsage: emptyRequestUsage(),
+      summary
+    });
+    currentUsageState = await persistUsageState(env, currentUsageState, config);
+  }
+
+  return okResponse(buildSuccessPayload({
+    summary,
+    payload,
+    status: "cached",
+    usageState: currentUsageState,
+    requestUsage: emptyRequestUsage(),
+    config,
+    generationResult,
+    turnstileVerification,
+    cacheResult: {
+      available: false,
+      key: null,
+      status: "approved-demo-sample",
+      entry: null,
+      timing: {
+        generatedAt: generationResult.generatedAt,
+        fresh: true,
+        ageSeconds: 0,
+        freshUntil: null,
+        expiresAt: null
+      }
+    },
+    quotaPayload: null
+  }));
+}
+
 async function handleAtomicGenerationRequest({
   request,
   env,
@@ -3127,7 +3276,7 @@ async function handleAtomicGenerationRequest({
           signal: generationSignal
         })
       });
-      if (!outcome.ok && outcome.stage === "generation" && outcome.generationError) {
+      if (!outcome.ok && outcome.generationError) {
         outcome.generationError.aiQuota = outcome.quota || null;
         throw outcome.generationError;
       }
@@ -3191,7 +3340,7 @@ async function handleAtomicGenerationRequest({
       input: {
         requestId,
         reason: quotaOutcome.error || "quota_service_unavailable",
-        actualUsage: emptyRequestUsage()
+        actualUsage: quotaOutcome.knownUsage || emptyRequestUsage()
       }
     });
     if (!released.ok || released.result?.ok !== true) {
@@ -3313,6 +3462,34 @@ async function handleApiRequest(request, env = {}) {
       ...summary,
       analysisMode: getAnalysisMode(payload, summary)
     };
+
+    const requestAudience = classifyAiRequestAudience(summary);
+    if (quotaConfig.enabled && requestAudience === "public_demo") {
+      if (!config.publicDemoApprovedSampleEnabled) {
+        return errorResponse({
+          code: "public_demo_sample_unavailable",
+          message: "The approved public-demo sample is not enabled.",
+          userMessage: summary.language === "en"
+            ? "The public-demo sample is being prepared. Your glucose display is still available 🍀"
+            : "公開デモのお手紙サンプルは準備中です。血糖表示はそのまま使えるよ🍀",
+          retryable: true
+        }, 503);
+      }
+      return handleApprovedPublicDemoRequest({
+        request,
+        env,
+        config,
+        usageState,
+        payload,
+        summary
+      });
+    }
+    if (quotaConfig.enabled && requestAudience !== "personal_user") {
+      return buildAiQuotaErrorResponse({
+        error: "authentication_required",
+        retryable: false
+      }, summary);
+    }
 
     let quotaRequest = null;
     if (quotaConfig.enabled) {
@@ -3485,9 +3662,13 @@ async function handleApiRequest(request, env = {}) {
       });
 
       if (!quotaOutcome.ok) {
-        if (quotaOutcome.stage === "generation" && quotaOutcome.generationError) {
+        if (quotaOutcome.generationError) {
           quotaOutcome.generationError.aiQuota = quotaOutcome.quota || null;
           throw quotaOutcome.generationError;
+        }
+        if (quotaOutcome.knownUsage) {
+          recordProviderUsage({ usageState, requestUsage: quotaOutcome.knownUsage });
+          await persistUsageState(env, usageState, config);
         }
         return buildAiQuotaErrorResponse(quotaOutcome, summary);
       }

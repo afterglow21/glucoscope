@@ -5419,10 +5419,16 @@ published frontend is:
   may contain prompts and responses and are normally retained for up to 30 days, with
   possible longer legal or service-protection exceptions. The canonical external source is
   [OpenAI API data controls](https://developers.openai.com/api/docs/guides/your-data).
-- The morning, afternoon, and night generation limits of 10 each and the daily maximum
-  of 30 remain one singleton infrastructure-wide guard shared by the public demo and all
-  users. These are not per-person allowances. A shared-limit or budget stop affects only
-  AI generation.
+- Current production still uses morning, afternoon, and night limits of 10 each and a
+  daily maximum of 30 as one infrastructure-wide counter shared by the public demo and
+  all users. These are not per-person allowances.
+- The approved replacement before broad release gives Free one successful new analysis
+  per JST day for each device profile and Plus five for each verified active account.
+  The public demo displays a human-reviewed fixed sample which ignores submitted glucose
+  values and does not call OpenAI. The shared 10/30 count ceilings are removed, while the
+  anonymous operations aggregate, actual token/cost accounting, monthly warning/stop, and
+  kill switch remain. Every candidate flag stays off until migration, Worker-first rollout,
+  Pages-last rollout, and supervised acceptance are complete.
 - Only a newly completed OpenAI generation may be counted by the separate Usage profile.
   Browser cache, any retained but unread shared cache, stale fallback, failed generation, button press,
   and ChatGPT-copy actions are not AI-generation successes.
@@ -5475,8 +5481,14 @@ Version 29で最初に受け入れ、現在のatomic Versionと公開フロン�
   promptやresponseが含まれる場合があり、通常最長30日保持されます。法令またはサービス・
   第三者保護のため、それより長い保持が必要となる例外があります。外部正本は
   [OpenAI API data controls](https://developers.openai.com/api/docs/guides/your-data) とします。
-- 朝・昼・夜各10回、1日最大30回は、公開デモと全利用者で共有する1つの全体運用上限です。
-  個人別の利用回数ではありません。全体上限またはbudget停止はAI生成だけに影響します。
+- 現在の本番では、朝・昼・夜各10回、1日最大30回は、公開デモと全利用者で共有する
+  1つの全体運用上限です。個人別の利用回数ではありません。
+- 一般公開前に置き換える承認済み候補は、Freeを端末プロフィールごとにJST 1日1回、
+  Plusを有効な確認済みアカウントごとにJST 1日5回とします。公開デモは、入力された
+  血糖サマリーの値を使わない、人が内容を確認した固定サンプルを表示し、OpenAIを呼びません。
+  全員で共有する10回/30回の回数上限は外しますが、匿名の全体運用集計、実token/費用記録、
+  月間費用のwarning/stop、kill switchは残します。この候補はmigration・Worker先行・
+  Pages後続の受け入れが終わるまで全flagをOFFにします。
 - 別のUsageプロフィールへ加算してよいのは、OpenAIで新しく最後まで正常に生成された時だけです。
   端末cache、保持中だが候補では読まない共有cache、stale fallback、失敗、ボタン押下、
   ChatGPTコピーは数えません。

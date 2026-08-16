@@ -278,7 +278,7 @@ AI_CACHE_ENABLED=false         # Worker configuration
 
 Workers KV is eventually consistent across Cloudflare locations. A newly written value is normally visible immediately where it was written, but another location may briefly see an older value while its edge cache expires.
 
-## Staged per-user quota integration (checked in disabled)
+## Staged personal quota and reviewed public-demo sample (checked in disabled)
 
 The AI Worker is wired to the Usage Worker's named `AiQuotaService` entrypoint, but the
 checked-in `AI_PER_USER_QUOTA_ENABLED=false` keeps current production behavior. While
@@ -303,10 +303,18 @@ its flag off, then Pages with its flag off. After end-to-end acceptance, enable 
 first, this Worker second, and Pages last. Never send the custom header while the Pages
 flag is false.
 
-Before enabling, finish a short dedicated quota explanation/consent and Privacy update,
-and a server-verifiable public-demo identity that cannot be forged with `pageMode`.
-Until then, the public demo has no quota bypass and would fail closed if this Worker flag
-were enabled; CGM display and the ordinary Gluco message remain independent.
+The reviewed replacement does not treat browser-provided `pageMode` as proof of a trusted
+data source. When all quota switches are enabled, an exact public-demo request receives a
+human-reviewed fixed sample which ignores submitted glucose values and does not call OpenAI
+or consume personal quota. Unknown modes fail closed. Exact personal-user mode still requires
+the server-authoritative Bearer credential. This removes the demo bypass problem without
+creating a reusable uncredentialed OpenAI path.
+
+The matching consent and Privacy copy explains that only the successful day/count is retained
+for quota enforcement. `AI_SHARED_COUNT_LIMITS_ENABLED=false` then removes the former shared
+10-per-slot and 30-per-day count ceilings, while the anonymous atomic counter and global
+monthly cost stop remain. Checked-in defaults deliberately retain current production behavior:
+personal quota and the demo sample are off, and shared count limits are on.
 
 ## Local development
 
@@ -382,6 +390,8 @@ AI_PROVIDER=openai
 AI_ENABLED=true
 AI_USAGE_ATOMIC_COUNTER_ENABLED=false
 AI_PER_USER_QUOTA_ENABLED=false
+AI_SHARED_COUNT_LIMITS_ENABLED=true
+AI_PUBLIC_DEMO_APPROVED_SAMPLE_ENABLED=false
 OPENAI_MODEL=gpt-5.4-nano
 OPENAI_MAX_OUTPUT_TOKENS_LETTER=700
 OPENAI_MAX_OUTPUT_TOKENS_DEEP=1500
@@ -415,7 +425,11 @@ Atomic generation reservations include a conservative maximum planned cost for b
 
 Provider work has a 120-second overall deadline, including transport retry and rewrite/incomplete retry paths. Pending reservations expire after 15 minutes. Completion and release RPCs retry once with the same `requestId`; their idempotent tombstones prevent a lost RPC response from double-counting tokens, cost, or generations.
 
-Release gate: before changing `AI_PER_USER_QUOTA_ENABLED` to `true`, preserve observed provider usage across per-user quota completion/release failures and add tests proving that the global atomic release receives those tokens and developer cost. The checked-in production setting remains `false` until that gate is complete.
+The former release gate for provider-usage preservation is complete in the candidate: a
+per-user completion failure retains known provider usage for the global atomic release, and
+a per-user release failure carries the original provider error and usage into the same
+idempotent global release. Both paths return no generated text. The checked-in production
+setting remains `false` until migration and remote acceptance are complete.
 
 Before either rollout phase, run:
 
@@ -427,7 +441,7 @@ npm run deploy:dry
 
 The estimated AI cost shown by the Worker is an operational estimate paid by the developer. It is not a charge to visitors.
 
-The production generation guard allows up to 10 new generations in each time slot (morning, afternoon, and night), with a daily maximum of 30. It is one singleton infrastructure-wide guard shared by the public demo and all callers, not a per-person allowance. This is designed so the five periods (today, yesterday, 7 days, 30 days, and custom) can each be tried in both analysis modes within a slot when the shared capacity is available. Cached displays do not consume a new-generation slot.
+Current production generation still allows up to 10 new generations in each time slot (morning, afternoon, and night), with a daily maximum of 30. It is one singleton infrastructure-wide guard shared by the public demo and all callers, not a per-person allowance. The disabled personal-quota candidate replaces these count ceilings with Free 1/day and Plus 5/day while retaining the singleton's cost safety stop. Cached displays and the reviewed public-demo sample do not consume an individual new-generation use.
 
 The first OpenAI attempt uses the normal limit for the selected mode. Within the incomplete-output path, only an API response explicitly marked incomplete due to `max_output_tokens` triggers one retry with the larger limit. A successful retry still counts as one user-requested generation, while usage and developer-cost estimates include both OpenAI attempts. If the retry is also incomplete, the partial text is discarded and is not cached.
 

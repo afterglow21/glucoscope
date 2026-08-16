@@ -257,10 +257,14 @@ test("release and completion failures fail closed without returning generated te
       async completeAiGeneration() { throw new Error("must not complete"); },
       async releaseAiGeneration() { return { ok: false, error: "quota_release_failed" }; },
     },
-    generate: async () => { throw Object.assign(new Error("bad"), { code: "openai_api_error" }); },
+    generate: async () => { throw Object.assign(new Error("bad"), {
+      code: "openai_api_error",
+      usage: { totalTokens: 123, estimatedCostJpy: 0.12 }
+    }); },
   });
   assert.equal(releaseFailure.stage, "release");
   assert.equal("result" in releaseFailure, false);
+  assert.deepEqual(releaseFailure.generationError.usage, { totalTokens: 123, estimatedCostJpy: 0.12 });
 
   const completionFailure = await runAiQuotaGeneration({
     enabled: true,
@@ -270,10 +274,11 @@ test("release and completion failures fail closed without returning generated te
       async completeAiGeneration() { return { ok: false, error: "quota_finalize_failed" }; },
       async releaseAiGeneration() { throw new Error("must not release after uncertain completion"); },
     },
-    generate: async () => ({ text: "must not escape" }),
+    generate: async () => ({ text: "must not escape", usage: { totalTokens: 321, estimatedCostJpy: 0.25 } }),
   });
   assert.equal(completionFailure.stage, "complete");
   assert.equal("result" in completionFailure, false);
+  assert.deepEqual(completionFailure.knownUsage, { totalTokens: 321, estimatedCostJpy: 0.25 });
 
   const malformedCompletion = await runAiQuotaGeneration({
     enabled: true,
@@ -283,10 +288,11 @@ test("release and completion failures fail closed without returning generated te
       async completeAiGeneration() { return { ok: true, quota: QUOTA }; },
       async releaseAiGeneration() { throw new Error("must not release after uncertain completion"); },
     },
-    generate: async () => ({ text: "must not escape" }),
+    generate: async () => ({ text: "must not escape", usage: { totalTokens: 322, estimatedCostJpy: 0.26 } }),
   });
   assert.equal(malformedCompletion.stage, "complete");
   assert.equal("result" in malformedCompletion, false);
+  assert.deepEqual(malformedCompletion.knownUsage, { totalTokens: 322, estimatedCostJpy: 0.26 });
 
   const malformedCompletionQuota = await runAiQuotaGeneration({
     enabled: true,
@@ -296,10 +302,11 @@ test("release and completion failures fail closed without returning generated te
       async completeAiGeneration() { return { ok: true, status: "completed", quota: null }; },
       async releaseAiGeneration() { throw new Error("must not release after uncertain completion"); },
     },
-    generate: async () => ({ text: "must not escape" }),
+    generate: async () => ({ text: "must not escape", usage: { totalTokens: 323, estimatedCostJpy: 0.27 } }),
   });
   assert.equal(malformedCompletionQuota.stage, "complete");
   assert.equal("result" in malformedCompletionQuota, false);
+  assert.deepEqual(malformedCompletionQuota.knownUsage, { totalTokens: 323, estimatedCostJpy: 0.27 });
 
   const malformedReleaseQuota = await runAiQuotaGeneration({
     enabled: true,
@@ -313,4 +320,7 @@ test("release and completion failures fail closed without returning generated te
   });
   assert.equal(malformedReleaseQuota.stage, "release");
   assert.equal("result" in malformedReleaseQuota, false);
+
+  assert.match(workerSource, /if \(!outcome\.ok && outcome\.generationError\)/u);
+  assert.match(workerSource, /actualUsage: quotaOutcome\.knownUsage \|\| emptyRequestUsage\(\)/u);
 });

@@ -417,14 +417,16 @@ export function applyAtomicGenerationReserve(inputState, input = {}, config = {}
     return rejectReservation({ state, reservation, status: "budget_stopped", reason: "budget", now });
   }
 
-  const dailyLimit = nonNegativeInteger(config.dailyGenerationLimit);
-  if (state.dailyGenerationCount + pending.totals.count >= dailyLimit) {
-    return rejectReservation({ state, reservation, status: "rate_limited", reason: "total", now });
-  }
+  if (config.sharedCountLimitsEnabled !== false) {
+    const dailyLimit = nonNegativeInteger(config.dailyGenerationLimit);
+    if (state.dailyGenerationCount + pending.totals.count >= dailyLimit) {
+      return rejectReservation({ state, reservation, status: "rate_limited", reason: "total", now });
+    }
 
-  const slotLimit = nonNegativeInteger(config.slotGenerationLimit);
-  if (state.dailySlotGenerationCounts[slot] + pending.totals.slotCounts[slot] >= slotLimit) {
-    return rejectReservation({ state, reservation, status: "rate_limited", reason: "slot", now });
+    const slotLimit = nonNegativeInteger(config.slotGenerationLimit);
+    if (state.dailySlotGenerationCounts[slot] + pending.totals.slotCounts[slot] >= slotLimit) {
+      return rejectReservation({ state, reservation, status: "rate_limited", reason: "slot", now });
+    }
   }
 
   state.usageReservations[requestId] = reservation;

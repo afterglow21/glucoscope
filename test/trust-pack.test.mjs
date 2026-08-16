@@ -33,7 +33,10 @@ test("Usage Dashboard separates AI operations from privacy-protected personal-us
   assert.match(index, /AIお手紙が作られた回数と、開発者が負担するAI利用料の目安/);
   assert.doesNotMatch(index, /ページ閲覧の傾向/);
   assert.match(dashboard, /ユーザー版の合計/);
-  assert.match(dashboard, /公開デモとユーザー版から新しく作ったAI分析を分けずに数えます/);
+  assert.match(dashboard, /公開デモは内容を確認した固定サンプルを表示するため、新しいAI生成には含まれません/);
+  assert.match(dashboard, /Freeでは端末プロフィールごとに1日1回、Plusでは確認済みアカウントごとに1日5回まで/);
+  assert.match(dashboard, /全員で共有する朝・昼・夜10回、1日30回の回数上限は使いません/);
+  assert.match(dashboard, /sharedCountLimitsEnabled = guard\.sharedCountLimitsEnabled !== false/);
   assert.match(dashboard, /前日まで30日間の端末プロフィール、利用日、新しく成功したAI分析、通常のグルコの想い出/);
   assert.match(dashboard, /10件未満では実数を表示しません/);
   assert.match(dashboard, /personalUserUsage\.status === "suppressed"/);
@@ -124,7 +127,8 @@ test("Roadmap stays simple for users while technical evidence stays internal", a
   assert.match(roadmap, /登録せずに公開デモと3種類の血糖測定機器（CGM）を見比べるページを開けます/);
   assert.match(roadmap, /利用記録やAI分析で問題が起きても、血糖値やグラフの表示は続けられる/);
   assert.match(roadmap, /300円の1回払いで30日間使える予定です。自動更新はありません/);
-  assert.match(roadmap, /Freeでは成功した新しいAI分析を1日1回、Plusでは1日5回まで/);
+  assert.match(roadmap, /Freeでは成功した新しいAI分析を1日1回、販売開始後のPlusでは1日5回まで/);
+  assert.match(roadmap, /公開デモは内容を確認した固定サンプルを表示し、新しいAI生成を使いません/);
   assert.match(roadmap, /文書の確認などで失敗した回は数えません/);
   assert.match(roadmap, /グラフのカスタム期間とShare StudioはPlus特典/);
   assert.match(roadmap, /確認済みの利用者ごとに1回だけ無料で試せる/);
@@ -142,7 +146,8 @@ test("Roadmap stays simple for users while technical evidence stays internal", a
   assert.match(roadmap, /Coming next/);
   assert.match(roadmap, /Plus 30-day pass \(in preparation\)/);
   assert.match(roadmap, /What will not change/);
-  assert.match(roadmap, /one successful new AI analysis per day, while Plus includes up to five/);
+  assert.match(roadmap, /Free is planned to include one successful new AI analysis per day, while Plus will include up to five after sales begin/);
+  assert.match(roadmap, /public demo will display a reviewed fixed sample without a new AI generation/);
   assert.match(roadmap, /an adult guardian age 18 or older/);
   assert.match(roadmap, /It is not yet available for purchase/);
   assert.match(roadmap, /To improve GlucoScope, we record a display name/);

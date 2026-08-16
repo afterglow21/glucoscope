@@ -66,6 +66,36 @@ test("serialized simultaneous reserves cannot exceed the last slot", async () =>
   assert.equal(harness.current.dailyRateLimitedCount, 1);
 });
 
+test("per-user rollout can remove shared count caps without removing the global budget stop", () => {
+  const perUserPolicy = {
+    ...CONFIG,
+    sharedCountLimitsEnabled: false
+  };
+  const beyondFormerCountCaps = applyAtomicGenerationReserve(state({
+    dailyGenerationCount: 30,
+    dailySlotGenerationCounts: { morning: 10 }
+  }), {
+    requestId: IDS[0],
+    slot: "morning",
+    analysisMode: "letter",
+    reservedCostJpy: 1
+  }, perUserPolicy, NOW);
+  assert.equal(beyondFormerCountCaps.status, "reserved");
+
+  const budgetStopped = applyAtomicGenerationReserve(state({
+    dailyGenerationCount: 30,
+    dailySlotGenerationCounts: { morning: 10 },
+    estimatedCostJpy: 79
+  }), {
+    requestId: IDS[1],
+    slot: "morning",
+    analysisMode: "letter",
+    reservedCostJpy: 1
+  }, perUserPolicy, NOW);
+  assert.equal(budgetStopped.status, "budget_stopped");
+  assert.equal(budgetStopped.reason, "budget");
+});
+
 test("duplicate request IDs create one pending reservation", () => {
   const first = reserve(state(), IDS[0]);
   const duplicate = reserve(first.state, IDS[0]);

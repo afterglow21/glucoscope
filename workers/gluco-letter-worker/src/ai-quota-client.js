@@ -216,7 +216,13 @@ export async function runAiQuotaGeneration({
   try {
     completed = await service.completeAiGeneration({ reservationId });
   } catch {
-    return { ok: false, stage: "complete", error: "quota_service_unavailable", retryable: true };
+    return {
+      ok: false,
+      stage: "complete",
+      error: "quota_service_unavailable",
+      retryable: true,
+      knownUsage: generated?.usage || null,
+    };
   }
   const completedQuota = safeQuota(completed?.quota);
   if (
@@ -224,7 +230,10 @@ export async function runAiQuotaGeneration({
     || (completed.status !== "completed" && completed.status !== "already_succeeded")
     || !completedQuota
   ) {
-    return serviceFailure("complete", completed, "quota_finalize_failed");
+    return {
+      ...serviceFailure("complete", completed, "quota_finalize_failed"),
+      knownUsage: generated?.usage || null,
+    };
   }
 
   return {

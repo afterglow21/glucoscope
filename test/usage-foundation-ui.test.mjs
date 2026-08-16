@@ -83,7 +83,7 @@ test("personal-user AI consent is explicit, versioned, and precedes any request"
   const aiButton = { focus: () => calls.push("focus-ai") };
   const context = {
     AI_LETTER_USER_CONSENT_STORAGE_KEY: "glucoscope.aiLetterUserConsent.v1",
-    AI_LETTER_USER_CONSENT_VERSION: "2026-08-14-user-ai-1",
+    AI_LETTER_USER_CONSENT_VERSION: "2026-08-16-user-ai-quota-1",
     aiLetterUserConsentGrantedThisSession: false,
     pendingAiLetterModeAfterConsent: null,
     currentAiLetterMode: "letter",
@@ -115,7 +115,7 @@ test("personal-user AI consent is explicit, versioned, and precedes any request"
   assert.equal(panel.hidden, true);
   const saved = JSON.parse(stored.get("glucoscope.aiLetterUserConsent.v1"));
   assert.equal(saved.accepted, true);
-  assert.equal(saved.version, "2026-08-14-user-ai-1");
+  assert.equal(saved.version, "2026-08-16-user-ai-quota-1");
   assert.equal(calls[1], "focus-ai");
   assert.equal(calls[2][0], "deep");
   assert.equal(calls[2][1].skipUserConsent, true);
@@ -137,12 +137,14 @@ test("personal-user AI consent is explicit, versioned, and precedes any request"
   assert.equal(context.requestConsent("letter"), false, "storage failure keeps consent for this session only");
 
   assert.match(index, /id="aiLetterUserConsent"[^>]*aria-labelledby="aiLetterUserConsentTitle"[^>]*hidden/);
+  assert.match(index, /data-i18n-key="aiLetterUserConsentQuota"/u);
+  assert.match(app, /成功したAI分析の日と回数だけを最大90日保存します。Freeは1日1回、Plusは1日5回まで/u);
   assert.match(index, /href="pages\/trust\/privacy-notes\.html#ai-letters"/);
   assert.match(css, /\.ai-letter-user-consent\[hidden\]\{\s*display:none;/);
   assert.match(css, /\.ai-letter-consent-actions \.letter-primary-button,[\s\S]*min-height:44px;/);
 });
 
-test("quota request context is inert while off and fail-closed for unresolved identities when on", () => {
+test("quota request context is inert while off, leaves the reviewed demo credential-free, and fails closed for unresolved user identities", () => {
   const start = app.indexOf("function createAiLetterQuotaRequestContext");
   const end = app.indexOf("function getAiLetterUsageDetailFromResponse", start);
   const helperSource = app.slice(start, end);
@@ -167,7 +169,11 @@ test("quota request context is inert while off and fail-closed for unresolved id
     ok: true,
     enabled: false
   });
-  assert.equal(runHelper({ enabled: true, userMode: false, manager: forbiddenManager }).error, "quota_identity_required");
+  assert.deepEqual({ ...runHelper({ enabled: true, userMode: false, manager: forbiddenManager }) }, {
+    ok: true,
+    enabled: false,
+    publicDemo: true
+  });
   assert.equal(runHelper({ enabled: true, userMode: true, manager: null }).error, "quota_identity_required");
 
   const enabled = runHelper({
@@ -187,6 +193,8 @@ test("quota request context is inert while off and fail-closed for unresolved id
   assert.equal(enabled.enabled, true);
   assert.equal(enabled.quotaCredentialKind, "account");
   assert.equal(enabled.authorization, `Bearer ${"B".repeat(43)}`);
+  assert.match(index, /name="glucoscope-ai-per-user-quota-enabled" content="false"/u);
+  assert.match(app, /data\.cache\?\.status === "approved-demo-sample"[\s\S]*aiLetterStatusApprovedDemoSample/u);
 });
 
 test("stale AI responses cannot cross a summary, mode, or saved-connection boundary", async () => {
@@ -1035,7 +1043,7 @@ test("local display-name storage remains network-free and server sync is separat
   assert.match(index, /js\/usage-client\.js\?v=20260815-guardian-confirmation-1/);
   assert.match(index, /js\/plus-feature-access\.js\?v=20260815-guardian-confirmation-1/);
   assert.match(index, /style\.css\?v=20260816-home-safe-area-1/);
-  assert.match(index, /js\/app\.js\?v=20260816-device-session-1/);
+  assert.match(index, /js\/app\.js\?v=20260816-device-session-1-onboarding-flow-2-ai-quota-1/);
   assert.match(app, /updateUsageProfileDisplayName\(result\.profile\.displayName\)/);
   assert.doesNotMatch(app, /handleLocalProfileDelete|localProfileDeleteButton/);
   assert.match(app, /if \(!state\.enabled \|\| !state\.registered\) return;/);

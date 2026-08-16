@@ -61,7 +61,7 @@ const AI_LETTER_WORKER_ENDPOINT_STORAGE_KEY = "glucoscope.aiLetterWorkerEndpoint
 const AI_LETTER_WORKER_ENABLED_STORAGE_KEY = "glucoscope.aiLetterWorkerEnabled.v1";
 const AI_LETTER_LOCAL_CACHE_STORAGE_KEY = "glucoscope.aiLetterLocalCache.v14";
 const AI_LETTER_USER_CONSENT_STORAGE_KEY = "glucoscope.aiLetterUserConsent.v1";
-const AI_LETTER_USER_CONSENT_VERSION = "2026-08-14-user-ai-1";
+const AI_LETTER_USER_CONSENT_VERSION = "2026-08-16-user-ai-quota-1";
 const AI_LETTER_LEGACY_LOCAL_CACHE_STORAGE_KEYS = [
   "glucoscope.aiLetterLocalCache.v13",
   "glucoscope.aiLetterLocalCache.v12",
@@ -86,10 +86,12 @@ const TURNSTILE_SCRIPT_ID = "glucoscope-turnstile-script";
 const USAGE_PROFILE_TURNSTILE_TIMEOUT_MS = 15_000;
 const USAGE_PROFILE_ENABLED = true;
 const USAGE_PROFILE_ENDPOINT = "https://glucoscope-usage.afterglow21.workers.dev";
-// Keep this false until the Usage and AI Workers are released first, the dedicated
-// quota notice is accepted, and the public-demo identity boundary is resolved.
-// False sends no Authorization header and preserves the current request contract.
-const AI_PER_USER_QUOTA_ENABLED = false;
+// The checked-in meta stays false until Usage migration 0002 and both Workers pass
+// the staged quota rollout. The public demo does not send a bearer credential; once
+// enabled, the Worker serves its reviewed fixed sample without calling OpenAI.
+const AI_PER_USER_QUOTA_ENABLED = document
+  .querySelector('meta[name="glucoscope-ai-per-user-quota-enabled"]')
+  ?.getAttribute("content") === "true";
 // Keep this false until verified-account recovery, purchase support, and server-side
 // entitlement checks have passed production acceptance. False preserves today's UI.
 const PLUS_FEATURE_GATING_ENABLED = false;
@@ -495,6 +497,7 @@ const translations = {
     aiLetterUserConsentCancel: "今はしない",
     aiLetterStatusConsentWaiting: "送る内容を確認してから、AI分析を始められます。",
     aiLetterStatusConsentCancelled: "血糖のまとめは送っていません。いつでも後から始められます🍀",
+    aiLetterUserConsentQuota: "利用上限の確認のため、成功したAI分析の日と回数だけを最大90日保存します。Freeは1日1回、Plusは1日5回までです。",
     aiLetterButtonNoData: "この期間はデータなし",
     aiLetterButtonUnavailable: "データを読み込めませんでした",
     aiLetterButtonReady: "AI分析を試す",
@@ -513,6 +516,7 @@ const translations = {
     aiLetterStatusSuccess: "グルコのお手紙を表示しました🍀",
     aiLetterStatusCached: "前回のグルコAIお手紙を表示しました🍀",
     aiLetterStatusSharedCache: "共有キャッシュに保存されたグルコAIお手紙を表示しました。新しいAI生成は行っていません🍀",
+    aiLetterStatusApprovedDemoSample: "公開デモ用に内容を確認したサンプルを表示しています。新しいAI生成は行っていません🍀",
     aiLetterStatusSharedCacheFallback: "新しいお手紙を作れなかったため、前に共有保存されたお手紙を表示しています🍀",
     aiLetterStatusLocalCache: "保存済みのグルコAIお手紙を表示しています🍀",
     aiLetterStatusFreshCache: "1時間以内に保存されたグルコAIお手紙を表示しました。新しいAI生成は行っていません🍀",
@@ -881,6 +885,7 @@ const translations = {
     aiLetterUserConsentCancel: "Not now",
     aiLetterStatusConsentWaiting: "Review what is sent before starting AI analysis.",
     aiLetterStatusConsentCancelled: "No glucose summary was sent. You can start later whenever you want 🍀",
+    aiLetterUserConsentQuota: "To enforce the usage limit, only the day and count of successful AI analyses are kept for up to 90 days. Free includes one per day and Plus includes five.",
     aiLetterButtonNoData: "No data for this range",
     aiLetterButtonUnavailable: "Could not load data",
     aiLetterButtonReady: "Try AI analysis",
@@ -899,6 +904,7 @@ const translations = {
     aiLetterStatusSuccess: "Gluco reflection displayed 🍀",
     aiLetterStatusCached: "Previous Gluco AI reflection displayed 🍀",
     aiLetterStatusSharedCache: "A Gluco AI reflection from the shared cache was displayed. No new AI generation was used 🍀",
+    aiLetterStatusApprovedDemoSample: "A reviewed sample for the public demo is displayed. No new AI generation was used 🍀",
     aiLetterStatusSharedCacheFallback: "A previously shared reflection is displayed because a new one could not be generated 🍀",
     aiLetterStatusLocalCache: "Saved Gluco AI reflection displayed 🍀",
     aiLetterStatusFreshCache: "A Gluco AI reflection saved within the last hour was displayed. No new AI generation was used 🍀",
@@ -5453,6 +5459,10 @@ function getAiLetterTextFromResponse(data) {
 function getAiLetterStatusKeyFromResponse(data) {
   if (!data || typeof data !== "object") return "aiLetterStatusSuccess";
 
+  if (data.cache?.status === "approved-demo-sample") {
+    return "aiLetterStatusApprovedDemoSample";
+  }
+
   if (data.cache?.status === "stale-fallback") {
     return "aiLetterStatusSharedCacheFallback";
   }
@@ -5498,7 +5508,7 @@ function createAiLetterQuotaRequestContext() {
     return Object.freeze({ ok: true, enabled: false });
   }
   if (!isUserDataSourceMode()) {
-    return Object.freeze({ ok: false, error: "quota_identity_required" });
+    return Object.freeze({ ok: true, enabled: false, publicDemo: true });
   }
 
   const context = usageProfileManager?.createAiQuotaRequestContext?.();

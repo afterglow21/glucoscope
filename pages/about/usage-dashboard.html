@@ -48,7 +48,7 @@
       <article class="usage-metric-card">
         <span class="usage-metric-kicker">REMAINING</span>
         <span id="usageRemainingCount" class="usage-metric-value">--</span>
-        <span class="usage-metric-label">今日の残り生成可能数</span>
+        <span id="usageRemainingLabel" class="usage-metric-label">今日の残り生成可能数</span>
       </article>
 
       <article class="usage-metric-card">
@@ -148,34 +148,34 @@
       </article>
 
       <article class="card usage-detail-card">
-        <div class="usage-detail-head"><span>🕰️</span><h2>新規生成の上限</h2></div>
+        <div class="usage-detail-head"><span>🕰️</span><h2>新規生成の時間帯別集計</h2></div>
         <dl class="usage-data-list">
           <div><dt>朝</dt><dd id="usageMorningLimit">--</dd></div>
           <div><dt>昼</dt><dd id="usageAfternoonLimit">--</dd></div>
           <div><dt>夜</dt><dd id="usageNightLimit">--</dd></div>
         </dl>
-        <p class="usage-detail-note">今日・昨日・7日・30日・カスタムの5期間を、2つの分析モードで試せるように、各時間帯10回・1日最大30回としています。</p>
+        <p class="usage-detail-note">Freeは端末プロフィールごとに1日1回、Plusは確認済みアカウントごとに1日5回までです。公開デモは、内容を確認した固定サンプルを表示し、新しいAI生成を行いません。</p>
       </article>
     </section>
 
     <section class="about-detail-grid about-detail-language-stack usage-explainer">
       <div class="card about-detail-card about-copy-jp" lang="ja">
         <h2>この数字が表すもの</h2>
-        <p>上のAI運用カウンターは、公開デモとユーザー版から新しく作ったAI分析を分けずに数えます。だれが使ったかは分かりません。</p>
+        <p>上のAI運用カウンターは、ユーザー版で実際に行われた新しいAI分析を全体の運用状況として数えます。だれが使ったかは分かりません。公開デモは内容を確認した固定サンプルを表示するため、新しいAI生成には含まれません。</p>
         <p>「ユーザー版の合計」は別の利用記録から、前日まで30日間の端末プロフィール、利用日、新しく成功したAI分析、通常のグルコの想い出だけをまとめます。血糖値、接続情報、表示名、AIお手紙本文は含みません。10件未満では実数を表示しません。</p>
         <p>利用カウンターに保存するのは、生成回数、トークン数、推定利用額、Turnstile確認、上限到達などの運用情報です。血糖値やAIお手紙本文を、利用カウンターとして保存するものではありません。</p>
         <p>少人数の先行体験中は、AIお手紙をほかの人と共有する一時保存を使いません。公開デモもユーザー版も、この端末に保存したお手紙だけを再表示します。以前の一時保存は読み取らず、最大24時間で自動的に消えます。</p>
         <p>推定利用額はOpenAIの利用状況から計算する開発者向けの目安です。閲覧者への請求ではありません。</p>
-        <p>新規生成は朝・昼・夜それぞれ最大10回、1日最大30回です。5つの表示期間を2つの分析モードで試せることを想定しています。保存済みのお手紙を表示するだけの場合は、新規生成回数を消費しません。</p>
+        <p>成功した新規生成は、Freeでは端末プロフィールごとに1日1回、Plusでは確認済みアカウントごとに1日5回までです。全員で共有する朝・昼・夜10回、1日30回の回数上限は使いません。ただし、予期しない費用からサービスを守る全体の費用安全弁は残します。保存済みのお手紙や公開デモの固定サンプルを表示するだけの場合は、個人の新規生成回数を消費しません。</p>
       </div>
       <div class="card about-detail-card about-copy-en" lang="en">
         <h2>What these numbers mean</h2>
-        <p>The AI operations counter combines new analyses from the public demo and personal-user experience. It does not identify who used them.</p>
+        <p>The AI operations counter shows the overall number of real new AI analyses in the personal-user experience. It does not identify who used them. The public demo displays a reviewed fixed sample and therefore does not add a new AI generation.</p>
         <p>The separate personal-user aggregate covers the 30 completed days through yesterday and includes only consenting device profiles, active days, successful new AI analyses, and ordinary Gluco memories. It never includes glucose values, connection details, display names, or AI-letter text. Exact totals are suppressed until at least 10 device profiles contributed.</p>
         <p>The counter stores operational totals such as generations, tokens, estimated developer cost, Turnstile results, and limit events. It does not store glucose values or AI letter text.</p>
         <p>During the small early-access period, AI letters are not placed in a temporary cache shared between people. Both the public demo and personal-user experience only redisplay letters saved on that device. Earlier temporary entries are not read and disappear automatically within 24 hours.</p>
         <p>Estimated cost is an operational estimate paid by the developer, not a charge to visitors.</p>
-        <p>New generation is limited to 10 times in each morning, afternoon, and night slot, with a daily maximum of 30. Showing a saved letter does not consume a new-generation count.</p>
+        <p>Successful new generation is limited to one per JST day for each Free device profile and five per JST day for each verified Plus account. The former shared limits of 10 per time slot and 30 per day are not used. A global cost safety stop remains for unexpected spending. Showing a saved letter or the reviewed public-demo sample does not consume an individual generation count.</p>
       </div>
     </section>
 
@@ -232,14 +232,24 @@
           const storage = report.storage || {};
           const sharedCache = report.cache || {};
           const personalUserUsage = report.personalUserUsage || { status: "unavailable" };
+          const sharedCountLimitsEnabled = guard.sharedCountLimitsEnabled !== false;
           const dailyLimit = Number(guard.dailyGenerationLimit || 0);
           const todayCount = Number(today.aiGenerationCount || 0);
           const remaining = Number(guard.dailyGenerationRemaining ?? Math.max(0, dailyLimit - todayCount));
           const budgetRate = Math.max(0, Math.min(100, Number(month.budgetUsageRate || 0)));
 
           setText("usageTodayCount", `${todayCount}`);
-          setText("usageTodayLimit", `AIお手紙の新規生成 / 上限 ${dailyLimit}回`);
-          setText("usageRemainingCount", `${remaining}`);
+          setText(
+            "usageTodayLimit",
+            sharedCountLimitsEnabled
+              ? `AIお手紙の新規生成 / 全体上限 ${dailyLimit}回`
+              : "AIお手紙の新規生成（全体集計）"
+          );
+          setText("usageRemainingCount", sharedCountLimitsEnabled ? `${remaining}` : "—");
+          setText(
+            "usageRemainingLabel",
+            sharedCountLimitsEnabled ? "今日の残り生成可能数" : "回数ではなく個人別上限と費用安全弁で保護"
+          );
           setText("usageMonthCount", `${Number(month.aiGenerationCount || 0)}`);
           setText("usageEstimatedCost", formatCost(month.estimatedCostJpy));
           setText("usageBudgetText", `${formatCost(month.estimatedCostJpy)} / ${formatCost(month.monthlyBudgetJpy)}`);
@@ -251,9 +261,9 @@
           setText("usageRateLimited", `${Number(today.rateLimitedCount || 0)}回`);
           const slotLimit = Number(guard.slotGenerationLimit || today.slotGenerationLimit || 0);
           const slotCounts = today.slotGenerationCounts || {};
-          setText("usageMorningLimit", `${Number(slotCounts.morning || 0)} / ${slotLimit}回`);
-          setText("usageAfternoonLimit", `${Number(slotCounts.afternoon || 0)} / ${slotLimit}回`);
-          setText("usageNightLimit", `${Number(slotCounts.night || 0)} / ${slotLimit}回`);
+          setText("usageMorningLimit", sharedCountLimitsEnabled ? `${Number(slotCounts.morning || 0)} / ${slotLimit}回` : `${Number(slotCounts.morning || 0)}回`);
+          setText("usageAfternoonLimit", sharedCountLimitsEnabled ? `${Number(slotCounts.afternoon || 0)} / ${slotLimit}回` : `${Number(slotCounts.afternoon || 0)}回`);
+          setText("usageNightLimit", sharedCountLimitsEnabled ? `${Number(slotCounts.night || 0)} / ${slotLimit}回` : `${Number(slotCounts.night || 0)}回`);
           setText("usageStorageKind", storageLabel(storage.kind));
           setText("usageLocalCacheState", "1時間（端末内）");
           setText(

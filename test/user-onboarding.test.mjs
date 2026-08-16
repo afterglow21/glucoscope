@@ -527,7 +527,7 @@ test("personal-user AI is enabled only after a plain first-use consent", () => {
   assert.match(app, /aiLetterButtonLocalDisabled: "ローカル確認ではAI分析は停止中"/);
   assert.doesNotMatch(app, /if \(isUserDataSourceMode\(\)\) return false;/);
   assert.match(app, /AI_LETTER_USER_CONSENT_STORAGE_KEY = "glucoscope\.aiLetterUserConsent\.v1"/);
-  assert.match(app, /AI_LETTER_USER_CONSENT_VERSION = "2026-08-14-user-ai-1"/);
+  assert.match(app, /AI_LETTER_USER_CONSENT_VERSION = "2026-08-16-user-ai-quota-1"/);
   assert.match(index, /id="aiLetterUserConsent"[^>]*hidden/);
   assert.match(index, /この画面にまとめた血糖情報をOpenAIへ送ります/);
   assert.match(index, /氏名、接続先URL、合言葉、元の血糖データ一覧は送りません/);
