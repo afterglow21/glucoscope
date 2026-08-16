@@ -16,7 +16,10 @@ GitHub Pages
 
 Current traffic target — 2026-08-16 JST:
 
-- 100% of AI Worker traffic routes to new-origin Version `7ea0cfef-5322-4370-b72d-e2885f129f38`.
+- 100% of AI Worker traffic routes to atomic-counter Version `c0a31ac7-257c-4225-a8f1-3bf7669f6937`.
+- The only reviewed direct rollback after atomic activation is unserved atomic stopped Version `46f44888-002b-4847-8553-5cd12e3d7ac5` (`AI_USAGE_ATOMIC_COUNTER_ENABLED=true`, `AI_ENABLED=false`). Old new-origin Version `7ea0cfef-5322-4370-b72d-e2885f129f38`, Phase A, and the pre-activation quiesce Version must not receive rollback traffic after the schema marker was written.
+- Phase A returned the privacy-protected personal aggregate as `suppressed` with no exact totals. A quiet window longer than 130 seconds completed before activation. The zero-percent activation probe used a synthetic non-health summary and an invalid Turnstile token; it returned `403`, wrote the private atomic marker, increased only the failed-Turnstile count by one, and left generation, token, cost, and pending-reservation totals unchanged.
+- The atomic live Version's Usage `GET` passed. The public Dashboard's real-browser visual check and one supervised real AI generation with an exact counter delta remain pending; this checkpoint does not claim either acceptance yet.
 - It retains the personal-user AI, all-mode browser-local cache, CORS, Turnstile, and no-store boundaries first accepted below.
 
 Historical boundary acceptance — 2026-08-14:
@@ -30,7 +33,10 @@ Historical boundary acceptance — 2026-08-14:
 
 現在の通信先 — 2026-08-16 JST：
 
-- AI Workerの通信100%はnew-origin Version `7ea0cfef-5322-4370-b72d-e2885f129f38`へ向けています。
+- AI Workerの通信100%はatomic-counter Version `c0a31ac7-257c-4225-a8f1-3bf7669f6937`へ向けています。
+- atomic有効化後に確認済みの直接rollbackは、未配信のatomic停止Version `46f44888-002b-4847-8553-5cd12e3d7ac5`（`AI_USAGE_ATOMIC_COUNTER_ENABLED=true`、`AI_ENABLED=false`）だけです。schema markerを書いた後は、旧new-origin Version `7ea0cfef-5322-4370-b72d-e2885f129f38`、Phase A、事前quiesce Versionへ戻しません。
+- Phase Aでは個人利用集計が `suppressed` となり、実数を返さないことを確認しました。130秒を超える静止時間の後、通信0%の有効化確認で健康情報ではない合成summaryと不正Turnstile tokenを使いました。応答は`403`で、非公開atomic markerを書き、Turnstile失敗数だけを1増やし、生成回数、token、費用、pending予約は変えませんでした。
+- atomic live VersionのUsage `GET`は合格しました。公開Dashboardの実ブラウザ表示確認と、実際のAI生成1件による正確なカウンター差分確認は未完了であり、この時点では受け入れ済みとしません。
 - 下記のVersion 29で最初に受け入れたユーザー版AI、全mode端末内cache、CORS、Turnstile、no-storeの境界を維持します。
 
 過去の境界受入記録 — 2026-08-14：
@@ -44,9 +50,9 @@ Historical boundary acceptance — 2026-08-14:
 
 ## Production user-mode AI boundary / ユーザー版AIの本番境界
 
-This section describes the personal-user boundary first accepted in Version 29 and retained by the current new-origin Version and Pages.
+This section describes the personal-user boundary first accepted in Version 29 and retained by the current atomic Version and Pages.
 
-この節は、Version 29で最初に受け入れ、現在のnew-origin VersionとPagesでも維持する個人ユーザー先行利用の本番境界を記録します。
+この節は、Version 29で最初に受け入れ、現在のatomic VersionとPagesでも維持する個人ユーザー先行利用の本番境界を記録します。
 
 - In `mode=user`, the first AI request for the current notice version requires a plain, explicit confirmation before Turnstile or any AI `POST`. The confirmation says that the summarized glucose information shown on the page is sent to OpenAI. Display name, connection URL, connection passphrase, and the raw glucose-entry list are not included.
 - The confirmation is versioned and stored only in the browser as `glucoscope.aiLetterUserConsent.v1`. Refusing or cancelling it sends nothing and leaves the rule-based Gluco message and CGM display available.
@@ -58,7 +64,7 @@ This section describes the personal-user boundary first accepted in Version 29 a
 - AI failure affects only the AI panel. It must not stop, clear, or replace an already verified CGM connection or the normal glucose display.
 - AI generation `POST /api/gluco-letter` requires an `Origin` header that passes the existing allowlist. Originless `GET /api/gluco-letter/usage` remains available for existing operational checks.
 - A successful Turnstile Siteverify response must match both `hostname=glucoscope.app` and `action=glucoscope-ai-letter`. The production variables are `TURNSTILE_EXPECTED_HOSTNAME` and `TURNSTILE_EXPECTED_ACTION`.
-- The Worker-first, Pages-second release is complete. Version 28 is historical and must never be restored while user AI remains enabled because its spoofable `pageMode` boundary would reopen shared-KV writes. Keep AI fail-closed on Version 29 or later, or first publish and verify Pages with user AI disabled before Worker recovery. CGM display remains independent.
+- The Worker-first, Pages-second release is complete. After atomic activation, the only direct rollback is the atomic-capable stopped Version named above. Version 28, Version 29, the old new-origin Version, Phase A, and the pre-activation quiesce Version are historical evidence and must not receive rollback traffic. CGM display remains independent.
 
 - `mode=user`では、現在の案内Versionで初めてAI分析を使う前に、TurnstileやAIへの `POST` より先に、短く明示的な確認を求めます。画面で集計した血糖情報をOpenAIへ送ることを伝えます。表示名、接続先URL、接続用の合言葉、元の血糖データ一覧は送りません。
 - 確認はVersion付きで `glucoscope.aiLetterUserConsent.v1` としてブラウザ内だけに保存します。「今はしない」を選んだ場合は何も送らず、ブラウザ内のいつものグルコのお話とCGM表示はそのまま使えます。
@@ -70,7 +76,7 @@ This section describes the personal-user boundary first accepted in Version 29 a
 - AI分析の失敗はAI欄だけで完結させます。確認済みCGM接続や通常の血糖表示を停止、削除、デモデータへ置換しません。
 - AI生成の `POST /api/gluco-letter` は、既存allowlistを通る `Origin` headerを必須にします。既存運用確認用のOriginなし `GET /api/gluco-letter/usage` は維持します。
 - Turnstile Siteverifyの成功時は、`hostname=glucoscope.app` と `action=glucoscope-ai-letter` の両方の一致を必須にします。本番の変数名は `TURNSTILE_EXPECTED_HOSTNAME` と `TURNSTILE_EXPECTED_ACTION` です。
-- Worker先行、Pages後続の公開は完了しました。Version 28は履歴であり、ユーザーAIがONのまま戻してはいけません。偽装できる `pageMode` 境界から共有KV書き込みが再開し得るためです。Version 29以降でAIをfail-closedに保つか、先にPages側のユーザーAIを停止して公開確認してからWorkerを復旧します。CGM表示は継続します。
+- Worker先行、Pages後続の公開は完了しました。atomic有効化後の直接rollbackは、上に記録したatomic対応の停止Versionだけです。Version 28、Version 29、旧new-origin Version、Phase A、事前quiesce Versionは履歴であり、rollback trafficを向けません。CGM表示は継続します。
 
 ## Historical Version 28 v14 behavior / 旧Version 28のv14動作
 
@@ -369,7 +375,7 @@ Expected storage value:
 
 ## Production variables
 
-Non-secret values are defined in `wrangler.toml`:
+The checked-in staged values are defined in `wrangler.toml`:
 
 ```text
 AI_PROVIDER=openai
@@ -390,6 +396,8 @@ TURNSTILE_REQUIRED=true
 CORS_ALLOWED_ORIGINS=https://glucoscope.app
 CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN=true
 ```
+
+The current production Version was built from the reviewed rollout configuration with `AI_USAGE_ATOMIC_COUNTER_ENABLED=true` and `AI_ENABLED=true`. Do not use the checked-in `false` value as a post-activation rollback instruction; the stored schema marker is sticky, and the only reviewed rollback is the atomic stopped Version recorded above.
 
 ## Atomic usage-counter rollout runbook
 

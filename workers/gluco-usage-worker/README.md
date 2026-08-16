@@ -2,7 +2,7 @@
 
 This directory contains a dedicated, dependency-light Cloudflare Worker and D1 schema for minimal device-profile usage counts.
 
-The stopped production foundation was created and verified on 2026-08-11. On 2026-08-12 JST, corrected Version `858cf438-b3d2-4a8c-801c-344503e0c58e` was used for a supervised device check. Profile creation succeeded, but a repeated callback after Turnstile reset produced a false error display after that success. The 2 known test profiles were later deleted, and the cascading deletion left `profiles`, `usage_daily`, and `event_receipts` at `0 / 0 / 0`. After the subsequent fixes, the full Create, reload deduplication and daily record, Stop, Resume, export, and Delete lifecycle passed on iPhone. Historical deployment `4fbf0e2c-5f5c-4f4f-98a9-ae57d73b4824` then routed accepted Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` to 100% for a 1–3 person early-access group. Current Version `137ee815-ecf3-4e5a-856a-44eeda8b6eff` receives 100% of Usage traffic for that approved small group. The checked-in `USAGE_COLLECTION_ENABLED=false` remains the fail-closed baseline. Historical stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` was the rollback at the 2026-08-12 checkpoint; it is not asserted here as the current direct rollback.
+The stopped production foundation was created and verified on 2026-08-11. On 2026-08-12 JST, corrected Version `858cf438-b3d2-4a8c-801c-344503e0c58e` was used for a supervised device check. Profile creation succeeded, but a repeated callback after Turnstile reset produced a false error display after that success. The 2 known test profiles were later deleted, and the cascading deletion left `profiles`, `usage_daily`, and `event_receipts` at `0 / 0 / 0`. After the subsequent fixes, the full Create, reload deduplication and daily record, Stop, Resume, export, and Delete lifecycle passed on iPhone. Historical deployment `4fbf0e2c-5f5c-4f4f-98a9-ae57d73b4824` then routed accepted Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` to 100% for a 1–3 person early-access group. Current Version `e7b2a895-c418-4cb2-b565-d2a37bef8e1b` receives 100% of Usage traffic for that approved small group and exposes the reviewed privacy-protected public aggregate through a service binding. Unserved stopped Version `e1496203-ab4b-429f-acd3-4e862cff0c2f` is the reviewed direct rollback. The checked-in `USAGE_COLLECTION_ENABLED=false` remains the fail-closed baseline. Historical stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` was the rollback at the 2026-08-12 checkpoint only.
 
 ## Stopped production checkpoint (2026-08-11)
 
@@ -244,6 +244,13 @@ Its AI total deliberately remains consented device-profile telemetry from
 subjects can have a different consent and contributor cohort. Authoritative quota totals
 remain protected behind `AiQuotaService.getAggregateAiUsage()` for operational/admin use.
 
+Production aggregate checkpoint — 2026-08-16 JST:
+
+- Version `e7b2a895-c418-4cb2-b565-d2a37bef8e1b` receives 100% of Usage traffic. It keeps collection enabled for the approved small group and adds only the reviewed service-binding aggregate; it remains compatible with the existing `0001` production schema and does not require the disabled per-user quota tables.
+- Unserved stopped Version `e1496203-ab4b-429f-acd3-4e862cff0c2f` is the direct Usage rollback.
+- The AI Worker's Phase A and atomic-live Usage `GET` checks returned the aggregate as `suppressed`, with `minimumContributors=10` and no exact totals because the completed 30-day window had fewer than 10 consenting contributors. No names or device-level rows were returned.
+- This accepts the service-binding response and suppression boundary. The public Dashboard's real-browser visual check and one supervised real AI generation with an exact counter delta remain pending.
+
 Before enforcement can be enabled, release in this order:
 
 1. Apply `0002_ai_quota.sql` without changing either quota switch.
@@ -297,8 +304,8 @@ There is intentionally no real `deploy` npm script.
 
 ## Current early-access operations
 
-1. Keep Usage limited to the approved small early-access group through current Version `137ee815-ecf3-4e5a-856a-44eeda8b6eff`; do not describe it as a broad public rollout.
+1. Keep Usage limited to the approved small early-access group through current Version `e7b2a895-c418-4cb2-b565-d2a37bef8e1b`; do not describe it as a broad public rollout.
 2. Monitor only the reviewed allowlisted counts and lifecycle state. Do not copy display names, profile tokens, or production rows into operational notes.
-3. If a privacy, safety, traffic, or provider-condition concern appears, use a separately reviewed stopped Version from the current configuration. Historical stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` is evidence from the 2026-08-12 checkpoint, not an automatically approved current rollback. Usage and the general-user relay remain independently stoppable.
+3. If a privacy, safety, traffic, or provider-condition concern appears, route Usage to reviewed stopped Version `e1496203-ab4b-429f-acd3-4e862cff0c2f`. Historical stopped Version `7cb71965-74c3-47f9-b589-75cf6d669edb` is evidence from the 2026-08-12 checkpoint, not a current rollback. Usage and the general-user relay remain independently stoppable.
 
 Secret values, profile tokens, display names, and production database content must never be copied into Git, command arguments, screenshots, logs, fixtures, or support messages.

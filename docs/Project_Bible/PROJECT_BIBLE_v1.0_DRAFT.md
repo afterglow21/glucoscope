@@ -22,15 +22,26 @@ GlucoScopeとともに成長し、更新され続けます。
 This list is the canonical current-state record. Dated rollout passages elsewhere in this
 document are historical evidence unless they explicitly say that they remain current.
 
-- GitHub Pages serves `https://glucoscope.app/`. The base long-lived-session release is
+- GitHub Pages serves `https://glucoscope.app/` from `main`. Commit
+  `7836b2f0ec3574890e25e4edc1dd9d128ba670d8` is the accepted source checkpoint for the
+  atomic usage-counter release and produced a successful Pages build before this documentation
+  sync. The base long-lived-session release is
   commit `64a92932a592dda1b6eb9d6dd7700279b1c7a47a`; accepted frontend and iPhone
-  Home Screen evidence is recorded through commit
-  `746116043b8d7ad0ad60c8af5eb27ad4d661d94d`.
-- AI Worker new-origin Version `7ea0cfef-5322-4370-b72d-e2885f129f38` receives 100% of AI
-  traffic. Version 29 is historical personal-user AI acceptance evidence.
-- Usage Worker Version `137ee815-ecf3-4e5a-856a-44eeda8b6eff` receives 100% of Usage
-  traffic for the approved small early-access group. The checked-in configuration remains
-  fail-closed.
+  Home Screen evidence is recorded through commit `746116043b8d7ad0ad60c8af5eb27ad4d661d94d`.
+- AI Worker atomic-counter Version `c0a31ac7-257c-4225-a8f1-3bf7669f6937` receives 100% of
+  AI traffic. Unserved atomic stopped Version `46f44888-002b-4847-8553-5cd12e3d7ac5`
+  is the only reviewed direct rollback. Old new-origin Version
+  `7ea0cfef-5322-4370-b72d-e2885f129f38`, Phase A, and the pre-activation quiesce Version
+  must not receive rollback traffic after the atomic schema marker was written.
+- Usage Worker Version `e7b2a895-c418-4cb2-b565-d2a37bef8e1b` receives 100% of Usage
+  traffic for the approved small early-access group. Unserved stopped Version
+  `e1496203-ab4b-429f-acd3-4e862cff0c2f` is the reviewed direct rollback. The checked-in
+  configuration remains fail-closed.
+- The privacy-protected Usage-to-AI aggregate is live. The current completed 30-day window
+  has fewer than 10 consenting device-profile contributors, so the response is `suppressed`
+  and contains no exact totals. Backend `GET` acceptance passed. The public Dashboard's
+  real-browser visual check and one supervised real AI generation with an exact counter delta
+  remain pending.
 - Demo-feed new-origin Version `97b14023-f9dd-440a-8b79-e2bb2b471697` receives 100% of
   continuous public-demo traffic. Version `4069bca4-e8cf-474a-9e9d-d7ffa42b7567`
   records the earlier continuous three-source acceptance.
@@ -44,13 +55,22 @@ document are historical evidence unless they explicitly say that they remain cur
 この一覧を、現在状態の正本とします。この文書内に残す日付付きの公開・受入記録は、
 「現在も有効」と明記したものを除き、その時点の履歴証拠です。
 
-- GitHub Pagesで `https://glucoscope.app/` を公開しています。長期端末sessionへの切替本体は
-  commit `64a92932a592dda1b6eb9d6dd7700279b1c7a47a`、現在のフロントとiPhoneホーム画面の
-  受入記録はcommit `746116043b8d7ad0ad60c8af5eb27ad4d661d94d` までです。
-- AI Workerはnew-origin Version `7ea0cfef-5322-4370-b72d-e2885f129f38`へ通信の100%を
-  向けています。Version 29は、ユーザー版AI境界を最初に受け入れた履歴です。
-- Usage WorkerはVersion `137ee815-ecf3-4e5a-856a-44eeda8b6eff`へ、承認済みの少人数先行体験の
-  通信を100%向けています。Gitへ保存した設定は停止側を初期値にします。
+- GitHub Pagesは`main`から `https://glucoscope.app/` を公開しています。commit
+  `7836b2f0ec3574890e25e4edc1dd9d128ba670d8`は、atomic利用カウンター公開の受入済みsource
+  checkpointであり、この文書同期前のPages buildに成功しています。長期端末sessionへの切替本体はcommit
+  `64a92932a592dda1b6eb9d6dd7700279b1c7a47a`、フロントとiPhoneホーム画面の受入記録はcommit
+  `746116043b8d7ad0ad60c8af5eb27ad4d661d94d`までです。
+- AI Workerはatomic-counter Version `c0a31ac7-257c-4225-a8f1-3bf7669f6937`へ通信の100%を
+  向けています。atomic有効化後に確認済みの直接rollbackは、未配信のatomic停止Version
+  `46f44888-002b-4847-8553-5cd12e3d7ac5`だけです。schema markerを書いた後は、旧new-origin
+  Version `7ea0cfef-5322-4370-b72d-e2885f129f38`、Phase A、事前quiesce Versionへ戻しません。
+- Usage WorkerはVersion `e7b2a895-c418-4cb2-b565-d2a37bef8e1b`へ、承認済みの少人数先行体験の
+  通信を100%向けています。未配信の停止Version `e1496203-ab4b-429f-acd3-4e862cff0c2f`が
+  確認済みの直接rollbackです。Gitへ保存した設定は停止側を初期値にします。
+- privacy保護したUsage-to-AI集計は本番接続済みです。前日までの完了した30日間は、利用記録に
+  同意した端末プロフィールが10件未満のため、応答を`suppressed`とし実数を含めません。
+  backendの`GET`受け入れは合格しました。公開Dashboardの実ブラウザ表示確認と、実際のAI生成
+  1件による正確なカウンター差分確認は未完了です。
 - 公開デモWorkerはnew-origin Version `97b14023-f9dd-440a-8b79-e2bb2b471697`へ100%を
   向けています。Version `4069bca4-e8cf-474a-9e9d-d7ffa42b7567`は、以前の3機種継続公開を
   受け入れた履歴です。
@@ -2847,7 +2867,9 @@ remains independently stoppable.
 
 The current implementation and release-readiness order as of 2026-08-16 is:
 
-1. Verify the Worker usage counter and public Usage Dashboard against production behavior.
+1. Finish the remaining production acceptance for the Worker usage counter and public Usage
+   Dashboard: one real-browser visual check and one supervised real AI generation with an exact
+   atomic counter delta.
 2. Finish the connection and manual improvements from Friends & Family feedback, then complete
    the site-wide Trust/About link and wording review.
 3. Because Plus is intended to launch with the public announcement, complete its contact,
@@ -2898,7 +2920,8 @@ Guardian 4、FreeStyle Libre 2、Dexcom G7を、
 
 2026年8月16日時点の実装・公開準備の優先順位は次のとおりです。
 
-1. Workerの利用回数と公開Usage Dashboardが、本番で正しく一致することを確認する。
+1. Workerの利用回数と公開Usage Dashboardについて、残る本番受入を完了する。実ブラウザ表示を1回確認し、
+   実際のAI生成1件でatomicカウンターの差分が正確に1増えることを確認する。
 2. Friends & Familyの声に沿って接続画面とマニュアルを改善し、Trust/About全体のリンクと文面を確認する。
 3. Plusを初回告知と同時に販売するため、公開問い合わせ、返金運用、税・領収書、復旧、メール不達、
    決済、本番受入の残件を完了する。完了までは公開販売・個人上限・特典のswitchを停止したままにする。
@@ -3476,7 +3499,9 @@ Later on 2026-08-12 JST, the 2 known test profiles were deleted. Cascading delet
 `7cb71965-74c3-47f9-b589-75cf6d669edb`, deployed as
 `25be2258-b72a-4e2c-8bf1-ab47781c48dc`, verified runtime `USAGE_COLLECTION_ENABLED=false`,
 allowed-origin preflight `204`, allowed-origin profile `POST` `503 usage_collection_paused`,
-wrong-origin and originless `403`, and D1 `0 / 0 / 0`. It remains the rollback target.
+wrong-origin and originless `403`, and D1 `0 / 0 / 0`. At that historical checkpoint, it was
+the rollback target. The current reviewed Usage rollback is the unserved stopped Version
+recorded in the canonical snapshot.
 
 Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` received 100% of traffic with runtime
 `USAGE_COLLECTION_ENABLED=true` for supervised re-acceptance, and frontend enrollment was
@@ -3648,12 +3673,16 @@ adapter tests cover `302` and `307`.
 
 There is no Stripe key, Webhook Secret, Price/Product identifier, public account route, or
 live entitlement. The existing AI and custom-range experience therefore remains unchanged.
-The public Usage Dashboard candidate adds only aggregate totals for the 30 completed days
-through yesterday; it omits exact totals until at least 10 consenting device profiles
-contributed, and never returns names or device-level rows. Public accounts and sales remain
-no-go. Do not enable individual quota or Plus feature gates until the remaining identity and
-recovery work, delivery-failure acceptance, refunds, tax and support, public-demo anti-bypass
-handling, deployment order, payment testing, and production acceptance are complete.
+The privacy-protected public Usage aggregate is live through Usage Worker Version
+`e7b2a895-c418-4cb2-b565-d2a37bef8e1b`, with unserved stopped Version
+`e1496203-ab4b-429f-acd3-4e862cff0c2f` as its reviewed direct rollback. It covers only the 30
+completed days through yesterday, omits exact totals until at least 10 consenting device
+profiles contributed, and never returns names or device-level rows. Current backend checks
+returned `suppressed` with no totals because there were fewer than 10 contributors. The public
+Dashboard's real-browser visual check remains pending. Public accounts and sales remain no-go.
+Do not enable individual quota or Plus feature gates until the remaining identity and recovery
+work, delivery-failure acceptance, refunds, tax and support, public-demo anti-bypass handling,
+deployment order, payment testing, and production acceptance are complete.
 
 The always-on mode comes after user rollout begins. It is opt-in, limited to the graph in
 landscape orientation, and must clearly explain battery and screen-on behavior. It is a
@@ -3760,8 +3789,9 @@ D1 tableと管理者viewが引き続き0件でした。その後の実機確認�
 `7cb71965-74c3-47f9-b589-75cf6d669edb` とdeployment
 `25be2258-b72a-4e2c-8bf1-ab47781c48dc` では、runtimeの `USAGE_COLLECTION_ENABLED=false`、
 許可Originのpreflight `204`、許可Originからのprofile `POST` が `503 usage_collection_paused`、
-不許可OriginとOriginなしが `403`、D1が `0 / 0 / 0` であることを確認しました。このVersionを
-clean stopped checkpoint兼rollback先として維持します。
+不許可OriginとOriginなしが `403`、D1が `0 / 0 / 0` であることを確認しました。このVersionは
+その履歴時点のclean stopped checkpoint兼rollback先です。現在の確認済みUsage rollbackは、
+正本スナップショットに記録した未配信の停止Versionだけです。
 
 その後、Version `5d160aed-7b27-48e6-b0a8-783534f97b6f` へ本番通信の100%を向け、
 runtimeの `USAGE_COLLECTION_ENABLED=true` とフロントの開始画面を監督下一時受け入れのため
@@ -3955,10 +3985,14 @@ redirect先へ転送しません。`302`と`307`の実行型テストでこの�
 
 Stripe key、Webhook Secret、Price/Product識別子、公開アカウント経路、実利用権は接続していません。
 そのため、現在のAIとカスタム期間の動作は変えません。公開アカウントとPlus販売は引き続き開始不可です。
-公開Usage Dashboard候補は、前日までの完了した30日間について、利用記録に同意した端末プロフィールが
-10件以上集まった時だけ全体の実数を表示し、名前や端末別の行は返しません。追加の本人確認・復旧と
-配信失敗時の受け入れ、返金、税とサポート、公開デモからの上限回避防止、公開順、決済試験、
-本番受け入れが完了するまで、個人上限とPlus特典の制限を有効にしません。
+privacy保護した公開Usage集計は、Usage Worker Version
+`e7b2a895-c418-4cb2-b565-d2a37bef8e1b`で本番接続済みです。未配信の停止Version
+`e1496203-ab4b-429f-acd3-4e862cff0c2f`を確認済みの直接rollbackとします。前日までの完了した
+30日間について、利用記録に同意した端末プロフィールが10件以上集まった時だけ全体の実数を表示し、
+名前や端末別の行は返しません。現在のbackend確認は10件未満のため`suppressed`で、実数を返しませんでした。
+公開Dashboardの実ブラウザ表示確認は未完了です。追加の本人確認・復旧と配信失敗時の受け入れ、返金、
+税とサポート、公開デモからの上限回避防止、公開順、決済試験、本番受け入れが完了するまで、
+個人上限とPlus特典の制限を有効にしません。
 
 同日、運営者は、子どものPlusを18歳以上の保護者が管理できる方針を決定しました。購入とメールを
 管理する人は、本人利用でも保護者利用でも18歳以上であることを明示確認します。保護者はさらに、
@@ -5240,7 +5274,7 @@ This reduces avoidable contradictions and output rejection;
 it does not weaken the medical-safety or factual checks.
 
 The personal-user boundary first accepted in Version 29, and retained by the current
-new-origin Version, uses only `glucoscope.aiLetterLocalCache.v14`, with up to
+atomic Version, uses only `glucoscope.aiLetterLocalCache.v14`, with up to
 30 browser entries. Browser cache v13, v12, and v11 data is retired and removed
 during cache reading and saved-connection deletion. Historical Version 28 also
 used shared schema `gluco-ai-letter-cache-v14` with up to 24-hour retention and
@@ -5250,7 +5284,8 @@ their existing 24-hour retention policy without being read. Git commit
 `5b099641-a818-4d14-ba9d-18aebb7e7ec2`; at that historical checkpoint, 100% of
 traffic routed to Version 28 (`f2565bc3-1f49-4f3f-b119-6ec2683f0607`) and
 Version 27 (`9f93a9df-f423-48c9-adbf-9de80e643712`) was the immediate rollback
-target. Neither is a current direct rollback target while user AI remains enabled.
+target. Neither is a current direct rollback target; after atomic activation the only
+reviewed rollback is the atomic stopped Version in the canonical snapshot.
 Binding and Secret names, the OpenAI model, generation limits, budget settings,
 CORS policy, and Durable Object migration are unchanged. The post-deploy
 boundary checks returned `204 / 403 / 200` for approved preflight,
@@ -5267,7 +5302,7 @@ prototypeまたはOpenAIで文章を作る前に外します。
 これは不要な矛盾や出力失敗を減らすためであり、
 医療安全や事実確認の境界を弱める変更ではありません。
 
-Version 29で最初に受け入れ、現在のnew-origin Versionでも維持する境界では、端末内のお手紙キャッシュ
+Version 29で最初に受け入れ、現在のatomic Versionでも維持する境界では、端末内のお手紙キャッシュ
 `glucoscope.aiLetterLocalCache.v14`だけを最大30件使います。
 端末内v13、v12、v11は退役し、キャッシュ読み取り時と保存済み接続の削除時に消します。
 旧Version 28では共有cache `gluco-ai-letter-cache-v14` を最大24時間保持し、共有v13は読み書きしませんでした。保持中の共有entryは現在の本番では読まず、既存の24時間以内の期限で自然に失効します。
@@ -5275,21 +5310,69 @@ Git commit `66f9b207d65c17130287b555920c115a9a963e1f` を、
 deployment `5b099641-a818-4d14-ba9d-18aebb7e7ec2` で本番へ反映し、
 その履歴時点では通信の100%をVersion 28（`f2565bc3-1f49-4f3f-b119-6ec2683f0607`）へ向け、
 Version 27（`9f93a9df-f423-48c9-adbf-9de80e643712`）を即時復帰先として保持していました。
-ユーザーAIがONの現在は、どちらも直接rollback先ではありません。
+どちらも現在の直接rollback先ではなく、atomic有効化後は正本スナップショットに記録した
+atomic停止Versionだけを確認済みrollbackとします。
 bindingとSecretの名前、OpenAI model、生成上限、budget設定、CORS policy、
 Durable Object migrationは変更していません。公開後の境界確認は、許可preflight、
 不許可OriginのUsage `GET`、許可OriginのUsage `GET` の順に `204 / 403 / 200` でした。
+
+### Atomic infrastructure-wide usage counter production checkpoint — 2026-08-16
+### 全体AI利用カウンターのatomic本番受入 — 2026-08-16
+
+The former whole-snapshot `getState` / provider call / `saveState` path could lose counts,
+tokens, or cost when requests overlapped. Current AI Worker Version
+`c0a31ac7-257c-4225-a8f1-3bf7669f6937` instead uses serialized, idempotent Durable Object
+RPCs to reserve capacity before provider work and then complete or release that exact
+reservation. Pending reservations count toward slot, day, and stop-budget guards, while the
+public estimated cost contains actual provider usage only. Provider work has a 120-second
+overall deadline and abandoned reservations expire after 15 minutes.
+
+The rollout installed the RPCs first with atomic mutations off. Its Usage `GET` returned the
+privacy-protected personal aggregate as `suppressed` without exact totals. Generation was then
+stopped and kept quiet for longer than 130 seconds before activation. A zero-percent activation
+probe used a synthetic non-health summary and an invalid Turnstile token: it returned `403`,
+wrote the private atomic schema marker, increased only the failed-Turnstile count by one, and
+left generation, token, cost, and pending-reservation totals unchanged. The atomic live
+Version's Usage `GET` then passed at 100% traffic.
+
+Activation is irreversible for rollback purposes. The only reviewed direct rollback is
+unserved atomic stopped Version `46f44888-002b-4847-8553-5cd12e3d7ac5`, with atomic mutation
+enabled and AI generation disabled. Old Version `7ea0cfef-5322-4370-b72d-e2885f129f38`,
+Phase A, and the pre-activation quiesce Version must not receive rollback traffic. The public
+Dashboard's real-browser visual check and one supervised real AI generation with an exact
+counter delta remain pending; the current daily generation count was still zero at this
+checkpoint.
+
+旧方式は、全stateを読み、provider通信後に全stateを書き戻していたため、通信が重なると回数、token、
+費用を取りこぼす可能性がありました。現在のAI Worker Version
+`c0a31ac7-257c-4225-a8f1-3bf7669f6937`は、Durable Object内で直列化したidempotent RPCを使い、
+provider通信の前に枠を予約し、その同じ予約を完了または解放します。pending予約も時間帯、1日、
+停止budgetの判定へ含め、公開する費用推定には実際のprovider使用分だけを含めます。provider処理全体は
+120秒で打ち切り、放置された予約は15分後に失効します。
+
+本番切替は、最初にatomic RPCだけを追加し、atomic mutationを無効のまま配置しました。この段階の
+Usage `GET`では、privacy保護した個人利用集計が`suppressed`となり、実数を含まないことを確認しました。
+次にAI生成を停止し、130秒を超えて通信が静止した後にatomicを有効にしました。通信0%の有効化確認では、
+健康情報ではない合成summaryと不正Turnstile tokenを使い、`403`、非公開schema markerの書き込み、
+Turnstile失敗数だけの1増加を確認しました。生成回数、token、費用、pending予約は変わりませんでした。
+その後、atomic live Versionへ100%を向け、Usage `GET`に合格しました。
+
+rollback上は、この有効化を元に戻しません。確認済みの直接rollbackは、atomic有効・AI生成停止の未配信
+Version `46f44888-002b-4847-8553-5cd12e3d7ac5`だけです。旧Version
+`7ea0cfef-5322-4370-b72d-e2885f129f38`、Phase A、事前quiesce Versionへ通信を戻しません。
+公開Dashboardの実ブラウザ表示確認と、実際のAI生成1件による正確なカウンター差分確認は未完了です。
+この時点の1日生成回数は0のままです。
 
 ### Historical Version 29 personal-user AI boundary acceptance — 2026-08-14
 
 At this historical checkpoint, deployment `a5b57a76-954b-4bb9-bbba-c23bfd0fa516` routed
 100% of AI Worker traffic to Version 29 (`235cdf03-31d7-40fd-ab58-5c1c6aa2d923`). The
 matching frontend was published through Pages merge
-`a4497ab1a5d303c8a16b7d0aad999bf0dc1bde5d`. The current new-origin Version recorded in
+`a4497ab1a5d303c8a16b7d0aad999bf0dc1bde5d`. The current atomic Version recorded in
 the canonical snapshot retains this accepted boundary. Version 28 is historical and must
 not be restored while user AI remains enabled.
 
-The boundary first accepted in Version 29 and retained by the current new-origin Version and
+The boundary first accepted in Version 29 and retained by the current atomic Version and
 published frontend is:
 
 - In `mode=user`, the first AI request for the current notice version requires a short,
@@ -5334,21 +5417,21 @@ published frontend is:
 - Turnstile, provider, quality, budget, limit, cache, or Usage-recording failure stays inside
   the AI panel. It must not stop, clear, or replace an already verified CGM connection or
   ordinary glucose display, and it must never fall back to Kazuma's demo data.
-- The Worker-first, Pages-second release is complete. Version 28 is historical and must not
-  be restored while user AI remains enabled because its spoofable `pageMode` boundary would
-  reopen shared-KV writes. Keep AI fail-closed on Version 29 or later, or first publish and
-  verify Pages with user AI disabled before Worker recovery. CGM connection and ordinary
-  glucose display remain independent.
+- The Worker-first, Pages-second release is complete. After atomic activation, recovery must
+  use only atomic stopped Version `46f44888-002b-4847-8553-5cd12e3d7ac5`. Version 28,
+  Version 29, old new-origin Version `7ea0cfef-5322-4370-b72d-e2885f129f38`, Phase A, and
+  the pre-activation quiesce Version must not receive rollback traffic. CGM connection and
+  ordinary glucose display remain independent.
 
 ### 旧Version 29でのユーザー版AI安全境界受入 — 2026-08-14
 
 この履歴時点では、AI Worker deployment `a5b57a76-954b-4bb9-bbba-c23bfd0fa516` がVersion 29
 （`235cdf03-31d7-40fd-ab58-5c1c6aa2d923`）へ本番通信の100%を向けていました。
 対応するフロントはPages merge `a4497ab1a5d303c8a16b7d0aad999bf0dc1bde5d` で公開しました。
-現在のnew-origin Versionは、正本スナップショットに記録したとおり、この受入済み境界を維持します。
+現在のatomic Versionは、正本スナップショットに記録したとおり、この受入済み境界を維持します。
 Version 28は履歴であり、ユーザーAIがONの間は直接戻してはいけません。
 
-Version 29で最初に受け入れ、現在のnew-origin Versionと公開フロントでも維持する
+Version 29で最初に受け入れ、現在のatomic Versionと公開フロントでも維持する
 ユーザー版AIの境界は次のとおりです。
 
 - `mode=user`では、現在の案内Versionで初めてAI分析を使う時に、TurnstileとAIへの
@@ -5388,10 +5471,10 @@ Version 29で最初に受け入れ、現在のnew-origin Versionと公開フロ�
 - Turnstile、provider、品質確認、budget、全体上限、cache、AI利用記録の失敗は、
   AI欄だけで完結させます。確認済みCGM接続や通常の血糖表示を停止、削除、置換せず、
   Kazumaの公開デモデータへfallbackしません。
-- Worker先行、Pages後続の公開は完了しました。Version 28は履歴であり、偽装できる
-  `pageMode` 境界から共有KV書き込みが再開し得るため、ユーザーAIがONの間は直接戻しては
-  いけません。Version 29以降でAIをfail-closedに保つか、先にPages側のユーザーAIを停止して
-  公開確認してからWorkerを復旧します。CGM接続と通常の血糖表示は独立して継続します。
+- Worker先行、Pages後続の公開は完了しました。atomic有効化後の復旧には、atomic停止Version
+  `46f44888-002b-4847-8553-5cd12e3d7ac5`だけを使います。Version 28、Version 29、旧new-origin
+  Version `7ea0cfef-5322-4370-b72d-e2885f129f38`、Phase A、事前quiesce Versionへrollback trafficを
+  向けません。CGM接続と通常の血糖表示は独立して継続します。
 
 ### Previous AI Worker production checkpoint — 2026-08-13
 ### 直前のAI Worker本番反映記録 — 2026-08-13
