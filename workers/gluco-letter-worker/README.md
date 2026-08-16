@@ -374,6 +374,7 @@ Non-secret values are defined in `wrangler.toml`:
 ```text
 AI_PROVIDER=openai
 AI_ENABLED=true
+AI_USAGE_ATOMIC_COUNTER_ENABLED=false
 AI_PER_USER_QUOTA_ENABLED=false
 OPENAI_MODEL=gpt-5.4-nano
 OPENAI_MAX_OUTPUT_TOKENS_LETTER=700
@@ -388,6 +389,32 @@ AI_SLOT_GENERATION_LIMIT=10
 TURNSTILE_REQUIRED=true
 CORS_ALLOWED_ORIGINS=https://glucoscope.app
 CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN=true
+```
+
+## Atomic usage-counter rollout runbook
+
+The atomic counter rollout is intentionally staged because Cloudflare may briefly route Worker requests across different deployed code versions while a new Version propagates.
+
+1. **Phase A — install the new Durable Object RPCs without using them.** Keep `AI_USAGE_ATOMIC_COUNTER_ENABLED=false`, deploy this code, wait until the Phase A Version is at 100% traffic, and allow propagation to finish. Confirm that the public usage endpoint still returns HTTP 200 with `storage.kind=durable-object-sqlite`. Do not manually invoke an atomic mutation RPC during Phase A.
+2. **Prepare the stopped rollback Version before activation.** Save a known-good Version built from the same atomic-capable code and bindings with `AI_USAGE_ATOMIC_COUNTER_ENABLED=true` and `AI_ENABLED=false`. It is the only safe immediate rollback target after activation. Merely changing the Phase A flag back to `false` is not a rollback plan.
+3. **Quiesce legacy generation before Phase B.** Deploy the same atomic-capable code with `AI_USAGE_ATOMIC_COUNTER_ENABLED=false` and `AI_ENABLED=false`. Wait for this stopped pre-activation Version to reach 100% traffic and finish propagation, then observe a quiet window of at least 130 additional seconds. In Cloudflare Worker invocation logs, confirm that every `POST /api/gluco-letter` which started before the stop has a terminal outcome and that no new generation POST started after the stopped Version reached 100%. The 130-second quiet window covers the shared 120-second bounded provider deadline plus margin, but invocation logs remain the authoritative evidence; do not rely on elapsed time alone. Do not begin Phase B while a legacy request may still be between `getState` and `saveState`; a late legacy save is safely rejected after activation, but that one provider usage could not be reconstructed.
+4. **Phase B — activate atomic mutations while generation remains stopped.** Change only `AI_USAGE_ATOMIC_COUNTER_ENABLED` to `true`, keep `AI_ENABLED=false`, deploy, and confirm 100% traffic on the Phase B Version. The first atomic mutation writes a private schema marker into the Durable Object state. The marker is not included in the public usage report.
+5. **Re-enable generation only after Phase B verification.** Confirm that the usage endpoint remains readable and the atomic-capable stopped Version fails closed as expected. Then deploy `AI_USAGE_ATOMIC_COUNTER_ENABLED=true` with `AI_ENABLED=true` and verify one controlled generation before restoring ordinary traffic.
+6. **Treat activation as irreversible.** After the marker exists, never roll traffic back to a Worker Version that can perform legacy whole-state saves. This code also treats the stored marker as sticky and keeps using atomic RPCs if the environment flag is accidentally changed back to `false`; that is defense in depth, not authorization to use Phase A as a rollback target.
+7. **Failure response after activation.** Route traffic only to the prepared atomic-capable stopped Version (`atomic=true`, `AI_ENABLED=false`). Verify that generation is stopped safely and that the usage endpoint remains readable. Fix forward, then reactivate with another atomic-capable Version.
+
+Atomic generation reservations include a conservative maximum planned cost for both logical OpenAI stages and both permitted HTTP attempts per stage. Completed cost plus all pending reserved cost must stay strictly below the stop budget. The public `estimatedCostJpy` remains actual provider usage only; pending reservation amounts are private operational state.
+
+Provider work has a 120-second overall deadline, including transport retry and rewrite/incomplete retry paths. Pending reservations expire after 15 minutes. Completion and release RPCs retry once with the same `requestId`; their idempotent tombstones prevent a lost RPC response from double-counting tokens, cost, or generations.
+
+Release gate: before changing `AI_PER_USER_QUOTA_ENABLED` to `true`, preserve observed provider usage across per-user quota completion/release failures and add tests proving that the global atomic release receives those tokens and developer cost. The checked-in production setting remains `false` until that gate is complete.
+
+Before either rollout phase, run:
+
+```text
+npm run check
+npm run test:quality
+npm run deploy:dry
 ```
 
 The estimated AI cost shown by the Worker is an operational estimate paid by the developer. It is not a charge to visitors.

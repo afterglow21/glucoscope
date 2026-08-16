@@ -88,7 +88,7 @@ test("checked-in integration is off, internal-only, and ignores debug controls w
   assert.match(wranglerSource, /CORS_ALLOWED_ORIGINS = "https:\/\/glucoscope\.app"/u);
   assert.match(wranglerSource, /binding = "AI_QUOTA"[\s\S]*entrypoint = "AiQuotaService"/u);
   assert.match(workerSource, /handleCorsPreflight\(request, corsDecision, env\)/u);
-  assert.match(workerSource, /const generationSignal = quotaConfig\.enabled \? request\.signal : undefined/u);
+  assert.match(workerSource, /runWithGenerationDeadline\(\{[\s\S]*signal:\s*request\.signal/u);
   assert.match(workerSource, /\.\.\.\(signal \? \{ signal \} : \{\}\)/u);
   assert.match(workerSource, /quotaConfig\.enabled \? "success" : getPrototypeStatus\(payload\)/u);
   assert.match(workerSource, /quotaConfig\.enabled[\s\S]*usageState[\s\S]*applyDebugUsageOverrides\(usageState, payload\)/u);

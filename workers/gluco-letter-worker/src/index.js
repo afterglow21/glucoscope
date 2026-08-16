@@ -20,6 +20,26 @@ import {
   shouldUseSharedCacheForSummary
 } from "./request-policy.js";
 import { loadPublicUsageAggregate } from "./user-usage-summary.js";
+import {
+  applyAtomicCacheHit,
+  applyAtomicGenerationComplete,
+  applyAtomicGenerationRelease,
+  applyAtomicGenerationReserve,
+  applyAtomicTurnstileEvent,
+  applyLegacyUsageStateSaveBoundary,
+  carryAtomicUsageStateAcrossMonth,
+  estimateMaximumOpenAiCostJpy,
+  markAtomicUsageState,
+  normalizeUsageRequestId,
+  shouldUseAtomicUsageCounter
+} from "./usage-counter-core.js";
+import {
+  getUsageCounterStub,
+  invokeAtomicUsageFinalization,
+  invokeAtomicUsageCounter,
+  runWithAtomicUsageReservation,
+  runWithGenerationDeadline
+} from "./usage-counter-client.js";
 
 const CONTRACT_VERSION = "gluco-ai-letter-worker-response-v0.2";
 const AI_LETTER_CACHE_SCHEMA_VERSION = "gluco-ai-letter-cache-v14";
@@ -28,6 +48,7 @@ const ANALYSIS_MODE_KEYS = ["letter", "deep"];
 
 const DEFAULT_GUARD_CONFIG = {
   aiEnabled: true,
+  atomicUsageCounterEnabled: false,
   provider: "prototype",
   openAiModel: "gpt-5.4-nano",
   openAiMaxOutputTokensLetter: 700,
@@ -313,6 +334,10 @@ function readGuardConfig(env = {}) {
 
   return {
     aiEnabled: readBoolean(env.AI_ENABLED, DEFAULT_GUARD_CONFIG.aiEnabled),
+    atomicUsageCounterEnabled: readBoolean(
+      env.AI_USAGE_ATOMIC_COUNTER_ENABLED,
+      DEFAULT_GUARD_CONFIG.atomicUsageCounterEnabled
+    ),
     provider,
     openAiModel: env.OPENAI_MODEL || DEFAULT_GUARD_CONFIG.openAiModel,
     openAiMaxOutputTokensLetter,
@@ -754,7 +779,7 @@ function normalizeUsageState(storedState, config, now = new Date()) {
     : createUsageState(now, config);
 
   if (state.monthKey !== monthKey) {
-    state = createUsageState(now, config);
+    state = carryAtomicUsageStateAcrossMonth(state, createUsageState(now, config));
   }
 
   state.kind = "durable-object-sqlite";
@@ -784,8 +809,8 @@ function normalizeUsageState(storedState, config, now = new Date()) {
 }
 
 async function loadUsageState(env, config) {
-  if (env?.USAGE_COUNTER?.getByName) {
-    const stub = env.USAGE_COUNTER.getByName("glucoscope-global-usage");
+  const stub = getUsageCounterStub(env?.USAGE_COUNTER);
+  if (stub) {
     return stub.getState(config);
   }
 
@@ -799,8 +824,8 @@ async function persistUsageState(env, state, config) {
   const normalized = normalizeUsageState(state, config);
   normalized.updatedAt = new Date().toISOString();
 
-  if (env?.USAGE_COUNTER?.getByName) {
-    const stub = env.USAGE_COUNTER.getByName("glucoscope-global-usage");
+  const stub = getUsageCounterStub(env?.USAGE_COUNTER);
+  if (stub) {
     return stub.saveState(normalized, config);
   }
 
@@ -1019,6 +1044,79 @@ Showing up to look is already a small step. I'm right here with you 🍀`;
 TIRは${tir}%、平均血糖は${avg}mg/dL${scoreSentenceJa}だったよ。${hintLine}
 血糖はあなたを責める数字じゃなくて、今日を理解して明日を少し楽にするための手がかりだよ。
 ここを見に来てくれたことも、小さな一歩だよ。ぼくはここにいるよ🍀`;
+}
+
+function getUtf8ByteLength(value) {
+  return new TextEncoder().encode(String(value ?? "")).byteLength;
+}
+
+function estimateReservedGenerationCostJpy({ summary = {}, config = DEFAULT_GUARD_CONFIG }) {
+  const analysisMode = normalizeAnalysisMode(summary.analysisMode);
+  if (config.provider !== "openai") {
+    const prototypeText = buildPrototypeLetter(summary, analysisMode);
+    return estimateCostJpy({
+      inputTokens: estimateInputTokens(summary),
+      outputTokens: estimateOutputTokens(prototypeText),
+      config
+    });
+  }
+
+  const language = summary.language === "en" ? "en" : "ja";
+  const instructions = buildOpenAiInstructions(language, analysisMode, summary);
+  const initialPrompt = buildOpenAiPrompt(summary, analysisMode);
+  const incompleteRetryPrompt = buildOpenAiRetryPrompt(summary, analysisMode, "incomplete");
+  const qualityRetryPrompt = buildOpenAiRetryPrompt(summary, analysisMode, "quality");
+  const retryPromptBytes = Math.max(
+    getUtf8ByteLength(incompleteRetryPrompt),
+    getUtf8ByteLength(qualityRetryPrompt)
+  );
+  const limits = getOpenAiTokenLimits(config, analysisMode);
+  return estimateMaximumOpenAiCostJpy({
+    instructionsUtf8Bytes: getUtf8ByteLength(instructions),
+    initialPromptUtf8Bytes: getUtf8ByteLength(initialPrompt),
+    retryPromptUtf8Bytes: retryPromptBytes,
+    initialMaxOutputTokens: limits.initial,
+    retryMaxOutputTokens: limits.retry,
+    inputPriceJpyPerMillionTokens: config.inputPriceJpyPerMillionTokens,
+    outputPriceJpyPerMillionTokens: config.outputPriceJpyPerMillionTokens,
+    framingInputTokensPerCall: 4096,
+    transportAttemptsPerStage: 2
+  }).reservedCostJpy;
+}
+
+function getAtomicUsageRequestId(payload = {}, quotaRequest = null) {
+  const candidate = quotaRequest?.reserveInput?.requestId || payload?.requestId;
+  return normalizeUsageRequestId(candidate) || crypto.randomUUID();
+}
+
+function buildUsageCounterUnavailableResponse() {
+  return errorResponse({
+    code: "usage_counter_unavailable",
+    message: "The atomic AI usage counter is temporarily unavailable.",
+    userMessage: "AI利用回数を安全に確認できませんでした。血糖表示はそのまま使えるので、少し時間をおいてもう一度試してね🍀",
+    retryable: true
+  }, 503);
+}
+
+async function invokeRequiredAtomicUsageCounter({ env, config, method, input = {} }) {
+  const options = {
+    enabled: config.atomicUsageCounterEnabled,
+    namespace: env.USAGE_COUNTER,
+    method,
+    input,
+    config
+  };
+  const outcome = method === "completeGeneration" || method === "releaseGeneration"
+    ? invokeAtomicUsageFinalization(options)
+    : invokeAtomicUsageCounter(options);
+  const result = await outcome;
+  if (!result.ok) {
+    console.error("Atomic usage counter RPC failed", {
+      method,
+      reason: result.reason || result.error || "unknown"
+    });
+  }
+  return result;
 }
 
 function buildOpenAiInstructions(language = "ja", mode = "letter", summary = {}) {
@@ -2344,17 +2442,27 @@ function buildRateLimitedUserMessage({ summary = {}, reason = "total" }) {
   return "今日の新しいAI振り返りは上限に達しました。表示中または保存済みの振り返りはそのまま読めます。ChatGPTコピー機能も使えます🍀";
 }
 
-function buildGuardError(status, { usageState, config, payload, summary = {}, reason = "manual", turnstileVerification = {} }) {
+function buildGuardError(status, {
+  usageState,
+  config,
+  payload,
+  summary = {},
+  reason = "manual",
+  turnstileVerification = {},
+  recordEvent = true
+}) {
   ensureSlotCounters(usageState);
   const slotKey = normalizeSlot(summary.slot);
   const analysisMode = normalizeAnalysisMode(summary.analysisMode);
 
   if (status === "rate_limited") {
-    usageState.dailyRateLimitedCount += 1;
-    usageState.dailySlotRateLimitedCounts[slotKey] = (usageState.dailySlotRateLimitedCounts[slotKey] || 0) + 1;
-    incrementModeCount(usageState, "dailyModeRateLimitedCounts", analysisMode);
-    incrementModeSlotCount(usageState, "dailyModeSlotRateLimitedCounts", analysisMode, slotKey);
-    usageState.updatedAt = new Date().toISOString();
+    if (recordEvent) {
+      usageState.dailyRateLimitedCount += 1;
+      usageState.dailySlotRateLimitedCounts[slotKey] = (usageState.dailySlotRateLimitedCounts[slotKey] || 0) + 1;
+      incrementModeCount(usageState, "dailyModeRateLimitedCounts", analysisMode);
+      incrementModeSlotCount(usageState, "dailyModeSlotRateLimitedCounts", analysisMode, slotKey);
+      usageState.updatedAt = new Date().toISOString();
+    }
 
     return {
       code: "rate_limited",
@@ -2372,8 +2480,10 @@ function buildGuardError(status, { usageState, config, payload, summary = {}, re
   }
 
   if (status === "budget_stopped") {
-    usageState.monthlyBudgetBlockedCount += 1;
-    usageState.updatedAt = new Date().toISOString();
+    if (recordEvent) {
+      usageState.monthlyBudgetBlockedCount += 1;
+      usageState.updatedAt = new Date().toISOString();
+    }
 
     return {
       code: "budget_stopped",
@@ -2390,8 +2500,10 @@ function buildGuardError(status, { usageState, config, payload, summary = {}, re
   }
 
   if (status === "ai_disabled") {
-    usageState.monthlyAiDisabledCount += 1;
-    usageState.updatedAt = new Date().toISOString();
+    if (recordEvent) {
+      usageState.monthlyAiDisabledCount += 1;
+      usageState.updatedAt = new Date().toISOString();
+    }
 
     return {
       code: "ai_disabled",
@@ -2595,10 +2707,65 @@ export class GlucoUsageCounter extends DurableObject {
   }
 
   async saveState(nextState, config = DEFAULT_GUARD_CONFIG) {
-    this.usageState = normalizeUsageState(nextState, config);
+    const currentState = normalizeUsageState(this.usageState, config);
+    const boundary = applyLegacyUsageStateSaveBoundary(currentState, nextState);
+    this.usageState = normalizeUsageState(boundary.state, config);
+    if (!boundary.accepted) {
+      await this.ctx.storage.put("usage-state", this.usageState);
+      return cloneUsageState(this.usageState);
+    }
     this.usageState.updatedAt = new Date().toISOString();
     await this.ctx.storage.put("usage-state", this.usageState);
     return cloneUsageState(this.usageState);
+  }
+
+  async _commitAtomic(transition, config = DEFAULT_GUARD_CONFIG) {
+    const now = new Date();
+    this.usageState = normalizeUsageState(this.usageState, config, now);
+    const result = transition(this.usageState, now);
+    const { state, ...metadata } = result;
+    this.usageState = markAtomicUsageState(normalizeUsageState(state, config, now), now);
+    this.usageState.updatedAt = now.toISOString();
+    await this.ctx.storage.put("usage-state", this.usageState);
+    return {
+      ...metadata,
+      state: cloneUsageState(this.usageState)
+    };
+  }
+
+  async recordTurnstileEvent(input = {}, config = DEFAULT_GUARD_CONFIG) {
+    return this._commitAtomic(
+      (state, now) => applyAtomicTurnstileEvent(state, input, now),
+      config
+    );
+  }
+
+  async reserveGeneration(input = {}, config = DEFAULT_GUARD_CONFIG) {
+    return this._commitAtomic(
+      (state, now) => applyAtomicGenerationReserve(state, input, config, now),
+      config
+    );
+  }
+
+  async completeGeneration(input = {}, config = DEFAULT_GUARD_CONFIG) {
+    return this._commitAtomic(
+      (state, now) => applyAtomicGenerationComplete(state, input, now),
+      config
+    );
+  }
+
+  async releaseGeneration(input = {}, config = DEFAULT_GUARD_CONFIG) {
+    return this._commitAtomic(
+      (state, now) => applyAtomicGenerationRelease(state, input, now),
+      config
+    );
+  }
+
+  async recordCacheHit(input = {}, config = DEFAULT_GUARD_CONFIG) {
+    return this._commitAtomic(
+      (state, now) => applyAtomicCacheHit(state, input, now),
+      config
+    );
   }
 }
 
@@ -2683,10 +2850,417 @@ async function serveSharedCachedLetter({
   }));
 }
 
+async function serveAtomicSharedCachedLetter({
+  cacheRead,
+  fallbackReason = null,
+  env,
+  config,
+  summary,
+  payload,
+  turnstileVerification,
+  quotaPayload = null
+}) {
+  const cacheEvent = await invokeRequiredAtomicUsageCounter({
+    env,
+    config,
+    method: "recordCacheHit",
+    input: {
+      slot: normalizeSlot(summary.slot),
+      analysisMode: normalizeAnalysisMode(summary.analysisMode)
+    }
+  });
+  if (!cacheEvent.ok || cacheEvent.result?.ok !== true) {
+    return buildUsageCounterUnavailableResponse();
+  }
+
+  const responseCacheResult = {
+    ...cacheRead,
+    status: fallbackReason ? "stale-fallback" : "fresh"
+  };
+  const generationResult = buildCachedGenerationResult(cacheRead);
+  const requestUsage = emptyRequestUsage();
+  return okResponse(buildSuccessPayload({
+    summary,
+    payload,
+    status: "cached",
+    usageState: cacheEvent.result.state,
+    requestUsage,
+    config,
+    generationResult,
+    turnstileVerification,
+    cacheResult: responseCacheResult,
+    cacheFallbackReason: fallbackReason,
+    quotaPayload
+  }));
+}
+
+function buildAtomicReservationConflictResponse(result = {}) {
+  const status = result.status || "usage_request_conflict";
+  return errorResponse({
+    code: status,
+    message: "This AI generation request has already been reserved or finalized.",
+    userMessage: "このAIお手紙の受付状態を安全に確認できませんでした。少し時間をおいて、もう一度試してね🍀",
+    retryable: status === "request_in_progress",
+    details: { reason: result.reason || status }
+  }, 409);
+}
+
+function buildAtomicProviderErrorResponse({
+  error,
+  usageState,
+  failedUsage,
+  config,
+  summary
+}) {
+  const incompleteOutput = error.code === "openai_incomplete_output";
+  const qualityOutput = error.code === "openai_output_quality_failed";
+  const language = summary.language === "en" ? "en" : "ja";
+  const userMessage = language === "en"
+    ? incompleteOutput
+      ? "Gluco could not finish the whole reflection this time. Nothing incomplete was saved, so please try again a little later 🍀"
+      : qualityOutput
+        ? "Gluco could not shape the reflection safely this time. Nothing was displayed or saved, so please try again a little later 🍀"
+        : "A small error occurred while Gluco was preparing the AI reflection. Your glucose display and saved reflections are still available 🍀"
+    : incompleteOutput
+      ? "AIお手紙を最後までまとめきれませんでした。途中の文章は保存していないので、少し時間をおいてもう一度試してね🍀"
+      : qualityOutput
+        ? "グルコらしい文章の形に安全に整えられませんでした。今回は表示も保存もしていないので、少し時間をおいてもう一度試してね🍀"
+        : "AIお手紙を作る途中で小さなエラーが起きました。血糖表示や保存済みのふりかえりは、そのまま使えるよ🍀";
+
+  return errorResponse({
+    code: incompleteOutput
+      ? "generation_incomplete"
+      : qualityOutput
+        ? "generation_quality_failed"
+        : "provider_error",
+    message: error.message || "AI letter provider failed.",
+    userMessage,
+    retryable: true,
+    details: {
+      provider: config.provider,
+      model: config.openAiModel,
+      errorCode: error.code || "unknown_provider_error",
+      analysisMode: error.analysisMode || normalizeAnalysisMode(summary.analysisMode),
+      incompleteReason: error.incompleteReason || null,
+      qualityIssues: Array.isArray(error.qualityIssues) ? error.qualityIssues : [],
+      attempts: Number(error.attempts) || (error.retryAttempted ? 2 : 1),
+      maxOutputTokens: Number(error.maxOutputTokens) || null,
+      usage: buildUsagePayload({
+        state: usageState,
+        requestUsage: failedUsage,
+        config,
+        summary
+      })
+    }
+  }, 502);
+}
+
+async function handleAtomicGenerationRequest({
+  request,
+  env,
+  config,
+  quotaConfig,
+  usageState,
+  payload,
+  summary,
+  quotaRequest
+}) {
+  let currentUsageState = usageState;
+  const turnstileVerification = await verifyTurnstileToken({
+    payload,
+    request,
+    env,
+    config
+  });
+  const turnstileEvent = await invokeRequiredAtomicUsageCounter({
+    env,
+    config,
+    method: "recordTurnstileEvent",
+    input: {
+      required: config.turnstileRequired,
+      verified: turnstileVerification.verified === true
+    }
+  });
+  if (!turnstileEvent.ok || turnstileEvent.result?.ok !== true) {
+    return buildUsageCounterUnavailableResponse();
+  }
+  currentUsageState = turnstileEvent.result.state;
+
+  if (config.turnstileRequired && !turnstileVerification.verified) {
+    return errorResponse(
+      buildTurnstileError(turnstileVerification),
+      turnstileVerification.code === "missing_turnstile_secret" ? 500 : 403
+    );
+  }
+
+  const cacheRead = await readSharedCache({ env, config, summary });
+  if (cacheRead.status === "fresh" && cacheRead.entry) {
+    return serveAtomicSharedCachedLetter({
+      cacheRead,
+      env,
+      config,
+      summary,
+      payload,
+      turnstileVerification,
+      quotaPayload: quotaConfig.enabled
+        ? buildAuthoritativeQuotaPayload(null, { consumed: false })
+        : null
+    });
+  }
+
+  const staleCacheAvailable = cacheRead.status === "stale" && Boolean(cacheRead.entry);
+  const prototypeStatus = quotaConfig.enabled ? "success" : getPrototypeStatus(payload);
+  if (prototypeStatus === "cached") {
+    const generationResult = await generateLetter({
+      summary,
+      payload,
+      env,
+      config,
+      status: prototypeStatus
+    });
+    const cacheEvent = await invokeRequiredAtomicUsageCounter({
+      env,
+      config,
+      method: "recordCacheHit",
+      input: {
+        slot: normalizeSlot(summary.slot),
+        analysisMode: normalizeAnalysisMode(summary.analysisMode)
+      }
+    });
+    if (!cacheEvent.ok || cacheEvent.result?.ok !== true) {
+      return buildUsageCounterUnavailableResponse();
+    }
+    return okResponse(buildSuccessPayload({
+      summary,
+      payload,
+      status: "cached",
+      usageState: cacheEvent.result.state,
+      requestUsage: emptyRequestUsage(),
+      config,
+      generationResult,
+      turnstileVerification,
+      cacheResult: cacheRead,
+      quotaPayload: null
+    }));
+  }
+
+  const effectiveUsageState = quotaConfig.enabled
+    ? currentUsageState
+    : applyDebugUsageOverrides(currentUsageState, payload);
+  const manualGuardStatus = ["rate_limited", "budget_stopped", "ai_disabled"].includes(prototypeStatus)
+    ? { status: prototypeStatus, reason: "manual" }
+    : null;
+  const preflightGuard = manualGuardStatus || getGuardBlock({
+    status: prototypeStatus,
+    usageState: effectiveUsageState,
+    config,
+    summary
+  });
+  const requestId = getAtomicUsageRequestId(payload, quotaRequest);
+  const reservedCostJpy = preflightGuard
+    ? 0
+    : estimateReservedGenerationCostJpy({ summary, config });
+  const reservationOutcome = await invokeRequiredAtomicUsageCounter({
+    env,
+    config,
+    method: "reserveGeneration",
+    input: {
+      requestId,
+      slot: normalizeSlot(summary.slot),
+      analysisMode: normalizeAnalysisMode(summary.analysisMode),
+      reservedCostJpy,
+      forcedStatus: preflightGuard?.status || null,
+      forcedReason: preflightGuard?.reason || null
+    }
+  });
+  if (!reservationOutcome.ok) return buildUsageCounterUnavailableResponse();
+  const reservation = reservationOutcome.result;
+  currentUsageState = reservation.state;
+
+  if (!reservation.ok) {
+    if (["rate_limited", "budget_stopped", "ai_disabled"].includes(reservation.status)) {
+      const guardError = buildGuardError(reservation.status, {
+        usageState: currentUsageState,
+        config,
+        payload,
+        summary,
+        reason: reservation.reason,
+        turnstileVerification,
+        recordEvent: false
+      });
+      if (staleCacheAvailable) {
+        return serveAtomicSharedCachedLetter({
+          cacheRead,
+          fallbackReason: reservation.status,
+          env,
+          config,
+          summary,
+          payload,
+          turnstileVerification,
+          quotaPayload: quotaConfig.enabled
+            ? buildAuthoritativeQuotaPayload(null, { consumed: false })
+            : null
+        });
+      }
+      const { status, ...errorBody } = guardError;
+      return errorResponse(errorBody, status);
+    }
+    return buildAtomicReservationConflictResponse(reservation);
+  }
+
+  let generationResult;
+  let quotaPayload = null;
+  const execution = await runWithAtomicUsageReservation({
+    signal: request.signal,
+    run: async (generationSignal) => {
+      const outcome = await runAiQuotaGeneration({
+        enabled: quotaConfig.enabled,
+        service: env.AI_QUOTA,
+        reserveInput: quotaRequest?.reserveInput,
+        signal: generationSignal,
+        generate: () => generateLetter({
+          summary,
+          payload,
+          env,
+          config,
+          status: prototypeStatus,
+          signal: generationSignal
+        })
+      });
+      if (!outcome.ok && outcome.stage === "generation" && outcome.generationError) {
+        outcome.generationError.aiQuota = outcome.quota || null;
+        throw outcome.generationError;
+      }
+      return outcome;
+    },
+    release: (error) => invokeRequiredAtomicUsageCounter({
+      env,
+      config,
+      method: "releaseGeneration",
+      input: {
+        requestId,
+        reason: error.code || "provider_error",
+        actualUsage: error.usage || emptyRequestUsage()
+      }
+    })
+  });
+
+  if (!execution.ok) {
+    const error = execution.error;
+    console.error("AI letter provider failed", error);
+    const failedUsage = error.usage || emptyRequestUsage();
+    const released = execution.releaseResult;
+    if (execution.releaseError || !released?.ok || released.result?.ok !== true) {
+      return buildUsageCounterUnavailableResponse();
+    }
+    currentUsageState = released.result.state;
+    const fallbackReason = error.code === "openai_incomplete_output"
+      ? "generation_incomplete"
+      : error.code === "openai_output_quality_failed"
+        ? "generation_quality_failed"
+        : "provider_error";
+    if (staleCacheAvailable) {
+      return serveAtomicSharedCachedLetter({
+        cacheRead,
+        fallbackReason,
+        env,
+        config,
+        summary,
+        payload,
+        turnstileVerification,
+        quotaPayload: quotaConfig.enabled
+          ? buildAuthoritativeQuotaPayload(error.aiQuota, { consumed: false })
+          : null
+      });
+    }
+    return buildAtomicProviderErrorResponse({
+      error,
+      usageState: currentUsageState,
+      failedUsage,
+      config,
+      summary
+    });
+  }
+
+  const quotaOutcome = execution.result;
+  if (!quotaOutcome.ok) {
+    const released = await invokeRequiredAtomicUsageCounter({
+      env,
+      config,
+      method: "releaseGeneration",
+      input: {
+        requestId,
+        reason: quotaOutcome.error || "quota_service_unavailable",
+        actualUsage: emptyRequestUsage()
+      }
+    });
+    if (!released.ok || released.result?.ok !== true) {
+      return buildUsageCounterUnavailableResponse();
+    }
+    return buildAiQuotaErrorResponse(quotaOutcome, summary);
+  }
+
+  generationResult = quotaOutcome.result;
+  quotaPayload = quotaConfig.enabled
+    ? buildAuthoritativeQuotaPayload(quotaOutcome.quota, { consumed: true })
+    : null;
+
+  const requestUsage = generationResult.usage || emptyRequestUsage();
+  const completed = await invokeRequiredAtomicUsageCounter({
+    env,
+    config,
+    method: "completeGeneration",
+    input: { requestId, actualUsage: requestUsage }
+  });
+  if (!completed.ok || completed.result?.ok !== true) {
+    return buildUsageCounterUnavailableResponse();
+  }
+  currentUsageState = completed.result.state;
+
+  const cacheWrite = await writeSharedCache({
+    env,
+    config,
+    summary,
+    generationResult
+  });
+  if (cacheWrite?.entry?.generatedAt) {
+    generationResult.generatedAt = cacheWrite.entry.generatedAt;
+  }
+
+  return okResponse(buildSuccessPayload({
+    summary,
+    payload,
+    status: prototypeStatus,
+    usageState: currentUsageState,
+    requestUsage,
+    config,
+    generationResult,
+    turnstileVerification,
+    cacheResult: cacheWrite,
+    quotaPayload
+  }));
+}
+
 async function handleApiRequest(request, env = {}) {
-    const config = readGuardConfig(env);
+    let config = readGuardConfig(env);
     const quotaConfig = readAiQuotaClientConfig(env);
-    const usageState = await loadUsageState(env, config);
+    let usageState;
+    try {
+      usageState = await loadUsageState(env, config);
+    } catch (error) {
+      if (config.atomicUsageCounterEnabled) {
+        console.error("Atomic usage counter state load failed", error);
+        return buildUsageCounterUnavailableResponse();
+      }
+      throw error;
+    }
+    const atomicUsageCounterRequired = shouldUseAtomicUsageCounter(config, usageState);
+    if (atomicUsageCounterRequired && usageState.kind !== "durable-object-sqlite") {
+      return buildUsageCounterUnavailableResponse();
+    }
+    if (atomicUsageCounterRequired && !config.atomicUsageCounterEnabled) {
+      config = { ...config, atomicUsageCounterEnabled: true };
+    }
 
     const url = new URL(request.url);
     if (url.pathname === "/api/gluco-letter/usage" && request.method === "GET") {
@@ -2752,6 +3326,19 @@ async function handleApiRequest(request, env = {}) {
       if (!quotaRequest.ok) {
         return buildAiQuotaErrorResponse(quotaRequest, summary);
       }
+    }
+
+    if (config.atomicUsageCounterEnabled) {
+      return handleAtomicGenerationRequest({
+        request,
+        env,
+        config,
+        quotaConfig,
+        usageState,
+        payload,
+        summary,
+        quotaRequest
+      });
     }
 
     const turnstileVerification = await verifyTurnstileToken({
@@ -2879,19 +3466,21 @@ async function handleApiRequest(request, env = {}) {
     let generationResult;
     let quotaPayload = null;
     try {
-      const generationSignal = quotaConfig.enabled ? request.signal : undefined;
-      const quotaOutcome = await runAiQuotaGeneration({
-        enabled: quotaConfig.enabled,
-        service: env.AI_QUOTA,
-        reserveInput: quotaRequest?.reserveInput,
-        signal: generationSignal,
-        generate: () => generateLetter({
-          summary,
-          payload,
-          env,
-          config,
-          status: prototypeStatus,
-          signal: generationSignal
+      const quotaOutcome = await runWithGenerationDeadline({
+        signal: request.signal,
+        run: (generationSignal) => runAiQuotaGeneration({
+          enabled: quotaConfig.enabled,
+          service: env.AI_QUOTA,
+          reserveInput: quotaRequest?.reserveInput,
+          signal: generationSignal,
+          generate: () => generateLetter({
+            summary,
+            payload,
+            env,
+            config,
+            status: prototypeStatus,
+            signal: generationSignal
+          })
         })
       });
 
