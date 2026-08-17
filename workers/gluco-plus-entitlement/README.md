@@ -86,8 +86,11 @@ made the principal Plus benefits mostly unusable and the operator could not reso
 There are no partial refunds, and a refunded payment ends its Plus entitlement. Card
 statement visibility is described only as an ordinary 5–10-business-day estimate that
 depends on the bank or card issuer. This is not a minute-by-minute SLA, and it does not
-make every kind of request refundable. A public support contact and an executable refund-support procedure are
-still unset sale blockers; the checked-in refund-policy path therefore remains blank.
+make every kind of request refundable. The public contact `support@glucoscope.app` has passed
+forwarding and real-receipt acceptance, and `docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md`
+defines the low-volume manual procedure. A complete Stripe test-mode drill, retention and receipt
+decisions, and professional review remain sale blockers; the checked-in refund-policy and support
+paths therefore remain blank.
 
 Keep the existing staging deployment stopped and unreachable. Do not add a route, Cron,
 public `workers.dev` endpoint, preview URL, Secret, sender, or commerce identifier merely

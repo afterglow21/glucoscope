@@ -33,11 +33,11 @@ test("Plus refund policy is short, conditional, and still blocked from sale", as
   assert.match(spec, /Plusの主な機能をほとんど使えず/);
   assert.match(spec, /部分返金は行いません。返金したPlusは終了します/);
   assert.match(spec, /通常5〜10営業日ほどかかる場合があります/);
-  assert.match(salesDraft, /Status: internal draft \/ non-public \/ not approved for sale/);
-  assert.match(salesDraft, /公開問い合わせ先と返金受付手順が未定/);
+  assert.match(salesDraft, /Status: internal draft with local public-page candidates \/ not approved for sale/);
+  assert.match(salesDraft, /公開問い合わせ先の実受信と返金受付手順の文書化は合格したが、Stripe test modeでの実行型受入が未完了/);
   assert.match(bible, /返金方針は、細かな時間条件や長い除外一覧を作らず/);
-  assert.match(bible, /公開問い合わせ先と実際の返金受付手順が[\s\S]*販売ブロッカー/);
-  assert.match(readme, /public support contact and an executable refund-support procedure are[\s\S]*still unset sale blockers/);
+  assert.match(bible, /PLUS_REFUND_SUPPORT_RUNBOOK\.md[\s\S]*Stripe test modeで受付から返金、Plus終了、返信まで実行する受入[\s\S]*販売ブロッカー/);
+  assert.match(readme, /public contact `support@glucoscope\.app` has passed[\s\S]*PLUS_REFUND_SUPPORT_RUNBOOK\.md[\s\S]*complete Stripe test-mode drill[\s\S]*remain sale blockers/);
   assert.match(spec, /`glucoscope\.app` を年間14\.20米ドルで取得し、自動更新をオフ/);
   assert.match(spec, /`auth\.glucoscope\.app` はResendで送信元認証済み/);
   assert.match(bible, /`glucoscope\.app` を年間14\.20米ドルで取得しました。自動更新はオフ/);

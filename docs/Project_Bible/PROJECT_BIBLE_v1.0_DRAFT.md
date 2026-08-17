@@ -4056,9 +4056,27 @@ Plusの主要特典をほとんど利用できず、運営側でも解決でき�
 全額返金します。部分返金は行わず、返金した支払いに対応するPlusは終了します。
 カード明細への反映は、カード会社や銀行により通常5〜10営業日ほどかかる場合があるという
 目安だけを案内し、反映日を保証しません。利用者都合を含むすべての申出を同じ返金対象とは
-案内せず、それ以外の相談も個別に受け付けます。公開問い合わせ先と実際の返金受付手順が
-まだ決まっていないため、これは販売ブロッカーです。公開ページ、決済、Worker、Stripe設定は
-この決定だけでは有効にしません。
+案内せず、それ以外の相談も個別に受け付けます。2026年8月17日、公開問い合わせ先は
+`support@glucoscope.app`、平日受付、原則5営業日以内の返信とする方針を決めました。
+Cloudflare Email Routingによる非公開受信箱への転送と必要な受信DNSは有効化済みです。2026年8月17日、別の送信元から`support@glucoscope.app`へ送った健康情報を含まないテストメールが非公開受信箱へ届くことを、運営者本人が確認しました。送信元、転送先、件名、本文は記録しません。`docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md`に、購入メールとおおよその購入日による最小照合、訂正優先、Stripe Dashboardでの全額返金、openな異議申立てとの二重処理禁止、成功したWebhook後のPlus終了、状態別返信を定義しました。Stripe test modeで受付から返金、Plus終了、返信まで実行する受入と、保持期間・専門家確認は販売ブロッカーです。
+公開ページ、決済、Worker、Stripe設定は、この方針だけでは有効にしません。
+
+同日、初期販売は日本国内に居住する人に限り、お支払い総額300円、購入とメールを管理する
+18歳以上の本人または18歳以上の保護者を対象とすることを決めました。販売者は個人事業の
+免税事業者で、適格請求書発行事業者ではありません。「税込」とは表示せず、適格請求書は
+発行しません。販売者の氏名、住所、電話番号はGitへ保存せず、請求があれば購入申込み前に
+確認できる時間を確保して遅滞なく提供する方針です。この表示と実運用、通常の支払確認・領収書、
+Stripe Taxを使わない初期構成、商品税コードは専門家確認が必要です。
+
+On 2026-08-17, the operator approved an initial Japan-only boundary: a JPY 300 total,
+one-time payment for an adult buyer or adult guardian. The seller is a Japanese
+consumption-tax-exempt sole proprietor and is not a qualified invoice issuer, so the public
+copy does not call the price tax-inclusive and does not promise a qualified invoice. Seller
+name, address, and telephone details stay out of Git and are to be supplied without delay on
+request, with enough time before purchase. The planned contact is `support@glucoscope.app`,
+weekdays, with a target reply within five business days. Cloudflare Email Routing and the
+required receiving DNS are enabled with a private destination. On August 17, 2026, the operator confirmed that a test message containing no health information, sent from a separate sender to `support@glucoscope.app`, reached the private destination. The sender, destination, subject, and body are not recorded. `docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md` defines minimum purchase matching, correction before refund, full refunds in Stripe Dashboard, no separate refund during an open dispute, entitlement termination only after a verified successful refund, and status-specific replies. A complete Stripe test-mode drill, professional review, refund operations acceptance, ordinary receipt wording, the no-Stripe-Tax initial
+configuration, and the product tax code remain sale blockers.
 
 同日、運営者は `glucoscope.app` を年間14.20米ドルで取得しました。自動更新はオフです。
 Plusの確認メールには `auth.glucoscope.app` を専用の送信元として使う方針です。期限前に、

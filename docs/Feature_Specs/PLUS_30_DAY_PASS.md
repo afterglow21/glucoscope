@@ -1,8 +1,8 @@
 # GlucoScope Plus 30日パス
 
-Status: approved core product, adult-or-guardian buyer, and conditional full-refund decisions / sales region, tax, public support, deletion, and retention details pending owner, professional, and implementation acceptance / stopped non-public staging only / not available for purchase
+Status: approved core product, adult-or-guardian buyer, Japan-only sale, JPY 300 total, tax-exempt seller status, public support, conditional full-refund policy, and operator runbook / Stripe refund drill, receipt, deletion, retention, professional, and implementation acceptance pending / stopped non-public staging only / not available for purchase
 
-Last reviewed: 2026-08-15
+Last reviewed: 2026-08-17
 
 Canonical principles: `docs/Project_Bible/PROJECT_BIBLE_v1.0_DRAFT.md`
 
@@ -12,7 +12,7 @@ Plus 30日パスは、GlucoScopeを長く育てるために、追加の便利機
 
 Plusは医療サービスではない。診断、治療判断、インスリン量、薬、機器設定、緊急時の判断を提供しない。購入により、より正しい医療判断、より良い血糖値、健康上の効果が得られるとは案内しない。
 
-価格と主な機能は決定済みだが、販売はまだ開始しない。本人または保護者の確認と復旧、返金受付、税、問い合わせ対応、Stripeテスト決済、安全確認を終えるまで購入導線を公開しない。
+価格と主な機能、販売地域、税務状態、公開問い合わせ先、返金方針と運営手順は決定済みだが、販売はまだ開始しない。本人または保護者の確認と復旧、返金手順のStripe test mode実行、領収書、保持期間、専門家確認、Stripeテスト決済、安全確認を終えるまで購入導線を公開しない。
 
 ## 2. 決定した初期商品
 
@@ -173,7 +173,7 @@ Resend APIのHTTP `200`や`email.sent`は、Resendが要求を受け付けて配
 - 可能な範囲で権限を絞ったStripeキーを使う。
 - 自動税計算は、必要な登録国・地域と会計上の扱いを確認してから有効にする。Stripeアカウントがあるだけでは税登録済みとみなさない。
 - Stripe Taxに対象地域の有効な登録が`Collecting`として存在すること、現在の正式一覧から選んだ商品税コード、Priceの税の扱い、事業者所在地、購入者所在地の取り扱いを確認できるまで、`automatic_tax`を有効にしない。登録や商品税コードをコードから推測・自動作成しない。
-- 税を含めて最終支払額を300円にするのか、税が別に加わるのかは未決定である。購入前画面、Stripe Checkout、領収書の金額表示を一致させるまで販売しない。未確認のまま「税込」「税別」「税不要」と断定しない。
+- 初期販売で利用者が支払う総額は300円とし、GlucoScope側で税や手数料を別に加えない。免税事業者のため「税込」「税別」「消費税額」と分解して表示せず、「お支払い総額300円」と表示する。購入前画面、Stripe Checkout、通常の支払確認・領収書の最終額を一致させるまで販売しない。
 - 将来Stripe Taxを使う場合も、税務上の登録義務は運営者と税務の専門家が確認し、Stripe上の登録を追加・期限切れにする操作は自動化しない。
 - 決済、Webhook、利用権WorkerはAI、Usage、Relay、管理者ダッシュボードと分け、障害時もCGM表示を止めない。
 
@@ -185,7 +185,7 @@ Resend APIのHTTP `200`や`email.sent`は、Resendが要求を受け付けて配
 
 ## 11. 返金と問い合わせ
 
-返金は、子どもや高齢者にも分かるよう、細かい時間条件を並べず、次の短いルールとする。この運営方針は運営者本人が承認済みだが、公開文面と実際の受付方法を確認するまで販売は開始しない。
+返金は、子どもや高齢者にも分かるよう、細かい時間条件を並べず、次の短いルールとする。この運営方針、公開文面、公開問い合わせ先、運営手順は運営者本人が承認済みである。Stripe test modeで実際に受付から全額返金、Webhook、Plus終了、返信まで確認するまでは販売を開始しない。
 
 > 二重に支払われた時や、お支払い後もPlusを始められない時は、状況を確認して直します。こちらで直せない場合は、全額返金します。GlucoScope側の大きな障害で、Plusの主な機能をほとんど使えず、こちらでも解決できない場合も、状況を確認して全額返金します。部分返金は行いません。返金したPlusは終了します。カード明細への反映は、カード会社や銀行により通常5〜10営業日ほどかかる場合があります。
 
@@ -193,7 +193,7 @@ Resend APIのHTTP `200`や`email.sent`は、Resendが要求を受け付けて配
 
 Plusは優先医療相談や緊急サポートを含まない。問い合わせで、血糖値、接続URL、合言葉、カード番号、パスワードの送付を求めない。本人確認に必要な最小の購入参照情報だけを案内する。
 
-公開問い合わせ先はまだ決まっていないため、これは販売ブロッカーである。販売前に、ログインできない人も開ける公開ページへ、返金を希望する時の連絡先と返答までの目安を置く。問い合わせ番号など、カード番号や血糖情報を送らずに状況を確認できる短い参照情報を用意する。メールアドレス、Stripe参照ID、問い合わせ内容の保存期間と削除方法も販売前に決める。
+公開問い合わせ先は`support@glucoscope.app`、平日受付、原則5営業日以内の返信とする。Cloudflare Email Routingの転送と別送信元からの実受信は2026年8月17日に合格した。運営手順は[`PLUS_REFUND_SUPPORT_RUNBOOK.md`](../Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md)を正とし、購入メール、おおよその購入日、相談区分、一般的なエラー文だけを受け付ける。カード番号や血糖情報は送らせない。サポートメール、アカウント結び付き、Stripe参照IDを含む会計記録の保持期間と削除方法は、専門家確認後に確定するまで販売ブロッカーである。
 
 ### 購入記録の最小保持候補
 
@@ -215,7 +215,7 @@ Plusは優先医療相談や緊急サポートを含まない。問い合わせ�
 
 ## 12. 購入前に見せる短い説明案
 
-次の文面は、税の扱いを決め、利用者が支払う最終額を300円と確認できた場合の案である。税が別に加わる場合は、主ボタンを含むすべての価格表示を、Stripe Checkoutの最終額と一致する表現へ直してから公開する。
+次の文面は、利用者が支払う総額を300円とする承認済み方針に基づく案である。購入前画面、Stripe Checkout、通常の支払確認・領収書の最終額が300円で一致することを実環境で確認してから公開する。
 
 > Plus 30日パスは300円の1回払いです。購入した時から30日間、AI分析を1日5回まで使え、グラフのカスタム期間とShare Studioを使えます。自動では更新されません。血糖値を見る基本機能は、Plusに入らなくても使えます。
 
@@ -245,10 +245,10 @@ Plusは優先医療相談や緊急サポートを含まない。問い合わせ�
 
 1. Resendで認証済みの `auth.glucoscope.app` と公式テスト宛先による受理・`delivered`確認に加え、本人受信箱1通と実Turnstileを含む最初の非公開E2E受け入れは完了した。開封・クリック追跡を無効にしたまま、次は追加の少人数受信箱、復旧、配信失敗時の手順、Privacy Notesの説明を受け入れる。無料枠、通常最長30日の保持、Suppression Listへ30日を超えて残り得る例外、原因解決後に手動削除する運用を追加送信前に再確認する
 2. 18歳以上の本人または保護者をコード送信前に確認し、確認した役割と版をCheckout前にサーバー側で照合する実環境受け入れ。兄弟姉妹を分ける家族機能は将来の別仕様とする
-3. 決定済みの全額返金方針を実行できる受付手順、公開問い合わせ先、返答までの目安
+3. 決定済みの全額返金方針、実受信済みの公開問い合わせ先、返答目安、運営手順をStripe test modeで最初から最後まで実行する受入
 4. 二重購入と「決済成功・利用権なし」の自動復旧・確認手順
 5. Stripeの事業者表示、領収書、必要な取引条件表示
-6. 300円を税込の最終支払額にするか、税を別にするか、税登録と商品税コード
+6. 免税事業者としてStripe Taxを使わない初期構成、正式な商品税コード、Priceの税の扱い、通常の支払確認・領収書を専門家と実環境で確認する
 7. GlucoScope側の大きな障害を確認し、解決できない時に全額返金する運用手順
 8. 会計記録7年・アカウント結び付き最大180日の候補を、運営形態に適用される法務・税務要件へ確定し、期限削除・切り離し・訂正を自動確認する方法
 9. 公開Usage Dashboardの10件基準を、実利用が増えた後も定期的に見直す手順
@@ -320,11 +320,11 @@ Plusは優先医療相談や緊急サポートを含まない。問い合わせ�
 - Checkoutには、販売準備を示す独立した停止ゲートも追加した。最終支払総額の扱い、購入者条件、版付き規約、特定商取引法に基づく表記、返金方針、問い合わせ先の同一サイト公開先がすべて確定しない限り、認証、D1、Stripeへ触れる前に停止する。checked-in設定は未確定・空欄・停止のままである。
 - 18歳以上の本人または保護者を明示確認する非公開基盤を追加した。確認した役割、確認版、時刻だけをアカウントへ保存し、子どもの氏名、生年月日、血糖値、表示名は収集しない。同じメールの役割変更は停止し、Checkout前にサーバー側で現在版を照合する。1メールは1 Plusアカウントのため、兄弟姉妹を別々に管理する家族機能は将来対応とする。関連flagはすべて停止中である。
 
-これは販売開始や本番制限の完了ではない。公開デモから個人上限を回避できない仕組み、追加の復旧と配信失敗時の受け入れ、返金規約、税、領収書、サポート、実際のStripe test mode・複数タブ・返金の受け入れ、本番環境と公開順の受け入れが残っている。
+これは販売開始や本番制限の完了ではない。公開デモから個人上限を回避できない仕組み、追加の復旧と配信失敗時の受け入れ、領収書、保持期間、専門家確認、実際のStripe test mode・複数タブ・返金運用の受け入れ、本番環境と公開順の受け入れが残っている。
 
 ## 16. English summary
 
-GlucoScope Plus is a proposed JPY 300 one-time pass for 30 consecutive days. It never renews automatically. Free users keep the core glucose experience, one successful new AI analysis per JST day, and one successful Share Studio trial per verified account. An active Plus account receives up to five successful new AI analyses per JST day, custom graph dates, and continued Share Studio use. Quality-check failures, provider or network failures, Turnstile failures, global-limit failures, aborted work, and browser-local cache hits do not consume an AI use. Plus remains separate from optional donations and the browser Usage profile. The adult managing the purchase and email must be 18 or older. They may act for themselves or as a guardian managing a child's purchase, recovery, and support. This confirmation collects no child name, birth date, display name, glucose value, or CGM type. One verified email maps to one Plus account; separating siblings under one mailbox requires a future family feature. The verified buyer role and confirmation version are stored on the account and checked again on the server before Checkout; a later code cannot silently change the role. Payment data stays on Stripe-hosted Checkout, and verified idempotent webhooks are required before granting an entitlement. Verification email is planned through Resend Free from `auth.glucoscope.app`. The provider receives the destination address; the message contains a six-digit code that expires after 10 minutes and short fixed input instructions. It contains no glucose, name, connection, AI, or purchase content, and open/click tracking stays off. Resend may retain ordinary sending records and message bodies for up to 30 days. A hard-bounce or spam-complaint destination can remain longer on the team-wide Suppression List until the cause is resolved and the operator removes it manually. GlucoScope's disabled hourly cleanup deletes verification challenges more than 24 hours after code expiry and global send reservations more than 24 hours after the attempt; the hourly interval makes this about 24 to 25 hours. Verified-account and purchase/accounting retention remains separately unresolved. An API `200` or `email.sent` is provider acceptance, not inbox-delivery proof. Daily operating review keeps bounce below 4% and spam complaints below 0.08%, while the real account Usage page and response rate-limit headers take precedence over any fixed per-second number in this specification. Cloudflare Email Service / Workers Paid is not subscribed. If a duplicate charge or a paid pass that did not start cannot be corrected, or a major GlucoScope-side outage made the main Plus features mostly unusable and cannot be resolved, the approved policy is a full refund after review; it is not an all-reasons refund promise. Plus is not available for purchase until additional recovery and delivery-failure acceptance, provider-retention acceptance, the public refund-support process, tax, privacy, professional review, payment testing, and production acceptance are complete.
+GlucoScope Plus is a proposed JPY 300 one-time pass for 30 consecutive days. It never renews automatically. Free users keep the core glucose experience, one successful new AI analysis per JST day, and one successful Share Studio trial per verified account. An active Plus account receives up to five successful new AI analyses per JST day, custom graph dates, and continued Share Studio use. Quality-check failures, provider or network failures, Turnstile failures, global-limit failures, aborted work, and browser-local cache hits do not consume an AI use. Plus remains separate from optional donations and the browser Usage profile. The adult managing the purchase and email must be 18 or older. They may act for themselves or as a guardian managing a child's purchase, recovery, and support. This confirmation collects no child name, birth date, display name, glucose value, or CGM type. One verified email maps to one Plus account; separating siblings under one mailbox requires a future family feature. The verified buyer role and confirmation version are stored on the account and checked again on the server before Checkout; a later code cannot silently change the role. Payment data stays on Stripe-hosted Checkout, and verified idempotent webhooks are required before granting an entitlement. Verification email is planned through Resend Free from `auth.glucoscope.app`. The provider receives the destination address; the message contains a six-digit code that expires after 10 minutes and short fixed input instructions. It contains no glucose, name, connection, AI, or purchase content, and open/click tracking stays off. Resend may retain ordinary sending records and message bodies for up to 30 days. A hard-bounce or spam-complaint destination can remain longer on the team-wide Suppression List until the cause is resolved and the operator removes it manually. GlucoScope's disabled hourly cleanup deletes verification challenges more than 24 hours after code expiry and global send reservations more than 24 hours after the attempt; the hourly interval makes this about 24 to 25 hours. Verified-account and purchase/accounting retention remains separately unresolved. An API `200` or `email.sent` is provider acceptance, not inbox-delivery proof. Daily operating review keeps bounce below 4% and spam complaints below 0.08%, while the real account Usage page and response rate-limit headers take precedence over any fixed per-second number in this specification. Cloudflare Email Service / Workers Paid is not subscribed. If a duplicate charge or a paid pass that did not start cannot be corrected, or a major GlucoScope-side outage made the main Plus features mostly unusable and cannot be resolved, the approved policy is a full refund after review; it is not an all-reasons refund promise. The public support address has passed real-receipt acceptance, and the refund-support runbook defines minimal intake, purchase matching, correction, a full refund in Stripe Dashboard, verified webhook handling, entitlement termination after a successful refund, and status-specific replies. Plus is not available for purchase until the Stripe test-mode drill, additional recovery and delivery-failure acceptance, provider-retention acceptance, tax, privacy, professional review, payment testing, and production acceptance are complete.
 
 Code checkpoint `b5669df` is deployed only as a stopped, non-public staging Worker. Version `bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9` receives 100% of that Worker, but it has no `workers.dev` route, preview, custom route, Cron, observability, or exposed closed-test Secrets; its live URL returns `404`, and every account, cleanup, RPC, purchase, Checkout, webhook, sales, and tax flag is false. The dedicated APAC staging D1 has migrations `0001`–`0005` applied and all 12 application tables at zero rows. Staging rate-limit IDs are distinct from the future production IDs. Public accounts and sales remain no-go.
 
