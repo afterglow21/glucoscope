@@ -89,6 +89,21 @@ temporary Custom Domain was deleted. Stopped Version
 `c917affd-74ed-4691-a3c6-b6c8e3149e3c` was then deployed at 100%. No real charge, card data,
 email address, Stripe key, webhook Secret, or health data is recorded.
 
+A second closed Checkout drill on the same day covered concurrent-click protection,
+pending-Checkout reuse, expiry, recreation, and a declined-card boundary. Two simultaneous
+requests created exactly one hosted Checkout: one returned `checkout_ready` and the other
+`409 checkout_creation_in_progress`; a later request reused that Checkout. A correctly signed,
+manually re-sent `checkout.session.expired` event changed the D1 attempt from `open` to
+`expired` exactly once. The next request created a different Checkout and the following request
+reused it. Stripe-hosted Checkout clearly rejected the declined-card test and created no
+entitlement. The unused full-access standard sandbox Secret was rotated immediately; the
+integration continues to use only its scoped restricted test key. The final synthetic Session
+was expired, the exact synthetic account was deleted, all 12 application tables returned to
+zero, stopped Version `c917affd-74ed-4691-a3c6-b6c8e3149e3c` was restored alone at 100%, the
+webhook destination was disabled, and the temporary Custom Domain and localhost harness were
+deleted. No Secret value, hosted Checkout URL, card data, email address, or health data is
+recorded.
+
 The internal verified-payment function also checks `PLUS_PURCHASES_ENABLED` before it
 reads payment identifiers, generates an entitlement ID, or touches D1. Missing or false
 always fails closed; only an explicit true value allows processing to begin.
@@ -110,9 +125,10 @@ statement visibility is described only as an ordinary 5–10-business-day estima
 depends on the bank or card issuer. This is not a minute-by-minute SLA, and it does not
 make every kind of request refundable. The public contact `support@glucoscope.app` has passed
 forwarding and real-receipt acceptance, and `docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md`
-defines the low-volume manual procedure. The first full-payment, duplicate-delivery, and full-refund
-sandbox drill has passed. Retention, receipt wording, remaining payment cases, and professional
-review remain sale blockers; checked-in release flags therefore remain false.
+defines the low-volume manual procedure. The full-payment, duplicate-delivery, full-refund,
+concurrent-click, pending-reuse, expiry, recreation, and declined-card sandbox drills have
+passed. Retention, receipt wording, acceptance of any additionally enabled payment method, and
+professional review remain sale blockers; checked-in release flags therefore remain false.
 
 Keep the existing staging deployment stopped and unreachable. Do not add a route, Cron,
 public `workers.dev` endpoint, preview URL, sender, or commerce identifier merely because
@@ -402,9 +418,11 @@ Git or `.dev.vars`.
 
 Live sales remain blocked. The stopped staging D1 schema-and-binding checkpoint, official
 Resend test-recipient acceptance, and the first personal-inbox and Turnstile closed E2E
-acceptance passed, but recovery and delivery-failure acceptance, Stripe-hosted test
-acceptance, user-facing terms, tax and receipt decisions, support and refund policy, and
-multi-tab acceptance of the per-account pending-Checkout guard are still required. The
+acceptance passed. Stripe-hosted full payment, duplicate delivery, full refund,
+concurrent-click protection, pending reuse, expiry, recreation, and declined-card acceptance
+also passed. Recovery and delivery-failure acceptance, user-facing terms, tax and receipt
+review, the full support exercise, any additionally enabled payment method, and production
+acceptance are still required. The
 payment, account, RPC, cleanup, sales, and tax switches must not be enabled merely because
 these closed checks passed.
 

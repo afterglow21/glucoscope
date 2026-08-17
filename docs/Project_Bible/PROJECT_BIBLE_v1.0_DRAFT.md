@@ -3718,9 +3718,23 @@ the same event did not duplicate either record. A full JPY 400 Dashboard refund 
 entitlement became `refunded`. The synthetic rows were deleted and all 12 application tables
 returned to zero. The preview stopped, the Stripe webhook destination was disabled, and its
 temporary Cloudflare Custom Domain was deleted. No real charge, card data, email address,
-Stripe key, webhook Secret, or health data is recorded. This accepts the first happy-path and
-full-refund drill only; receipt wording, retention, remaining payment cases, professional review,
-and production acceptance remain sales blockers.
+Stripe key, webhook Secret, or health data is recorded.
+
+A second closed Checkout drill on the same day covered concurrent clicks, pending-Checkout
+reuse, expiry, recreation, and a declined-card boundary. Two simultaneous requests created
+exactly one hosted Checkout: one returned `checkout_ready` and the other returned
+`409 checkout_creation_in_progress`; a later request reused the same Checkout. A correctly
+signed, manually re-sent `checkout.session.expired` event changed the D1 attempt from `open` to
+`expired` exactly once. The next request created a different Checkout and a following request
+reused it. Stripe-hosted Checkout clearly rejected the declined-card test and created no
+entitlement. The unused full-access standard sandbox Secret was rotated immediately; the
+integration continues to use only its scoped restricted test key. The final synthetic Session
+was expired, the exact synthetic account was deleted, all 12 application tables returned to
+zero, stopped Version `c917affd-74ed-4691-a3c6-b6c8e3149e3c` was restored alone at 100%, the
+webhook destination was disabled, and the temporary Custom Domain and localhost harness were
+deleted. No Secret value, hosted Checkout URL, card data, email address, or health data is
+recorded. Receipt wording, retention, acceptance of any additionally enabled payment method,
+professional review, and production acceptance remain sales blockers.
 The privacy-protected public Usage aggregate is live through Usage Worker Version
 `e7b2a895-c418-4cb2-b565-d2a37bef8e1b`, with unserved stopped Version
 `e1496203-ab4b-429f-acd3-4e862cff0c2f` as its reviewed direct rollback. It covers only the 30
@@ -4056,9 +4070,21 @@ test Product/Price識別子と暗号化したrestricted key/Webhook bindingは�
 `refund.created`、`charge.refunded`、`refund.updated`がすべて検証され、Checkoutと利用権は
 `refunded`になりました。合成行は特定して削除し、12 tableを0件へ戻しました。remote previewを
 停止し、Stripe webhook送信先を無効化し、一時Custom Domainを削除しました。実請求、カード情報、
-実メール、健康情報、Stripe key、Webhook Secretの値は記録していません。これは最初の正常系と
-全額返金ドリルの合格であり、領収書、保持期間、残る決済ケース、専門家確認、本番受け入れは
-引き続き販売ブロッカーです。
+実メール、健康情報、Stripe key、Webhook Secretの値は記録していません。
+
+同日の2回目の非公開Checkoutドリルでは、二重操作、未完了Checkoutの再利用、期限切れ、再作成、
+カード拒否を確認しました。同時に2回操作してもHosted Checkoutは1件だけ作られ、一方は
+`checkout_ready`、もう一方は`409 checkout_creation_in_progress`を返し、後続操作は同じCheckoutを
+再利用しました。正しく署名して手動再送した`checkout.session.expired`通知は、D1の試行を`open`から
+`expired`へ1回だけ変更しました。その後の操作は別のCheckoutを作り、さらに次の操作はその新しい
+Checkoutを再利用しました。Stripeの拒否用テストカードはHosted Checkout上で明確に拒否され、
+利用権は作成されませんでした。未使用だったフルアクセスの標準sandbox Secretは直ちに
+ローテーションし、連携は権限を絞ったrestricted test keyだけを使い続けます。最後の合成Sessionを
+期限切れにし、合成accountを特定して削除し、12 tableを0件へ戻し、停止Version
+`c917affd-74ed-4691-a3c6-b6c8e3149e3c`だけを100%へ復帰させました。Webhook送信先を無効化し、
+一時Custom Domainとlocalhost harnessも削除しました。Secret値、Hosted Checkout URL、カード情報、
+実メール、健康情報は記録していません。領収書、保持期間、追加で有効にする支払方法、専門家確認、
+本番受け入れは引き続き販売ブロッカーです。
 
 privacy保護した公開Usage集計は、Usage Worker Version
 `e7b2a895-c418-4cb2-b565-d2a37bef8e1b`で本番接続済みです。未配信の停止Version
@@ -4105,7 +4131,7 @@ Plusの主要特典をほとんど利用できず、運営側でも解決でき�
 目安だけを案内し、反映日を保証しません。利用者都合を含むすべての申出を同じ返金対象とは
 案内せず、それ以外の相談も個別に受け付けます。2026年8月17日、公開問い合わせ先は
 `support@glucoscope.app`、平日受付、原則5営業日以内の返信とする方針を決めました。
-Cloudflare Email Routingによる非公開受信箱への転送と必要な受信DNSは有効化済みです。2026年8月17日、別の送信元から`support@glucoscope.app`へ送った健康情報を含まないテストメールが非公開受信箱へ届くことを、運営者本人が確認しました。送信元、転送先、件名、本文は記録しません。`docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md`に、購入メールとおおよその購入日による最小照合、訂正優先、Stripe Dashboardでの全額返金、openな異議申立てとの二重処理禁止、成功したWebhook後のPlus終了、状態別返信を定義しました。Stripe test modeの最初の400円決済・重複Webhook・全額返金・Plus終了は合格しました。問い合わせ受付と返信を含む運営手順全体、異常系、保持期間・専門家確認は販売ブロッカーです。
+Cloudflare Email Routingによる非公開受信箱への転送と必要な受信DNSは有効化済みです。2026年8月17日、別の送信元から`support@glucoscope.app`へ送った健康情報を含まないテストメールが非公開受信箱へ届くことを、運営者本人が確認しました。送信元、転送先、件名、本文は記録しません。`docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md`に、購入メールとおおよその購入日による最小照合、訂正優先、Stripe Dashboardでの全額返金、openな異議申立てとの二重処理禁止、成功したWebhook後のPlus終了、状態別返信を定義しました。Stripe test modeの400円決済・重複Webhook・全額返金・Plus終了・二重操作・未完了Checkout再利用・期限切れ・再作成・カード拒否は合格しました。問い合わせ受付と返信を含む運営手順全体、追加で有効にする支払方法、保持期間・専門家確認は販売ブロッカーです。
 公開ページ、決済、Worker、Stripe設定は、この方針だけでは有効にしません。
 
 同日、初期販売は日本国内に居住する人に限り、お支払い総額400円、購入とメールを管理する
@@ -4122,7 +4148,7 @@ copy does not call the price tax-inclusive and does not promise a qualified invo
 name, address, and telephone details stay out of Git and are to be supplied without delay on
 request, with enough time before purchase. The planned contact is `support@glucoscope.app`,
 weekdays, with a target reply within five business days. Cloudflare Email Routing and the
-required receiving DNS are enabled with a private destination. On August 17, 2026, the operator confirmed that a test message containing no health information, sent from a separate sender to `support@glucoscope.app`, reached the private destination. The sender, destination, subject, and body are not recorded. `docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md` defines minimum purchase matching, correction before refund, full refunds in Stripe Dashboard, no separate refund during an open dispute, entitlement termination only after a verified successful refund, and status-specific replies. The first JPY 400 payment, duplicate-webhook, full-refund, and entitlement-termination sandbox drill passed. The full support intake/reply exercise, remaining payment cases, professional review, ordinary receipt wording, the no-Stripe-Tax initial configuration, and the product tax code remain sale blockers.
+required receiving DNS are enabled with a private destination. On August 17, 2026, the operator confirmed that a test message containing no health information, sent from a separate sender to `support@glucoscope.app`, reached the private destination. The sender, destination, subject, and body are not recorded. `docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md` defines minimum purchase matching, correction before refund, full refunds in Stripe Dashboard, no separate refund during an open dispute, entitlement termination only after a verified successful refund, and status-specific replies. The JPY 400 payment, duplicate-webhook, full-refund, entitlement-termination, concurrent-click, pending-reuse, expiry, recreation, and declined-card sandbox drills passed. The full support intake/reply exercise, any additionally enabled payment method, professional review, ordinary receipt wording, the no-Stripe-Tax initial configuration, and the product tax code remain sale blockers.
 
 On the same day, Stripe test mode created exactly one active `GlucoScope Plus 30日パス`
 Product (`prod_V5SDrFKGSiwaql`) with one default JPY 400 one-time Price

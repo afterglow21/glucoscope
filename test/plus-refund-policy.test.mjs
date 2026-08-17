@@ -36,8 +36,13 @@ test("Plus refund policy is short, conditional, and still blocked from sale", as
   assert.match(salesDraft, /Status: internal draft with local public-page candidates \/ not approved for sale/);
   assert.match(salesDraft, /公開問い合わせ先の実受信、返金受付手順の文書化、Stripe test modeの最初の決済・重複通知・全額返金は合格したが[\s\S]*運営手順全体[\s\S]*未完了/);
   assert.match(bible, /返金方針は、細かな時間条件や長い除外一覧を作らず/);
-  assert.match(bible, /PLUS_REFUND_SUPPORT_RUNBOOK\.md[\s\S]*Stripe test modeの最初の400円決済・重複Webhook・全額返金・Plus終了は合格しました[\s\S]*問い合わせ受付と返信を含む運営手順全体[\s\S]*販売ブロッカー/);
-  assert.match(readme, /public contact `support@glucoscope\.app` has passed[\s\S]*PLUS_REFUND_SUPPORT_RUNBOOK\.md[\s\S]*first full-payment, duplicate-delivery, and full-refund[\s\S]*remain sale blockers/);
+  assert.match(bible, /PLUS_REFUND_SUPPORT_RUNBOOK\.md[\s\S]*Stripe test modeの400円決済・重複Webhook・全額返金・Plus終了・二重操作・未完了Checkout再利用・期限切れ・再作成・カード拒否は合格しました[\s\S]*問い合わせ受付と返信を含む運営手順全体[\s\S]*販売ブロッカー/);
+  assert.match(readme, /public contact `support@glucoscope\.app` has passed[\s\S]*PLUS_REFUND_SUPPORT_RUNBOOK\.md[\s\S]*concurrent-click, pending-reuse, expiry, recreation, and declined-card sandbox drills have[\s\S]*remain sale blockers/);
+  assert.match(readme, /Two simultaneous[\s\S]*`checkout_ready`[\s\S]*`409 checkout_creation_in_progress`[\s\S]*reused that Checkout/);
+  assert.match(bible, /correctly[\s\S]{0,20}signed, manually re-sent `checkout\.session\.expired` event[\s\S]*from `open` to[\s\S]*`expired` exactly once/);
+  assert.match(bible, /declined-card test and created no[\s\S]*entitlement/);
+  assert.match(bible, /unused full-access standard sandbox Secret was rotated immediately[\s\S]*scoped restricted test key/);
+  assert.match(spec, /追加で有効にする支払方法/);
   assert.match(spec, /`glucoscope\.app` を年間14\.20米ドルで取得し、自動更新をオフ/);
   assert.match(spec, /`auth\.glucoscope\.app` はResendで送信元認証済み/);
   assert.match(bible, /`glucoscope\.app` を年間14\.20米ドルで取得しました。自動更新はオフ/);
