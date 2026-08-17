@@ -2887,7 +2887,7 @@ The current implementation and release-readiness order as of 2026-08-16 is:
    preflights, Nightscout status, and a fresh public-browser `LIVE` / connected display passed without
    recording glucose values or exact measurement times.
 3. Before deciding whether Plus can launch with the public announcement, complete its contact,
-   refund-operation, tax, receipt, recovery, delivery-failure, payment, and production-acceptance
+   refund-operation, tax, receipt, delivery-failure, payment, and production-acceptance
    blockers while keeping every public sales and feature switch off.
 4. Make the first announcement only after those readiness checks. Add the opt-in landscape-graph
    always-on mode later; it is not a launch blocker.
@@ -2942,7 +2942,7 @@ Guardian 4、FreeStyle Libre 2、Dexcom G7を、
    `https://glucoscope.app`だけを追加し、localhostと旧PagesのOriginを残したまま復旧した。
    新旧の許可Originのpreflight、Nightscout status、公開ブラウザの`LIVE`・接続中表示に合格し、
    血糖値や正確な測定時刻は確認記録へ残していない。
-3. Plusを初回告知と同時に販売できるか判断する前に、公開問い合わせ、返金運用、税・領収書、復旧、メール不達、
+3. Plusを初回告知と同時に販売できるか判断する前に、公開問い合わせ、返金運用、税・領収書、メール不達、
    決済、本番受入の残件を完了する。完了までは公開販売・個人上限・特典のswitchを停止したままにする。
 4. 上の公開準備を終えてから最初のお知らせを行う。横向きグラフの任意の常時表示は、その後の機能とする。
 
@@ -3655,12 +3655,13 @@ They never follow a redirect with the restricted-key Authorization header or Che
 Focused tests cover both `302` and `307`; this is a local safety boundary only and does not
 authorize a Stripe key, deployment, public Checkout, or sales.
 
-Code checkpoint `dabb3571` is deployed only as the stopped
-`glucoscope-plus-entitlement-staging` Worker. Version
-`c917affd-74ed-4691-a3c6-b6c8e3149e3c` receives 100% of that Worker's traffic, but
-`workers_dev=false`, the `workers.dev` URL returns `404`, preview URLs are off, routes and Cron
-triggers are empty, and observability is off. Six encrypted test-only Secret bindings remain for
-later closed acceptance; their values are not recorded. Account auth, cleanup, RPC,
+Corrected-secret stopped Version `809ecd8b-8e37-40f9-9f6b-7d006cdd52b6` receives 100% of the
+non-public `glucoscope-plus-entitlement-staging` Worker. `workers_dev=false`, the `workers.dev`
+URL returns `404`, preview URLs are off, routes and Cron triggers are empty, and observability is
+off. Only the four encrypted account-HMAC, Resend, and dedicated Turnstile Secret bindings needed
+for closed account acceptance remain; their values are not recorded. Historical stopped Version
+`c917affd-74ed-4691-a3c6-b6c8e3149e3c` must not be restored because its Turnstile Secret predates
+the accepted correction. Account auth, cleanup, RPC,
 purchases, Checkout HTTP, Stripe webhooks, sales readiness, and tax readiness all remain
 false. The staging-only APAC D1 `glucoscope-plus-staging` has migrations `0001` through `0006`
 applied. Fail-closed migration `0006` ran only after all 12 application tables were verified at
@@ -3703,10 +3704,11 @@ adapter tests cover `302` and `307`.
 
 Historical unserved Version `a0805f46-8585-47c5-b431-dfcb463d2993` first staged the JPY 400
 code and the two non-secret Stripe test Product/Price identifiers with every flag false. It is not
-a current rollback target. Traffic-serving stopped Version
-`c917affd-74ed-4691-a3c6-b6c8e3149e3c` is now at 100%. The test Product/Price identifiers and
-encrypted restricted-key/webhook bindings are retained only for later closed acceptance, while
-there is no public account route, Checkout, payment path, or live entitlement. The existing AI
+a current rollback target. Corrected-secret stopped Version
+`809ecd8b-8e37-40f9-9f6b-7d006cdd52b6` is now at 100%. The test Product/Price identifiers remain
+non-secret configuration, while Stripe restricted-key and webhook bindings are not present on
+this stopped account-acceptance Version. There is no public account route, Checkout, payment
+path, or live entitlement. The existing AI
 and custom-range experience therefore remains unchanged.
 
 On 2026-08-17 JST, a closed Stripe sandbox drill used one opaque synthetic account through a
@@ -3742,8 +3744,8 @@ completed days through yesterday, omits exact totals until at least 10 consentin
 profiles contributed, and never returns names or device-level rows. Current backend checks
 returned `suppressed` with no totals because there were fewer than 10 contributors. The public
 Dashboard's supervised real-browser visual check passed. Public accounts and sales remain no-go.
-Do not enable individual quota or Plus feature gates until the remaining identity and recovery
-work, delivery-failure acceptance, refunds, tax and support, public-demo anti-bypass handling,
+Do not enable individual quota or Plus feature gates until the remaining identity acceptance,
+delivery-failure handling, refunds, tax and support, public-demo anti-bypass handling,
 deployment order, payment testing, and production acceptance are complete.
 
 The always-on mode comes after user rollout begins. It is opt-in, limited to the graph in
@@ -4014,10 +4016,12 @@ Stripe APIへの通信は `redirect: "manual"` とし、`3xx`は1回の通信で
 制限付きキーのAuthorization headerやCheckout本文をredirect先へ転送せず、`302`と`307`のテストで
 固定します。これはローカルの安全境界だけであり、Stripe key、配置、公開Checkout、販売を承認しません。
 
-commit `dabb3571` は、停止中の `glucoscope-plus-entitlement-staging` Workerだけへ配置しました。
-Version `c917affd-74ed-4691-a3c6-b6c8e3149e3c`へ通信の100%を向けていますが、
-`workers_dev=false`で実URLは`404`、preview URLは無効、routeとCronは空、observabilityは無効、
-後の非公開受け入れ用に暗号化したtest専用Secret bindingを6件保持しています。値は記録しません。
+修正済みSecretを持つ停止Version `809ecd8b-8e37-40f9-9f6b-7d006cdd52b6`へ、非公開の
+`glucoscope-plus-entitlement-staging` Workerの通信を100%向けています。
+`workers_dev=false`で実URLは`404`、preview URLは無効、routeとCronは空、observabilityは無効です。
+非公開アカウント受け入れに必要なaccount HMAC、Resend、専用Turnstileの暗号化Secret binding
+4件だけを保持し、値は記録しません。旧停止Version
+`c917affd-74ed-4691-a3c6-b6c8e3149e3c`は修正前Turnstile Secretの履歴であり、rollback先にしません。
 アカウント認証、cleanup、RPC、購入、Checkout HTTP、Stripe Webhook、販売準備、
 税確認のflagはすべて`false`です。APACのstaging専用D1 `glucoscope-plus-staging`へmigration
 `0001`〜`0006`を適用しました。fail-closedの`0006`は、12個のapplication tableがすべて0件で
@@ -4057,9 +4061,10 @@ redirect先へ転送しません。`302`と`307`の実行型テストでこの�
 
 過去の未配信Version `a0805f46-8585-47c5-b431-dfcb463d2993`は、JPY 400のコードと非秘密の
 Stripe test Product/Price識別子を全flag `false`で最初にstagingした履歴です。現在のrollback先では
-ありません。交通量100%は停止Version `c917affd-74ed-4691-a3c6-b6c8e3149e3c`です。
-test Product/Price識別子と暗号化したrestricted key/Webhook bindingは、後の非公開受け入れ用に
-停止Versionへ保持していますが、公開アカウント経路、Checkout、支払い経路、実利用権はありません。
+ありません。交通量100%は修正済みSecretを持つ停止Version
+`809ecd8b-8e37-40f9-9f6b-7d006cdd52b6`です。test Product/Price識別子は非秘密の設定として残りますが、
+Stripe restricted key/Webhook Secretはこの停止中アカウント受け入れVersionにありません。
+公開アカウント経路、Checkout、支払い経路、実利用権もありません。
 そのため、現在のAIとカスタム期間の動作は変えません。公開アカウントとPlus販売は引き続き開始不可です。
 
 2026年8月17日JST、匿名の合成account 1件、localhost限定harness、private service binding、
@@ -4091,7 +4096,7 @@ privacy保護した公開Usage集計は、Usage Worker Version
 `e1496203-ab4b-429f-acd3-4e862cff0c2f`を確認済みの直接rollbackとします。前日までの完了した
 30日間について、利用記録に同意した端末プロフィールが10件以上集まった時だけ全体の実数を表示し、
 名前や端末別の行は返しません。現在のbackend確認は10件未満のため`suppressed`で、実数を返しませんでした。
-公開Dashboardの監督下実ブラウザ表示確認は合格しました。追加の本人確認・復旧と配信失敗時の受け入れ、返金、
+公開Dashboardの監督下実ブラウザ表示確認は合格しました。追加の本人確認と配信失敗時の受け入れ、返金、
 税とサポート、公開デモからの上限回避防止、公開順、決済試験、本番受け入れが完了するまで、
 個人上限とPlus特典の制限を有効にしません。
 
@@ -4155,10 +4160,11 @@ Product (`prod_V5SDrFKGSiwaql`) with one default JPY 400 one-time Price
 (`price_1U5HIhQk6xCYKhx8oHxg44Ep`). The Dashboard was re-read to confirm the product is
 active, the amount is JPY 400, and no recurring subscription is attached. The two non-secret
 identifiers and encrypted test-only Stripe bindings are retained only on stopped staging.
-Public Checkout and sales remain disabled. Current stopped Version
-`c917affd-74ed-4691-a3c6-b6c8e3149e3c` receives 100%, every release/readiness flag is false,
+Public Checkout and sales remain disabled. Corrected-secret stopped Version
+`809ecd8b-8e37-40f9-9f6b-7d006cdd52b6` receives 100%, every release/readiness flag is false,
 no route or Cron exists, the Stripe webhook destination is disabled, and its temporary Custom
-Domain has been deleted.
+Domain has been deleted. Historical stopped Version `c917affd-74ed-4691-a3c6-b6c8e3149e3c`
+must not be restored because its Turnstile Secret predates the accepted correction.
 
 同日、運営者は `glucoscope.app` を年間14.20米ドルで取得しました。自動更新はオフです。
 Plusの確認メールには `auth.glucoscope.app` を専用の送信元として使う方針です。期限前に、
@@ -4198,11 +4204,27 @@ APIの秒間上限は固定値を正本化せず、実アカウントのUsage画
 [Event Types](https://resend.com/docs/webhooks/event-types)、
 [Delivered表示と実受信の違い](https://resend.com/docs/knowledge-base/what-if-an-email-says-delivered-but-the-recipient-has-not-received-it)、
 [Acceptable Use Policy](https://resend.com/legal/acceptable-use)です。
+確認コード画面では、届くまで数分かかり得ること、迷惑メール・分類フォルダ・以前のGlucoScopeメールと
+同じ会話を案内します。再送は60秒の残り時間を表示し、新しいTurnstile tokenを必須にします。成功後は
+最新メールのコードだけを使うと伝え、新しい送信が確定した時だけ以前のchallengeを無効にします。再送が
+明確に失敗した場合は、先に正常送信済みのchallengeを失敗処理だけで無効にしません。429の
+`Retry-After`はブラウザ側で1〜86,400秒に制限して待機へ反映します。利用者案内、Resend Dashboardの
+`delivery_delayed`・`failed`・`bounced`・`complained`・`suppressed`の確認、停止判断、記録しない情報は
+`docs/Operations/PLUS_EMAIL_DELIVERY_RUNBOOK.md`を正とします。UI、原子的なchallenge切替、clientの
+失敗時grant保持、自動テスト、運営手順はローカル候補へ追加済みですが、追加の少人数受信箱と異常状態の
+実地運用が終わるまで公開アカウントと販売は停止したままです。
 2026年8月16日、公式テスト宛先の受理・`delivered`確認に加え、本人受信箱1通と実Turnstileを含む
-最初の非公開E2Eを受け入れました。閉じた試験用Versionだけで使った送信・認証用Secretは、100%へ
-復帰した停止中Versionには露出しません。Cloudflareへの現在の配置は、上記の公開URLを持たない停止中
-staging checkpointです。追加の少人数受信、復旧、配信失敗時の手順と残る公開前確認を終えるまで、
-公開アカウントとPlus販売は開始しません。
+最初の非公開E2Eを受け入れました。
+
+2026年8月18日、同じ非公開localhost境界で、同じメールへの完全な復旧も受け入れました。最初の
+確認コードでsession Aを作り、60秒の再送待機後に2通目を送り、2つ目の確認コードでsession Bを
+作りました。session Aは`401`、session Bは`200`、アカウント削除は`200`でした。専用Turnstile
+Secretの不一致はD1やメールへ触れる前に`403`で安全に停止し、運営者が値を開示せず正しいSecretへ
+差し替えた後は、実widgetと2通の本人受信箱到着に合格しました。既知の送信予約2行だけを削除し、
+12個のapplication tableをすべて0件へ戻し、previewを停止しました。現在は修正済みSecretを持つ
+停止Version `809ecd8b-8e37-40f9-9f6b-7d006cdd52b6`だけを100%へ向けています。公開アカウント、
+Checkout、販売、route、Cronは停止したままです。追加の少人数受信、配信失敗時の実地運用と残る
+公開前確認を終えるまで、公開アカウントとPlus販売は開始しません。
 
 常時表示モードは、ユーザー展開を始めた後に実装します。
 本人が選んだ時だけ、横向きのグラフ画面に限定して動かし、

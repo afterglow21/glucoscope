@@ -9,9 +9,14 @@ const source = fs.readFileSync(
 );
 const app = fs.readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
 const index = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const emailDeliveryRunbook = fs.readFileSync(
+  new URL("../docs/Operations/PLUS_EMAIL_DELIVERY_RUNBOOK.md", import.meta.url),
+  "utf8"
+);
 
 const TOKEN = "A".repeat(43);
 const VERIFICATION_GRANT = "G".repeat(43);
+const SECOND_VERIFICATION_GRANT = "H".repeat(43);
 const CHECKOUT_REQUEST_ID = "11111111-1111-4111-8111-111111111111";
 
 function createStorage() {
@@ -44,10 +49,10 @@ function loadClient({ storage = createStorage(), fetchImpl } = {}) {
   return { api: context.GlucoScopePlusEntitlement, storage };
 }
 
-function jsonResponse(body, status = 200) {
+function jsonResponse(body, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" }
+    headers: { "Content-Type": "application/json", ...extraHeaders }
   });
 }
 
@@ -87,6 +92,11 @@ test("the checked-in account and purchase UI stays hidden and network-inert", ()
   assert.match(index, /id="plusAccountRoleGuardian"/u);
   assert.match(index, /id="plusAccountAdultConfirmed"[^>]*required/u);
   assert.match(index, /子どもの名前・生年月日・血糖値は入力しません。/u);
+  assert.match(index, /id="plusAccountResendCodeButton"[^>]*disabled/u);
+  assert.match(index, /以前のGlucoScopeメールと同じ会話/u);
+  assert.match(app, /const PLUS_ACCOUNT_RESEND_WAIT_SECONDS = 60;/u);
+  assert.match(app, /startPlusAccountResendWait/u);
+  assert.match(app, /いちばん新しいメールのコードだけを使ってください。/u);
   assert.match(app, /plusAccountVerificationPending = true;[\s\S]*setPlusAccountControlsDisabled\(false\)/u);
   assert.match(app, /locksBuyerConfirmation = plusAccountVerificationPending/u);
   assert.match(app, /checkoutReturn === "success"/u);
@@ -94,6 +104,16 @@ test("the checked-in account and purchase UI stays hidden and network-inert", ()
   assert.match(app, /history\.replaceState/u);
   assert.match(app, /event\.key !== "Enter"[\s\S]*event\.preventDefault\(\)/u);
   assert.match(app, /if \(!config\.accountEnabled\) return;/u);
+});
+
+test("email delivery guidance limits resend and keeps support free of codes and health data", () => {
+  assert.match(emailDeliveryRunbook, /60秒の表示が終わるまで再送しない/u);
+  assert.match(emailDeliveryRunbook, /いちばん新しいメールの6桁コードだけ/u);
+  assert.match(emailDeliveryRunbook, /失敗した場合は、先に正常送信済みのコード/u);
+  assert.match(emailDeliveryRunbook, /delivery_delayed/u);
+  assert.match(emailDeliveryRunbook, /suppressed/u);
+  assert.match(emailDeliveryRunbook, /6桁コード、メールのパスワード、カード情報、血糖値/u);
+  assert.match(emailDeliveryRunbook, /Freeの基本機能を止めない/u);
 });
 
 test("request-code preserves local-part case and keeps its verification grant in memory only", async () => {
@@ -277,6 +297,66 @@ test("wrong-code retries retain the in-memory verification grant until success",
   ]);
   assert.equal((await api.verifyCode({ email: "A@example.com", code: "123456" })).error,
     "verification_grant_required");
+});
+
+test("a failed resend retains the previous grant and exposes a bounded retry wait", async () => {
+  const verifyBodies = [];
+  let requestCalls = 0;
+  const { api } = loadClient({
+    fetchImpl: async (url, init) => {
+      if (url.endsWith("/v1/auth/request-code")) {
+        requestCalls += 1;
+        if (requestCalls === 1) {
+          return jsonResponse({
+            ok: true,
+            status: "code_sent",
+            verificationGrant: VERIFICATION_GRANT
+          });
+        }
+        return jsonResponse(
+          { ok: false, error: "please_wait" },
+          429,
+          { "Retry-After": "60" }
+        );
+      }
+      verifyBodies.push(JSON.parse(init.body));
+      return jsonResponse({ ok: false, error: "invalid_or_expired_code" }, 400);
+    }
+  });
+  await api.configure({ enabled: true, endpoint: "https://plus.example" });
+  assert.equal((await api.requestCode(confirmedSelfRequest("A@example.com"))).ok, true);
+  const resend = await api.requestCode(confirmedSelfRequest("A@example.com", "fresh-token"));
+  assert.equal(resend.ok, false);
+  assert.equal(resend.error, "please_wait");
+  assert.equal(resend.retryAfterSeconds, 60);
+  await api.verifyCode({ email: "A@example.com", code: "123456" });
+  assert.equal(verifyBodies[0].verificationGrant, VERIFICATION_GRANT);
+});
+
+test("a successful resend replaces the previous in-memory grant", async () => {
+  const verifyBodies = [];
+  let requestCalls = 0;
+  const { api } = loadClient({
+    fetchImpl: async (url, init) => {
+      if (url.endsWith("/v1/auth/request-code")) {
+        requestCalls += 1;
+        return jsonResponse({
+          ok: true,
+          status: "code_sent",
+          verificationGrant: requestCalls === 1
+            ? VERIFICATION_GRANT
+            : SECOND_VERIFICATION_GRANT
+        });
+      }
+      verifyBodies.push(JSON.parse(init.body));
+      return jsonResponse({ ok: false, error: "invalid_or_expired_code" }, 400);
+    }
+  });
+  await api.configure({ enabled: true, endpoint: "https://plus.example" });
+  await api.requestCode(confirmedSelfRequest("A@example.com"));
+  await api.requestCode(confirmedSelfRequest("A@example.com", "fresh-token"));
+  await api.verifyCode({ email: "A@example.com", code: "234567" });
+  assert.equal(verifyBodies[0].verificationGrant, SECOND_VERIFICATION_GRANT);
 });
 
 test("configure, clear, logout, and delete discard an in-memory verification grant", async () => {

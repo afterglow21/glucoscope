@@ -41,6 +41,8 @@ let plusAccountTurnstileWidgetId = null;
 let plusAccountDeleteTurnstileWidgetId = null;
 let plusAccountActionInFlight = false;
 let plusAccountVerificationPending = false;
+let plusAccountResendAvailableAt = 0;
+let plusAccountResendTimerId = null;
 let plusCheckoutConfirmationPending = false;
 let plusCheckoutCancelledReturn = false;
 let plusCheckoutPollGeneration = 0;
@@ -100,6 +102,7 @@ const PLUS_FEATURE_GATING_ENABLED = false;
 // before any purchase button is ever shown.
 const PLUS_ACCOUNT_UI_ENABLED = false;
 const PLUS_PURCHASE_UI_ENABLED = false;
+const PLUS_ACCOUNT_RESEND_WAIT_SECONDS = 60;
 const PRODUCTION_AI_LETTER_WORKER_ENDPOINT = "https://gluco-letter-worker.afterglow21.workers.dev/api/gluco-letter";
 const LOCAL_AI_LETTER_WORKER_ENDPOINT = "http://127.0.0.1:8787/api/gluco-letter";
 
@@ -343,7 +346,9 @@ const translations = {
     plusAccountGuardianConfirmed: "私は保護者として、購入・別の端末で使うための確認・返金の問い合わせを管理します",
     plusAccountSendCodeButton: "確認コードを送る",
     plusAccountCodeLabel: "メールに届いた6桁の確認コード",
-    plusAccountCodeHelp: "10分以内に入力してください。この画面を閉じたり更新した時は、もう一度コードを送ってください。届かない時は迷惑メールも確認できます。",
+    plusAccountCodeHelp: "10分以内に入力してください。この画面は閉じずに待ってください。",
+    plusAccountDeliveryHelp: "届くまで数分かかることがあります。迷惑メール・プロモーション・以前のGlucoScopeメールと同じ会話も確認してください。再送した時は、いちばん新しいメールのコードを使います。",
+    plusAccountResendCodeButton: "もう一度送る",
     plusAccountVerifyButton: "確認する",
     plusAccountEditConfirmationButton: "メール・選択を直す",
     plusAccountPurchaseButton: "400円で30日間使う（支払い画面へ）",
@@ -732,7 +737,9 @@ const translations = {
     plusAccountGuardianConfirmed: "As the guardian, I will manage the purchase, use on another device, and refund questions",
     plusAccountSendCodeButton: "Send verification code",
     plusAccountCodeLabel: "Six-digit code from the email",
-    plusAccountCodeHelp: "Enter it within 10 minutes. If you close or reload this page, send a new code. If it does not arrive, check the junk folder too.",
+    plusAccountCodeHelp: "Enter it within 10 minutes. Keep this page open while you wait.",
+    plusAccountDeliveryHelp: "Delivery can take a few minutes. Check junk, promotions, and the existing GlucoScope email thread. After a resend, use the code in the newest email.",
+    plusAccountResendCodeButton: "Send again",
     plusAccountVerifyButton: "Verify",
     plusAccountEditConfirmationButton: "Change email or choices",
     plusAccountPurchaseButton: "Use Plus for 30 days for JPY 400 (payment page)",
@@ -3175,6 +3182,11 @@ function getPlusAccountFriendlyError(error, action = "account") {
       : "次の確認コードを送るまで、1分ほど待ってください。";
   }
   if (["network_error", "network_unavailable", "request_timeout"].includes(code)) {
+    if (action === "code") {
+      return currentLanguage === "en"
+        ? "The connection stopped before delivery could be confirmed. If a code arrives, you can try it. Otherwise, wait and send a new code."
+        : "送信結果を確認する前に通信が止まりました。コードが届いた時は入力できます。届かない時は、少し待ってから新しいコードを送ってください。";
+    }
     return currentLanguage === "en"
       ? "The internet connection was interrupted. Nothing was purchased. Please try again later."
       : "通信が途中で止まりました。購入は行われていません。少し時間をおいて試してください。";
@@ -3234,6 +3246,56 @@ function getPlusAccountFriendlyError(error, action = "account") {
     : "アカウントの状態を確認できませんでした。少し時間をおいて試してください。";
 }
 
+function getPlusAccountResendWaitSeconds() {
+  return Math.max(0, Math.ceil((plusAccountResendAvailableAt - Date.now()) / 1000));
+}
+
+function clearPlusAccountResendTimer({ reset = false } = {}) {
+  if (plusAccountResendTimerId !== null) {
+    clearTimeout(plusAccountResendTimerId);
+    plusAccountResendTimerId = null;
+  }
+  if (reset) plusAccountResendAvailableAt = 0;
+}
+
+function updatePlusAccountResendButton() {
+  const button = document.getElementById("plusAccountResendCodeButton");
+  const seconds = getPlusAccountResendWaitSeconds();
+  if (button) {
+    button.textContent = seconds > 0
+      ? (currentLanguage === "en"
+        ? `Send again in ${seconds}s`
+        : `${seconds}秒後にもう一度送れます`)
+      : t("plusAccountResendCodeButton");
+    button.disabled = plusAccountActionInFlight
+      || !plusAccountVerificationPending
+      || seconds > 0;
+  }
+  const initialButton = document.getElementById("plusAccountSendCodeButton");
+  if (initialButton) {
+    initialButton.disabled = plusAccountActionInFlight
+      || plusAccountVerificationPending
+      || seconds > 0;
+  }
+}
+
+function startPlusAccountResendWait(seconds = PLUS_ACCOUNT_RESEND_WAIT_SECONDS) {
+  const safeSeconds = Number.isSafeInteger(Number(seconds))
+    ? Math.min(86_400, Math.max(1, Number(seconds)))
+    : PLUS_ACCOUNT_RESEND_WAIT_SECONDS;
+  clearPlusAccountResendTimer();
+  plusAccountResendAvailableAt = Date.now() + safeSeconds * 1000;
+  const tick = () => {
+    updatePlusAccountResendButton();
+    if (getPlusAccountResendWaitSeconds() > 0) {
+      plusAccountResendTimerId = setTimeout(tick, 250);
+    } else {
+      plusAccountResendTimerId = null;
+    }
+  };
+  tick();
+}
+
 function setPlusAccountControlsDisabled(disabled) {
   plusAccountActionInFlight = Boolean(disabled);
   [
@@ -3244,6 +3306,7 @@ function setPlusAccountControlsDisabled(disabled) {
     "plusAccountGuardianConfirmed",
     "plusAccountCode",
     "plusAccountSendCodeButton",
+    "plusAccountResendCodeButton",
     "plusAccountVerifyButton",
     "plusAccountEditConfirmationButton",
     "plusAccountPurchaseButton",
@@ -3260,11 +3323,18 @@ function setPlusAccountControlsDisabled(disabled) {
         "plusAccountAdultConfirmed",
         "plusAccountGuardianConfirmed"
       ].includes(id);
+      const locksInitialSend = id === "plusAccountSendCodeButton"
+        && (plusAccountVerificationPending || getPlusAccountResendWaitSeconds() > 0);
+      const locksResend = id === "plusAccountResendCodeButton"
+        && (!plusAccountVerificationPending || getPlusAccountResendWaitSeconds() > 0);
       control.disabled = plusAccountActionInFlight
         || locksBuyerConfirmation
+        || locksInitialSend
+        || locksResend
         || (id === "plusAccountPurchaseButton" && plusCheckoutConfirmationPending);
     }
   });
+  updatePlusAccountResendButton();
 }
 
 function updatePlusGuardianConfirmation() {
@@ -3645,8 +3715,16 @@ function setupPlusAccountFoundation() {
     if (deleteDetails.open) renderPlusAccountDeleteTurnstile();
   });
 
-  document.getElementById("plusAccountSendCodeButton")?.addEventListener("click", async () => {
+  const requestPlusAccountCode = async ({ resend = false } = {}) => {
     if (plusAccountActionInFlight) return;
+    const resendWaitSeconds = getPlusAccountResendWaitSeconds();
+    if (resendWaitSeconds > 0) {
+      setPlusAccountStatus(currentLanguage === "en"
+        ? `Please wait ${resendWaitSeconds} seconds before sending another code.`
+        : `次の確認コードを送るまで、あと${resendWaitSeconds}秒待ってください。`);
+      return;
+    }
+    if (plusAccountVerificationPending && !resend) return;
     if (!emailInput?.checkValidity?.()) {
       emailInput?.setAttribute("aria-invalid", "true");
       emailInput?.reportValidity?.();
@@ -3700,17 +3778,36 @@ function setupPlusAccountFoundation() {
     resetPlusAccountTurnstile();
     setPlusAccountControlsDisabled(false);
     if (!result?.ok) {
+      if (result?.error === "please_wait") {
+        startPlusAccountResendWait(
+          Number(result?.retryAfterSeconds) || PLUS_ACCOUNT_RESEND_WAIT_SECONDS
+        );
+      }
       setPlusAccountStatus(getPlusAccountFriendlyError(result?.error, "code"));
       return;
     }
     plusAccountVerificationPending = true;
+    startPlusAccountResendWait();
     setPlusAccountControlsDisabled(false);
     const codePanel = document.getElementById("plusAccountCodePanel");
     if (codePanel) codePanel.hidden = false;
-    setPlusAccountStatus(currentLanguage === "en"
-      ? "If the email can be used, a six-digit code will arrive shortly. Keep this page open until you enter it."
-      : "入力したメールを使える場合は、まもなく6桁の確認コードが届きます。入力するまで、この画面を開いたままにしてください。");
+    if (resend && codeInput) codeInput.value = "";
+    setPlusAccountStatus(resend
+      ? (currentLanguage === "en"
+        ? "A new code was sent. Delivery can take a few minutes. Use only the code in the newest email."
+        : "新しい確認コードを送りました。届くまで数分かかることがあります。いちばん新しいメールのコードだけを使ってください。")
+      : (currentLanguage === "en"
+        ? "A six-digit code will arrive if the email can be used. Delivery can take a few minutes, so keep this page open."
+        : "入力したメールを使える場合は、6桁の確認コードが届きます。数分かかることがあるため、この画面を開いたまま待ってください。"));
     document.getElementById("plusAccountCode")?.focus();
+  };
+
+  document.getElementById("plusAccountSendCodeButton")?.addEventListener("click", () => {
+    void requestPlusAccountCode();
+  });
+
+  document.getElementById("plusAccountResendCodeButton")?.addEventListener("click", () => {
+    void requestPlusAccountCode({ resend: true });
   });
 
   document.getElementById("plusAccountVerifyButton")?.addEventListener("click", async () => {
@@ -3734,6 +3831,7 @@ function setupPlusAccountFoundation() {
       return;
     }
     plusAccountVerificationPending = false;
+    clearPlusAccountResendTimer({ reset: true });
     if (codeInput) codeInput.value = "";
     updatePlusAccountUi();
     configurePlusFeatureGating();
@@ -3752,6 +3850,7 @@ function setupPlusAccountFoundation() {
     if (plusAccountActionInFlight) return;
     plusEntitlementClient?.cancelVerification?.();
     plusAccountVerificationPending = false;
+    clearPlusAccountResendTimer({ reset: true });
     if (codeInput) codeInput.value = "";
     const codePanel = document.getElementById("plusAccountCodePanel");
     if (codePanel) codePanel.hidden = true;
@@ -3782,6 +3881,7 @@ function setupPlusAccountFoundation() {
     setPlusAccountControlsDisabled(true);
     await plusEntitlementClient?.logout?.();
     plusAccountVerificationPending = false;
+    clearPlusAccountResendTimer({ reset: true });
     plusCheckoutConfirmationPending = false;
     plusCheckoutCancelledReturn = false;
     plusCheckoutPollGeneration += 1;
@@ -5009,6 +5109,7 @@ function applyLanguage() {
     plusFeatureNotice.textContent = t(plusFeatureNotice.dataset.messageKey);
   }
   updatePlusAccountUi();
+  updatePlusAccountResendButton();
   syncMobileApp();
 }
 

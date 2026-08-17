@@ -339,6 +339,8 @@ export function createAccountAuthService(env = {}, dependencies = {}) {
       }
       const sent = await store.markChallengeSent({
         id: credentials.challengeId,
+        emailLookupHmac: currentEmailIdentity.hmac,
+        alternateEmailLookupHmac: previousEmailIdentity.hmac,
         sentAt: requireSafeEpoch(now()),
       });
       if (!sent?.sent) {

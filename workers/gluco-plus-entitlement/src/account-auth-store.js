@@ -150,17 +150,6 @@ export function createD1AccountAuthStore(database) {
           createdAt,
         ),
         db.prepare(`
-          UPDATE account_auth_challenges
-          SET invalidated_at = ?4
-          WHERE email_lookup_hmac IN (?1, ?2)
-            AND id <> ?3
-            AND consumed_at IS NULL
-            AND invalidated_at IS NULL
-            AND EXISTS (
-              SELECT 1 FROM account_auth_challenges WHERE id = ?3
-            )
-        `).bind(emailLookupHmac, alternateEmailLookupHmac, id, createdAt),
-        db.prepare(`
           SELECT
             EXISTS (
               SELECT 1 FROM account_auth_challenges WHERE id = ?1
@@ -197,7 +186,7 @@ export function createD1AccountAuthStore(database) {
           globalWindowStartsAt,
         ),
       ]);
-      const row = firstBatchRow(results[6]);
+      const row = firstBatchRow(results[5]);
       if (Boolean(row?.inserted)) return { status: "pending", id };
       const latestRetryAt = row?.latest_previous_created_at === null
         || row?.latest_previous_created_at === undefined
@@ -227,7 +216,13 @@ export function createD1AccountAuthStore(database) {
       };
     },
 
-    async markChallengeSent({ id, sentAt }) {
+    async markChallengeSent({
+      id,
+      emailLookupHmac,
+      alternateEmailLookupHmac,
+      sentAt,
+    }) {
+      const alternateLookup = alternateEmailLookupHmac || emailLookupHmac;
       const results = await db.batch([
         db.prepare(`
           UPDATE account_auth_challenges
@@ -237,8 +232,32 @@ export function createD1AccountAuthStore(database) {
             AND consumed_at IS NULL
             AND invalidated_at IS NULL
             AND expires_at > ?2
+            AND NOT EXISTS (
+              SELECT 1 FROM account_auth_challenges AS newer
+              WHERE newer.email_lookup_hmac IN (?3, ?4)
+                AND newer.id <> ?1
+                AND newer.created_at > account_auth_challenges.created_at
+                AND newer.send_state = 'sent'
+                AND newer.consumed_at IS NULL
+                AND newer.invalidated_at IS NULL
+            )
           RETURNING id
-        `).bind(id, sentAt),
+        `).bind(id, sentAt, emailLookupHmac, alternateLookup),
+        db.prepare(`
+          UPDATE account_auth_challenges
+          SET invalidated_at = ?2
+          WHERE id <> ?1
+            AND email_lookup_hmac IN (?3, ?4)
+            AND created_at <= (
+              SELECT created_at FROM account_auth_challenges WHERE id = ?1
+            )
+            AND consumed_at IS NULL
+            AND invalidated_at IS NULL
+            AND EXISTS (
+              SELECT 1 FROM account_auth_challenges
+              WHERE id = ?1 AND send_state = 'sent' AND sent_at = ?2
+            )
+        `).bind(id, sentAt, emailLookupHmac, alternateLookup),
         db.prepare(`
           UPDATE account_email_send_reservations
           SET delivery_state = 'sent', updated_at = ?2

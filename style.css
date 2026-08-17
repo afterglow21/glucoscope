@@ -7377,6 +7377,17 @@ body.local-profile-dialog-open {
   gap:12px;
 }
 
+.plus-account-delivery-help {
+  margin:0;
+  padding:11px 12px;
+  border:1px solid rgba(147,197,253,.22);
+  border-radius:12px;
+  background:rgba(30,64,175,.12);
+  color:#dbeafe;
+  font-size:13px;
+  line-height:1.7;
+}
+
 .plus-account-confirmation {
   display:grid;
   gap:9px;

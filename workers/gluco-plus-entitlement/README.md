@@ -28,12 +28,14 @@ false: `PLUS_ENTITLEMENT_RPC_ENABLED`, `PLUS_PURCHASES_ENABLED`,
 `PLUS_ACCOUNT_AUTH_HTTP_ENABLED`, `ACCOUNT_AUTH_CLEANUP_ENABLED`,
 `PLUS_SALES_READINESS_CONFIRMED`, and `PLUS_TAX_TREATMENT_CONFIRMED`.
 
-Code checkpoint `dabb3571` is deployed as the stopped
-`glucoscope-plus-entitlement-staging` Worker. Version
-`c917affd-74ed-4691-a3c6-b6c8e3149e3c` receives 100% of that Worker's traffic, but
+The corrected-secret stopped `glucoscope-plus-entitlement-staging` Worker is Version
+`809ecd8b-8e37-40f9-9f6b-7d006cdd52b6` at 100% traffic. It keeps only the encrypted
+account HMAC, Resend, and dedicated Turnstile Secret bindings required for later closed
+acceptance, but
 `workers_dev=false`, preview URLs are disabled, no routes or Cron triggers exist,
-observability is disabled, and the `workers.dev` URL returns `404`. Six encrypted test-only
-Secret bindings remain for later closed acceptance; their values are not recorded. This
+observability is disabled, and the `workers.dev` URL returns `404`. Secret values are not
+recorded. Earlier stopped Version `c917affd-74ed-4691-a3c6-b6c8e3149e3c` is historical and
+must not be restored because its Turnstile Secret predates the accepted correction. This
 deployment is an unreachable schema-and-binding checkpoint, not public account access or
 a sales release.
 
@@ -76,6 +78,26 @@ exact test send-reservation row was removed, all 12 application tables returned 
 and stopped Version `bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9` was restored to 100%. The public
 `workers.dev` URL returned `404`; public account UI, sales, and payment remained off. No
 email address, code, token, Secret, site key, or candidate Version ID is recorded.
+
+On 2026-08-18 JST, a new localhost-only drill accepted the complete same-email recovery
+path. The first code created session A; after the enforced 60-second resend wait, a second
+code created session B. The old session returned `401`, the new session returned `200`, and
+account deletion returned `200`. A mismatched dedicated Turnstile Secret first failed closed
+with `403` before D1 or email; after the operator replaced it without exposing the value, the
+real widget and both personal-inbox deliveries succeeded. The two known send-reservation rows
+were deleted, all 12 application tables returned to zero, the preview stopped, and corrected-
+secret stopped Version `809ecd8b-8e37-40f9-9f6b-7d006cdd52b6` was deployed alone at 100%.
+Public account UI, Checkout, sales, routes, and Cron remained off throughout.
+
+The next delivery-hardening candidate adds an explicit several-minute wait, junk/category/
+existing-thread guidance, a visible 60-second resend countdown, and a fresh Turnstile check
+for every resend. A newly delivered code replaces the previous challenge only after the email
+adapter accepts it and the new challenge is marked sent; a clearly failed resend no longer
+invalidates the previously delivered code. The browser keeps the prior in-memory grant across
+a failed resend, adopts a successful replacement only, and bounds a server `Retry-After` to
+1–86,400 seconds. Operator handling for delayed, bounced, complained, failed, and suppressed
+mail is defined in [`PLUS_EMAIL_DELIVERY_RUNBOOK.md`](../../docs/Operations/PLUS_EMAIL_DELIVERY_RUNBOOK.md).
+This candidate is not deployed, and public account UI and sales remain off.
 
 On 2026-08-17 JST, a closed Stripe sandbox drill used one opaque synthetic account through
 a localhost-only harness and a zero-percent Checkout candidate. Stripe-hosted Checkout
@@ -303,8 +325,8 @@ Recheck [Resend pricing](https://resend.com/pricing),
 [acceptable-use sending thresholds](https://resend.com/legal/acceptable-use) immediately
 before any additional personal-mailbox test. The first personal-inbox and Turnstile path
 passed the closed acceptance above. Account and sales flags remain off until the ordinary
-30-day retention plus longer Suppression List exception, recovery and delivery-failure
-procedures, and the remaining release gates are explicitly accepted.
+30-day retention plus longer Suppression List exception, delivery-failure procedures, and the
+remaining release gates are explicitly accepted.
 
 Suggested simple explanation for the future screen:
 
@@ -417,10 +439,11 @@ Cloudflare's secret or dashboard configuration facilities; never put their value
 Git or `.dev.vars`.
 
 Live sales remain blocked. The stopped staging D1 schema-and-binding checkpoint, official
-Resend test-recipient acceptance, and the first personal-inbox and Turnstile closed E2E
-acceptance passed. Stripe-hosted full payment, duplicate delivery, full refund,
+Resend test-recipient acceptance, the first personal-inbox and Turnstile closed E2E, and the
+same-email session-replacement recovery acceptance passed. Stripe-hosted full payment,
+duplicate delivery, full refund,
 concurrent-click protection, pending reuse, expiry, recreation, and declined-card acceptance
-also passed. Recovery and delivery-failure acceptance, user-facing terms, tax and receipt
+also passed. Delivery-failure acceptance, user-facing terms, tax and receipt
 review, the full support exercise, any additionally enabled payment method, and production
 acceptance are still required. The
 payment, account, RPC, cleanup, sales, and tax switches must not be enabled merely because

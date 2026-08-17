@@ -377,10 +377,12 @@
             <label class="local-profile-field" for="plusAccountCode">
               <span data-i18n-key="plusAccountCodeLabel">メールに届いた6桁の確認コード</span>
               <input id="plusAccountCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" aria-describedby="plusAccountCodeHelp" required>
-              <small id="plusAccountCodeHelp" data-i18n-key="plusAccountCodeHelp">10分以内に入力してください。この画面を閉じたり更新した時は、もう一度コードを送ってください。届かない時は迷惑メールも確認できます。</small>
+              <small id="plusAccountCodeHelp" data-i18n-key="plusAccountCodeHelp">10分以内に入力してください。この画面は閉じずに待ってください。</small>
             </label>
+            <p class="plus-account-delivery-help" data-i18n-key="plusAccountDeliveryHelp">届くまで数分かかることがあります。迷惑メール・プロモーション・以前のGlucoScopeメールと同じ会話も確認してください。再送した時は、いちばん新しいメールのコードを使います。</p>
             <div class="usage-profile-actions">
               <button id="plusAccountVerifyButton" class="usage-profile-primary-button" type="button" data-i18n-key="plusAccountVerifyButton">確認する</button>
+              <button id="plusAccountResendCodeButton" class="usage-profile-secondary-button" type="button" data-i18n-key="plusAccountResendCodeButton" disabled>60秒後にもう一度送れます</button>
               <button id="plusAccountEditConfirmationButton" class="usage-profile-secondary-button" type="button" data-i18n-key="plusAccountEditConfirmationButton">メール・選択を直す</button>
             </div>
           </div>

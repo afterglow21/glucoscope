@@ -229,10 +229,17 @@
         return { ok: false, status: response.status, error: "invalid_response" };
       }
       if (!response.ok || payload?.ok !== true) {
+        const retryAfterValue = Number(response.headers.get("Retry-After"));
+        const retryAfterSeconds = Number.isSafeInteger(retryAfterValue)
+          && retryAfterValue >= 1
+          && retryAfterValue <= 86_400
+          ? retryAfterValue
+          : null;
         return {
           ok: false,
           status: response.status,
-          error: String(payload?.error || "request_failed")
+          error: String(payload?.error || "request_failed"),
+          retryAfterSeconds
         };
       }
       return { ok: true, status: response.status, payload };
@@ -318,7 +325,6 @@
       return { ok: false, error: "invalid_request" };
     }
     const epoch = ++operationEpoch;
-    clearVerificationGrant();
     const result = await requestJson("/v1/auth/request-code", {
       method: "POST",
       body: {
@@ -332,9 +338,14 @@
     if (epoch !== operationEpoch) return { ok: false, skipped: true };
     const grant = String(result.payload?.verificationGrant || "");
     if (!result.ok || result.payload?.status !== "code_sent") {
-      return { ok: false, error: result.error || "request_failed" };
+      return {
+        ok: false,
+        error: result.error || "request_failed",
+        retryAfterSeconds: result.retryAfterSeconds || null
+      };
     }
     if (!VERIFICATION_GRANT_PATTERN.test(grant)) {
+      clearVerificationGrant();
       return { ok: false, error: "invalid_response" };
     }
     verificationGrant = grant;

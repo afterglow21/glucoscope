@@ -470,6 +470,83 @@ test("real SQLite flow sends a short code, rotates sessions for recovery, and st
   });
 });
 
+test("a failed resend keeps the previously delivered code usable", async (t) => {
+  const database = createDatabase();
+  t.after(() => database.close());
+  const store = createD1AccountAuthStore(database);
+  const clock = { value: NOW };
+  const delivered = [];
+  const dependencies = createDeterministicDependencies(store, clock, delivered);
+  let sendAttempts = 0;
+  dependencies.emailAdapter = {
+    async sendAccountCode(message) {
+      sendAttempts += 1;
+      if (sendAttempts === 1) {
+        delivered.push(message);
+        return { accepted: true };
+      }
+      return { accepted: false };
+    },
+  };
+  const service = createAccountAuthService(ENABLED_ENV, dependencies);
+
+  const first = await service.requestCode(confirmedSelf(), { turnstileVerified: true });
+  clock.value += 61_000;
+  await assert.rejects(
+    service.requestCode(confirmedSelf(), { turnstileVerified: true }),
+    assertAuthError("service_unavailable", 503),
+  );
+
+  const challenges = database.raw.prepare(`
+    SELECT id, send_state, invalidated_at
+    FROM account_auth_challenges
+    ORDER BY created_at
+  `).all();
+  assert.equal(challenges.length, 2);
+  assert.equal(challenges[0].send_state, "sent");
+  assert.equal(challenges[0].invalidated_at, null);
+  assert.equal(challenges[1].send_state, "failed");
+  assert.equal(Number(challenges[1].invalidated_at), clock.value);
+
+  const verified = await service.verifyCode({
+    email: EMAIL,
+    code: delivered[0].code,
+    verificationGrant: first.verificationGrant,
+  });
+  assert.equal(verified.status, "verified");
+});
+
+test("a successfully delivered resend replaces the older code", async (t) => {
+  const database = createDatabase();
+  t.after(() => database.close());
+  const store = createD1AccountAuthStore(database);
+  const clock = { value: NOW };
+  const delivered = [];
+  const service = createAccountAuthService(
+    ENABLED_ENV,
+    createDeterministicDependencies(store, clock, delivered),
+  );
+
+  const first = await service.requestCode(confirmedSelf(), { turnstileVerified: true });
+  clock.value += 61_000;
+  const second = await service.requestCode(confirmedSelf(), { turnstileVerified: true });
+
+  await assert.rejects(
+    service.verifyCode({
+      email: EMAIL,
+      code: delivered[0].code,
+      verificationGrant: first.verificationGrant,
+    }),
+    assertAuthError("invalid_or_expired_code", 400),
+  );
+  const verified = await service.verifyCode({
+    email: EMAIL,
+    code: delivered[1].code,
+    verificationGrant: second.verificationGrant,
+  });
+  assert.equal(verified.status, "verified");
+});
+
 test("email HMAC rotation atomically rekeys the same Plus account without losing its entitlement", async (t) => {
   const database = createDatabase();
   t.after(() => database.close());
@@ -779,6 +856,8 @@ test("rolling global email cap atomically reserves 80 attempts across addresses"
 
   await store.markChallengeSent({
     id: challengeInput(1).id,
+    emailLookupHmac: challengeInput(1).emailLookupHmac,
+    alternateEmailLookupHmac: challengeInput(1).alternateEmailLookupHmac,
     sentAt: NOW + 1,
   });
   await store.markChallengeSendFailed({
