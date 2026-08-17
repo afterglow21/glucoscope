@@ -83,7 +83,7 @@ test("the checked-in account and purchase UI stays hidden and network-inert", ()
   assert.match(app, /action: "glucoscope-plus-delete-account"/u);
   assert.match(index, /id="plusAccountDeleteDetails"/u);
   assert.match(index, /基本の血糖表示は、Plusを買わなくても使えます。/u);
-  assert.match(index, /300円で30日間使う（支払い画面へ）/u);
+  assert.match(index, /400円で30日間使う（支払い画面へ）/u);
   assert.match(index, /id="plusAccountRoleGuardian"/u);
   assert.match(index, /id="plusAccountAdultConfirmed"[^>]*required/u);
   assert.match(index, /子どもの名前・生年月日・血糖値は入力しません。/u);

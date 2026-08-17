@@ -2818,6 +2818,8 @@ function buildAiQuotaErrorResponse(result, summary = {}) {
     ? 401
     : code === "invalid_quota_request"
       ? 400
+      : code === "plus_required"
+        ? 403
       : code === "daily_limit_reached"
         ? 429
         : code === "request_in_progress" || code === "request_already_succeeded"
@@ -2828,11 +2830,15 @@ function buildAiQuotaErrorResponse(result, summary = {}) {
   const userMessage = language === "en"
     ? code === "daily_limit_reached"
       ? "Today's successful AI analyses have reached your current limit. Your glucose display is still available, so please try again tomorrow 🍀"
+      : code === "plus_required"
+        ? "Detailed analysis is included with Plus. Free includes one gentle analysis per day, and your glucose display is still available 🍀"
       : code === "authentication_required"
         ? "Gluco could not confirm the usage profile for AI analysis. Your glucose display is still available 🍀"
         : "Gluco could not safely confirm the AI usage count. Your glucose display is still available, so please try again a little later 🍀"
     : code === "daily_limit_reached"
       ? "きょう使えるAI分析の回数に達したよ。血糖表示はそのまま見られるから、また明日試してね🍀"
+      : code === "plus_required"
+        ? "しっかり分析はPlusで使えるよ。Freeでは、やさしい分析を1日1回試せるよ。血糖表示はそのまま見られるよ🍀"
       : code === "authentication_required"
         ? "AI分析に使う利用プロフィールを確認できなかったよ。血糖表示はそのまま見られるよ🍀"
         : "AI分析の利用回数を安全に確認できなかったよ。血糖表示はそのまま使えるから、少し時間をおいて試してね🍀";

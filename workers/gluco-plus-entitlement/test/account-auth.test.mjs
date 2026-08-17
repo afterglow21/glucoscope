@@ -143,6 +143,7 @@ function createDatabase() {
     "../migrations/0003_stripe_checkout_state.sql",
     "../migrations/0004_guardian_buyer_confirmation.sql",
     "../migrations/0005_account_email_global_send_limit.sql",
+    "../migrations/0006_plus_price_400.sql",
   ]) {
     database.raw.exec(readFileSync(new URL(migration, import.meta.url), "utf8"));
   }
@@ -491,7 +492,7 @@ test("email HMAC rotation atomically rekeys the same Plus account without losing
       currency, paid_at, outcome, received_at, processed_at
     ) VALUES (
       'evt_rotation_receipt', 'cs_test_rotation123456',
-      'checkout.session.completed', ?1, 300, 'jpy', ?2,
+      'checkout.session.completed', ?1, 400, 'jpy', ?2,
       'granted', ?2, ?2
     )
   `).run(ACCOUNT_IDS[0], entitlementStartsAt);
@@ -501,7 +502,7 @@ test("email HMAC rotation atomically rekeys the same Plus account without losing
       starts_at, ends_at, status, source_event_id, created_at, updated_at
     ) VALUES (
       'dddddddd-dddd-4ddd-8ddd-dddddddddddd', ?1, 'plus_30d',
-      'one_time', 300, 'jpy', ?2, ?3, 'granted',
+      'one_time', 400, 'jpy', ?2, ?3, 'granted',
       'evt_rotation_receipt', ?2, ?2
     )
   `).run(ACCOUNT_IDS[0], entitlementStartsAt, entitlementEndsAt);
@@ -1189,7 +1190,7 @@ test("an account with a purchase receipt stays intact and requires private suppo
       currency, paid_at, outcome, received_at, processed_at
     ) VALUES (
       'evt_local_receipt', 'cs_test_1234567890123456',
-      'checkout.session.completed', ?1, 300, 'jpy', ?2,
+      'checkout.session.completed', ?1, 400, 'jpy', ?2,
       'pending', ?2, NULL
     )
   `).run(ACCOUNT_IDS[0], NOW);

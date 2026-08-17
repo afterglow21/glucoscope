@@ -321,7 +321,7 @@ profile ID、token・token hash、作成・更新・最終利用日時、日別�
 
 ## 22. AI利用上限の無効状態での連携候補（2026-08-15）
 
-FreeはJST基準で正常完了した新しいAI分析を1日1回、Plusは1日5回とするためのサーバー側基盤を追加した。ただし、Usage Worker、AI Worker、フロントの保存済みflagはすべて`false`であり、現時点の公開動作と送信内容は変えない。フロントがOFFの間は`Authorization`とquota用`requestId`を送らない。
+FreeはJST基準で正常完了した新しい「やさしい分析」だけを1日1回、Plusは「やさしい分析」と「しっかり分析」を合わせて1日5回とするためのサーバー側基盤を追加した。「しっかり分析」のグルコのお話、AIお手紙、ChatGPTへの相談はすべてPlus機能とする。ただし、Usage Worker、AI Worker、フロントの保存済みflagはすべて`false`であり、現時点の公開動作と送信内容は変えない。フロントがOFFの間は`Authorization`とquota用`requestId`を送らない。
 
 AI回数は機能提供に必要な別記録であり、任意の利用記録とは分ける。利用記録を停止してもFree AIのcredentialは使えるが、`usage_daily`のAIイベントは送らない。利用プロフィールを削除するとcredentialは無効になり、その端末プロフィールに紐づくquota行もcascade削除する。account/Plusのtierと上限はPlus正本を内部RPCで確認し、ブラウザから届くtier・期限・上限値を信用しない。
 

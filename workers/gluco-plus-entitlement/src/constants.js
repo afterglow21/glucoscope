@@ -1,5 +1,5 @@
 export const PLUS_PRODUCT_CODE = "plus_30d";
-export const PLUS_PRICE_JPY = 300;
+export const PLUS_PRICE_JPY = 400;
 export const PLUS_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
 export const FREE_AI_DAILY_SUCCESS_LIMIT = 1;
 export const PLUS_AI_DAILY_SUCCESS_LIMIT = 5;

@@ -1,9 +1,18 @@
 (function initializeGlucoScopePlusFeatures(root) {
   "use strict";
 
+  const FEATURE_SEVEN_DAY_RANGE = "seven_day_range";
+  const FEATURE_THIRTY_DAY_RANGE = "thirty_day_range";
   const FEATURE_CUSTOM_RANGE = "custom_range";
+  const FEATURE_DEEP_ANALYSIS = "deep_analysis";
   const FEATURE_SHARE_STUDIO = "share_studio";
-  const KNOWN_FEATURES = new Set([FEATURE_CUSTOM_RANGE, FEATURE_SHARE_STUDIO]);
+  const PLUS_ONLY_FEATURES = new Set([
+    FEATURE_SEVEN_DAY_RANGE,
+    FEATURE_THIRTY_DAY_RANGE,
+    FEATURE_CUSTOM_RANGE,
+    FEATURE_DEEP_ANALYSIS
+  ]);
+  const KNOWN_FEATURES = new Set([...PLUS_ONLY_FEATURES, FEATURE_SHARE_STUDIO]);
 
   let configuration = Object.freeze({
     enforcementEnabled: false,
@@ -89,7 +98,7 @@
 
     if (state.plusActive) return allow(normalizedFeature, "plus", "active_plus");
 
-    if (normalizedFeature === FEATURE_CUSTOM_RANGE) {
+    if (PLUS_ONLY_FEATURES.has(normalizedFeature)) {
       return deny(normalizedFeature, "plus_required");
     }
 
@@ -107,7 +116,10 @@
   }
 
   root.GlucoScopePlusFeatures = Object.freeze({
+    FEATURE_SEVEN_DAY_RANGE,
+    FEATURE_THIRTY_DAY_RANGE,
     FEATURE_CUSTOM_RANGE,
+    FEATURE_DEEP_ANALYSIS,
     FEATURE_SHARE_STUDIO,
     configure,
     getConfiguration,

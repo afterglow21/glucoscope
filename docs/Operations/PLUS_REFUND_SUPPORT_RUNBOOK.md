@@ -55,7 +55,7 @@ Last reviewed: 2026-08-17 JST
 
 Stripe DashboardはMFAを有効にした運営者アカウントで開く。API keyをチャット、メール、Git、メモへコピーしない。
 
-1. StripeのPaymentsで、購入メール、おおよその購入日、JPY 300を使って候補を探す。
+1. StripeのPaymentsで、購入メール、おおよその購入日、JPY 400を使って候補を探す。
 2. GlucoScope Plus 30日パスの正しいProduct・Price・Checkoutであることを確認する。
 3. 支払いが成功済みであること、返金済みでないこと、同じ購入に未解決の異議申立てがないことを確認する。
 4. Plus側では、確認済みアカウント、Checkout、支払い、利用権の対応が一致することを、安全な照会画面または将来の運営ツールで確認する。D1を直接編集して帳尻を合わせない。
@@ -83,7 +83,7 @@ Stripe DashboardはMFAを有効にした運営者アカウントで開く。API 
 2. 異議申立てがopenの場合は、通常の返金を同時に行わずStripeのdispute手順で処理する。
 3. 「Refund payment」を選び、必ず全額を選ぶ。
 4. 理由は事実に合わせる。重複ならduplicate、それ以外の承認済み返金ならrequested by customer相当を選び、必要な場合だけ健康情報を含まない短い内部メモを残す。
-5. 最終確認でJPY 300の全額、正しいPayment、重複操作でないことを確認して実行する。
+5. 最終確認でJPY 400の全額、正しいPayment、重複操作でないことを確認して実行する。
 6. Dashboardでrefundの状態を確認する。`pending`や`failed`を`成功`と案内しない。
 
 ## 8. WebhookとPlus終了の確認
@@ -102,7 +102,7 @@ Stripe DashboardはMFAを有効にした運営者アカウントで開く。API 
 
 ### 返金開始時
 
-> 状況を確認し、JPY 300の全額返金をStripeで開始しました。対応するPlusは終了します。支払元への反映には、カード会社や銀行により通常5〜10営業日ほどかかる場合があります。反映日をGlucoScopeが保証するものではありません。
+> 状況を確認し、JPY 400の全額返金をStripeで開始しました。対応するPlusは終了します。支払元への反映には、カード会社や銀行により通常5〜10営業日ほどかかる場合があります。反映日をGlucoScopeが保証するものではありません。
 
 ### 返金がpendingまたはfailedの時
 
@@ -117,7 +117,7 @@ Stripe DashboardはMFAを有効にした運営者アカウントで開く。API 
 
 ## 11. 販売前の実行型受入
 
-- Stripe test modeでJPY 300の単発決済を1件作る
+- Stripe test modeでJPY 400の単発決済を1件作る
 - 二重決済の候補、Plus未付与、全額返金、refund pending、refund failed、Webhook再送を確認する
 - 返金成功時だけPlusが終了し、失敗時は誤って終了しないことを確認する
 - open dispute中に通常返金を重ねない手順を確認する

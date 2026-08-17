@@ -48,7 +48,7 @@ test("commercial disclosure contains every approved one-time sale boundary", () 
   const html = read(PAGE_PATHS[0]);
   for (const expected of [
     "お支払い総額",
-    "300円",
+    "400円",
     "1回だけ",
     "自動更新や継続課金はありません",
     "連続30日間",
@@ -64,7 +64,7 @@ test("commercial disclosure contains every approved one-time sale boundary", () 
     "部分返金は行わず",
   ]) assert.match(html, new RegExp(expected, "u"));
 
-  assert.doesNotMatch(html, /300円（税込）/u);
+  assert.doesNotMatch(html, /400円（税込）/u);
   assert.match(html, /公開問い合わせ先の実受信は確認済み/u);
   assert.match(html, /事業者の氏名・住所・電話番号の開示請求/u);
   assert.match(html, /優先して遅滞なく対応/u);

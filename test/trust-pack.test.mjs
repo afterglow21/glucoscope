@@ -48,12 +48,12 @@ test("Usage Dashboard separates AI operations from privacy-protected personal-us
 test("Plus 30-day pass records the approved one-time boundary without claiming sale", async () => {
   const spec = await read(plusSpecUrl);
   assert.match(spec, /not available for purchase/);
-  assert.match(spec, /価格 \| 300円/);
+  assert.match(spec, /価格 \| 400円/);
   assert.match(spec, /自動更新 \| なし/);
-  assert.match(spec, /成功した新規AI分析を1日1回/);
-  assert.match(spec, /成功した新規AI分析を1日5回まで/);
+  assert.match(spec, /成功した「やさしい分析」を1日1回/);
+  assert.match(spec, /やさしい分析としっかり分析を合わせて成功した新規分析を1日5回まで/);
   assert.match(spec, /文書・品質チェックで止まった/);
-  assert.match(spec, /グラフのカスタム期間/);
+  assert.match(spec, /グラフの7日・30日・カスタム期間/);
   assert.match(spec, /認証済みアカウントごとに1回だけ無料体験/);
   assert.match(spec, /利用記録の端末プロフィール、profile ID、token、表示名を、購入者の本人確認やPlus利用権に流用しない/);
   assert.match(spec, /Stripeへ血糖値、グラフ、TIR\/TAR\/TBR/);
@@ -126,11 +126,11 @@ test("Roadmap stays simple for users while technical evidence stays internal", a
   assert.match(roadmap, /変わらない約束/);
   assert.match(roadmap, /登録せずに公開デモと3種類の血糖測定機器（CGM）を見比べるページを開けます/);
   assert.match(roadmap, /利用記録やAI分析で問題が起きても、血糖値やグラフの表示は続けられる/);
-  assert.match(roadmap, /300円の1回払いで30日間使える予定です。自動更新はありません/);
-  assert.match(roadmap, /Freeで成功した新しいAI分析を端末プロフィールごとに1日1回/);
+  assert.match(roadmap, /400円の1回払いで30日間使える予定です。自動更新はありません/);
+  assert.match(roadmap, /Freeで成功した新しい「やさしい分析」を端末プロフィールごとに1日1回/);
   assert.match(roadmap, /公開デモは内容を確認した固定サンプルを表示し、新しいAI生成を使いません/);
   assert.match(roadmap, /文書の確認などで失敗した回は数えません/);
-  assert.match(roadmap, /グラフのカスタム期間とShare StudioはPlus特典/);
+  assert.match(roadmap, /グラフの7日・30日・カスタム期間とShare StudioはPlus特典/);
   assert.match(roadmap, /確認済みの利用者ごとに1回だけ無料で試せる/);
   assert.match(roadmap, /この保護者確認のために、子どもの名前や血糖値は集めません/);
   assert.match(roadmap, /確認メールにはResendというメール送信サービスを使う予定です/);
@@ -146,7 +146,8 @@ test("Roadmap stays simple for users while technical evidence stays internal", a
   assert.match(roadmap, /Coming next/);
   assert.match(roadmap, /Plus 30-day pass \(in preparation\)/);
   assert.match(roadmap, /What will not change/);
-  assert.match(roadmap, /Free includes one successful new AI analysis per day for each device profile/);
+  assert.match(roadmap, /Free includes one successful gentle analysis per day for each device profile/);
+  assert.match(roadmap, /The 7-day, 30-day, and custom graph ranges and continued Share Studio use will be Plus benefits/);
   assert.match(roadmap, /public demo displays a reviewed fixed sample without a new AI generation/);
   assert.match(roadmap, /an adult guardian age 18 or older/);
   assert.match(roadmap, /It is not yet available for purchase/);

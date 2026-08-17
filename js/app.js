@@ -327,12 +327,12 @@ const translations = {
     usageProfileTurnstileLabel: "利用記録の安全確認",
     plusAccountBadge: "準備中",
     plusAccountCardTitle: "Plus 30日パス",
-    plusAccountPrice: "300円・30日間・1回払い・自動更新なし",
+    plusAccountPrice: "400円・30日間・1回払い・自動更新なし",
     plusAccountLead: "メールで本人確認すると、機種変更やブラウザの保存を消した後もPlusを確認できます。",
     plusAccountBenefitFree: "基本の血糖表示は、Plusを買わなくても使えます。",
-    plusAccountBenefitAi: "Plusでは、成功したAI分析を1日最大5回まで使えます。",
-    plusAccountBenefitRange: "グラフの日付を自由に選べます。",
-    plusAccountBenefitShare: "Share Studioを使えます。購入前にも1回だけ試せます。",
+    plusAccountBenefitAi: "Freeでは、やさしい分析を1日1回。Plusでは、しっかり分析を含めて1日最大5回まで使えます。",
+    plusAccountBenefitRange: "7日・30日・カスタム期間のグラフを使えます。",
+    plusAccountBenefitShare: "Share Studioを使えます。確認済みアカウントなら、購入前にも1回だけ試せます。",
     plusAccountEmailLabel: "確認に使うメール",
     plusAccountEmailHelp: "パスワードは入力しません。1つのメールで管理できるPlusアカウントは1つです。",
     plusAccountRoleLegend: "だれが購入やメールを管理しますか？",
@@ -346,7 +346,7 @@ const translations = {
     plusAccountCodeHelp: "10分以内に入力してください。この画面を閉じたり更新した時は、もう一度コードを送ってください。届かない時は迷惑メールも確認できます。",
     plusAccountVerifyButton: "確認する",
     plusAccountEditConfirmationButton: "メール・選択を直す",
-    plusAccountPurchaseButton: "300円で30日間使う（支払い画面へ）",
+    plusAccountPurchaseButton: "400円で30日間使う（支払い画面へ）",
     plusAccountRefreshButton: "状態を更新する",
     plusAccountLogoutButton: "この端末からログアウト",
     plusAccountDeleteDetails: "詳しい管理",
@@ -497,7 +497,7 @@ const translations = {
     aiLetterUserConsentCancel: "今はしない",
     aiLetterStatusConsentWaiting: "送る内容を確認してから、AI分析を始められます。",
     aiLetterStatusConsentCancelled: "血糖のまとめは送っていません。いつでも後から始められます🍀",
-    aiLetterUserConsentQuota: "利用上限の確認のため、成功したAI分析の日と回数だけを最大90日保存します。Freeは1日1回、Plusは1日5回までです。",
+    aiLetterUserConsentQuota: "利用上限の確認のため、成功したAI分析の日と回数だけを最大90日保存します。Freeはやさしい分析を1日1回、Plusはやさしい分析としっかり分析を合わせて1日5回までです。",
     aiLetterButtonNoData: "この期間はデータなし",
     aiLetterButtonUnavailable: "データを読み込めませんでした",
     aiLetterButtonReady: "AI分析を試す",
@@ -594,7 +594,8 @@ const translations = {
     customFromLabel: "開始",
     customToLabel: "終了",
     customApplyLabel: "表示",
-    plusCustomRangeRequired: "カスタム期間はPlus 30日パスで使えます。今日・昨日・7日・30日は、これまでどおり使えます。",
+    plusExtendedRangeRequired: "7日・30日・カスタム期間はPlus 30日パスで使えます。今日と昨日は、Plusがなくても使えます。",
+    plusDeepAnalysisRequired: "しっかり分析のグルコのお話し・AIお手紙・ChatGPTに相談は、Plus 30日パスで使えます。Freeでは、やさしい分析を1日1回試せます。",
     plusAccessUnavailable: "Plusの利用状況を確認できませんでした。少し待って、もう一度お試しください。",
     selectedRangeLabel: "表示中の期間",
     periodPreviousDay: "前日",
@@ -715,12 +716,12 @@ const translations = {
     usageProfileTurnstileLabel: "Usage-recording safety check",
     plusAccountBadge: "In preparation",
     plusAccountCardTitle: "Plus 30-day pass",
-    plusAccountPrice: "JPY 300 · 30 days · one payment · no automatic renewal",
+    plusAccountPrice: "JPY 400 · 30 days · one payment · no automatic renewal",
     plusAccountLead: "Email verification lets you recover Plus after changing devices or clearing browser storage.",
     plusAccountBenefitFree: "Basic glucose viewing stays available without buying Plus.",
-    plusAccountBenefitAi: "Plus allows up to five successful AI analyses per day.",
-    plusAccountBenefitRange: "Choose custom dates for the graph.",
-    plusAccountBenefitShare: "Use Share Studio, with one trial before purchase.",
+    plusAccountBenefitAi: "Free includes one gentle analysis per day. Plus includes detailed analysis and up to five successful analyses per day.",
+    plusAccountBenefitRange: "Use 7-day, 30-day, and custom graph ranges.",
+    plusAccountBenefitShare: "Use Share Studio, with one trial per verified account before purchase.",
     plusAccountEmailLabel: "Email for verification",
     plusAccountEmailHelp: "No password is needed. One email address can manage one Plus account.",
     plusAccountRoleLegend: "Who will manage the purchase and email?",
@@ -734,7 +735,7 @@ const translations = {
     plusAccountCodeHelp: "Enter it within 10 minutes. If you close or reload this page, send a new code. If it does not arrive, check the junk folder too.",
     plusAccountVerifyButton: "Verify",
     plusAccountEditConfirmationButton: "Change email or choices",
-    plusAccountPurchaseButton: "Use Plus for 30 days for JPY 300 (payment page)",
+    plusAccountPurchaseButton: "Use Plus for 30 days for JPY 400 (payment page)",
     plusAccountRefreshButton: "Refresh status",
     plusAccountLogoutButton: "Sign out on this device",
     plusAccountDeleteDetails: "More account options",
@@ -885,7 +886,7 @@ const translations = {
     aiLetterUserConsentCancel: "Not now",
     aiLetterStatusConsentWaiting: "Review what is sent before starting AI analysis.",
     aiLetterStatusConsentCancelled: "No glucose summary was sent. You can start later whenever you want 🍀",
-    aiLetterUserConsentQuota: "To enforce the usage limit, only the day and count of successful AI analyses are kept for up to 90 days. Free includes one per day and Plus includes five.",
+    aiLetterUserConsentQuota: "To enforce the usage limit, only the day and count of successful AI analyses are kept for up to 90 days. Free includes one gentle analysis per day; Plus includes five gentle or detailed analyses in total.",
     aiLetterButtonNoData: "No data for this range",
     aiLetterButtonUnavailable: "Could not load data",
     aiLetterButtonReady: "Try AI analysis",
@@ -982,7 +983,8 @@ const translations = {
     customFromLabel: "From",
     customToLabel: "To",
     customApplyLabel: "Show",
-    plusCustomRangeRequired: "Custom dates are included with the Plus 30-day pass. Today, yesterday, 7 days, and 30 days remain available as before.",
+    plusExtendedRangeRequired: "The 7-day, 30-day, and custom ranges are included with the Plus 30-day pass. Today and yesterday remain available without Plus.",
+    plusDeepAnalysisRequired: "Detailed Gluco stories, AI letters, and ChatGPT handoff are included with the Plus 30-day pass. Free includes one gentle analysis per day.",
     plusAccessUnavailable: "We could not confirm your Plus access. Please wait a moment and try again.",
     selectedRangeLabel: "Selected range",
     periodPreviousDay: "Previous day",
@@ -3095,8 +3097,12 @@ function setLetterPanel(panel) {
 }
 
 function setAiLetterMode(mode, options = {}) {
+  const nextMode = normalizeAiLetterMode(mode);
+  if (!canUseAiLetterMode(nextMode, { announce: options.announce === true })) {
+    return false;
+  }
   const previousMode = currentAiLetterMode;
-  currentAiLetterMode = normalizeAiLetterMode(mode);
+  currentAiLetterMode = nextMode;
   if (previousMode !== currentAiLetterMode) {
     invalidateAiLetterRequest();
   }
@@ -3122,6 +3128,7 @@ function setAiLetterMode(mode, options = {}) {
   }
 
   updateAiLetterControls(null, "", { preserveAiStatus: true });
+  return true;
 }
 
 const livePeriodOptions = {
@@ -3836,8 +3843,8 @@ function setupPlusAccountFoundation() {
   document.getElementById("plusAccountPurchaseButton")?.addEventListener("click", async () => {
     if (plusAccountActionInFlight || !getPlusAccountRolloutConfig().purchasesEnabled) return;
     const confirmed = window.confirm(currentLanguage === "en"
-      ? "Plus costs JPY 300 for 30 days as a one-time payment. It will not renew automatically. Continue to Stripe?"
-      : "Plusは300円の1回払いで30日間使えます。自動更新はありません。Stripeの購入画面へ進みますか？");
+      ? "Plus costs JPY 400 for 30 days as a one-time payment. It will not renew automatically. Continue to Stripe?"
+      : "Plusは400円の1回払いで30日間使えます。自動更新はありません。Stripeの購入画面へ進みますか？");
     if (!confirmed) return;
     plusCheckoutCancelledReturn = false;
     setPlusAccountControlsDisabled(true);
@@ -3868,6 +3875,16 @@ function configurePlusFeatureGating() {
     enforcementEnabled: PLUS_FEATURE_GATING_ENABLED,
     entitlementStateProvider: readPlusEntitlementStateSnapshot
   });
+
+  if (currentAiLetterMode === "deep" && !canUseAiLetterMode("deep")) {
+    currentAiLetterMode = "letter";
+    localStorage.setItem(AI_LETTER_MODE_STORAGE_KEY, currentAiLetterMode);
+    invalidateAiLetterRequest();
+    updateAiModeSwitcher();
+    updateRuleCommentDisplay();
+    updateAiSlotDisplay();
+    updateAiLetterControls(null, "", { preserveAiStatus: true });
+  }
 }
 
 function getPlusFeatureAccess(feature) {
@@ -3889,8 +3906,25 @@ function setPlusFeatureNotice(messageKey = "") {
   notice.hidden = !messageKey;
 }
 
-function canUseCustomRange({ announce = false } = {}) {
-  const feature = plusFeatureAccessManager?.FEATURE_CUSTOM_RANGE || "custom_range";
+function getGraphPeriodFeature(periodKey) {
+  if (periodKey === "seven") {
+    return plusFeatureAccessManager?.FEATURE_SEVEN_DAY_RANGE || "seven_day_range";
+  }
+  if (periodKey === "thirty") {
+    return plusFeatureAccessManager?.FEATURE_THIRTY_DAY_RANGE || "thirty_day_range";
+  }
+  if (periodKey === "custom") {
+    return plusFeatureAccessManager?.FEATURE_CUSTOM_RANGE || "custom_range";
+  }
+  return "";
+}
+
+function canUseGraphPeriod(periodKey, { announce = false } = {}) {
+  const feature = getGraphPeriodFeature(periodKey);
+  if (!feature) {
+    if (announce) setPlusFeatureNotice("");
+    return true;
+  }
   const decision = getPlusFeatureAccess(feature);
   if (decision.allowed) {
     if (announce) setPlusFeatureNotice("");
@@ -3901,7 +3935,28 @@ function canUseCustomRange({ announce = false } = {}) {
     setPlusFeatureNotice(
       decision.reason === "entitlement_unavailable"
         ? "plusAccessUnavailable"
-        : "plusCustomRangeRequired"
+        : "plusExtendedRangeRequired"
+    );
+  }
+  return false;
+}
+
+function canUseCustomRange(options = {}) {
+  return canUseGraphPeriod("custom", options);
+}
+
+function canUseAiLetterMode(mode, { announce = false } = {}) {
+  if (normalizeAiLetterMode(mode) !== "deep") return true;
+  const feature = plusFeatureAccessManager?.FEATURE_DEEP_ANALYSIS || "deep_analysis";
+  const decision = getPlusFeatureAccess(feature);
+  if (decision.allowed) return true;
+
+  if (announce) {
+    setAiLetterPanelStatus(
+      decision.reason === "entitlement_unavailable"
+        ? "plusAccessUnavailable"
+        : "plusDeepAnalysisRequired",
+      "error"
     );
   }
   return false;
@@ -4035,8 +4090,11 @@ function getLivePeriodConfig(periodKey = currentLivePeriod) {
 }
 
 function getLivePeriodRange(periodKey = currentLivePeriod, now = Date.now()) {
+  if (!canUseGraphPeriod(periodKey)) {
+    return getLivePeriodRange("today", now);
+  }
   if (periodKey === "custom") {
-    return canUseCustomRange() ? getCustomPeriodRange(now) : getLivePeriodRange("today", now);
+    return getCustomPeriodRange(now);
   }
 
   const config = getLivePeriodConfig(periodKey);
@@ -4094,7 +4152,7 @@ function updatePeriodButtons() {
 
 function setupPeriodSwitch() {
   if (!livePeriodOptions[currentLivePeriod]) currentLivePeriod = "today";
-  if (currentLivePeriod === "custom" && !canUseCustomRange()) {
+  if (!canUseGraphPeriod(currentLivePeriod)) {
     currentLivePeriod = "today";
     localStorage.setItem(LIVE_PERIOD_STORAGE_KEY, currentLivePeriod);
   }
@@ -4105,8 +4163,7 @@ function setupPeriodSwitch() {
       const nextPeriod = button.dataset.period;
       if (!livePeriodOptions[nextPeriod]) return;
 
-      if (nextPeriod === "custom" && !canUseCustomRange({ announce: true })) return;
-      if (nextPeriod !== "custom") setPlusFeatureNotice("");
+      if (!canUseGraphPeriod(nextPeriod, { announce: true })) return;
 
       if (nextPeriod === "custom" && isMobileUiLayout()) {
         setMobileCustomRangeDialog(true);
@@ -6567,7 +6624,7 @@ function isCurrentAiLetterRequest(requestState) {
 
 async function handleAiLetterRequest(mode = currentAiLetterMode, options = {}) {
   const analysisMode = normalizeAiLetterMode(mode);
-  setAiLetterMode(analysisMode);
+  if (!setAiLetterMode(analysisMode, { announce: true })) return;
 
   if (!latestAiLetterSummary) {
     setAiLetterPanelStatus("aiLetterStatusWaitingForSummary", "error");
@@ -6691,7 +6748,7 @@ function exposeLetterControlGlobals() {
   window.glucoSetLetterPanel = () => { showAllLetterPanels(); };
 
   window.glucoSetAiLetterMode = (mode) => {
-    setAiLetterMode(mode, { showCached: true });
+    setAiLetterMode(mode, { showCached: true, announce: true });
   };
 }
 
@@ -6704,7 +6761,7 @@ function setupLetterControlsClickHandler() {
     if (modeButton) {
       event.preventDefault();
       event.stopPropagation();
-      setAiLetterMode(modeButton.dataset.aiModeToggle, { showCached: true });
+      setAiLetterMode(modeButton.dataset.aiModeToggle, { showCached: true, announce: true });
       return;
     }
 

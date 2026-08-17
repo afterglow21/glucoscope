@@ -138,7 +138,7 @@ test("personal-user AI consent is explicit, versioned, and precedes any request"
 
   assert.match(index, /id="aiLetterUserConsent"[^>]*aria-labelledby="aiLetterUserConsentTitle"[^>]*hidden/);
   assert.match(index, /data-i18n-key="aiLetterUserConsentQuota"/u);
-  assert.match(app, /成功したAI分析の日と回数だけを最大90日保存します。Freeは1日1回、Plusは1日5回まで/u);
+  assert.match(app, /成功したAI分析の日と回数だけを最大90日保存します。Freeはやさしい分析を1日1回、Plusはやさしい分析としっかり分析を合わせて1日5回まで/u);
   assert.match(index, /href="pages\/trust\/privacy-notes\.html#ai-letters"/);
   assert.match(css, /\.ai-letter-user-consent\[hidden\]\{\s*display:none;/);
   assert.match(css, /\.ai-letter-consent-actions \.letter-primary-button,[\s\S]*min-height:44px;/);
@@ -245,7 +245,7 @@ test("stale AI responses cannot cross a summary, mode, or saved-connection bound
     normalizeAiLetterMode: (mode) => mode === "deep" ? "deep" : "letter",
     getAiLetterLocalCacheKey: (summary, mode) => `${summary?.cacheRangeKey || "none"}|${mode}`,
     resetAiLetterTurnstile: () => { calls.turnstileResets += 1; },
-    setAiLetterMode: () => {},
+    setAiLetterMode: () => true,
     isAiLetterWorkerEnabled: () => true,
     requestAiLetterUserConsent: () => false,
     getFreshCachedAiLetter: () => null,

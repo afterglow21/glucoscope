@@ -109,6 +109,7 @@ function createDatabase() {
     "0002_account_auth.sql",
     "0003_stripe_checkout_state.sql",
     "0004_guardian_buyer_confirmation.sql",
+    "0006_plus_price_400.sql",
   ]) {
     const migration = readFileSync(
       new URL(`../migrations/${migrationName}`, import.meta.url),
@@ -163,7 +164,7 @@ function enabledHttpEnv() {
     PLUS_CHECKOUT_SUCCESS_PATH: "/?mode=user&checkout=success#settings",
     PLUS_CHECKOUT_CANCEL_PATH: "/?mode=user&checkout=cancelled#settings",
     PLUS_SALES_READINESS_CONFIRMED: "true",
-    PLUS_FINAL_PRICE_DISPLAY: "total_300_confirmed",
+    PLUS_FINAL_PRICE_DISPLAY: "total_400_confirmed",
     PLUS_TAX_TREATMENT_CONFIRMED: "true",
     PLUS_BUYER_POLICY: "adult_self_or_confirmed_guardian",
     PLUS_COMMERCIAL_DISCLOSURE_PATH:
@@ -213,8 +214,8 @@ function validRetrievedSession(overrides = {}) {
     mode: "payment",
     status: "complete",
     payment_status: "paid",
-    amount_total: 300,
-    amount_subtotal: 300,
+    amount_total: 400,
+    amount_subtotal: 400,
     currency: "jpy",
     client_reference_id: ACCOUNT_ID,
     metadata: {
@@ -227,11 +228,11 @@ function validRetrievedSession(overrides = {}) {
       has_more: false,
       data: [{
         quantity: 1,
-        amount_total: 300,
+        amount_total: 400,
         price: {
           id: PRICE_ID,
           currency: "jpy",
-          unit_amount: 300,
+          unit_amount: 400,
           recurring: null,
           product: { id: PRODUCT_ID },
         },
@@ -273,7 +274,7 @@ function fakeStripeClient(session = validRetrievedSession()) {
       return {
         id: REFUND_ID,
         status: "succeeded",
-        amount: 300,
+        amount: 400,
         currency: "jpy",
         charge: CHARGE_ID,
         payment_intent: PAYMENT_INTENT_ID,
@@ -283,8 +284,8 @@ function fakeStripeClient(session = validRetrievedSession()) {
       return {
         id: CHARGE_ID,
         livemode: false,
-        amount: 300,
-        amount_refunded: 300,
+        amount: 400,
+        amount_refunded: 400,
         currency: "jpy",
         paid: true,
         status: "succeeded",
@@ -528,11 +529,11 @@ test("re-fetched Checkout facts reject live mode, wrong price, product, or accou
         has_more: false,
         data: [{
           quantity: 1,
-          amount_total: 300,
+          amount_total: 400,
           price: {
             id: `price_${"z".repeat(24)}`,
             currency: "jpy",
-            unit_amount: 300,
+            unit_amount: 400,
             recurring: null,
             product: { id: PRODUCT_ID },
           },
@@ -544,11 +545,11 @@ test("re-fetched Checkout facts reject live mode, wrong price, product, or accou
         has_more: false,
         data: [{
           quantity: 1,
-          amount_total: 300,
+          amount_total: 400,
           price: {
             id: PRICE_ID,
             currency: "jpy",
-            unit_amount: 300,
+            unit_amount: 400,
             recurring: null,
             product: { id: `prod_${"z".repeat(24)}` },
           },

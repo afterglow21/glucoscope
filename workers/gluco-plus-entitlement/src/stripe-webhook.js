@@ -1,6 +1,7 @@
 import {
   EXPIRED_CHECKOUT_EVENT_TYPES,
   FAILED_PAYMENT_EVENT_TYPES,
+  PLUS_PRICE_JPY,
   STRIPE_API_VERSION,
   STRIPE_REFUND_EVENT_TYPES,
   STRIPE_RELEVANT_EVENT_TYPES,
@@ -217,7 +218,7 @@ export async function processStripeWebhookEvent(event, env = {}, dependencies = 
       checkoutSessionId: validated.checkoutSessionId,
       eventType: event.type,
       accountId: validated.accountId,
-      amountJpy: 300,
+      amountJpy: PLUS_PRICE_JPY,
       currency: "jpy",
       paidAt: eventTime,
     }, store, {

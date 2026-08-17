@@ -256,6 +256,9 @@ export async function reserveAiGeneration(rawInput, env = {}, services = {}) {
     const input = validateReserveInput(rawInput);
     const nowMs = Number(services.now?.() ?? Date.now());
     const subject = await resolveSubject(input.credential, services);
+    if (subject.tier !== "plus" && input.analysisMode === "deep") {
+      throw new AiQuotaError("plus_required", 403);
+    }
     const subjectKey = await hashQuotaSubject(subject.kind, subject.id, services.crypto || crypto);
     const reservationId = String(services.createReservationId());
     if (!UUID_PATTERN.test(reservationId)) throw new AiQuotaError("service_unavailable", 503);

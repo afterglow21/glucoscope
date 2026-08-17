@@ -15,7 +15,7 @@ function loadModule() {
   return context.GlucoScopePlusFeatures;
 }
 
-test("the rollout switch defaults off and preserves both current feature paths", () => {
+test("the rollout switch defaults off and preserves every current feature path", () => {
   const api = loadModule();
 
   assert.deepEqual(
@@ -24,10 +24,13 @@ test("the rollout switch defaults off and preserves both current feature paths",
   );
   assert.equal(api.getAccess(api.FEATURE_CUSTOM_RANGE).allowed, true);
   assert.equal(api.getAccess(api.FEATURE_CUSTOM_RANGE).accessMode, "legacy");
+  assert.equal(api.getAccess(api.FEATURE_SEVEN_DAY_RANGE).allowed, true);
+  assert.equal(api.getAccess(api.FEATURE_THIRTY_DAY_RANGE).allowed, true);
+  assert.equal(api.getAccess(api.FEATURE_DEEP_ANALYSIS).allowed, true);
   assert.equal(api.getAccess(api.FEATURE_SHARE_STUDIO).allowed, true);
 });
 
-test("custom dates require an active Plus entitlement after enforcement is enabled", () => {
+test("extended graph ranges and detailed analysis require active Plus", () => {
   const api = loadModule();
   let state = {
     status: "ready",
@@ -37,26 +40,32 @@ test("custom dates require an active Plus entitlement after enforcement is enabl
   };
   api.configure({ enforcementEnabled: true, entitlementStateProvider: () => state });
 
-  assert.deepEqual(
-    { ...api.getAccess(api.FEATURE_CUSTOM_RANGE) },
-    {
-      allowed: false,
-      feature: "custom_range",
-      accessMode: "none",
-      reason: "plus_required"
-    }
-  );
+  for (const [feature, expectedName] of [
+    [api.FEATURE_SEVEN_DAY_RANGE, "seven_day_range"],
+    [api.FEATURE_THIRTY_DAY_RANGE, "thirty_day_range"],
+    [api.FEATURE_CUSTOM_RANGE, "custom_range"],
+    [api.FEATURE_DEEP_ANALYSIS, "deep_analysis"]
+  ]) {
+    assert.deepEqual(
+      { ...api.getAccess(feature) },
+      {
+        allowed: false,
+        feature: expectedName,
+        accessMode: "none",
+        reason: "plus_required"
+      }
+    );
+  }
 
   state = { ...state, plusActive: true };
-  assert.deepEqual(
-    { ...api.getAccess(api.FEATURE_CUSTOM_RANGE) },
-    {
-      allowed: true,
-      feature: "custom_range",
-      accessMode: "plus",
-      reason: "active_plus"
-    }
-  );
+  for (const feature of [
+    api.FEATURE_SEVEN_DAY_RANGE,
+    api.FEATURE_THIRTY_DAY_RANGE,
+    api.FEATURE_CUSTOM_RANGE,
+    api.FEATURE_DEEP_ANALYSIS
+  ]) {
+    assert.equal(api.getAccess(feature).accessMode, "plus");
+  }
 });
 
 test("Share Studio selects Plus or one verified-account trial without consuming it locally", () => {
@@ -119,14 +128,14 @@ test("missing, throwing, asynchronous, or malformed entitlement state fails clos
   ]);
 });
 
-test("the frontend loads the access module first and gates every custom-range entry path", () => {
+test("the frontend loads the access module first and gates extended ranges and detailed analysis", () => {
   assert.match(index, /id="plusFeatureNotice"[^>]*role="status"[^>]*hidden/);
   assert.ok(index.indexOf("js/plus-feature-access.js") < index.indexOf("js/app.js"));
   assert.match(app, /const PLUS_FEATURE_GATING_ENABLED = false;/);
   assert.match(app, /configurePlusFeatureGating\(\);[\s\S]*setupPeriodSwitch\(\);/);
   assert.match(
     app,
-    /if \(nextPeriod === "custom" && !canUseCustomRange\(\{ announce: true \}\)\) return;/
+    /if \(!canUseGraphPeriod\(nextPeriod, \{ announce: true \}\)\) return;/
   );
   assert.match(
     app,
@@ -134,6 +143,9 @@ test("the frontend loads the access module first and gates every custom-range en
   );
   assert.match(
     app,
-    /return canUseCustomRange\(\) \? getCustomPeriodRange\(now\) : getLivePeriodRange\("today", now\);/
+    /if \(!canUseGraphPeriod\(periodKey\)\) \{\s*return getLivePeriodRange\("today", now\);/s
   );
+  assert.match(app, /FEATURE_DEEP_ANALYSIS \|\| "deep_analysis"/);
+  assert.match(app, /if \(!setAiLetterMode\(analysisMode, \{ announce: true \}\)\) return;/);
+  assert.match(app, /plusDeepAnalysisRequired/);
 });

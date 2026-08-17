@@ -3626,11 +3626,13 @@ expectations must be clear before release. Do not present Plus as medical care o
 medical guidance.
 
 On 2026-08-15, the owner approved the initial product boundary in
-`docs/Feature_Specs/PLUS_30_DAY_PASS.md`: JPY 300 as a one-time payment for 30 consecutive
-days, with no automatic renewal. Free keeps core glucose viewing, the Today/Yesterday/7-day/
-30-day graph ranges, one successful new personal-user AI analysis per JST day, and one
-successful Share Studio trial per verified account. Active Plus provides up to five
-successful new AI analyses per JST day, custom graph dates, and continued Share Studio use.
+`docs/Feature_Specs/PLUS_30_DAY_PASS.md`; on 2026-08-17, the owner revised its price and
+feature boundary. The product is JPY 400 as a one-time payment for 30 consecutive days,
+with no automatic renewal. Free keeps core glucose viewing, the Today and Yesterday graph
+ranges, one successful gentle analysis per JST day, and one successful Share Studio trial
+per verified account. Active Plus provides the 7-day, 30-day, and custom graph ranges; up
+to five successful gentle or detailed analyses per JST day; every detailed-analysis output
+(Gluco story, AI letter, and ChatGPT handoff); and continued Share Studio use.
 Quality/document-check failures, provider or network errors, Turnstile failures, aborted
 work, global-limit failures, and browser-local cache hits do not consume an AI use. These
 decisions authorize local implementation and test-mode preparation only, not sales or live
@@ -3641,7 +3643,8 @@ payment or account details.
 
 The expanded implementation foundation remains disabled and unpublished. It includes an
 atomic AI-quota reservation ledger, a separate non-public Plus entitlement Worker, server-side
-Share Studio trial reservation, a disabled custom-range gate, an optional administrator
+Share Studio trial reservation, disabled 7-day/30-day/custom-range and detailed-analysis
+gates, an optional administrator
 aggregate for active Plus accounts, short-code email account/recovery and safe no-purchase
 account deletion, a test-mode Stripe Checkout/Webhook adapter, and a per-account
 unfinished-Checkout guard that prevents a second payable Session. The matching settings UI is
@@ -3951,11 +3954,13 @@ Plus 30日パスは、それとは別の設計中の有料サービスです。�
 サポート範囲を分かりやすく定めます。Plusを医療サービスや、
 より良い医療判断が得られる仕組みとして案内しません。
 
-2026年8月15日、`docs/Feature_Specs/PLUS_30_DAY_PASS.md` の初期商品境界を決定しました。
-価格は300円、1回払いで決済成功から連続30日、自動更新は行いません。Freeでは現在血糖などの
-基本機能、今日・昨日・7日・30日のグラフ、成功した新規ユーザー版AI分析を日本時間で1日1回、
-認証済みアカウントごとのShare Studio無料体験1回を残します。Plusでは成功した新規AI分析を
-日本時間で1日5回まで、グラフのカスタム期間、Share Studioの継続利用を提供します。文書・品質
+2026年8月15日に初期商品境界を決定し、8月17日に価格と機能境界を更新しました。
+価格は400円、1回払いで決済成功から連続30日、自動更新は行いません。Freeでは現在血糖などの
+基本機能、今日・昨日のグラフ、成功した新規の「やさしい分析」を日本時間で1日1回、
+認証済みアカウントごとのShare Studio無料体験1回を残します。Plusでは7日・30日・カスタムの
+グラフ、成功した「やさしい分析」と「しっかり分析」を合わせて日本時間で1日5回まで、
+「しっかり分析」のグルコのお話・AIお手紙・ChatGPTへの相談の全出力、Share Studioの継続利用を
+提供します。文書・品質
 チェック、提供元・通信・Turnstile・全体上限のエラー、中断、端末内保存済みお手紙の再表示は
 AI回数を消費しません。この決定はローカル実装とStripeテストモード準備の承認であり、販売や
 本番決済の開始承認ではありません。利用権の本人確認と復旧、返金、税、サポートは完了が必要です。
@@ -3963,7 +3968,8 @@ Plus利用権はブラウザの利用記録プロフィールから分離し、�
 個別の購入・アカウント情報を表示しません。
 
 実装基盤を拡張しましたが、すべて停止状態で未公開です。AI回数の原子的な予約台帳、
-公開しないPlus利用権Worker、Share Studio無料体験のサーバー側予約、停止中のカスタム期間ゲート、
+公開しないPlus利用権Worker、Share Studio無料体験のサーバー側予約、停止中の7日・30日・カスタム
+期間と「しっかり分析」のゲート、
 管理者画面の有効Plus合計受け口、短い確認コードによるメール確認・復旧、購入記録がない場合の
 アカウント削除、StripeテストモードのCheckout/Webhook adapter、未完了の支払い画面をアカウントごとに
 再利用または停止して二重の支払い画面を作らない仕組みを含みます。対応する設定画面も追加しましたが
@@ -4061,14 +4067,14 @@ Plusの主要特典をほとんど利用できず、運営側でも解決でき�
 Cloudflare Email Routingによる非公開受信箱への転送と必要な受信DNSは有効化済みです。2026年8月17日、別の送信元から`support@glucoscope.app`へ送った健康情報を含まないテストメールが非公開受信箱へ届くことを、運営者本人が確認しました。送信元、転送先、件名、本文は記録しません。`docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md`に、購入メールとおおよその購入日による最小照合、訂正優先、Stripe Dashboardでの全額返金、openな異議申立てとの二重処理禁止、成功したWebhook後のPlus終了、状態別返信を定義しました。Stripe test modeで受付から返金、Plus終了、返信まで実行する受入と、保持期間・専門家確認は販売ブロッカーです。
 公開ページ、決済、Worker、Stripe設定は、この方針だけでは有効にしません。
 
-同日、初期販売は日本国内に居住する人に限り、お支払い総額300円、購入とメールを管理する
+同日、初期販売は日本国内に居住する人に限り、お支払い総額400円、購入とメールを管理する
 18歳以上の本人または18歳以上の保護者を対象とすることを決めました。販売者は個人事業の
 免税事業者で、適格請求書発行事業者ではありません。「税込」とは表示せず、適格請求書は
 発行しません。販売者の氏名、住所、電話番号はGitへ保存せず、請求があれば購入申込み前に
 確認できる時間を確保して遅滞なく提供する方針です。この表示と実運用、通常の支払確認・領収書、
 Stripe Taxを使わない初期構成、商品税コードは専門家確認が必要です。
 
-On 2026-08-17, the operator approved an initial Japan-only boundary: a JPY 300 total,
+On 2026-08-17, the operator approved an initial Japan-only boundary: a JPY 400 total,
 one-time payment for an adult buyer or adult guardian. The seller is a Japanese
 consumption-tax-exempt sole proprietor and is not a qualified invoice issuer, so the public
 copy does not call the price tax-inclusive and does not promise a qualified invoice. Seller
@@ -4077,6 +4083,12 @@ request, with enough time before purchase. The planned contact is `support@gluco
 weekdays, with a target reply within five business days. Cloudflare Email Routing and the
 required receiving DNS are enabled with a private destination. On August 17, 2026, the operator confirmed that a test message containing no health information, sent from a separate sender to `support@glucoscope.app`, reached the private destination. The sender, destination, subject, and body are not recorded. `docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md` defines minimum purchase matching, correction before refund, full refunds in Stripe Dashboard, no separate refund during an open dispute, entitlement termination only after a verified successful refund, and status-specific replies. A complete Stripe test-mode drill, professional review, refund operations acceptance, ordinary receipt wording, the no-Stripe-Tax initial
 configuration, and the product tax code remain sale blockers.
+
+On the same day, Stripe test mode created exactly one active `GlucoScope Plus 30日パス`
+Product (`prod_V5SDrFKGSiwaql`) with one default JPY 400 one-time Price
+(`price_1U5HIhQk6xCYKhx8oHxg44Ep`). The Dashboard was re-read to confirm the product is
+active, the amount is JPY 400, and no recurring subscription is attached. No API key,
+webhook Secret, Checkout, payment, Worker configuration, public route, or sale was enabled.
 
 同日、運営者は `glucoscope.app` を年間14.20米ドルで取得しました。自動更新はオフです。
 Plusの確認メールには `auth.glucoscope.app` を専用の送信元として使う方針です。期限前に、
@@ -5512,8 +5524,9 @@ Version 29で最初に受け入れ、現在のatomic Versionと公開フロン�
   promptやresponseが含まれる場合があり、通常最長30日保持されます。法令またはサービス・
   第三者保護のため、それより長い保持が必要となる例外があります。外部正本は
   [OpenAI API data controls](https://developers.openai.com/api/docs/guides/your-data) とします。
-- 少人数先行体験の個人別上限は、Freeを端末プロフィールごとにJST 1日1回、
-  Plusを有効な確認済みアカウントごとにJST 1日5回とします。公開デモは、入力された
+- 少人数先行体験の個人別上限は、Freeを端末プロフィールごとに「やさしい分析」だけJST 1日1回、
+  Plusを有効な確認済みアカウントごとに「やさしい分析」と「しっかり分析」を合わせてJST 1日5回とします。
+  「しっかり分析」のグルコのお話、AIお手紙、ChatGPTへの相談はすべてPlus機能です。公開デモは、入力された
   血糖サマリーの値を使わない、人が内容を確認した固定サンプルを表示し、OpenAIを呼びません。
   全員で共有する10回/30回の回数上限は外しますが、匿名の全体運用集計、実token/費用記録、
   月間費用のwarning/stop、kill switchは残します。Usage D1 migration `0002_ai_quota.sql` は

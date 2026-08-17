@@ -70,7 +70,7 @@
     "RESEND_FROM_ADDRESS": "GlucoScope <no-reply@auth.glucoscope.app>",
     "RESEND_TIMEOUT_MS": "10000",
     "RESEND_RESPONSE_LIMIT_BYTES": "4096",
-    "PLUS_PRICE_JPY": "300",
+    "PLUS_PRICE_JPY": "400",
     "PLUS_DURATION_DAYS": "30",
     "SHARE_TRIAL_RESERVATION_TTL_SECONDS": "600"
   },
@@ -139,7 +139,7 @@
         "RESEND_FROM_ADDRESS": "GlucoScope <no-reply@auth.glucoscope.app>",
         "RESEND_TIMEOUT_MS": "10000",
         "RESEND_RESPONSE_LIMIT_BYTES": "4096",
-        "PLUS_PRICE_JPY": "300",
+        "PLUS_PRICE_JPY": "400",
         "PLUS_DURATION_DAYS": "30",
         "SHARE_TRIAL_RESERVATION_TTL_SECONDS": "600"
       },

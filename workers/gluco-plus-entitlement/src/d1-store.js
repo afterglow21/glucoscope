@@ -674,7 +674,7 @@ export function createD1PlusEntitlementStore(database) {
             starts_at, ends_at, status, source_event_id, created_at, updated_at
           )
           SELECT
-            ?1, ?2, 'plus_30d', 'one_time', 300, 'jpy',
+            ?1, ?2, 'plus_30d', 'one_time', ?8, 'jpy',
             ?3, ?4, 'granted', ?5, ?6, ?6
           WHERE EXISTS (
             SELECT 1 FROM processed_webhook_events
@@ -703,6 +703,7 @@ export function createD1PlusEntitlementStore(database) {
           input.eventId,
           input.processedAt,
           input.checkoutSessionId,
+          input.amountJpy,
         ),
         db.prepare(`
           UPDATE processed_webhook_events

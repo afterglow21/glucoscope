@@ -117,6 +117,7 @@ function createDatabase() {
     "0002_account_auth.sql",
     "0003_stripe_checkout_state.sql",
     "0004_guardian_buyer_confirmation.sql",
+    "0006_plus_price_400.sql",
   ]) {
     const migration = readFileSync(
       new URL(`../migrations/${migrationName}`, import.meta.url),
@@ -192,7 +193,7 @@ test("checked-in config is non-public, paused, and has no unprovisioned bindings
   assert.equal(config.vars.PLUS_PURCHASES_ENABLED, "false");
   assert.equal(config.vars.PLUS_CHECKOUT_HTTP_ENABLED, "false");
   assert.equal(config.vars.PLUS_STRIPE_WEBHOOK_ENABLED, "false");
-  assert.equal(config.vars.PLUS_PRICE_JPY, "300");
+  assert.equal(config.vars.PLUS_PRICE_JPY, "400");
   assert.equal(config.vars.PLUS_DURATION_DAYS, "30");
   assert.equal("d1_databases" in config, false);
   assert.equal("secrets" in config, false);
@@ -255,7 +256,7 @@ test("staging binds only its dedicated D1 while every release path stays stopped
   assert.equal("secrets" in staging, false);
 });
 
-test("migration fixes one-time JPY 300 entitlements to exactly 30 days and excludes health fields", () => {
+test("migrations move the one-time pass to JPY 400, keep exactly 30 days, and exclude health fields", () => {
   const migration = readFileSync(
     new URL("../migrations/0001_initial_plus_entitlement_schema.sql", import.meta.url),
     "utf8",
@@ -279,6 +280,16 @@ test("migration fixes one-time JPY 300 entitlements to exactly 30 days and exclu
     migration,
     /glucose|nightscout|gluroo|dexcom|libre|\btir\b|\btar\b|\btbr\b|\bgmi\b|\bcgm\b/iu,
   );
+
+  const priceMigration = readFileSync(
+    new URL("../migrations/0006_plus_price_400.sql", import.meta.url),
+    "utf8",
+  );
+  assert.match(priceMigration, /plus_price_400_migration_guard/u);
+  assert.match(priceMigration, /CHECK \(row_count = 0\)/u);
+  assert.match(priceMigration, /COUNT\(\*\) FROM processed_webhook_events/u);
+  assert.match(priceMigration, /COUNT\(\*\) FROM entitlements/u);
+  assert.match(priceMigration, /amount_jpy = 400/u);
 });
 
 test("public fetch response stays closed without CORS or internal details", async () => {
@@ -400,7 +411,7 @@ test("verified payment processing touches nothing unless purchases are explicitl
     checkoutSessionId: CHECKOUT_ONE,
     eventType: "checkout.session.completed",
     accountId: ACCOUNT_ID,
-    amountJpy: 300,
+    amountJpy: 400,
     currency: "jpy",
     paidAt: NOW,
   }, {
@@ -475,7 +486,7 @@ test("Checkout Session identity prevents a second grant across distinct webhook 
   const base = {
     checkoutSessionId: CHECKOUT_ONE,
     accountId: ACCOUNT_ID,
-    amountJpy: 300,
+    amountJpy: 400,
     currency: "jpy",
     paidAt: NOW,
   };
@@ -555,7 +566,7 @@ test("payment validation rejects the wrong amount, currency, type, or future tim
     checkoutSessionId: CHECKOUT_ONE,
     eventType: "checkout.session.completed",
     accountId: ACCOUNT_ID,
-    amountJpy: 300,
+    amountJpy: 400,
     currency: "jpy",
     paidAt: NOW,
   };
@@ -588,7 +599,7 @@ test("active pass blocks a second event, while an explicit purchase after expiry
     checkoutSessionId: CHECKOUT_ONE,
     eventType: "checkout.session.completed",
     accountId: ACCOUNT_ID,
-    amountJpy: 300,
+    amountJpy: 400,
     currency: "jpy",
     paidAt: NOW,
   }, store, {
@@ -601,7 +612,7 @@ test("active pass blocks a second event, while an explicit purchase after expiry
     checkoutSessionId: CHECKOUT_TWO,
     eventType: "checkout.session.completed",
     accountId: ACCOUNT_ID,
-    amountJpy: 300,
+    amountJpy: 400,
     currency: "jpy",
     paidAt: NOW + 1000,
   }, store, {
@@ -619,7 +630,7 @@ test("active pass blocks a second event, while an explicit purchase after expiry
     checkoutSessionId: CHECKOUT_THREE,
     eventType: "checkout.session.async_payment_succeeded",
     accountId: ACCOUNT_ID,
-    amountJpy: 300,
+    amountJpy: 400,
     currency: "jpy",
     paidAt: repurchaseAt,
   }, store, {
@@ -643,7 +654,7 @@ test("overlap rejection is independent of webhook arrival order", async (t) => {
     checkoutSessionId: CHECKOUT_ONE,
     eventType: "checkout.session.completed",
     accountId: ACCOUNT_ID,
-    amountJpy: 300,
+    amountJpy: 400,
     currency: "jpy",
     paidAt: laterStart,
   }, store, {
@@ -657,7 +668,7 @@ test("overlap rejection is independent of webhook arrival order", async (t) => {
     checkoutSessionId: CHECKOUT_TWO,
     eventType: "checkout.session.completed",
     accountId: ACCOUNT_ID,
-    amountJpy: 300,
+    amountJpy: 400,
     currency: "jpy",
     paidAt: NOW,
   }, store, {
@@ -702,7 +713,7 @@ test("AI subject and Plus summary return only opaque entitlement facts", async (
     checkoutSessionId: CHECKOUT_FOUR,
     eventType: "checkout.session.completed",
     accountId: ACCOUNT_ID,
-    amountJpy: 300,
+    amountJpy: 400,
     currency: "jpy",
     paidAt: NOW,
   }, store, {
@@ -752,7 +763,7 @@ test("admin aggregate returns only the distinct active Plus account count", asyn
     checkoutSessionId: CHECKOUT_FIVE,
     eventType: "checkout.session.completed",
     accountId: SECOND_ACCOUNT_ID,
-    amountJpy: 300,
+    amountJpy: 400,
     currency: "jpy",
     paidAt: NOW,
   }, store, {
@@ -860,7 +871,7 @@ test("expired trial reservation releases itself, and active Plus never consumes 
     checkoutSessionId: CHECKOUT_SIX,
     eventType: "checkout.session.completed",
     accountId: ACCOUNT_ID,
-    amountJpy: 300,
+    amountJpy: 400,
     currency: "jpy",
     paidAt: NOW,
   }, store, {
@@ -895,7 +906,7 @@ test("a pass activated after trial reservation wins the completion race without 
     checkoutSessionId: CHECKOUT_SEVEN,
     eventType: "checkout.session.completed",
     accountId: ACCOUNT_ID,
-    amountJpy: 300,
+    amountJpy: 400,
     currency: "jpy",
     paidAt: NOW + 1,
   }, store, {

@@ -333,6 +333,35 @@ test("a free device profile consumes one successful generation per JST day", asy
   assert.equal(second.error, "daily_limit_reached");
 });
 
+test("Free can reserve gentle analysis only, while active Plus can reserve detailed analysis", async () => {
+  const freeHarness = createHarness({ plusActive: false });
+  const freeDeep = await reserveAiGeneration({
+    credential: { kind: "account", token: ACCOUNT_TOKEN },
+    requestId: uuid(7),
+    analysisMode: "deep",
+  }, freeHarness.env, freeHarness.services);
+  assert.deepEqual(freeDeep, {
+    ok: false,
+    status: "error",
+    error: "plus_required",
+    retryable: false,
+  });
+  assert.equal(freeHarness.store.reserveCalls, 0);
+
+  const freeGentle = await reserveAiGeneration({
+    credential: { kind: "account", token: ACCOUNT_TOKEN },
+    requestId: uuid(8),
+    analysisMode: "letter",
+  }, freeHarness.env, freeHarness.services);
+  assert.equal(freeGentle.status, "reserved");
+  assert.equal(freeGentle.quota.tier, "free");
+
+  const plusHarness = createHarness({ plusActive: true });
+  const plusDeep = await reserveAiGeneration(accountRequest(uuid(9)), plusHarness.env, plusHarness.services);
+  assert.equal(plusDeep.status, "reserved");
+  assert.equal(plusDeep.quota.tier, "plus");
+});
+
 test("provider and quality failures release a reservation without consuming quota", async () => {
   for (const reasonCode of ["provider_error", "quality_failed", "generation_incomplete"]) {
     const harness = createHarness();
@@ -391,7 +420,7 @@ test("only the trusted entitlement resolver can grant the five-success Plus limi
 test("an inactive Plus account gets the free limit and resolver failure fails closed", async () => {
   const freeHarness = createHarness({ plusActive: false });
   const free = await reserveAiGeneration(
-    accountRequest(uuid(200)),
+    { ...accountRequest(uuid(200)), analysisMode: "letter" },
     freeHarness.env,
     freeHarness.services,
   );

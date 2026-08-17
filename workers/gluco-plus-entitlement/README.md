@@ -5,9 +5,12 @@ checkpoint and no public account or sales path.
 
 ## Fixed product boundary
 
-- JPY 300, paid once.
+- JPY 400, paid once.
 - Thirty consecutive days from the verified payment-success timestamp.
 - No subscription, automatic renewal, background charge, or customer portal.
+- Stripe test mode has one active Product (`prod_V5SDrFKGSiwaql`) and one default
+  one-time JPY 400 Price (`price_1U5HIhQk6xCYKhx8oHxg44Ep`). They are not connected
+  to a key, webhook, route, enabled Checkout, or public sale.
 - Usage profiles, display names, CGM data, connection credentials, AI input and output,
   and payment-card data never enter this service.
 - Email HMAC identifiers, provider event identifiers, and Checkout Session identifiers
@@ -73,7 +76,7 @@ always fails closed; only an explicit true value allows processing to begin.
 
 Checkout has a separate commerce-readiness gate. Even when the technical Checkout flag
 is enabled, it returns `503 sales_not_ready` before authentication, D1, or Stripe unless
-all of the following are explicitly confirmed: JPY 300 as the buyer's final total,
+all of the following are explicitly confirmed: JPY 400 as the buyer's final total,
 the seller's separately reviewed tax treatment, the reviewed buyer policy, a dated terms
 version, and same-site public pages for the commercial disclosure, refund policy, and
 support. Checked-in values remain false, undecided, or empty. The gate is defense in
@@ -333,7 +336,7 @@ The adapter is hard-limited to test mode: it accepts only a test-mode restricted
 key, test Checkout Session IDs, `livemode=false`, and Stripe API version
 `2026-06-24.dahlia`. For `checkout.session.completed` and
 `checkout.session.async_payment_succeeded`, it retrieves the Checkout Session again and
-validates `payment_status=paid`, `mode=payment`, the exact Price and Product, JPY 300,
+validates `payment_status=paid`, `mode=payment`, the exact Price and Product, JPY 400,
 one-time pricing, and the server-created account metadata before calling
 `applyVerifiedPlusPayment()`. Provider event IDs and validated Checkout Session IDs are
 deduplicated, and every grant is exactly 2,592,000,000 milliseconds.
