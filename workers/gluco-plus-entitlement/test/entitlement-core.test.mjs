@@ -220,7 +220,14 @@ test("staging binds only its dedicated D1 while every release path stays stopped
   assert.equal(staging.preview_urls, false);
   assert.deepEqual(staging.observability, { enabled: false });
   assert.deepEqual(staging.triggers, { crons: [] });
-  assert.deepEqual(staging.vars, config.vars);
+  const {
+    STRIPE_PLUS_PRODUCT_ID: stagingProductId,
+    STRIPE_PLUS_PRICE_ID: stagingPriceId,
+    ...stagingBaseVars
+  } = staging.vars;
+  assert.deepEqual(stagingBaseVars, config.vars);
+  assert.equal(stagingProductId, "prod_V5SDrFKGSiwaql");
+  assert.equal(stagingPriceId, "price_1U5HIhQk6xCYKhx8oHxg44Ep");
   assert.deepEqual(staging.d1_databases, [{
     binding: "PLUS_DB",
     database_name: "glucoscope-plus-staging",

@@ -139,6 +139,8 @@
         "RESEND_FROM_ADDRESS": "GlucoScope <no-reply@auth.glucoscope.app>",
         "RESEND_TIMEOUT_MS": "10000",
         "RESEND_RESPONSE_LIMIT_BYTES": "4096",
+        "STRIPE_PLUS_PRODUCT_ID": "prod_V5SDrFKGSiwaql",
+        "STRIPE_PLUS_PRICE_ID": "price_1U5HIhQk6xCYKhx8oHxg44Ep",
         "PLUS_PRICE_JPY": "400",
         "PLUS_DURATION_DAYS": "30",
         "SHARE_TRIAL_RESERVATION_TTL_SECONDS": "600"

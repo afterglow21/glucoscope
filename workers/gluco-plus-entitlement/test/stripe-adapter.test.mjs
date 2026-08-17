@@ -366,7 +366,7 @@ function plusCheckoutRequest(requestId = REQUEST_ID) {
   });
 }
 
-test("checked-in Stripe HTTP and webhook switches stay off with no identifiers or Secrets", () => {
+test("checked-in Stripe switches stay off while only staging has test identifiers", () => {
   const config = JSON.parse(readFileSync(
     new URL("../wrangler.jsonc", import.meta.url),
     "utf8",
@@ -395,6 +395,14 @@ test("checked-in Stripe HTTP and webhook switches stay off with no identifiers o
   assert.equal(config.env.staging.vars.PLUS_ALLOWED_ORIGIN, "https://glucoscope.app");
   assert.equal(config.env.staging.vars.PLUS_CHECKOUT_SUCCESS_PATH, "/?mode=user&checkout=success#settings");
   assert.equal(config.env.staging.vars.PLUS_CHECKOUT_CANCEL_PATH, "/?mode=user&checkout=cancelled#settings");
+  assert.equal(
+    config.env.staging.vars.STRIPE_PLUS_PRODUCT_ID,
+    "prod_V5SDrFKGSiwaql",
+  );
+  assert.equal(
+    config.env.staging.vars.STRIPE_PLUS_PRICE_ID,
+    "price_1U5HIhQk6xCYKhx8oHxg44Ep",
+  );
   for (const forbidden of [
     "STRIPE_RESTRICTED_API_KEY",
     "STRIPE_WEBHOOK_SECRET",

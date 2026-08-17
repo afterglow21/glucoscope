@@ -9,8 +9,9 @@ checkpoint and no public account or sales path.
 - Thirty consecutive days from the verified payment-success timestamp.
 - No subscription, automatic renewal, background charge, or customer portal.
 - Stripe test mode has one active Product (`prod_V5SDrFKGSiwaql`) and one default
-  one-time JPY 400 Price (`price_1U5HIhQk6xCYKhx8oHxg44Ep`). They are not connected
-  to a key, webhook, route, enabled Checkout, or public sale.
+  one-time JPY 400 Price (`price_1U5HIhQk6xCYKhx8oHxg44Ep`). Their non-secret IDs are
+  present only in an unserved, fully stopped staging candidate; they are not connected
+  to a Stripe API key, webhook Secret, route, enabled Checkout, payment, or public sale.
 - Usage profiles, display names, CGM data, connection credentials, AI input and output,
   and payment-card data never enter this service.
 - Email HMAC identifiers, provider event identifiers, and Checkout Session identifiers
@@ -36,10 +37,16 @@ is empty. This deployment is an unreachable schema-and-binding checkpoint, not p
 account access or a sales release.
 
 The staging-only `PLUS_DB` binding points to `glucoscope-plus-staging` in APAC.
-Migrations `0001` through `0005` are applied, and all 12 application tables were verified
-at zero rows after deployment. Request-code and verify use staging-specific rate-limit
+Migrations `0001` through `0006` are applied. Migration `0006` ran only after all 12
+application tables were verified at zero rows, replaced the empty JPY 300 constraints
+with JPY 400 constraints, and left all 12 application tables at zero rows. Request-code and verify use staging-specific rate-limit
 IDs, distinct from the future production IDs. Because account HTTP remains false, the
 bindings are not read and no account operation can begin.
+
+Unserved staging Version `a0805f46-8585-47c5-b431-dfcb463d2993` contains the JPY 400
+code and the two test identifiers while every release/readiness flag remains false. It
+receives no traffic. Stopped Version `bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9` remains at
+100%, so routes, Cron, public reachability, email, and payment behavior did not change.
 
 A later acceptance used a temporary remote preview restricted to localhost and only
 synthetic old and fresh rows. Cleanup removed the old rows without removing the fresh

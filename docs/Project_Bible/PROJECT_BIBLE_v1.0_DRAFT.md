@@ -3661,8 +3661,10 @@ Code checkpoint `b5669df` is deployed only as the stopped
 `workers_dev=false`, the live URL returns `404`, preview URLs are off, routes and Cron triggers
 are empty, observability is off, and its Secret list is empty. Account auth, cleanup, RPC,
 purchases, Checkout HTTP, Stripe webhooks, sales readiness, and tax readiness all remain
-false. The staging-only APAC D1 `glucoscope-plus-staging` has migrations `0001` through `0005`
-applied, and all 12 application tables were verified at zero rows after deployment. Request-code
+false. The staging-only APAC D1 `glucoscope-plus-staging` has migrations `0001` through `0006`
+applied. Fail-closed migration `0006` ran only after all 12 application tables were verified at
+zero rows, replaced the empty JPY 300 constraints with JPY 400 constraints, and left all 12 tables
+at zero rows. Request-code
 and verify use staging-specific rate-limit IDs distinct from the future production IDs.
 
 A later acceptance used a temporary remote preview restricted to localhost and only synthetic
@@ -3698,8 +3700,11 @@ The adapter now uses `redirect: "manual"` and rejects every `3xx` without follow
 does not forward the Authorization header or request body to a redirect destination. Focused
 adapter tests cover `302` and `307`.
 
-There is no Stripe key, Webhook Secret, Price/Product identifier, public account route, or
-live entitlement. The existing AI and custom-range experience therefore remains unchanged.
+Unserved staging Version `a0805f46-8585-47c5-b431-dfcb463d2993` contains the JPY 400 code
+and only the two non-secret Stripe test Product/Price identifiers; every release/readiness flag
+remains false. Traffic-serving stopped Version `bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9`
+remains at 100%. There is no Stripe API key, Webhook Secret, public account route, Checkout,
+payment, or live entitlement. The existing AI and custom-range experience therefore remains unchanged.
 The privacy-protected public Usage aggregate is live through Usage Worker Version
 `e7b2a895-c418-4cb2-b565-d2a37bef8e1b`, with unserved stopped Version
 `e1496203-ab4b-429f-acd3-4e862cff0c2f` as its reviewed direct rollback. It covers only the 30
@@ -3984,7 +3989,9 @@ Version `bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9`へ通信の100%を向けていま
 `workers_dev=false`で実URLは`404`、preview URLは無効、routeとCronは空、observabilityは無効、
 Secretは0件です。アカウント認証、cleanup、RPC、購入、Checkout HTTP、Stripe Webhook、販売準備、
 税確認のflagはすべて`false`です。APACのstaging専用D1 `glucoscope-plus-staging`へmigration
-`0001`〜`0005`を適用し、デプロイ後も12個のapplication tableがすべて0件であることを確認しました。
+`0001`〜`0006`を適用しました。fail-closedの`0006`は、12個のapplication tableがすべて0件で
+あることを確認した後だけ実行し、空のJPY 300制約をJPY 400制約へ置き換えました。適用後も
+12 tableはすべて0件です。
 request-codeとverifyは、将来の本番用と重ならないstaging専用のrate limit IDを使います。
 
 その後、localhostだけに限定した一時的なremote previewで、古い行と新しい行の合成データを使って
@@ -4017,7 +4024,10 @@ Secret、site key、候補Version IDは記録していません。
 `redirect: "manual"`へ変更し、`3xx`を追跡せず拒否します。これによりAuthorization headerと本文を
 redirect先へ転送しません。`302`と`307`の実行型テストでこの境界を固定しました。
 
-Stripe key、Webhook Secret、Price/Product識別子、公開アカウント経路、実利用権は接続していません。
+未配信staging Version `a0805f46-8585-47c5-b431-dfcb463d2993`だけに、JPY 400のコードと
+非秘密のStripe test Product/Price識別子を設定しました。全release/readiness flagは`false`で、
+交通量100%は引き続き停止Version `bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9`です。Stripe API key、
+Webhook Secret、公開アカウント経路、Checkout、支払い、実利用権は接続していません。
 そのため、現在のAIとカスタム期間の動作は変えません。公開アカウントとPlus販売は引き続き開始不可です。
 privacy保護した公開Usage集計は、Usage Worker Version
 `e7b2a895-c418-4cb2-b565-d2a37bef8e1b`で本番接続済みです。未配信の停止Version
@@ -4087,8 +4097,11 @@ configuration, and the product tax code remain sale blockers.
 On the same day, Stripe test mode created exactly one active `GlucoScope Plus 30日パス`
 Product (`prod_V5SDrFKGSiwaql`) with one default JPY 400 one-time Price
 (`price_1U5HIhQk6xCYKhx8oHxg44Ep`). The Dashboard was re-read to confirm the product is
-active, the amount is JPY 400, and no recurring subscription is attached. No API key,
-webhook Secret, Checkout, payment, Worker configuration, public route, or sale was enabled.
+active, the amount is JPY 400, and no recurring subscription is attached. The two non-secret
+identifiers were later added only to unserved, fully stopped staging Version
+`a0805f46-8585-47c5-b431-dfcb463d2993`. No Stripe API key, webhook Secret, Checkout,
+payment, public route, or sale was enabled, and stopped Version
+`bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9` remained at 100%.
 
 同日、運営者は `glucoscope.app` を年間14.20米ドルで取得しました。自動更新はオフです。
 Plusの確認メールには `auth.glucoscope.app` を専用の送信元として使う方針です。期限前に、
