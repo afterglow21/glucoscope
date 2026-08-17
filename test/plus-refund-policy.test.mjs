@@ -34,10 +34,10 @@ test("Plus refund policy is short, conditional, and still blocked from sale", as
   assert.match(spec, /部分返金は行いません。返金したPlusは終了します/);
   assert.match(spec, /通常5〜10営業日ほどかかる場合があります/);
   assert.match(salesDraft, /Status: internal draft with local public-page candidates \/ not approved for sale/);
-  assert.match(salesDraft, /公開問い合わせ先の実受信と返金受付手順の文書化は合格したが、Stripe test modeでの実行型受入が未完了/);
+  assert.match(salesDraft, /公開問い合わせ先の実受信、返金受付手順の文書化、Stripe test modeの最初の決済・重複通知・全額返金は合格したが[\s\S]*運営手順全体[\s\S]*未完了/);
   assert.match(bible, /返金方針は、細かな時間条件や長い除外一覧を作らず/);
-  assert.match(bible, /PLUS_REFUND_SUPPORT_RUNBOOK\.md[\s\S]*Stripe test modeで受付から返金、Plus終了、返信まで実行する受入[\s\S]*販売ブロッカー/);
-  assert.match(readme, /public contact `support@glucoscope\.app` has passed[\s\S]*PLUS_REFUND_SUPPORT_RUNBOOK\.md[\s\S]*complete Stripe test-mode drill[\s\S]*remain sale blockers/);
+  assert.match(bible, /PLUS_REFUND_SUPPORT_RUNBOOK\.md[\s\S]*Stripe test modeの最初の400円決済・重複Webhook・全額返金・Plus終了は合格しました[\s\S]*問い合わせ受付と返信を含む運営手順全体[\s\S]*販売ブロッカー/);
+  assert.match(readme, /public contact `support@glucoscope\.app` has passed[\s\S]*PLUS_REFUND_SUPPORT_RUNBOOK\.md[\s\S]*first full-payment, duplicate-delivery, and full-refund[\s\S]*remain sale blockers/);
   assert.match(spec, /`glucoscope\.app` を年間14\.20米ドルで取得し、自動更新をオフ/);
   assert.match(spec, /`auth\.glucoscope\.app` はResendで送信元認証済み/);
   assert.match(bible, /`glucoscope\.app` を年間14\.20米ドルで取得しました。自動更新はオフ/);

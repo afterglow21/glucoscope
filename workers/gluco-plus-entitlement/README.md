@@ -9,9 +9,9 @@ checkpoint and no public account or sales path.
 - Thirty consecutive days from the verified payment-success timestamp.
 - No subscription, automatic renewal, background charge, or customer portal.
 - Stripe test mode has one active Product (`prod_V5SDrFKGSiwaql`) and one default
-  one-time JPY 400 Price (`price_1U5HIhQk6xCYKhx8oHxg44Ep`). Their non-secret IDs are
-  present only in an unserved, fully stopped staging candidate; they are not connected
-  to a Stripe API key, webhook Secret, route, enabled Checkout, payment, or public sale.
+  one-time JPY 400 Price (`price_1U5HIhQk6xCYKhx8oHxg44Ep`). No recurring Price exists.
+  Their non-secret IDs and encrypted test-only Stripe bindings remain only on stopped
+  staging; public Checkout and sales remain disabled.
 - Usage profiles, display names, CGM data, connection credentials, AI input and output,
   and payment-card data never enter this service.
 - Email HMAC identifiers, provider event identifiers, and Checkout Session identifiers
@@ -28,13 +28,14 @@ false: `PLUS_ENTITLEMENT_RPC_ENABLED`, `PLUS_PURCHASES_ENABLED`,
 `PLUS_ACCOUNT_AUTH_HTTP_ENABLED`, `ACCOUNT_AUTH_CLEANUP_ENABLED`,
 `PLUS_SALES_READINESS_CONFIRMED`, and `PLUS_TAX_TREATMENT_CONFIRMED`.
 
-Code checkpoint `b5669df` is deployed as the stopped
+Code checkpoint `dabb3571` is deployed as the stopped
 `glucoscope-plus-entitlement-staging` Worker. Version
-`bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9` receives 100% of that Worker's traffic, but
+`c917affd-74ed-4691-a3c6-b6c8e3149e3c` receives 100% of that Worker's traffic, but
 `workers_dev=false`, preview URLs are disabled, no routes or Cron triggers exist,
-observability is disabled, and the live `workers.dev` URL returns `404`. Its Secret list
-is empty. This deployment is an unreachable schema-and-binding checkpoint, not public
-account access or a sales release.
+observability is disabled, and the `workers.dev` URL returns `404`. Six encrypted test-only
+Secret bindings remain for later closed acceptance; their values are not recorded. This
+deployment is an unreachable schema-and-binding checkpoint, not public account access or
+a sales release.
 
 The staging-only `PLUS_DB` binding points to `glucoscope-plus-staging` in APAC.
 Migrations `0001` through `0006` are applied. Migration `0006` ran only after all 12
@@ -43,10 +44,9 @@ with JPY 400 constraints, and left all 12 application tables at zero rows. Reque
 IDs, distinct from the future production IDs. Because account HTTP remains false, the
 bindings are not read and no account operation can begin.
 
-Unserved staging Version `a0805f46-8585-47c5-b431-dfcb463d2993` contains the JPY 400
-code and the two test identifiers while every release/readiness flag remains false. It
-receives no traffic. Stopped Version `bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9` remains at
-100%, so routes, Cron, public reachability, email, and payment behavior did not change.
+Historical unserved Version `a0805f46-8585-47c5-b431-dfcb463d2993` first staged the
+JPY 400 code and the two non-secret test identifiers with every flag false. It is not a
+current rollback target.
 
 A later acceptance used a temporary remote preview restricted to localhost and only
 synthetic old and fresh rows. Cleanup removed the old rows without removing the fresh
@@ -77,6 +77,18 @@ and stopped Version `bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9` was restored to 100%.
 `workers.dev` URL returned `404`; public account UI, sales, and payment remained off. No
 email address, code, token, Secret, site key, or candidate Version ID is recorded.
 
+On 2026-08-17 JST, a closed Stripe sandbox drill used one opaque synthetic account through
+a localhost-only harness and a zero-percent Checkout candidate. Stripe-hosted Checkout
+showed JPY 400, one-time payment, 30 days, and no automatic renewal. A sandbox card produced
+one verified `checkout.session.completed` event and exactly one entitlement. Re-sending the
+same event did not duplicate either record. A full JPY 400 Dashboard refund delivered
+`refund.created`, `charge.refunded`, and `refund.updated`; both the Checkout attempt and
+entitlement became `refunded`. All synthetic rows were deleted, all 12 application tables
+returned to zero, the preview stopped, the Stripe webhook destination was disabled, and the
+temporary Custom Domain was deleted. Stopped Version
+`c917affd-74ed-4691-a3c6-b6c8e3149e3c` was then deployed at 100%. No real charge, card data,
+email address, Stripe key, webhook Secret, or health data is recorded.
+
 The internal verified-payment function also checks `PLUS_PURCHASES_ENABLED` before it
 reads payment identifiers, generates an entitlement ID, or touches D1. Missing or false
 always fails closed; only an explicit true value allows processing to begin.
@@ -98,14 +110,14 @@ statement visibility is described only as an ordinary 5–10-business-day estima
 depends on the bank or card issuer. This is not a minute-by-minute SLA, and it does not
 make every kind of request refundable. The public contact `support@glucoscope.app` has passed
 forwarding and real-receipt acceptance, and `docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md`
-defines the low-volume manual procedure. A complete Stripe test-mode drill, retention and receipt
-decisions, and professional review remain sale blockers; the checked-in refund-policy and support
-paths therefore remain blank.
+defines the low-volume manual procedure. The first full-payment, duplicate-delivery, and full-refund
+sandbox drill has passed. Retention, receipt wording, remaining payment cases, and professional
+review remain sale blockers; checked-in release flags therefore remain false.
 
 Keep the existing staging deployment stopped and unreachable. Do not add a route, Cron,
-public `workers.dev` endpoint, preview URL, Secret, sender, or commerce identifier merely
-because the D1 schema is present. Add the outbound-email settings and Secrets only to a
-separately reviewed closed-test Version after the email boundary is accepted. Never
+public `workers.dev` endpoint, preview URL, sender, or commerce identifier merely because
+the D1 schema and encrypted closed-test Secrets are present. Add any new binding only to a
+separately reviewed closed-test Version. Never
 commit tester email addresses, placeholder IDs, API keys, Webhook Secrets, HMAC keys,
 encryption keys, or `.dev.vars`.
 

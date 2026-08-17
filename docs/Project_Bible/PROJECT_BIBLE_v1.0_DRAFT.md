@@ -3655,11 +3655,12 @@ They never follow a redirect with the restricted-key Authorization header or Che
 Focused tests cover both `302` and `307`; this is a local safety boundary only and does not
 authorize a Stripe key, deployment, public Checkout, or sales.
 
-Code checkpoint `b5669df` is deployed only as the stopped
+Code checkpoint `dabb3571` is deployed only as the stopped
 `glucoscope-plus-entitlement-staging` Worker. Version
-`bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9` receives 100% of that Worker's traffic, but
-`workers_dev=false`, the live URL returns `404`, preview URLs are off, routes and Cron triggers
-are empty, observability is off, and its Secret list is empty. Account auth, cleanup, RPC,
+`c917affd-74ed-4691-a3c6-b6c8e3149e3c` receives 100% of that Worker's traffic, but
+`workers_dev=false`, the `workers.dev` URL returns `404`, preview URLs are off, routes and Cron
+triggers are empty, and observability is off. Six encrypted test-only Secret bindings remain for
+later closed acceptance; their values are not recorded. Account auth, cleanup, RPC,
 purchases, Checkout HTTP, Stripe webhooks, sales readiness, and tax readiness all remain
 false. The staging-only APAC D1 `glucoscope-plus-staging` has migrations `0001` through `0006`
 applied. Fail-closed migration `0006` ran only after all 12 application tables were verified at
@@ -3700,11 +3701,26 @@ The adapter now uses `redirect: "manual"` and rejects every `3xx` without follow
 does not forward the Authorization header or request body to a redirect destination. Focused
 adapter tests cover `302` and `307`.
 
-Unserved staging Version `a0805f46-8585-47c5-b431-dfcb463d2993` contains the JPY 400 code
-and only the two non-secret Stripe test Product/Price identifiers; every release/readiness flag
-remains false. Traffic-serving stopped Version `bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9`
-remains at 100%. There is no Stripe API key, Webhook Secret, public account route, Checkout,
-payment, or live entitlement. The existing AI and custom-range experience therefore remains unchanged.
+Historical unserved Version `a0805f46-8585-47c5-b431-dfcb463d2993` first staged the JPY 400
+code and the two non-secret Stripe test Product/Price identifiers with every flag false. It is not
+a current rollback target. Traffic-serving stopped Version
+`c917affd-74ed-4691-a3c6-b6c8e3149e3c` is now at 100%. The test Product/Price identifiers and
+encrypted restricted-key/webhook bindings are retained only for later closed acceptance, while
+there is no public account route, Checkout, payment path, or live entitlement. The existing AI
+and custom-range experience therefore remains unchanged.
+
+On 2026-08-17 JST, a closed Stripe sandbox drill used one opaque synthetic account through a
+localhost-only harness, private service binding, and zero-percent Checkout candidate. Stripe
+Checkout showed JPY 400, one-time payment, 30 days, and no automatic renewal. A sandbox card
+produced one verified `checkout.session.completed` event and exactly one entitlement. Re-sending
+the same event did not duplicate either record. A full JPY 400 Dashboard refund delivered
+`refund.created`, `charge.refunded`, and `refund.updated`; both the Checkout attempt and
+entitlement became `refunded`. The synthetic rows were deleted and all 12 application tables
+returned to zero. The preview stopped, the Stripe webhook destination was disabled, and its
+temporary Cloudflare Custom Domain was deleted. No real charge, card data, email address,
+Stripe key, webhook Secret, or health data is recorded. This accepts the first happy-path and
+full-refund drill only; receipt wording, retention, remaining payment cases, professional review,
+and production acceptance remain sales blockers.
 The privacy-protected public Usage aggregate is live through Usage Worker Version
 `e7b2a895-c418-4cb2-b565-d2a37bef8e1b`, with unserved stopped Version
 `e1496203-ab4b-429f-acd3-4e862cff0c2f` as its reviewed direct rollback. It covers only the 30
@@ -3984,10 +4000,11 @@ Stripe APIへの通信は `redirect: "manual"` とし、`3xx`は1回の通信で
 制限付きキーのAuthorization headerやCheckout本文をredirect先へ転送せず、`302`と`307`のテストで
 固定します。これはローカルの安全境界だけであり、Stripe key、配置、公開Checkout、販売を承認しません。
 
-commit `b5669df` は、停止中の `glucoscope-plus-entitlement-staging` Workerだけへ配置しました。
-Version `bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9`へ通信の100%を向けていますが、
+commit `dabb3571` は、停止中の `glucoscope-plus-entitlement-staging` Workerだけへ配置しました。
+Version `c917affd-74ed-4691-a3c6-b6c8e3149e3c`へ通信の100%を向けていますが、
 `workers_dev=false`で実URLは`404`、preview URLは無効、routeとCronは空、observabilityは無効、
-Secretは0件です。アカウント認証、cleanup、RPC、購入、Checkout HTTP、Stripe Webhook、販売準備、
+後の非公開受け入れ用に暗号化したtest専用Secret bindingを6件保持しています。値は記録しません。
+アカウント認証、cleanup、RPC、購入、Checkout HTTP、Stripe Webhook、販売準備、
 税確認のflagはすべて`false`です。APACのstaging専用D1 `glucoscope-plus-staging`へmigration
 `0001`〜`0006`を適用しました。fail-closedの`0006`は、12個のapplication tableがすべて0件で
 あることを確認した後だけ実行し、空のJPY 300制約をJPY 400制約へ置き換えました。適用後も
@@ -4024,11 +4041,25 @@ Secret、site key、候補Version IDは記録していません。
 `redirect: "manual"`へ変更し、`3xx`を追跡せず拒否します。これによりAuthorization headerと本文を
 redirect先へ転送しません。`302`と`307`の実行型テストでこの境界を固定しました。
 
-未配信staging Version `a0805f46-8585-47c5-b431-dfcb463d2993`だけに、JPY 400のコードと
-非秘密のStripe test Product/Price識別子を設定しました。全release/readiness flagは`false`で、
-交通量100%は引き続き停止Version `bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9`です。Stripe API key、
-Webhook Secret、公開アカウント経路、Checkout、支払い、実利用権は接続していません。
+過去の未配信Version `a0805f46-8585-47c5-b431-dfcb463d2993`は、JPY 400のコードと非秘密の
+Stripe test Product/Price識別子を全flag `false`で最初にstagingした履歴です。現在のrollback先では
+ありません。交通量100%は停止Version `c917affd-74ed-4691-a3c6-b6c8e3149e3c`です。
+test Product/Price識別子と暗号化したrestricted key/Webhook bindingは、後の非公開受け入れ用に
+停止Versionへ保持していますが、公開アカウント経路、Checkout、支払い経路、実利用権はありません。
 そのため、現在のAIとカスタム期間の動作は変えません。公開アカウントとPlus販売は引き続き開始不可です。
+
+2026年8月17日JST、匿名の合成account 1件、localhost限定harness、private service binding、
+通信0%のCheckout候補を使い、Stripe sandboxの最初の完全な1往復を受け入れました。Checkoutは
+400円・1回払い・30日・自動更新なしを表示し、sandbox cardの完了後、署名済み
+`checkout.session.completed`が400円・JPYを検証して30日利用権を1件だけ付与しました。同じeventを
+再送しても決済eventと利用権は各1件のままでした。Dashboardで400円を全額返金すると、
+`refund.created`、`charge.refunded`、`refund.updated`がすべて検証され、Checkoutと利用権は
+`refunded`になりました。合成行は特定して削除し、12 tableを0件へ戻しました。remote previewを
+停止し、Stripe webhook送信先を無効化し、一時Custom Domainを削除しました。実請求、カード情報、
+実メール、健康情報、Stripe key、Webhook Secretの値は記録していません。これは最初の正常系と
+全額返金ドリルの合格であり、領収書、保持期間、残る決済ケース、専門家確認、本番受け入れは
+引き続き販売ブロッカーです。
+
 privacy保護した公開Usage集計は、Usage Worker Version
 `e7b2a895-c418-4cb2-b565-d2a37bef8e1b`で本番接続済みです。未配信の停止Version
 `e1496203-ab4b-429f-acd3-4e862cff0c2f`を確認済みの直接rollbackとします。前日までの完了した
@@ -4074,7 +4105,7 @@ Plusの主要特典をほとんど利用できず、運営側でも解決でき�
 目安だけを案内し、反映日を保証しません。利用者都合を含むすべての申出を同じ返金対象とは
 案内せず、それ以外の相談も個別に受け付けます。2026年8月17日、公開問い合わせ先は
 `support@glucoscope.app`、平日受付、原則5営業日以内の返信とする方針を決めました。
-Cloudflare Email Routingによる非公開受信箱への転送と必要な受信DNSは有効化済みです。2026年8月17日、別の送信元から`support@glucoscope.app`へ送った健康情報を含まないテストメールが非公開受信箱へ届くことを、運営者本人が確認しました。送信元、転送先、件名、本文は記録しません。`docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md`に、購入メールとおおよその購入日による最小照合、訂正優先、Stripe Dashboardでの全額返金、openな異議申立てとの二重処理禁止、成功したWebhook後のPlus終了、状態別返信を定義しました。Stripe test modeで受付から返金、Plus終了、返信まで実行する受入と、保持期間・専門家確認は販売ブロッカーです。
+Cloudflare Email Routingによる非公開受信箱への転送と必要な受信DNSは有効化済みです。2026年8月17日、別の送信元から`support@glucoscope.app`へ送った健康情報を含まないテストメールが非公開受信箱へ届くことを、運営者本人が確認しました。送信元、転送先、件名、本文は記録しません。`docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md`に、購入メールとおおよその購入日による最小照合、訂正優先、Stripe Dashboardでの全額返金、openな異議申立てとの二重処理禁止、成功したWebhook後のPlus終了、状態別返信を定義しました。Stripe test modeの最初の400円決済・重複Webhook・全額返金・Plus終了は合格しました。問い合わせ受付と返信を含む運営手順全体、異常系、保持期間・専門家確認は販売ブロッカーです。
 公開ページ、決済、Worker、Stripe設定は、この方針だけでは有効にしません。
 
 同日、初期販売は日本国内に居住する人に限り、お支払い総額400円、購入とメールを管理する
@@ -4091,17 +4122,17 @@ copy does not call the price tax-inclusive and does not promise a qualified invo
 name, address, and telephone details stay out of Git and are to be supplied without delay on
 request, with enough time before purchase. The planned contact is `support@glucoscope.app`,
 weekdays, with a target reply within five business days. Cloudflare Email Routing and the
-required receiving DNS are enabled with a private destination. On August 17, 2026, the operator confirmed that a test message containing no health information, sent from a separate sender to `support@glucoscope.app`, reached the private destination. The sender, destination, subject, and body are not recorded. `docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md` defines minimum purchase matching, correction before refund, full refunds in Stripe Dashboard, no separate refund during an open dispute, entitlement termination only after a verified successful refund, and status-specific replies. A complete Stripe test-mode drill, professional review, refund operations acceptance, ordinary receipt wording, the no-Stripe-Tax initial
-configuration, and the product tax code remain sale blockers.
+required receiving DNS are enabled with a private destination. On August 17, 2026, the operator confirmed that a test message containing no health information, sent from a separate sender to `support@glucoscope.app`, reached the private destination. The sender, destination, subject, and body are not recorded. `docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md` defines minimum purchase matching, correction before refund, full refunds in Stripe Dashboard, no separate refund during an open dispute, entitlement termination only after a verified successful refund, and status-specific replies. The first JPY 400 payment, duplicate-webhook, full-refund, and entitlement-termination sandbox drill passed. The full support intake/reply exercise, remaining payment cases, professional review, ordinary receipt wording, the no-Stripe-Tax initial configuration, and the product tax code remain sale blockers.
 
 On the same day, Stripe test mode created exactly one active `GlucoScope Plus 30日パス`
 Product (`prod_V5SDrFKGSiwaql`) with one default JPY 400 one-time Price
 (`price_1U5HIhQk6xCYKhx8oHxg44Ep`). The Dashboard was re-read to confirm the product is
 active, the amount is JPY 400, and no recurring subscription is attached. The two non-secret
-identifiers were later added only to unserved, fully stopped staging Version
-`a0805f46-8585-47c5-b431-dfcb463d2993`. No Stripe API key, webhook Secret, Checkout,
-payment, public route, or sale was enabled, and stopped Version
-`bbc6c159-ce64-4fbf-a120-a43f9c5ca5d9` remained at 100%.
+identifiers and encrypted test-only Stripe bindings are retained only on stopped staging.
+Public Checkout and sales remain disabled. Current stopped Version
+`c917affd-74ed-4691-a3c6-b6c8e3149e3c` receives 100%, every release/readiness flag is false,
+no route or Cron exists, the Stripe webhook destination is disabled, and its temporary Custom
+Domain has been deleted.
 
 同日、運営者は `glucoscope.app` を年間14.20米ドルで取得しました。自動更新はオフです。
 Plusの確認メールには `auth.glucoscope.app` を専用の送信元として使う方針です。期限前に、
