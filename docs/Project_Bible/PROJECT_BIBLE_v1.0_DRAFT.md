@@ -4185,10 +4185,10 @@ Stripeへ渡す決済説明は個人情報を含まない固定文です。実�
 日本語、ビジネスサイトを`https://glucoscope.app/`へ揃え、任意支援だけを扱う古い事業説明を、
 400円の1回払い・30日間・自動更新なしの現在のPlus説明へ直しました。Stripe画面上のsandbox返金
 領収書では、日本語、400円、公開問い合わせ先、現在のサイトを確認しました。手動送信した返金
-領収書の1通目は本人受信箱へ届きましたが、明示的に依頼して送った2通目はStripeの送信履歴に
-残った一方、受信箱、迷惑メール、既存スレッドでは見つかりませんでした。同日分の顧客メールログは
-まだ確認できないため追加送信を止め、翌日以降の配信ログ確認と通常の成功決済メール・領収書を
-販売ブロッカーとして残します。`PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED`は`false`のままです。
+領収書は2通とも本人受信箱へ届き、2通目はメール側で迷惑メールへ振り分けられていたことを
+運営者本人が確認しました。日本語、400円、返金状態、公開問い合わせ先を実メールでも確認できたため、
+返金領収書の配信と文面は受入済みです。通常の成功決済メール・領収書は販売ブロッカーとして残し、
+`PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED`は`false`のままです。
 
 On 2026-08-17, the operator approved an initial Japan-only boundary: a JPY 400 total,
 one-time payment for an adult buyer or adult guardian. The seller is a Japanese
@@ -4213,11 +4213,11 @@ On August 18, 2026, the public Stripe support contact was aligned to
 website to `https://glucoscope.app/`. The stale donation-only business description was replaced
 with the current JPY 400 one-time, 30-day, non-renewing Plus description. The hosted sandbox
 refund receipt then showed Japanese copy, JPY 400, the public support contact, and the current
-website. The first manually sent refund receipt reached the operator, while a second explicitly
-requested send appeared in Stripe's send history but was not found in the inbox, spam, or an
-existing thread. No further resend was attempted. Because the same-day customer-email log and
-an ordinary successful-payment email and receipt remain unverified,
-`PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED` remains `false` and public sales remain blocked.
+website. Both manually sent refund receipts reached the operator; the second was initially missed
+because the mailbox placed it in spam. The real message confirmed Japanese copy, JPY 400, the
+refund state, and the public support contact, so refund-receipt delivery and wording are accepted.
+An ordinary successful-payment email and receipt remain unverified,
+`PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED` remains `false`, and public sales remain blocked.
 
 On the same day, Stripe test mode created exactly one active `GlucoScope Plus 30日パス`
 Product (`prod_V5SDrFKGSiwaql`) with one default JPY 400 one-time Price
