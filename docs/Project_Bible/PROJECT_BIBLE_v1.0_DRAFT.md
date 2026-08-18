@@ -3655,12 +3655,12 @@ They never follow a redirect with the restricted-key Authorization header or Che
 Focused tests cover both `302` and `307`; this is a local safety boundary only and does not
 authorize a Stripe key, deployment, public Checkout, or sales.
 
-Fresh stopped Version `29574f7c-d449-4a99-8e50-d4862b0d6d33` receives 100% of the
+Fresh stopped Version `acff4e32-ef5c-433a-83df-14958b192d62` receives 100% of the
 non-public `glucoscope-plus-entitlement-staging` Worker. `workers_dev=false`, the `workers.dev`
 URL returns `404`, preview URLs are off, routes and Cron triggers are empty, and observability is
-off. The four encrypted account-HMAC, Resend, and Turnstile Secret binding names remain, but their
-current values are not accepted for another drill and must be replaced or revalidated without
-disclosure first. Earlier stopped and test-candidate Versions are historical and are not current
+off. The four encrypted account-HMAC, Resend, and Turnstile Secret binding names remain. The
+corrected current Resend key passed the one-message provider-acceptance check below without
+disclosure. Earlier stopped and test-candidate Versions are historical and are not current
 rollback targets. Account auth, cleanup, RPC,
 purchases, Checkout HTTP, Stripe webhooks, sales readiness, and tax readiness all remain
 false. The staging-only APAC D1 `glucoscope-plus-staging` has migrations `0001` through `0006`
@@ -3669,14 +3669,21 @@ zero rows, replaced the empty JPY 300 constraints with JPY 400 constraints, and 
 at zero rows. Request-code
 and verify use staging-specific rate-limit IDs distinct from the future production IDs.
 
-A later resend-safety acceptance attempt on 2026-08-18 stopped at `403 turnstile_failed`
+A resend-safety acceptance attempt on 2026-08-18 stopped at `403 turnstile_failed`
 before D1 or email. Repeated clicks created no account, challenge, send reservation, session,
 purchase, or entitlement, and no delivery was accepted as evidence. The localhost remote-dev
 service-binding bridge also failed while forwarding an otherwise valid diagnostic request, so
 this path is not used as resend acceptance evidence. The harness and diagnostic copies were
 removed, all 12 application tables were verified at zero rows, and `workers.dev` remained `404`.
-The resend change remains locally tested and needs a new controlled end-to-end acceptance with
-revalidated real staging Secrets.
+This path is historical failure evidence only. Later that day, after the operator replaced the
+Resend key without exposing its value, a zero-percent candidate received exactly one request
+through a temporary Custom Domain and a Version override. Resend's official safe test recipient,
+not a personal address, was used. The Worker returned `200 code_sent`; both the challenge and
+global send reservation reached `sent`, proving provider acceptance with the corrected key. This
+does not claim personal-inbox arrival. The two exact test rows were deleted, all 12 application
+tables returned to zero, the candidate and temporary Custom Domain were removed, `workers.dev`
+returned `404`, and the fresh stopped Version above was deployed alone at 100%. Public account
+UI, Checkout, sales, routes, preview URLs, and Cron remain off.
 
 A later acceptance used a temporary remote preview restricted to localhost and only synthetic
 old and fresh rows. Cleanup removed only the old rows. Request-code returned a safe `503`
@@ -3714,7 +3721,7 @@ adapter tests cover `302` and `307`.
 Historical unserved Version `a0805f46-8585-47c5-b431-dfcb463d2993` first staged the JPY 400
 code and the two non-secret Stripe test Product/Price identifiers with every flag false. It is not
 a current rollback target. Fresh stopped Version
-`29574f7c-d449-4a99-8e50-d4862b0d6d33` is now at 100%. The test Product/Price identifiers remain
+`acff4e32-ef5c-433a-83df-14958b192d62` is now at 100%. The test Product/Price identifiers remain
 non-secret configuration, while Stripe restricted-key and webhook bindings are not present on
 this stopped account-acceptance Version. There is no public account route, Checkout, payment
 path, or live entitlement. The existing AI
@@ -4025,11 +4032,11 @@ Stripe APIへの通信は `redirect: "manual"` とし、`3xx`は1回の通信で
 制限付きキーのAuthorization headerやCheckout本文をredirect先へ転送せず、`302`と`307`のテストで
 固定します。これはローカルの安全境界だけであり、Stripe key、配置、公開Checkout、販売を承認しません。
 
-新しい停止Version `29574f7c-d449-4a99-8e50-d4862b0d6d33`へ、非公開の
+新しい停止Version `acff4e32-ef5c-433a-83df-14958b192d62`へ、非公開の
 `glucoscope-plus-entitlement-staging` Workerの通信を100%向けています。
 `workers_dev=false`で実URLは`404`、preview URLは無効、routeとCronは空、observabilityは無効です。
-account HMAC、Resend、Turnstileの暗号化Secret binding名4件を保持しますが、現在の値を次の試験で
-使用できるとは受け入れていません。値を開示せず、次の試験前に再設定または再検証します。以前の停止Versionと
+account HMAC、Resend、Turnstileの暗号化Secret binding名4件を保持します。修正後のResend keyは、値を
+開示せず、後述の1通限定provider受理確認に合格しました。以前の停止Versionと
 試験候補Versionは履歴であり、現在のrollback先にしません。
 アカウント認証、cleanup、RPC、購入、Checkout HTTP、Stripe Webhook、販売準備、
 税確認のflagはすべて`false`です。APACのstaging専用D1 `glucoscope-plus-staging`へmigration
@@ -4071,7 +4078,7 @@ redirect先へ転送しません。`302`と`307`の実行型テストでこの�
 過去の未配信Version `a0805f46-8585-47c5-b431-dfcb463d2993`は、JPY 400のコードと非秘密の
 Stripe test Product/Price識別子を全flag `false`で最初にstagingした履歴です。現在のrollback先では
 ありません。交通量100%は新しい停止Version
-`29574f7c-d449-4a99-8e50-d4862b0d6d33`です。test Product/Price識別子は非秘密の設定として残りますが、
+`acff4e32-ef5c-433a-83df-14958b192d62`です。test Product/Price識別子は非秘密の設定として残りますが、
 Stripe restricted key/Webhook Secretはこの停止中アカウント受け入れVersionにありません。
 公開アカウント経路、Checkout、支払い経路、実利用権もありません。
 そのため、現在のAIとカスタム期間の動作は変えません。公開アカウントとPlus販売は引き続き開始不可です。
@@ -4170,7 +4177,7 @@ Product (`prod_V5SDrFKGSiwaql`) with one default JPY 400 one-time Price
 active, the amount is JPY 400, and no recurring subscription is attached. The two non-secret
 identifiers and encrypted test-only Stripe bindings are retained only on stopped staging.
 Public Checkout and sales remain disabled. Fresh stopped Version
-`29574f7c-d449-4a99-8e50-d4862b0d6d33` receives 100%, every release/readiness flag is false,
+`acff4e32-ef5c-433a-83df-14958b192d62` receives 100%, every release/readiness flag is false,
 no route or Cron exists, the Stripe webhook destination is disabled, and its temporary Custom
 Domain has been deleted. Earlier stopped and test-candidate Versions are historical and are not
 current rollback targets.
@@ -4235,14 +4242,19 @@ Secretの不一致はD1やメールへ触れる前に`403`で安全に停止し�
 Checkout、販売、route、Cronは停止したままです。追加の少人数受信、配信失敗時の実地運用と残る
 公開前確認を終えるまで、公開アカウントとPlus販売は開始しません。
 
-同日、その後の再送安全性候補の受け入れは、`403 turnstile_failed`でD1やメールの前に停止しました。
+同日、再送安全性候補の受け入れは、`403 turnstile_failed`でD1やメールの前に停止しました。
 繰り返し操作してもaccount、challenge、送信予約、session、購入、利用権は作られず、メール到着の証拠も
 採用していません。localhostのremote-dev service-binding bridgeも、有効な診断requestの中継中に失敗したため、
 この経路を再送修正の受け入れ証拠にしません。harnessと診断copyを削除し、12個のapplication tableが
-すべて0件、`workers.dev`が`404`であることを再確認しました。現在は新しい停止Version
-`29574f7c-d449-4a99-8e50-d4862b0d6d33`だけを100%へ向け、全flag `false`、route/Cron/previewなしを
-維持します。4つのSecret binding名は保持しますが、値は次の試験前に開示せず再設定または再検証します。
-再送修正はローカルテスト済みですが、実環境E2Eは未完了です。
+すべて0件、`workers.dev`が`404`であることを再確認しました。この結果は履歴上の失敗証拠です。
+
+その後、運営者が値を開示せずResend keyを差し替え、Resend公式の安全なテスト宛先だけを使う1通限定の
+非公開確認を行いました。一時Custom DomainからVersion overrideで0%候補だけへ到達させ、Workerは
+`200 code_sent`を返し、challengeと全体送信予約はいずれも`sent`になりました。これは修正後keyによる
+provider受理の確認であり、本人受信箱への到着確認とは扱いません。試験で作られた2行を削除して12個の
+application tableをすべて0件へ戻し、0%候補と一時Custom Domainを削除しました。現在は新しい停止Version
+`acff4e32-ef5c-433a-83df-14958b192d62`だけを100%へ向け、全flag `false`、route/Cron/previewなし、
+`workers.dev` `404`を維持します。公開アカウント、Checkout、販売は停止したままです。
 
 常時表示モードは、ユーザー展開を始めた後に実装します。
 本人が選んだ時だけ、横向きのグラフ画面に限定して動かし、

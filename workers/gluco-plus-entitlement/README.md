@@ -29,9 +29,9 @@ false: `PLUS_ENTITLEMENT_RPC_ENABLED`, `PLUS_PURCHASES_ENABLED`,
 `PLUS_SALES_READINESS_CONFIRMED`, and `PLUS_TAX_TREATMENT_CONFIRMED`.
 
 The fresh stopped `glucoscope-plus-entitlement-staging` Worker is Version
-`29574f7c-d449-4a99-8e50-d4862b0d6d33` at 100% traffic. It keeps the four encrypted
-account-HMAC, Resend, and Turnstile Secret binding names, but their current values are not
-accepted for another drill and must be replaced or revalidated without disclosure first. It has
+`acff4e32-ef5c-433a-83df-14958b192d62` at 100% traffic. It keeps the four encrypted
+account-HMAC, Resend, and Turnstile Secret binding names. The corrected current Resend key
+passed the one-message provider-acceptance check below without disclosure. It has
 `workers_dev=false`, preview URLs are disabled, no routes or Cron triggers exist,
 observability is disabled, and the `workers.dev` URL returns `404`. Secret values are not
 recorded. Earlier stopped Version `c917affd-74ed-4691-a3c6-b6c8e3149e3c` is historical and
@@ -89,15 +89,23 @@ were deleted, all 12 application tables returned to zero, the preview stopped, a
 secret stopped Version `809ecd8b-8e37-40f9-9f6b-7d006cdd52b6` was deployed alone at 100%.
 Public account UI, Checkout, sales, routes, and Cron remained off throughout.
 
-A later resend-safety acceptance attempt on 2026-08-18 stopped at `403 turnstile_failed`
+A resend-safety acceptance attempt on 2026-08-18 stopped at `403 turnstile_failed`
 before D1 or email. Repeated clicks created no account, challenge, send reservation, session,
 purchase, or entitlement, and no delivery was accepted as evidence. The localhost remote-dev
 service-binding bridge also failed while forwarding a valid diagnostic request, so this path is
 not used as resend acceptance evidence. The harness and diagnostic copies were removed, all 12
-application tables were verified at zero rows, `workers.dev` remained `404`, and fresh stopped
-Version `29574f7c-d449-4a99-8e50-d4862b0d6d33` was deployed alone at 100%. The resend change
-remains locally tested and needs a new controlled end-to-end acceptance with revalidated real
-staging Secrets.
+application tables were verified at zero rows, and `workers.dev` remained `404`. This path is
+historical failure evidence only.
+
+Later that day, after the operator replaced the Resend key without exposing its value, a
+zero-percent candidate received exactly one request through a temporary Custom Domain and a
+Version override. It used Resend's official safe test recipient, not a personal address. The
+Worker returned `200 code_sent`; both the challenge and global send reservation reached `sent`,
+proving provider acceptance with the corrected key. This does not claim personal-inbox arrival.
+The two exact test rows were deleted, all 12 application tables returned to zero, the candidate
+and temporary domain were removed, `workers.dev` returned `404`, and fresh stopped Version
+`acff4e32-ef5c-433a-83df-14958b192d62` was deployed alone at 100%. Public account UI,
+Checkout, sales, routes, preview URLs, and Cron remain off.
 
 The next delivery-hardening candidate adds an explicit several-minute wait, junk/category/
 existing-thread guidance, a visible 60-second resend countdown, and a fresh Turnstile check
