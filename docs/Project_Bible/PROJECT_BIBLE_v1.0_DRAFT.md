@@ -3685,6 +3685,17 @@ tables returned to zero, the candidate and temporary Custom Domain were removed,
 returned `404`, and the fresh stopped Version above was deployed alone at 100%. Public account
 UI, Checkout, sales, routes, preview URLs, and Cron remain off.
 
+On 2026-08-18, a separate safe abnormal-delivery acceptance used only Resend's official test
+recipients through an unserved candidate. Resend displayed `Bounced`, `Complained`, and
+`Suppressed` as distinct results; the real Suppression List remained empty. Resend does not
+publish a deterministic `delivery_delayed` test recipient, so actual delayed-delivery observation
+and the runbook response remain pending. The preview was stopped, the candidate was detached,
+the three exact anonymous challenge and send-reservation rows were deleted, and all 12 staging
+application tables returned to zero. Fresh stopped Version
+`acff4e32-ef5c-433a-83df-14958b192d62` was restored alone at 100%. Public account UI, Checkout,
+sales, routes, preview URLs, and Cron remained off. No real recipient, email address, code, token,
+Secret, site key, provider identifier, or candidate Version ID is recorded.
+
 A later acceptance used a temporary remote preview restricted to localhost and only synthetic
 old and fresh rows. Cleanup removed only the old rows. Request-code returned a safe `503`
 before its limiter reached `429`; verify returned `400` before its separate limiter reached
@@ -4227,8 +4238,9 @@ APIの秒間上限は固定値を正本化せず、実アカウントのUsage画
 `Retry-After`はブラウザ側で1〜86,400秒に制限して待機へ反映します。利用者案内、Resend Dashboardの
 `delivery_delayed`・`failed`・`bounced`・`complained`・`suppressed`の確認、停止判断、記録しない情報は
 `docs/Operations/PLUS_EMAIL_DELIVERY_RUNBOOK.md`を正とします。UI、原子的なchallenge切替、clientの
-失敗時grant保持、自動テスト、運営手順はローカル候補へ追加済みですが、追加の少人数受信箱と異常状態の
-実地運用が終わるまで公開アカウントと販売は停止したままです。
+失敗時grant保持、自動テスト、運営手順はローカル候補へ追加済みです。公式の安全なテスト宛先による
+bounce・complaint・suppressionの判別は受け入れ済みですが、追加の少人数受信箱と実際の
+`delivery_delayed`発生時の運用確認が終わるまで公開アカウントと販売は停止したままです。
 2026年8月16日、公式テスト宛先の受理・`delivered`確認に加え、本人受信箱1通と実Turnstileを含む
 最初の非公開E2Eを受け入れました。
 
@@ -4266,6 +4278,15 @@ application tableをすべて0件へ戻し、0%候補と一時Custom Domainを�
 `acff4e32-ef5c-433a-83df-14958b192d62`だけを100%へ復帰しました。メールアドレス、コード、token、Secret、
 site key、候補Version IDは記録しません。通常の利用者は1通の最新コードを1回入力し、2通目は本人が再送を
 選んだ時だけ送ります。
+
+さらに同日、Resend公式の安全なテスト宛先だけを使い、`Bounced`、`Complained`、`Suppressed`の3状態が
+Dashboardで区別されることを非公開で確認しました。実際のSuppression Listは空のままで、実在する宛先を
+抑止対象にしていません。Resendには`delivery_delayed`を決定的に再現する公式テスト宛先がないため、実際に
+発生した時の待機・状態再確認・連続再送停止の運用確認は残します。3通の試験後はpreviewを停止し、候補を
+配信から外し、今回の匿名challenge・送信予約3件だけを削除してD1全12表を0件へ戻しました。停止Version
+`acff4e32-ef5c-433a-83df-14958b192d62`だけを100%へ復帰し、公開アカウント、Checkout、販売、route、
+preview、Cronは停止したままです。実宛先、コード、token、Secret、site key、provider識別子、候補Version IDは
+記録しません。
 
 常時表示モードは、ユーザー展開を始めた後に実装します。
 本人が選んだ時だけ、横向きのグラフ画面に限定して動かし、

@@ -122,6 +122,16 @@ token, Secret, site key, or candidate Version ID is recorded. Ordinary users rec
 and enter the latest code once; a second message is sent only when they explicitly request a
 resend.
 
+A separate safe abnormal-delivery acceptance on 2026-08-18 used only Resend's official test
+recipients through an unserved candidate. Resend displayed `Bounced`, `Complained`, and
+`Suppressed` as distinct results, while the real Suppression List remained empty. Resend does
+not publish a deterministic `delivery_delayed` test recipient, so actual delayed-delivery
+observation and the runbook response remain pending. The three exact anonymous challenges and
+send reservations were deleted, all 12 application tables returned to zero, the preview stopped,
+the candidate was detached, and stopped Version
+`acff4e32-ef5c-433a-83df-14958b192d62` was restored alone at 100%. No real recipient, email
+address, code, token, Secret, site key, provider identifier, or candidate Version ID is recorded.
+
 The next delivery-hardening candidate adds an explicit several-minute wait, junk/category/
 existing-thread guidance, a visible 60-second resend countdown, and a fresh Turnstile check
 for every resend. A newly delivered code replaces the previous challenge only after the email
@@ -130,7 +140,9 @@ invalidates the previously delivered code. The browser keeps the prior in-memory
 a failed resend, adopts a successful replacement only, and bounds a server `Retry-After` to
 1–86,400 seconds. Operator handling for delayed, bounced, complained, failed, and suppressed
 mail is defined in [`PLUS_EMAIL_DELIVERY_RUNBOOK.md`](../../docs/Operations/PLUS_EMAIL_DELIVERY_RUNBOOK.md).
-This candidate is not deployed, and public account UI and sales remain off.
+This candidate is not deployed, and public account UI and sales remain off. The safe official
+test-recipient checks above accept bounced, complained, and suppressed classification; actual
+`delivery_delayed` observation and additional small-inbox acceptance remain open.
 
 On 2026-08-17 JST, a closed Stripe sandbox drill used one opaque synthetic account through
 a localhost-only harness and a zero-percent Checkout candidate. Stripe-hosted Checkout

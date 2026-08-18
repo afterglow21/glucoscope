@@ -47,6 +47,12 @@ Resendの`delivered`は受信側メールサーバーの受理であり、その
 - `delivery_delayed`、`bounced`、`complained`、`suppressed`の各状態を、健康情報やSecretを使わずに運営者が見分けられる。
 - 送信失敗・受信遅延・問い合わせ中もFreeの血糖表示が続く。
 
+### 2026年8月18日の非公開受け入れ
+
+Resend公式の安全なテスト宛先だけを使い、`bounced`、`complained`、`suppressed`がDashboardでそれぞれ区別して表示されることを確認した。試験後も実際のSuppression Listは空で、実在する宛先を抑止対象にしていない。`delivery_delayed`には公式の決定的なテスト宛先がないため、発生時に本手順どおり待機・状態再確認・連続再送停止を行う実運用確認を残す。安全なテスト方法は[Send Test Emails](https://resend.com/docs/dashboard/emails/send-test-emails)、抑止の扱いは[Email Suppressions](https://resend.com/docs/dashboard/emails/email-suppressions)、状態名は[Webhook Event Types](https://resend.com/docs/webhooks/event-types)を正とする。
+
+受け入れは通信0%の隔離候補だけに到達する一時localhost経路で行い、3通の試験後に経路を停止した。候補を配信から外し、今回作成した匿名のchallenge・送信予約だけを削除し、staging D1の全12表が0件へ戻ったことを確認した。公開アカウント、Checkout、販売、route、preview、Cronは停止したままである。
+
 ## 5. 記録しないもの
 
 コード、Turnstile token、Resend API key、完全なメールアドレス、非公開転送先、メール本文、血糖値、接続URL・合言葉、カード情報を、Git、公開issue、PROJECT_BIBLEの受け入れ記録、スクリーンショットへ残さない。受け入れ記録には日時、対象環境、状態種別、成功・失敗、停止flag、合成行の削除結果だけを書く。
