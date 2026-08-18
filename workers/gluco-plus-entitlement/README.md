@@ -107,6 +107,21 @@ and temporary domain were removed, `workers.dev` returned `404`, and fresh stopp
 `acff4e32-ef5c-433a-83df-14958b192d62` was deployed alone at 100%. Public account UI,
 Checkout, sales, routes, preview URLs, and Cron remain off.
 
+The current resend-safety code then passed a separate closed acceptance on 2026-08-18. A
+synthetic invalid-email preflight used Cloudflare's official test Turnstile pair only on an
+unserved candidate and returned `400`, proving the request crossed Turnstile without reaching
+D1 or Resend. The operator then received both the initial and explicitly requested resend in
+the same personal inbox, verified the latest code, confirmed the authenticated session, and
+deleted the test account; each accepted operation returned `200`. The official test pair's
+hostname is not a production identity signal, so this exception existed only in the isolated
+candidate; production hostname and action checks remain strict. The preview stopped, the
+candidate was detached, the exact two opaque send-reservation rows were deleted, all 12
+application tables returned to zero, and stopped Version
+`acff4e32-ef5c-433a-83df-14958b192d62` was restored alone at 100%. No email address, code,
+token, Secret, site key, or candidate Version ID is recorded. Ordinary users receive one code
+and enter the latest code once; a second message is sent only when they explicitly request a
+resend.
+
 The next delivery-hardening candidate adds an explicit several-minute wait, junk/category/
 existing-thread guidance, a visible 60-second resend countdown, and a fresh Turnstile check
 for every resend. A newly delivered code replaces the previous challenge only after the email
