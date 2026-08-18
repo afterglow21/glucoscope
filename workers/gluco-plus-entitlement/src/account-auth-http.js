@@ -3,7 +3,11 @@ import {
   createAccountAuthService,
   readAccountAuthConfig,
 } from "./account-auth-core.js";
-import { createPublicUnavailableResponse } from "./entitlement-core.js";
+import {
+  createPlusEntitlementService,
+  createPublicUnavailableResponse,
+  PlusEntitlementError,
+} from "./entitlement-core.js";
 import { enforceAccountAuthRateLimit } from "./account-auth-rate-limit.js";
 import { verifyAccountTurnstile } from "./account-auth-turnstile.js";
 
@@ -13,7 +17,15 @@ const ROUTES = Object.freeze({
   session: "/v1/session",
   logout: "/v1/auth/logout",
   deleteAccount: "/v1/account/delete",
+  reserveShareTrial: "/v1/share-trial/reserve",
+  completeShareTrial: "/v1/share-trial/complete",
+  releaseShareTrial: "/v1/share-trial/release",
 });
+const SHARE_TRIAL_PATHS = new Set([
+  ROUTES.reserveShareTrial,
+  ROUTES.completeShareTrial,
+  ROUTES.releaseShareTrial,
+]);
 const JSON_CONTENT_TYPE = /^application\/json(?:\s*;|$)/iu;
 const BEARER_PATTERN = /^Bearer ([A-Za-z0-9_-]{43})$/u;
 
@@ -53,7 +65,7 @@ function jsonResponse(body, status, origin, extraHeaders = {}) {
 }
 
 function errorResponse(error, origin) {
-  const safe = error instanceof AccountAuthError
+  const safe = error instanceof AccountAuthError || error instanceof PlusEntitlementError
     ? error
     : new AccountAuthError("service_unavailable", 503);
   const body = { ok: false, error: safe.code };
@@ -134,7 +146,11 @@ function preflightResponse(origin) {
 
 export async function handleAccountAuthRequest(request, env = {}, dependencies = {}) {
   const config = readAccountAuthConfig(env);
-  if (!config.httpEnabled) return createPublicUnavailableResponse();
+  const requestPath = new URL(request.url).pathname;
+  const shareTrialRequest = SHARE_TRIAL_PATHS.has(requestPath);
+  if (shareTrialRequest ? !config.shareTrialHttpEnabled : !config.httpEnabled) {
+    return createPublicUnavailableResponse();
+  }
   if (!isExactHttpsOrigin(config.allowedOrigin)) {
     return createPublicUnavailableResponse();
   }
@@ -154,7 +170,9 @@ export async function handleAccountAuthRequest(request, env = {}, dependencies =
   }
 
   const service = dependencies.service
-    || createAccountAuthService(env, dependencies.serviceDependencies);
+    || (shareTrialRequest
+      ? createPlusEntitlementService(env, dependencies.serviceDependencies)
+      : createAccountAuthService(env, dependencies.serviceDependencies));
   const enforceRateLimit = dependencies.enforceRateLimit
     || enforceAccountAuthRateLimit;
   const turnstileVerifier = dependencies.verifyTurnstile || verifyAccountTurnstile;
@@ -256,6 +274,36 @@ export async function handleAccountAuthRequest(request, env = {}, dependencies =
         { turnstileVerified: true },
       );
       return jsonResponse(result, 200, origin);
+    }
+
+    if (SHARE_TRIAL_PATHS.has(url.pathname)) {
+      if (request.method !== "POST") {
+        return jsonResponse({ ok: false, error: "method_not_allowed" }, 405, origin, {
+          Allow: "POST, OPTIONS",
+        });
+      }
+      const payload = requireAllowedKeys(
+        await readJsonBody(request, config.bodyLimitBytes),
+        new Set(["requestId"]),
+      );
+      const sessionToken = readBearerToken(request);
+      const method = url.pathname === ROUTES.reserveShareTrial
+        ? "reserveShareTrial"
+        : url.pathname === ROUTES.completeShareTrial
+          ? "completeShareTrial"
+          : "releaseShareTrial";
+      const result = await service[method](sessionToken, payload.requestId);
+      const acceptedStatuses = method === "reserveShareTrial"
+        ? new Set(["reserved", "completed", "plus_active"])
+        : method === "completeShareTrial"
+          ? new Set(["completed", "plus_active"])
+          : new Set(["released", "expired", "already_completed"]);
+      const status = result?.status === "invalid_session"
+        ? 401
+        : acceptedStatuses.has(result?.status)
+          ? 200
+          : 409;
+      return jsonResponse({ ok: status === 200, ...result }, status, origin);
     }
 
     return jsonResponse({ ok: false, error: "not_found" }, 404, origin);

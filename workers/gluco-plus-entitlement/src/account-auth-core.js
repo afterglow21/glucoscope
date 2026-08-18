@@ -53,6 +53,7 @@ function readIsoDate(value) {
 export function readAccountAuthConfig(env = {}) {
   return Object.freeze({
     httpEnabled: readBoolean(env.PLUS_ACCOUNT_AUTH_HTTP_ENABLED, false),
+    shareTrialHttpEnabled: readBoolean(env.PLUS_SHARE_TRIAL_HTTP_ENABLED, false),
     allowedOrigin: String(env.ACCOUNT_AUTH_ALLOWED_ORIGIN || "").trim(),
     expectedHostname: String(env.ACCOUNT_AUTH_EXPECTED_HOSTNAME || "").trim()
       .toLowerCase(),

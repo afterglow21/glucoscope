@@ -418,6 +418,15 @@ Bind another Worker specifically to the named `PlusEntitlementRpc` entrypoint.
   confirmation matches the required current version.
 - `getActivePlusSummary(sessionToken)` returns feature booleans, the active time window,
   and Share Studio trial state.
+
+The rollout-hidden browser Share Studio uses three authenticated `POST` paths:
+`/v1/share-trial/reserve`, `/v1/share-trial/complete`, and
+`/v1/share-trial/release`. `PLUS_SHARE_TRIAL_HTTP_ENABLED` gates these paths
+independently from account email and Checkout. Each body accepts only a random UUID
+request ID; the bearer session identifies the verified account. Glucose values,
+connection credentials, generated images, and share destinations are rejected or
+never sent. The checked-in production and staging values remain `false` until closed
+browser/Worker acceptance passes.
 - `reserveShareTrial`, `completeShareTrial`, and `releaseShareTrial` implement a short
   reservation. Only `complete` consumes the one successful trial.
 

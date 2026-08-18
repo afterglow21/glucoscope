@@ -14,6 +14,9 @@ const ACCOUNT_AUTH_PATHS = new Set([
   "/v1/session",
   "/v1/auth/logout",
   "/v1/account/delete",
+  "/v1/share-trial/reserve",
+  "/v1/share-trial/complete",
+  "/v1/share-trial/release",
 ]);
 
 export class AdminPlusAggregateEntrypoint extends WorkerEntrypoint {

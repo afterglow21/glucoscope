@@ -213,6 +213,41 @@ test("verification stores only the opaque session token and exposes no credentia
   assert.equal(JSON.stringify(stored).includes(VERIFICATION_GRANT), false);
 });
 
+test("Share Studio trial operations send only an opaque session and request ID", async () => {
+  const storage = createStorage();
+  storage.setItem("glucoscope.plusSession.v1", JSON.stringify({
+    schemaVersion: 1,
+    sessionToken: TOKEN
+  }));
+  const calls = [];
+  const { api } = loadClient({
+    storage,
+    fetchImpl: async (url, init) => {
+      calls.push({ url, init });
+      const operation = url.split("/").at(-1);
+      return jsonResponse({
+        ok: true,
+        status: operation === "reserve" ? "reserved" : operation === "complete" ? "completed" : "released",
+        grant: "trial",
+        requestId: CHECKOUT_REQUEST_ID,
+        ...(operation === "complete" ? {} : { reservationExpiresAt: Date.now() + 60_000 })
+      });
+    }
+  });
+  await api.configure({ enabled: true, endpoint: "https://plus.example" });
+  const reserved = await api.reserveShareStudio();
+  assert.equal(reserved.ok, true);
+  assert.equal(reserved.requestId, CHECKOUT_REQUEST_ID);
+  assert.deepEqual(JSON.parse(calls[0].init.body), { requestId: CHECKOUT_REQUEST_ID });
+  assert.equal(calls[0].init.headers.get("Authorization"), `Bearer ${TOKEN}`);
+  assert.equal(JSON.stringify(calls[0]).includes("glucose"), false);
+
+  const completed = await api.completeShareStudio(CHECKOUT_REQUEST_ID);
+  assert.equal(completed.ok, true);
+  assert.equal(calls[1].url, "https://plus.example/v1/share-trial/complete");
+  assert.equal(calls[2].url, "https://plus.example/v1/session");
+});
+
 test("verification fails locally without a request-code grant", async () => {
   let calls = 0;
   const { api } = loadClient({

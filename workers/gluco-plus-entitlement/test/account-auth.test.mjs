@@ -1807,6 +1807,73 @@ test("HTTP contract enforces exact Origin, bounded JSON, CORS, route methods, an
   });
 });
 
+test("Share Studio trial HTTP is separately gated and sends only session plus request ID", async () => {
+  const requestId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+  const calls = [];
+  const service = {
+    async reserveShareTrial(token, value) {
+      calls.push(["reserve", token, value]);
+      return { status: "reserved", grant: "trial", requestId: value, reservationExpiresAt: NOW };
+    },
+    async completeShareTrial(token, value) {
+      calls.push(["complete", token, value]);
+      return { status: "completed", grant: "trial", requestId: value };
+    },
+    async releaseShareTrial(token, value) {
+      calls.push(["release", token, value]);
+      return { status: "released", requestId: value };
+    },
+  };
+  const request = (operation, body = { requestId }) => new Request(
+    `https://worker.invalid/v1/share-trial/${operation}`,
+    {
+      method: "POST",
+      headers: {
+        Origin: ORIGIN,
+        Authorization: `Bearer ${SESSION_TOKENS[0]}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    },
+  );
+
+  const disabled = await handleAccountAuthRequest(
+    request("reserve"),
+    ENABLED_ENV,
+    { service },
+  );
+  assert.equal(disabled.status, 503);
+  assert.equal(calls.length, 0);
+
+  const env = { ...ENABLED_ENV, PLUS_SHARE_TRIAL_HTTP_ENABLED: "true" };
+  for (const operation of ["reserve", "complete", "release"]) {
+    const response = await handleAccountAuthRequest(request(operation), env, { service });
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("cache-control"), "no-store");
+    assert.equal((await response.json()).ok, true);
+  }
+  assert.deepEqual(calls, [
+    ["reserve", SESSION_TOKENS[0], requestId],
+    ["complete", SESSION_TOKENS[0], requestId],
+    ["release", SESSION_TOKENS[0], requestId],
+  ]);
+
+  const extraHealthData = await handleAccountAuthRequest(
+    request("reserve", { requestId, glucose: 123 }),
+    env,
+    { service },
+  );
+  assert.equal(extraHealthData.status, 400);
+  assert.equal(calls.length, 3);
+
+  const preflight = await handleAccountAuthRequest(new Request(
+    "https://worker.invalid/v1/share-trial/reserve",
+    { method: "OPTIONS", headers: { Origin: ORIGIN } },
+  ), env, { service });
+  assert.equal(preflight.status, 204);
+  assert.equal(preflight.headers.get("access-control-allow-origin"), ORIGIN);
+});
+
 test("Cloudflare rate-limit bindings enforce 5 and 30 per IP with separate keys", async () => {
   function createCountingLimiter(maximum) {
     const counts = new Map();

@@ -281,6 +281,13 @@ const translations = {
     mobileMoreTitle: "その他",
     mobileMoreLead: "GlucoScopeのほかのページや設定を開けます。",
     mobileMoreJournal: "Journal",
+    mobileMoreShareStudioNote: "ふりかえり画像を作る",
+    shareStudioTitle: "今日のふりかえり画像",
+    shareStudioLead: "今の血糖と今日のTIR・TAR・TBRを、端末の中だけで1枚の画像にします。",
+    shareStudioPrivacyTitle: "共有する前に",
+    shareStudioPrivacyBody: "画像には健康情報が含まれます。共有相手と公開範囲を確認してください。接続URLや合言葉は画像にもサーバーにも送りません。",
+    shareStudioCreate: "画像を作る",
+    shareStudioShare: "共有・保存する",
     mobileMoreCollection: "想い出",
     mobileMoreCollectionNote: "グルコとの記録",
     mobileMoreAbout: "About",
@@ -337,6 +344,7 @@ const translations = {
     plusAccountBenefitAi: "Freeでは、やさしい分析を1日1回。Plusでは、しっかり分析を含めて1日最大5回まで使えます。",
     plusAccountBenefitRange: "7日・30日・カスタム期間のグラフを使えます。",
     plusAccountBenefitShare: "Share Studioを使えます。確認済みアカウントなら、購入前にも1回だけ試せます。",
+    plusAccountShareStudioButton: "Share Studioを開く",
     plusAccountEmailLabel: "確認に使うメール",
     plusAccountEmailHelp: "パスワードは入力しません。1つのメールで管理できるPlusアカウントは1つです。",
     plusAccountRoleLegend: "だれが購入やメールを管理しますか？",
@@ -629,6 +637,8 @@ const translations = {
     plusExtendedRangeRequired: "7日・30日・カスタム期間はPlus 30日パスで使えます。今日と昨日は、Plusがなくても使えます。",
     plusDeepAnalysisRequired: "しっかり分析のグルコのお話し・AIお手紙・ChatGPTに相談は、Plus 30日パスで使えます。Freeでは、やさしい分析を1日1回試せます。",
     plusAccessUnavailable: "Plusの利用状況を確認できませんでした。少し待って、もう一度お試しください。",
+    plusVerifiedAccountRequired: "Share Studioの1回体験には、メール確認済みのPlusアカウントが必要です。",
+    plusShareStudioRequired: "Share Studioの無料体験は使用済みです。続けて使う場合はPlus 30日パスをご利用ください。",
     selectedRangeLabel: "表示中の期間",
     periodPreviousDay: "前日",
     periodPreviousRange: "前期間",
@@ -698,6 +708,13 @@ const translations = {
     mobileMoreTitle: "More",
     mobileMoreLead: "Open other GlucoScope pages and settings.",
     mobileMoreJournal: "Journal",
+    mobileMoreShareStudioNote: "Create a reflection image",
+    shareStudioTitle: "Today's reflection image",
+    shareStudioLead: "Create one image from the current glucose and today's TIR, TAR, and TBR, entirely on this device.",
+    shareStudioPrivacyTitle: "Before sharing",
+    shareStudioPrivacyBody: "This image contains health information. Check the recipient and audience. Connection URLs and passphrases are never included or sent to the server.",
+    shareStudioCreate: "Create image",
+    shareStudioShare: "Share or save",
     mobileMoreCollection: "Memories",
     mobileMoreCollectionNote: "Your moments with Gluco",
     mobileMoreAbout: "About",
@@ -754,6 +771,7 @@ const translations = {
     plusAccountBenefitAi: "Free includes one gentle analysis per day. Plus includes detailed analysis and up to five successful analyses per day.",
     plusAccountBenefitRange: "Use 7-day, 30-day, and custom graph ranges.",
     plusAccountBenefitShare: "Use Share Studio, with one trial per verified account before purchase.",
+    plusAccountShareStudioButton: "Open Share Studio",
     plusAccountEmailLabel: "Email for verification",
     plusAccountEmailHelp: "No password is needed. One email address can manage one Plus account.",
     plusAccountRoleLegend: "Who will manage the purchase and email?",
@@ -1046,6 +1064,8 @@ const translations = {
     plusExtendedRangeRequired: "The 7-day, 30-day, and custom ranges are included with the Plus 30-day pass. Today and yesterday remain available without Plus.",
     plusDeepAnalysisRequired: "Detailed Gluco stories, AI letters, and ChatGPT handoff are included with the Plus 30-day pass. Free includes one gentle analysis per day.",
     plusAccessUnavailable: "We could not confirm your Plus access. Please wait a moment and try again.",
+    plusVerifiedAccountRequired: "A verified Plus account is required for the one-time Share Studio trial.",
+    plusShareStudioRequired: "The free Share Studio trial has been used. Continued use is included with the Plus 30-day pass.",
     selectedRangeLabel: "Selected range",
     periodPreviousDay: "Previous day",
     periodPreviousRange: "Previous range",
@@ -3421,6 +3441,7 @@ function updatePlusAccountUi() {
   const card = document.getElementById("plusAccountCard");
   if (!card) return;
   card.hidden = !config.accountEnabled;
+  updateShareStudioAvailability();
   if (!config.accountEnabled) return;
 
   const accountState = plusEntitlementClient?.getState?.() || { status: "unavailable" };
@@ -4139,6 +4160,182 @@ function canUseAiLetterMode(mode, { announce = false } = {}) {
     );
   }
   return false;
+}
+
+let shareStudioBlob = null;
+let shareStudioPreviewUrl = "";
+let shareStudioBusy = false;
+let shareStudioOpener = null;
+
+function setShareStudioStatus(message = "") {
+  const status = document.getElementById("shareStudioStatus");
+  if (status) status.textContent = message;
+}
+
+function closeShareStudio() {
+  if (shareStudioBusy) return;
+  const dialog = document.getElementById("shareStudioDialog");
+  if (dialog) dialog.hidden = true;
+  shareStudioOpener?.focus?.();
+  shareStudioOpener = null;
+}
+
+function readShareStudioSnapshot() {
+  const read = (id) => document.getElementById(id)?.textContent?.trim() || "--";
+  return {
+    glucose: read("glucoseValue"),
+    arrow: read("glucoseArrow"),
+    tir: read("tirValue"),
+    tar: read("tarValue"),
+    tbr: read("tbrValue"),
+    date: new Intl.DateTimeFormat(currentLanguage === "en" ? "en" : "ja-JP", {
+      dateStyle: "long",
+      timeStyle: "short"
+    }).format(new Date()),
+    language: currentLanguage
+  };
+}
+
+function updateShareStudioAvailability() {
+  const hidden = !getPlusAccountRolloutConfig().accountEnabled;
+  ["mobileShareStudioButton", "plusAccountShareStudioButton"].forEach((id) => {
+    const button = document.getElementById(id);
+    if (button) button.hidden = hidden;
+  });
+}
+
+function setupShareStudio() {
+  const dialog = document.getElementById("shareStudioDialog");
+  const createButton = document.getElementById("shareStudioCreateButton");
+  const shareButton = document.getElementById("shareStudioShareButton");
+  const preview = document.getElementById("shareStudioPreview");
+  const previewImage = document.getElementById("shareStudioPreviewImage");
+
+  const openShareStudio = (event) => {
+    if (!dialog) return;
+    const feature = plusFeatureAccessManager?.FEATURE_SHARE_STUDIO || "share_studio";
+    const access = getPlusFeatureAccess(feature);
+    if (!access.allowed) {
+      setPlusFeatureNotice(
+        access.reason === "verified_account_required"
+          ? "plusVerifiedAccountRequired"
+          : access.reason === "entitlement_unavailable"
+            ? "plusAccessUnavailable"
+            : "plusShareStudioRequired"
+      );
+      return;
+    }
+    setPlusFeatureNotice("");
+    shareStudioOpener = event?.currentTarget || document.activeElement;
+    dialog.hidden = false;
+    setShareStudioStatus("");
+    createButton?.focus?.();
+  };
+
+  ["mobileShareStudioButton", "plusAccountShareStudioButton"].forEach((id) => {
+    document.getElementById(id)?.addEventListener("click", openShareStudio);
+  });
+
+  document.getElementById("shareStudioCloseButton")?.addEventListener("click", closeShareStudio);
+  dialog?.addEventListener("click", (event) => {
+    if (event.target === dialog) closeShareStudio();
+  });
+  dialog?.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeShareStudio();
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const controls = [...dialog.querySelectorAll("button:not([hidden]):not([disabled])")];
+    if (!controls.length) return;
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+
+  createButton?.addEventListener("click", async () => {
+    if (shareStudioBusy) return;
+    shareStudioBusy = true;
+    dialog?.setAttribute("aria-busy", "true");
+    createButton.disabled = true;
+    shareButton.hidden = true;
+    if (preview) preview.hidden = true;
+    setShareStudioStatus(currentLanguage === "en" ? "Creating the image on this device…" : "この端末の中で画像を作っています…");
+
+    let reservation = null;
+    let completionStarted = false;
+    try {
+      reservation = await plusEntitlementClient?.reserveShareStudio?.();
+      if (!reservation?.ok) throw new Error(reservation?.error || "reservation_failed");
+      const blob = await window.GlucoScopeShareStudio?.generateBlob?.(readShareStudioSnapshot());
+      if (!(blob instanceof Blob)) throw new Error("image_failed");
+
+      if (reservation.grant === "trial") {
+        completionStarted = true;
+        let completion = await plusEntitlementClient?.completeShareStudio?.(reservation.requestId);
+        if (!completion?.ok) {
+          completion = await plusEntitlementClient?.completeShareStudio?.(reservation.requestId);
+        }
+        if (!completion?.ok) throw new Error(completion?.error || "completion_failed");
+        configurePlusFeatureGating();
+      }
+
+      if (shareStudioPreviewUrl) URL.revokeObjectURL(shareStudioPreviewUrl);
+      shareStudioBlob = blob;
+      shareStudioPreviewUrl = URL.createObjectURL(blob);
+      if (previewImage) previewImage.src = shareStudioPreviewUrl;
+      if (preview) preview.hidden = false;
+      if (shareButton) shareButton.hidden = false;
+      setShareStudioStatus(currentLanguage === "en"
+        ? "The image is ready. Check it before sharing or saving."
+        : "画像ができました。内容を確認してから共有・保存してください。");
+    } catch (error) {
+      if (reservation?.grant === "trial" && reservation?.requestId && !completionStarted) {
+        await plusEntitlementClient?.releaseShareStudio?.(reservation.requestId).catch(() => {});
+      }
+      if (completionStarted) {
+        await plusEntitlementClient?.refresh?.().catch(() => {});
+        configurePlusFeatureGating();
+      }
+      shareStudioBlob = null;
+      setShareStudioStatus(completionStarted
+        ? (currentLanguage === "en"
+          ? "The trial result could not be confirmed, so the image is not shown. Check your connection, then refresh the account status."
+          : "体験の完了を確認できなかったため、画像は表示していません。通信を確認して、アカウントの状態を更新してください。")
+        : (currentLanguage === "en"
+          ? "The image could not be created. The trial was not used. Please try again."
+          : "画像を作れませんでした。体験回数は使っていません。もう一度お試しください。"));
+    } finally {
+      shareStudioBusy = false;
+      dialog?.removeAttribute("aria-busy");
+      createButton.disabled = false;
+    }
+  });
+
+  shareButton?.addEventListener("click", async () => {
+    if (!shareStudioBlob || shareStudioBusy) return;
+    try {
+      await window.GlucoScopeShareStudio?.shareBlob?.(shareStudioBlob, currentLanguage);
+      setShareStudioStatus(currentLanguage === "en"
+        ? "The share or save screen was opened."
+        : "共有または保存の画面を開きました。");
+    } catch (error) {
+      if (error?.name !== "AbortError") {
+        setShareStudioStatus(currentLanguage === "en"
+          ? "Sharing was not completed. The image remains here."
+          : "共有は完了しませんでした。画像はこの画面に残っています。");
+      }
+    }
+  });
+
+  updateShareStudioAvailability();
 }
 
 function isMobileUiLayout() {
@@ -8667,6 +8864,7 @@ setupViewTabs();
 setupLanguageSwitch();
 setupLocalProfileFoundation();
 setupPlusAccountFoundation();
+setupShareStudio();
 void initializePlusEntitlementFoundation();
 void initializeUsageProfileFoundation();
 setupMobileDisplayMode();

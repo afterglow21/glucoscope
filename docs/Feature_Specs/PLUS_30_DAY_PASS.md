@@ -170,7 +170,7 @@ Resend APIのHTTP `200`や`email.sent`は、Resendが要求を受け付けて配
 - 別のメールで体験を繰り返すことは利用条件で禁止するが、技術で「1人」を完全に見分けられるとは案内しない。
 - 購入または未解決の支払いがあるアカウントは、現在の自動削除routeで「削除できた」と見せず、問い合わせへ案内する。全sessionの失効、Plus停止、返金の扱い、残す最小の購入記録、アカウントとの結び付きを外す日を本人へ確認してから処理する。削除だけで自動返金になるとは案内しない。
 
-この90日ルールはローカル実装済みである。migration `0007_share_trial_reuse_retention.sql` は、元に戻せないメール照合HMACと鍵version、体験成功時刻、期限、作成・更新時刻だけを保持する。体験未使用の削除、体験使用後の削除、90日内の同一メール再登録、期限後の再利用、毎時cleanup、HMAC鍵rotation、旧新記録の衝突時の停止を実SQLiteテストで確認した。stagingでは`0007`、6列だけのschema、13 table 0件、全flag停止のVersion `be6a1dbe-c9cf-4002-a997-13d93cf58c36`を受け入れた。残る販売前ゲートは、Share Studio実画面からの予約・成功・失敗解除と削除後の再登録を含む非公開E2Eである。
+この90日ルールはローカル実装済みである。migration `0007_share_trial_reuse_retention.sql` は、元に戻せないメール照合HMACと鍵version、体験成功時刻、期限、作成・更新時刻だけを保持する。体験未使用の削除、体験使用後の削除、90日内の同一メール再登録、期限後の再利用、毎時cleanup、HMAC鍵rotation、旧新記録の衝突時の停止を実SQLiteテストで確認した。stagingでは`0007`、6列だけのschema、13 table 0件、全flag停止のVersion `be6a1dbe-c9cf-4002-a997-13d93cf58c36`を受け入れた。2026年8月18日のローカル候補では、Daily Snapshotを端末内CanvasでPNG化し、既存の不透明sessionとランダムrequest IDだけを、別flagで停止できる予約・完了・解除HTTPへ送る。血糖値、接続URL、合言葉、作成画像はPlus Workerへ送らない。画像生成成功後だけ体験を完了し、生成前の失敗は予約を解除する。通信結果が曖昧な完了処理は同じrequest IDで再確認し、画像を公開せず安全側に止める。残る販売前ゲートは、この実画面とWorker候補をつないだ予約・成功・失敗解除、削除後の再登録を含む非公開E2Eである。
 
 ## 9. Stripe実装方針
 
@@ -329,7 +329,7 @@ Plusは優先医療相談や緊急サポートを含まない。問い合わせ�
 - その後の再送安全性候補の受け入れは、`403 turnstile_failed`でD1やメールの前に停止した。繰り返し操作してもaccount、challenge、送信予約、session、購入、利用権は作られず、メール到着の証拠も採用していない。localhostのremote-dev service-binding bridgeも、有効な診断requestの中継中に失敗したため、この経路を再送修正の受け入れ証拠にしない。この失敗確認の後、運営者が値を開示せずResend keyを差し替え、公式の安全なテスト宛先へ1通だけ送る0%候補で、`200 code_sent`とchallenge・全体送信予約の`sent`を確認した。これはprovider受理の確認であり、本人受信箱への到着確認ではない。試験2行、候補、一時Custom Domainを削除し、12個のapplication tableを0件へ戻した。現在は停止Version `acff4e32-ef5c-433a-83df-14958b192d62`だけを100%へ向け、全flag `false`、route/Cron/previewなし、`workers.dev` `404`を維持する。
 - この受け入れで、Cloudflare Workers runtimeではResendへの`fetch`に `redirect: "error"` を指定すると`TypeError`になり、送信を完了できない相互運用上の問題が分かった。adapterは `redirect: "manual"` へ変更し、`3xx`を追跡せず拒否する。これによりAuthorization headerと本文をredirect先へ転送しない。`302`と`307`の実行型テストでこの境界を固定した。
 - Free 1回/日、Plus 5回/日のAI成功回数について、10分の予約、成功確定、失敗解除、重複防止、90日削除の基盤を追加した。個人上限のフラグは停止中である。
-- 7日・30日・カスタム期間、しっかり分析、Share Studioの共通権限判定を追加した。制限フラグは停止中のため、現在の公開動作は変わらない。Share Studio体験後のアカウント削除では、成功日から90日だけ最小HMAC記録を残し、再登録後も二重体験を防ぐ実装とテストを追加した。2026年8月18日にstagingへ`0007`を適用し、6列の最小schema、13 table 0件、全flag停止の新Versionを確認した。Share Studio画面と体験の予約・成功・解除をつなぐ本番接続はまだない。
+- 7日・30日・カスタム期間、しっかり分析、Share Studioの共通権限判定を追加した。制限フラグは停止中のため、現在の公開動作は変わらない。Share Studio体験後のアカウント削除では、成功日から90日だけ最小HMAC記録を残し、再登録後も二重体験を防ぐ実装とテストを追加した。2026年8月18日にstagingへ`0007`を適用し、6列の最小schema、13 table 0件、全flag停止の新Versionを確認した。同日のローカル候補でDaily Snapshot画面、端末内PNG生成、最小の予約・成功・解除HTTPを接続したが、公開flagはすべて停止したままであり、非公開E2Eは未実施である。
 - 管理者画面は、将来のPlus内部サービスから有効なPlusアカウント合計だけを受け取れる。未接続や失敗を0件に見せず「確認できません」とする。
 - 公開Usage Dashboard候補は、前日までの完了した30日間に活動した端末プロフィールが10件以上になった時だけ全体の実数を表示する。10件未満のレスポンスには実数を入れない。
 - Stripe test mode専用のローカルadapterを追加した。CheckoutはJPY 400の`mode=payment`だけを作り、`payment_method_types`、`automatic_tax`、Subscriptionをコードから指定しない。raw bodyのWebhook署名を確認した後、Checkout Session、Price、Product、支払い状態、test mode、アカウント対応をStripeへ再取得して検証し、成功時だけ既存の利用権処理へ渡す。成功した一部・全額返金では利用権を`refunded`へ変更し、二重通知でも重複処理しない実行型SQLiteテストを追加した。既存の空stagingを400円制約へ移すfail-closed `0006_plus_price_400.sql`はremote適用済みで、適用後も12 tableはすべて0件である。

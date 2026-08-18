@@ -4144,7 +4144,7 @@ Freeの現在血糖と基本グラフを止めません。
 案内せず、利用条件でも禁止します。削除時の公開説明、同じメールでの再登録、期限直後の再利用、
 期限削除、HMAC鍵更新、衝突時の安全停止はローカルSQLiteテストで確認済みです。2026年8月18日に
 stagingへ`0007_share_trial_reuse_retention.sql`を適用し、6列だけのschema、13 table 0件、全flag停止の
-Version `be6a1dbe-c9cf-4002-a997-13d93cf58c36`を確認しました。残る販売前ゲートは、Share Studio実画面からの
+Version `be6a1dbe-c9cf-4002-a997-13d93cf58c36`を確認しました。2026年8月18日のローカル候補では、端末内だけでDaily SnapshotのPNGを作り、既存の不透明sessionとランダムrequest IDだけを別flagの予約・成功・解除HTTPへ送る実装を追加しました。血糖値、接続URL、合言葉、画像はPlus Workerへ送りません。公開flagは停止したままです。残る販売前ゲートは、Share Studio実画面からの
 成功消費、account削除、同じメールでの再登録、期限削除までを含む非公開E2Eです。
 
 購入記録は、復旧・問い合わせに使うアカウントとの結び付きと、会計・返金・異議申立てに必要な

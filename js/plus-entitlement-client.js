@@ -9,6 +9,7 @@
   const CODE_PATTERN = /^\d{6}$/u;
   const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
   const CONTACT_ROLES = new Set(["self", "guardian"]);
+  const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
   let configuration = Object.freeze({
     enabled: false,
@@ -456,6 +457,42 @@
     }
   }
 
+  function createRequestId() {
+    const requestId = root?.crypto?.randomUUID?.();
+    return UUID_PATTERN.test(String(requestId || "")) ? requestId : "";
+  }
+
+  async function runShareTrialOperation(operation, requestIdValue) {
+    const stored = readStoredToken();
+    if (!stored.ok || !stored.token) return { ok: false, error: "not_signed_in" };
+    const requestId = String(requestIdValue || "");
+    if (!UUID_PATTERN.test(requestId)) return { ok: false, error: "invalid_request" };
+    const result = await requestJson(`/v1/share-trial/${operation}`, {
+      method: "POST",
+      token: stored.token,
+      body: { requestId }
+    });
+    if (!result.ok) return { ok: false, error: result.error, status: result.status };
+    return { ok: true, ...result.payload };
+  }
+
+  async function reserveShareStudio() {
+    const requestId = createRequestId();
+    if (!requestId) return { ok: false, error: "share_studio_unavailable" };
+    const result = await runShareTrialOperation("reserve", requestId);
+    return result.ok ? { ...result, requestId } : result;
+  }
+
+  async function completeShareStudio(requestId) {
+    const result = await runShareTrialOperation("complete", requestId);
+    if (result.ok && result.status === "completed") await refresh();
+    return result;
+  }
+
+  async function releaseShareStudio(requestId) {
+    return runShareTrialOperation("release", requestId);
+  }
+
   root.GlucoScopePlusEntitlement = Object.freeze({
     configure,
     refresh,
@@ -465,6 +502,9 @@
     logout,
     deleteAccount,
     createCheckout,
+    reserveShareStudio,
+    completeShareStudio,
+    releaseShareStudio,
     getState: publicState,
     hasStoredSession,
     clear: removeStoredToken,
