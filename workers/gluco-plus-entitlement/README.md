@@ -47,8 +47,12 @@ The staging `PLUS_DB` binding points to `glucoscope-plus-staging` in APAC. The p
 binding points to `glucoscope-plus-production` in APAC. Both have migrations `0001`
 through `0007`, including the JPY 400 constraint and minimal 90-day Share trial reuse
 marker. All 13 application tables in both databases were verified at zero rows.
-Production Worker Version `d6c5de68-bdc5-41c0-8c30-2e2f5de74b33` is at 100% with all
-release flags false, no Secrets, route, Cron, preview URL, or `workers.dev` target.
+Production stopped Version `c3a49718-e961-4557-b2bf-5f9224e8225f` is at 100% with all
+release flags false, the production D1 binding, and only the newly generated
+`ACCOUNT_EMAIL_LOOKUP_HMAC_KEY` and `ACCOUNT_CODE_HMAC_KEY` Secret bindings. It has no
+route, Cron, or `workers.dev` target. It is the only reviewed production rollback.
+Earlier production Versions, including unserved unusable-key Version
+`7dc440a4-6fc5-4907-8590-9c2b3ef97b3f`, must not receive traffic.
 
 Historical unserved Version `a0805f46-8585-47c5-b431-dfcb463d2993` first staged the
 JPY 400 code and the two non-secret test identifiers with every flag false. It is not a
