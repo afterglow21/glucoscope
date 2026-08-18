@@ -383,6 +383,7 @@ export function createStripeTestClient(env = {}, dependencies = {}) {
         ["line_items[0][quantity]", "1"],
         ["locale", "ja"],
         ["submit_type", "pay"],
+        ["payment_intent_data[description]", "GlucoScope Plus 30日パス（30日間・1回払い・自動更新なし）"],
         ["client_reference_id", accountId],
         ["metadata[glucoscope_account_id]", accountId],
         ["metadata[glucoscope_product_code]", PLUS_PRODUCT_CODE],

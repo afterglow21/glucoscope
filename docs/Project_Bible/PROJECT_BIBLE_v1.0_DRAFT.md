@@ -4173,6 +4173,14 @@ Cloudflare Email Routingによる非公開受信箱への転送と必要な受�
 確認できる時間を確保して遅滞なく提供する方針です。この表示と実運用、通常の支払確認・領収書、
 Stripe Taxを使わない初期構成、商品税コードは専門家確認が必要です。
 
+購入前のchecked-in候補は、短いブラウザ確認を廃止し、商品名、数量1、支払総額400円、
+Stripeでの1回払い、30日、自動更新なし、購入条件、返金、医療サービスではないこと、
+特定商取引法に基づく表記・利用条件・Privacy・問い合わせを見える最終確認画面へ置き換えました。
+Stripeへ渡す決済説明は個人情報を含まない固定文です。実際の成功決済メールと通常の領収書を
+受け入れるまで、独立した`PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED=false`でCheckoutを停止します。
+通常の領収書を適格請求書と呼ばず、有料の単発請求書作成は自動で有効にしません。公開アカウント、
+決済、販売flagは引き続き停止中です。
+
 On 2026-08-17, the operator approved an initial Japan-only boundary: a JPY 400 total,
 one-time payment for an adult buyer or adult guardian. The seller is a Japanese
 consumption-tax-exempt sole proprietor and is not a qualified invoice issuer, so the public
@@ -4181,6 +4189,15 @@ name, address, and telephone details stay out of Git and are to be supplied with
 request, with enough time before purchase. The planned contact is `support@glucoscope.app`,
 weekdays, with a target reply within five business days. Cloudflare Email Routing and the
 required receiving DNS are enabled with a private destination. On August 17, 2026, the operator confirmed that a test message containing no health information, sent from a separate sender to `support@glucoscope.app`, reached the private destination. The sender, destination, subject, and body are not recorded. `docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md` defines minimum purchase matching, correction before refund, full refunds in Stripe Dashboard, no separate refund during an open dispute, entitlement termination only after a verified successful refund, and status-specific replies. The JPY 400 payment, duplicate-webhook, full-refund, entitlement-termination, concurrent-click, pending-reuse, expiry, recreation, and declined-card sandbox drills passed. The full support intake/reply exercise, any additionally enabled payment method, professional review, ordinary receipt wording, the no-Stripe-Tax initial configuration, and the product tax code remain sale blockers.
+
+The checked-in pre-payment candidate now uses a visible final order review instead of a short
+browser prompt. It shows the product, quantity one, JPY 400 total, one payment, 30 days, no
+automatic renewal, eligibility, refund boundary, medical disclaimer, and links to the commercial
+disclosure, terms, privacy, and support pages. Stripe receives only a fixed non-personal payment
+description. A separate `PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED=false` gate keeps Checkout closed
+until the successful-payment email and ordinary receipt are accepted in the actual environment.
+The ordinary receipt is not called a Japanese qualified invoice, and paid one-time invoice
+creation is not enabled automatically. Public account, Checkout, and sale flags remain off.
 
 On the same day, Stripe test mode created exactly one active `GlucoScope Plus 30日パス`
 Product (`prod_V5SDrFKGSiwaql`) with one default JPY 400 one-time Price

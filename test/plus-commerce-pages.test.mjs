@@ -38,6 +38,7 @@ test("Plus sale pages stay noindex and clearly unavailable before acceptance", (
     assert.equal(vars.PLUS_STRIPE_WEBHOOK_ENABLED, "false");
     assert.equal(vars.PLUS_SALES_READINESS_CONFIRMED, "false");
     assert.equal(vars.PLUS_TAX_TREATMENT_CONFIRMED, "false");
+    assert.equal(vars.PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED, "false");
     assert.equal(vars.PLUS_COMMERCIAL_DISCLOSURE_PATH, "");
     assert.equal(vars.PLUS_REFUND_POLICY_PATH, "");
     assert.equal(vars.PLUS_SUPPORT_PATH, "");
@@ -62,6 +63,9 @@ test("commercial disclosure contains every approved one-time sale boundary", () 
     "5営業日以内",
     "全額返金",
     "部分返金は行わず",
+    "支払確認・領収書",
+    "適格請求書（インボイス）ではありません",
+    "実際のメールと表示内容を確認するまで販売を始めません",
   ]) assert.match(html, new RegExp(expected, "u"));
 
   assert.doesNotMatch(html, /400円（税込）/u);

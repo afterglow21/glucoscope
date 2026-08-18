@@ -57,6 +57,7 @@ export function readCommerceReadiness(env = {}, allowedOrigin = "") {
     ready: readExactBoolean(env.PLUS_SALES_READINESS_CONFIRMED)
       && String(env.PLUS_FINAL_PRICE_DISPLAY ?? "") === "total_400_confirmed"
       && readExactBoolean(env.PLUS_TAX_TREATMENT_CONFIRMED)
+      && readExactBoolean(env.PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED)
       && String(env.PLUS_BUYER_POLICY ?? "")
         === "adult_self_or_confirmed_guardian"
       && Boolean(termsVersion)

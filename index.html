@@ -39,7 +39,7 @@
   <meta name="glucoscope-plus-account-enabled" content="false">
   <meta name="glucoscope-plus-purchases-enabled" content="false">
   <meta name="glucoscope-plus-entitlement-endpoint" content="">
-  <link rel="stylesheet" href="style.css?v=20260816-home-safe-area-1-onboarding-flow-1">
+  <link rel="stylesheet" href="style.css?v=20260816-home-safe-area-1-onboarding-flow-1-plus-purchase-review-1">
 </head>
 <body>
 
@@ -395,6 +395,37 @@
             <button id="plusAccountRefreshButton" class="usage-profile-secondary-button" type="button" data-i18n-key="plusAccountRefreshButton">状態を更新する</button>
             <button id="plusAccountLogoutButton" class="usage-profile-secondary-button" type="button" data-i18n-key="plusAccountLogoutButton">この端末からログアウト</button>
           </div>
+
+          <section id="plusPurchaseReview" class="plus-purchase-review" aria-labelledby="plusPurchaseReviewTitle" hidden>
+            <div class="plus-purchase-review-heading">
+              <p class="local-profile-eyebrow" data-i18n-key="plusPurchaseReviewEyebrow">お支払いの前に</p>
+              <h3 id="plusPurchaseReviewTitle" tabindex="-1" data-i18n-key="plusPurchaseReviewTitle">お申し込み内容の最終確認</h3>
+            </div>
+            <dl class="plus-purchase-review-list">
+              <div><dt data-i18n-key="plusPurchaseReviewProductLabel">商品</dt><dd data-i18n-key="plusPurchaseReviewProductValue">GlucoScope Plus 30日パス</dd></div>
+              <div><dt data-i18n-key="plusPurchaseReviewQuantityLabel">数量</dt><dd data-i18n-key="plusPurchaseReviewQuantityValue">1</dd></div>
+              <div><dt data-i18n-key="plusPurchaseReviewTotalLabel">お支払い総額</dt><dd data-i18n-key="plusPurchaseReviewTotalValue">400円</dd></div>
+              <div><dt data-i18n-key="plusPurchaseReviewPaymentLabel">支払い</dt><dd data-i18n-key="plusPurchaseReviewPaymentValue">Stripeの決済画面に表示される方法で1回だけ支払います。</dd></div>
+              <div><dt data-i18n-key="plusPurchaseReviewTermLabel">利用開始・期間</dt><dd data-i18n-key="plusPurchaseReviewTermValue">Stripeから支払い完了を安全に確認できた時から連続30日間です。</dd></div>
+              <div><dt data-i18n-key="plusPurchaseReviewRenewalLabel">自動更新</dt><dd data-i18n-key="plusPurchaseReviewRenewalValue">ありません。期限が来ても自動で料金は発生しません。</dd></div>
+            </dl>
+            <p class="plus-purchase-review-note" data-i18n-key="plusPurchaseReviewEligibility">日本国内に住む、購入とメールを管理する18歳以上の本人、または18歳以上の保護者だけが購入できます。</p>
+            <p class="plus-purchase-review-note" data-i18n-key="plusPurchaseReviewRefund">二重決済やPlus未付与をこちらで直せない場合、またはGlucoScope側の大きな障害で主なPlus機能をほとんど使えず解決できない場合は、確認後に全額返金します。部分返金は行わず、返金したPlusは終了します。</p>
+            <p class="plus-purchase-review-note" data-i18n-key="plusPurchaseReviewReceipt">支払い完了後の支払確認・通常の領収書は、Stripeの決済画面で入力したメールへStripeから案内されます。適格請求書（インボイス）ではありません。</p>
+            <p class="plus-purchase-review-note" data-i18n-key="plusPurchaseReviewMedical">Plusは医療サービスではなく、診断や治療の判断を提供しません。</p>
+            <nav class="plus-purchase-review-links" aria-label="Plusの購入条件" data-i18n-aria-label="plusPurchaseReviewLinksLabel">
+              <a href="pages/trust/commercial-transactions.html" target="_blank" rel="noopener" data-i18n-key="plusPurchaseReviewCommercialLink">特定商取引法に基づく表記</a>
+              <a href="pages/trust/plus-terms.html" target="_blank" rel="noopener" data-i18n-key="plusPurchaseReviewTermsLink">Plus利用条件・返金</a>
+              <a href="pages/trust/privacy-notes.html" target="_blank" rel="noopener" data-i18n-key="plusPurchaseReviewPrivacyLink">プライバシー</a>
+              <a href="pages/trust/plus-support.html" target="_blank" rel="noopener" data-i18n-key="plusPurchaseReviewSupportLink">問い合わせ</a>
+            </nav>
+            <p class="plus-purchase-review-correction" data-i18n-key="plusPurchaseReviewCorrection">メールが違う時は「今は購入しない」を選び、この端末からログアウトして確認し直してください。役割が違う時は、購入前なら「詳しい管理」からPlusアカウントを削除して確認し直せます。</p>
+            <div class="usage-profile-actions">
+              <button id="plusPurchaseReviewConfirmButton" class="usage-profile-primary-button" type="button" data-i18n-key="plusPurchaseReviewConfirmButton">400円を1回支払う</button>
+              <button id="plusPurchaseReviewCancelButton" class="usage-profile-secondary-button" type="button" data-i18n-key="plusPurchaseReviewCancelButton">今は購入しない</button>
+            </div>
+          </section>
+
           <details id="plusAccountDeleteDetails" class="usage-profile-details">
             <summary data-i18n-key="plusAccountDeleteDetails">詳しい管理</summary>
             <p data-i18n-key="plusAccountDeleteLead">Plusアカウントを削除しても、血糖の接続や利用記録は別に残ります。購入記録がある場合は、この画面では削除できません。</p>
@@ -989,7 +1020,7 @@
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js?v=20260721-user-foundation-3"></script>
-<script src="js/app.js?v=20260816-device-session-1-onboarding-flow-2-ai-quota-1"></script>
+<script src="js/app.js?v=20260816-device-session-1-onboarding-flow-2-ai-quota-1-plus-purchase-review-1"></script>
 <!-- Cloudflare Web Analytics: aggregate page-view and performance metrics only -->
 <script src="js/analytics-loader.js?v=20260811-usage-profile-stage-1"></script>
 <!-- End Cloudflare Web Analytics -->

@@ -26,7 +26,8 @@ environment binds only its dedicated D1 database while keeping every release swi
 false: `PLUS_ENTITLEMENT_RPC_ENABLED`, `PLUS_PURCHASES_ENABLED`,
 `PLUS_CHECKOUT_HTTP_ENABLED`, `PLUS_STRIPE_WEBHOOK_ENABLED`,
 `PLUS_ACCOUNT_AUTH_HTTP_ENABLED`, `ACCOUNT_AUTH_CLEANUP_ENABLED`,
-`PLUS_SALES_READINESS_CONFIRMED`, and `PLUS_TAX_TREATMENT_CONFIRMED`.
+`PLUS_SALES_READINESS_CONFIRMED`, `PLUS_TAX_TREATMENT_CONFIRMED`, and
+`PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED`.
 
 The fresh stopped `glucoscope-plus-entitlement-staging` Worker is Version
 `acff4e32-ef5c-433a-83df-14958b192d62` at 100% traffic. It keeps the four encrypted
@@ -194,8 +195,15 @@ make every kind of request refundable. The public contact `support@glucoscope.ap
 forwarding and real-receipt acceptance, and `docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md`
 defines the low-volume manual procedure. The full-payment, duplicate-delivery, full-refund,
 concurrent-click, pending-reuse, expiry, recreation, and declined-card sandbox drills have
-passed. Retention, receipt wording, acceptance of any additionally enabled payment method, and
-professional review remain sale blockers; checked-in release flags therefore remain false.
+passed. The checked-in candidate now replaces the browser's short confirmation prompt with a
+visible final order review and gives the Stripe PaymentIntent a fixed non-personal description
+matching JPY 400, 30 days, one payment, and no automatic renewal. Commerce readiness also
+requires `PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED=true`, so Checkout cannot open until the operator
+has verified Stripe's successful-payment email and ordinary receipt in the actual sale
+environment. It deliberately does not create a paid invoice or call the ordinary receipt a
+Japanese qualified invoice. Retention, real receipt-email acceptance, acceptance of any
+additionally enabled payment method, and professional review remain sale blockers; checked-in
+release flags therefore remain false.
 
 Keep the existing staging deployment stopped and unreachable. Do not add a route, Cron,
 public `workers.dev` endpoint, preview URL, sender, or commerce identifier merely because

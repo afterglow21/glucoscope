@@ -166,6 +166,7 @@ function enabledHttpEnv() {
     PLUS_SALES_READINESS_CONFIRMED: "true",
     PLUS_FINAL_PRICE_DISPLAY: "total_400_confirmed",
     PLUS_TAX_TREATMENT_CONFIRMED: "true",
+    PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED: "true",
     PLUS_BUYER_POLICY: "adult_self_or_confirmed_guardian",
     PLUS_COMMERCIAL_DISCLOSURE_PATH:
       "/pages/trust/commercial-transactions.html",
@@ -189,6 +190,7 @@ test("commerce readiness requires final tax, buyer, terms, and same-site public 
     { PLUS_SALES_READINESS_CONFIRMED: "false" },
     { PLUS_FINAL_PRICE_DISPLAY: "undecided" },
     { PLUS_TAX_TREATMENT_CONFIRMED: "false" },
+    { PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED: "false" },
     { PLUS_BUYER_POLICY: "guardian_shared_email" },
     { PLUS_BUYER_CONFIRMATION_VERSION: "" },
     { PLUS_BUYER_CONFIRMATION_VERSION: "2026-02-30" },
@@ -377,6 +379,7 @@ test("checked-in Stripe switches stay off while only staging has test identifier
   assert.equal(config.vars.PLUS_SALES_READINESS_CONFIRMED, "false");
   assert.equal(config.vars.PLUS_FINAL_PRICE_DISPLAY, "undecided");
   assert.equal(config.vars.PLUS_TAX_TREATMENT_CONFIRMED, "false");
+  assert.equal(config.vars.PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED, "false");
   assert.equal(config.vars.PLUS_BUYER_POLICY, "undecided");
   assert.equal(config.vars.PLUS_COMMERCIAL_DISCLOSURE_PATH, "");
   assert.equal(config.vars.PLUS_REFUND_POLICY_PATH, "");
@@ -395,6 +398,7 @@ test("checked-in Stripe switches stay off while only staging has test identifier
   assert.equal(config.env.staging.vars.PLUS_ALLOWED_ORIGIN, "https://glucoscope.app");
   assert.equal(config.env.staging.vars.PLUS_CHECKOUT_SUCCESS_PATH, "/?mode=user&checkout=success#settings");
   assert.equal(config.env.staging.vars.PLUS_CHECKOUT_CANCEL_PATH, "/?mode=user&checkout=cancelled#settings");
+  assert.equal(config.env.staging.vars.PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED, "false");
   assert.equal(
     config.env.staging.vars.STRIPE_PLUS_PRODUCT_ID,
     "prod_V5SDrFKGSiwaql",
@@ -462,12 +466,19 @@ test("Stripe-hosted Checkout is a test-mode one-time payment with dynamic method
   assert.equal(captured.form.get("mode"), "payment");
   assert.equal(captured.form.get("line_items[0][price]"), PRICE_ID);
   assert.equal(captured.form.get("line_items[0][quantity]"), "1");
+  assert.equal(
+    captured.form.get("payment_intent_data[description]"),
+    "GlucoScope Plus 30日パス（30日間・1回払い・自動更新なし）",
+  );
   assert.equal(captured.form.get("metadata[glucoscope_account_id]"), ACCOUNT_ID);
   assert.equal(captured.form.get("metadata[glucoscope_product_code]"), "plus_30d");
   assert.match(captured.form.get("integration_identifier"), /^glucoscope_plus_[a-z]{8}$/u);
   assert.equal(captured.form.has("payment_method_types"), false);
   assert.equal(captured.form.has("automatic_tax"), false);
   assert.equal(captured.form.has("subscription_data"), false);
+  assert.equal(captured.form.has("invoice_creation[enabled]"), false);
+  assert.equal(captured.form.has("payment_intent_data[receipt_email]"), false);
+  assert.equal(captured.form.has("customer_email"), false);
   assert.equal(
     captured.init.headers.get("idempotency-key"),
     `glucoscope-plus:${ACCOUNT_ID}:${REQUEST_ID}`,

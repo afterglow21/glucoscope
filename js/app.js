@@ -46,6 +46,7 @@ let plusAccountResendTimerId = null;
 let plusCheckoutConfirmationPending = false;
 let plusCheckoutCancelledReturn = false;
 let plusCheckoutPollGeneration = 0;
+let plusPurchaseReviewOpen = false;
 
 let glucoseChart = null;
 let currentLanguage = localStorage.getItem("glucoscope.language.v1") || "ja";
@@ -352,6 +353,32 @@ const translations = {
     plusAccountVerifyButton: "確認する",
     plusAccountEditConfirmationButton: "メール・選択を直す",
     plusAccountPurchaseButton: "400円で30日間使う（支払い画面へ）",
+    plusPurchaseReviewEyebrow: "お支払いの前に",
+    plusPurchaseReviewTitle: "お申し込み内容の最終確認",
+    plusPurchaseReviewProductLabel: "商品",
+    plusPurchaseReviewProductValue: "GlucoScope Plus 30日パス",
+    plusPurchaseReviewQuantityLabel: "数量",
+    plusPurchaseReviewQuantityValue: "1",
+    plusPurchaseReviewTotalLabel: "お支払い総額",
+    plusPurchaseReviewTotalValue: "400円",
+    plusPurchaseReviewPaymentLabel: "支払い",
+    plusPurchaseReviewPaymentValue: "Stripeの決済画面に表示される方法で1回だけ支払います。",
+    plusPurchaseReviewTermLabel: "利用開始・期間",
+    plusPurchaseReviewTermValue: "Stripeから支払い完了を安全に確認できた時から連続30日間です。",
+    plusPurchaseReviewRenewalLabel: "自動更新",
+    plusPurchaseReviewRenewalValue: "ありません。期限が来ても自動で料金は発生しません。",
+    plusPurchaseReviewEligibility: "日本国内に住む、購入とメールを管理する18歳以上の本人、または18歳以上の保護者だけが購入できます。",
+    plusPurchaseReviewRefund: "二重決済やPlus未付与をこちらで直せない場合、またはGlucoScope側の大きな障害で主なPlus機能をほとんど使えず解決できない場合は、確認後に全額返金します。部分返金は行わず、返金したPlusは終了します。",
+    plusPurchaseReviewReceipt: "支払い完了後の支払確認・通常の領収書は、Stripeの決済画面で入力したメールへStripeから案内されます。適格請求書（インボイス）ではありません。",
+    plusPurchaseReviewMedical: "Plusは医療サービスではなく、診断や治療の判断を提供しません。",
+    plusPurchaseReviewLinksLabel: "Plusの購入条件",
+    plusPurchaseReviewCommercialLink: "特定商取引法に基づく表記",
+    plusPurchaseReviewTermsLink: "Plus利用条件・返金",
+    plusPurchaseReviewPrivacyLink: "プライバシー",
+    plusPurchaseReviewSupportLink: "問い合わせ",
+    plusPurchaseReviewCorrection: "メールが違う時は「今は購入しない」を選び、この端末からログアウトして確認し直してください。役割が違う時は、購入前なら「詳しい管理」からPlusアカウントを削除して確認し直せます。",
+    plusPurchaseReviewConfirmButton: "400円を1回支払う",
+    plusPurchaseReviewCancelButton: "今は購入しない",
     plusAccountRefreshButton: "状態を更新する",
     plusAccountLogoutButton: "この端末からログアウト",
     plusAccountDeleteDetails: "詳しい管理",
@@ -743,6 +770,32 @@ const translations = {
     plusAccountVerifyButton: "Verify",
     plusAccountEditConfirmationButton: "Change email or choices",
     plusAccountPurchaseButton: "Use Plus for 30 days for JPY 400 (payment page)",
+    plusPurchaseReviewEyebrow: "Before payment",
+    plusPurchaseReviewTitle: "Final order review",
+    plusPurchaseReviewProductLabel: "Product",
+    plusPurchaseReviewProductValue: "GlucoScope Plus 30-day pass",
+    plusPurchaseReviewQuantityLabel: "Quantity",
+    plusPurchaseReviewQuantityValue: "1",
+    plusPurchaseReviewTotalLabel: "Total payment",
+    plusPurchaseReviewTotalValue: "JPY 400",
+    plusPurchaseReviewPaymentLabel: "Payment",
+    plusPurchaseReviewPaymentValue: "Pay once using a method shown in Stripe Checkout.",
+    plusPurchaseReviewTermLabel: "Start and term",
+    plusPurchaseReviewTermValue: "30 consecutive days from secure confirmation of successful payment from Stripe.",
+    plusPurchaseReviewRenewalLabel: "Automatic renewal",
+    plusPurchaseReviewRenewalValue: "None. No automatic charge is made when the pass ends.",
+    plusPurchaseReviewEligibility: "Available only to an adult living in Japan who manages the purchase and email, either for themselves or as an adult guardian.",
+    plusPurchaseReviewRefund: "If we cannot correct a duplicate payment or a paid pass that did not start, or if a major GlucoScope-side outage left the main Plus features mostly unusable and we could not resolve it, we provide a full refund after review. We do not offer partial refunds, and the refunded pass ends.",
+    plusPurchaseReviewReceipt: "After successful payment, Stripe sends payment confirmation and an ordinary receipt to the email entered in Stripe Checkout. It is not a Japanese qualified invoice.",
+    plusPurchaseReviewMedical: "Plus is not a medical service and does not provide diagnosis or treatment decisions.",
+    plusPurchaseReviewLinksLabel: "Plus purchase terms",
+    plusPurchaseReviewCommercialLink: "Commercial transaction disclosure",
+    plusPurchaseReviewTermsLink: "Plus terms and refunds",
+    plusPurchaseReviewPrivacyLink: "Privacy",
+    plusPurchaseReviewSupportLink: "Support",
+    plusPurchaseReviewCorrection: "If the email is wrong, choose “Not now,” sign out on this device, and verify again. If the role is wrong, you can delete the Plus account under More account options before purchase and verify again.",
+    plusPurchaseReviewConfirmButton: "Pay JPY 400 once",
+    plusPurchaseReviewCancelButton: "Not now",
     plusAccountRefreshButton: "Refresh status",
     plusAccountLogoutButton: "Sign out on this device",
     plusAccountDeleteDetails: "More account options",
@@ -3310,6 +3363,8 @@ function setPlusAccountControlsDisabled(disabled) {
     "plusAccountVerifyButton",
     "plusAccountEditConfirmationButton",
     "plusAccountPurchaseButton",
+    "plusPurchaseReviewConfirmButton",
+    "plusPurchaseReviewCancelButton",
     "plusAccountRefreshButton",
     "plusAccountLogoutButton",
     "plusAccountDeleteButton"
@@ -3377,6 +3432,7 @@ function updatePlusAccountUi() {
   const badge = document.getElementById("plusAccountStateBadge");
   const summary = document.getElementById("plusAccountSummary");
   const purchaseButton = document.getElementById("plusAccountPurchaseButton");
+  const purchaseReview = document.getElementById("plusPurchaseReview");
   if (signedOutPanel) signedOutPanel.hidden = signedIn;
   if (signedInPanel) signedInPanel.hidden = !signedIn;
   if (rolloutBadge) {
@@ -3436,7 +3492,7 @@ function updatePlusAccountUi() {
     const canReopenCancelledCheckout = plusCheckoutCancelledReturn
       && accountState.purchasePending
       && !plusCheckoutConfirmationPending;
-    purchaseButton.hidden = !(
+    purchaseButton.hidden = plusPurchaseReviewOpen || !(
       config.purchasesEnabled
       && accountState.status === "ready"
       && !accountState.plusActive
@@ -3447,6 +3503,17 @@ function updatePlusAccountUi() {
         ? "Open the same payment page again"
         : "同じ支払い画面をもう一度開く")
       : t("plusAccountPurchaseButton");
+  }
+  if (purchaseReview) {
+    purchaseReview.hidden = !(
+      plusPurchaseReviewOpen
+      && config.purchasesEnabled
+      && accountState.status === "ready"
+      && !accountState.plusActive
+      && (!accountState.purchasePending || plusCheckoutCancelledReturn)
+      && !plusCheckoutConfirmationPending
+    );
+    if (purchaseReview.hidden) plusPurchaseReviewOpen = false;
   }
   setPlusAccountControlsDisabled(plusAccountActionInFlight);
 }
@@ -3884,6 +3951,7 @@ function setupPlusAccountFoundation() {
     clearPlusAccountResendTimer({ reset: true });
     plusCheckoutConfirmationPending = false;
     plusCheckoutCancelledReturn = false;
+    plusPurchaseReviewOpen = false;
     plusCheckoutPollGeneration += 1;
     if (deleteDetails) deleteDetails.open = false;
     setPlusAccountControlsDisabled(false);
@@ -3929,6 +3997,7 @@ function setupPlusAccountFoundation() {
     }
     plusCheckoutConfirmationPending = false;
     plusCheckoutCancelledReturn = false;
+    plusPurchaseReviewOpen = false;
     plusCheckoutPollGeneration += 1;
     if (deleteDetails) deleteDetails.open = false;
     updatePlusAccountUi();
@@ -3942,10 +4011,20 @@ function setupPlusAccountFoundation() {
 
   document.getElementById("plusAccountPurchaseButton")?.addEventListener("click", async () => {
     if (plusAccountActionInFlight || !getPlusAccountRolloutConfig().purchasesEnabled) return;
-    const confirmed = window.confirm(currentLanguage === "en"
-      ? "Plus costs JPY 400 for 30 days as a one-time payment. It will not renew automatically. Continue to Stripe?"
-      : "Plusは400円の1回払いで30日間使えます。自動更新はありません。Stripeの購入画面へ進みますか？");
-    if (!confirmed) return;
+    plusPurchaseReviewOpen = true;
+    updatePlusAccountUi();
+    document.getElementById("plusPurchaseReviewTitle")?.focus?.();
+  });
+
+  document.getElementById("plusPurchaseReviewCancelButton")?.addEventListener("click", () => {
+    if (plusAccountActionInFlight) return;
+    plusPurchaseReviewOpen = false;
+    updatePlusAccountUi();
+    document.getElementById("plusAccountPurchaseButton")?.focus?.();
+  });
+
+  document.getElementById("plusPurchaseReviewConfirmButton")?.addEventListener("click", async () => {
+    if (plusAccountActionInFlight || !plusPurchaseReviewOpen || !getPlusAccountRolloutConfig().purchasesEnabled) return;
     plusCheckoutCancelledReturn = false;
     setPlusAccountControlsDisabled(true);
     setPlusAccountStatus(currentLanguage === "en" ? "Opening Stripe Checkout…" : "Stripeの購入画面を準備しています…");
