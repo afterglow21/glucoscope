@@ -1,7 +1,7 @@
 # GlucoScope Plus entitlement Worker
 
-Non-public foundation for the proposed Plus 30-day pass, with a stopped staging
-checkpoint and no public account or sales path.
+Non-public foundation for the proposed Plus 30-day pass, with stopped production and
+staging checkpoints and no public account or sales path.
 
 ## Fixed product boundary
 
@@ -21,31 +21,34 @@ checkpoint and no public account or sales path.
 
 The checked-in configuration deliberately keeps RPC, purchases, Checkout HTTP, Stripe
 webhooks, account HTTP, account cleanup, sales readiness, and tax readiness disabled.
-The default future-production candidate has no D1 binding. The reviewed `staging`
-environment binds only its dedicated D1 database while keeping every release switch
+The default configuration binds the provisioned production D1, and the reviewed
+`staging` environment binds only its dedicated staging D1. Both keep every release switch
 false: `PLUS_ENTITLEMENT_RPC_ENABLED`, `PLUS_PURCHASES_ENABLED`,
 `PLUS_CHECKOUT_HTTP_ENABLED`, `PLUS_STRIPE_WEBHOOK_ENABLED`,
-`PLUS_ACCOUNT_AUTH_HTTP_ENABLED`, `ACCOUNT_AUTH_CLEANUP_ENABLED`,
+`PLUS_ACCOUNT_AUTH_HTTP_ENABLED`, `PLUS_SHARE_TRIAL_HTTP_ENABLED`,
+`ACCOUNT_AUTH_CLEANUP_ENABLED`,
 `PLUS_SALES_READINESS_CONFIRMED`, `PLUS_TAX_TREATMENT_CONFIRMED`, and
 `PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED`.
 
 The fresh stopped `glucoscope-plus-entitlement-staging` Worker is Version
-`acff4e32-ef5c-433a-83df-14958b192d62` at 100% traffic. It keeps the four encrypted
+`be6a1dbe-c9cf-4002-a997-13d93cf58c36` at 100% traffic. It keeps the four encrypted
 account-HMAC, Resend, and Turnstile Secret binding names. The corrected current Resend key
 passed the one-message provider-acceptance check below without disclosure. It has
 `workers_dev=false`, preview URLs are disabled, no routes or Cron triggers exist,
 observability is disabled, and the `workers.dev` URL returns `404`. Secret values are not
-recorded. Earlier stopped Version `c917affd-74ed-4691-a3c6-b6c8e3149e3c` is historical and
-must not be restored because its Turnstile Secret predates the accepted correction. This
+recorded. Zero-percent candidate `8d206190-da81-4fa3-8e69-ee1277e3c1f5` is attached only
+for private Share Studio acceptance; it enables account HTTP, Share trial HTTP, and
+entitlement RPC while purchases, Checkout, webhook, cleanup, sales, and every public
+target stay off. Earlier stopped Versions are historical and must not be restored. This
 deployment is an unreachable schema-and-binding checkpoint, not public account access or
 a sales release.
 
-The staging-only `PLUS_DB` binding points to `glucoscope-plus-staging` in APAC.
-Migrations `0001` through `0006` are applied. Migration `0006` ran only after all 12
-application tables were verified at zero rows, replaced the empty JPY 300 constraints
-with JPY 400 constraints, and left all 12 application tables at zero rows. Request-code and verify use staging-specific rate-limit
-IDs, distinct from the future production IDs. Because account HTTP remains false, the
-bindings are not read and no account operation can begin.
+The staging `PLUS_DB` binding points to `glucoscope-plus-staging` in APAC. The production
+binding points to `glucoscope-plus-production` in APAC. Both have migrations `0001`
+through `0007`, including the JPY 400 constraint and minimal 90-day Share trial reuse
+marker. All 13 application tables in both databases were verified at zero rows.
+Production Worker Version `d6c5de68-bdc5-41c0-8c30-2e2f5de74b33` is at 100% with all
+release flags false, no Secrets, route, Cron, preview URL, or `workers.dev` target.
 
 Historical unserved Version `a0805f46-8585-47c5-b431-dfcb463d2993` first staged the
 JPY 400 code and the two non-secret test identifiers with every flag false. It is not a

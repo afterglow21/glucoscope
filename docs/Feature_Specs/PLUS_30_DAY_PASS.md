@@ -170,7 +170,7 @@ Resend APIのHTTP `200`や`email.sent`は、Resendが要求を受け付けて配
 - 別のメールで体験を繰り返すことは利用条件で禁止するが、技術で「1人」を完全に見分けられるとは案内しない。
 - 購入または未解決の支払いがあるアカウントは、現在の自動削除routeで「削除できた」と見せず、問い合わせへ案内する。全sessionの失効、Plus停止、返金の扱い、残す最小の購入記録、アカウントとの結び付きを外す日を本人へ確認してから処理する。削除だけで自動返金になるとは案内しない。
 
-この90日ルールはローカル実装済みである。migration `0007_share_trial_reuse_retention.sql` は、元に戻せないメール照合HMACと鍵version、体験成功時刻、期限、作成・更新時刻だけを保持する。体験未使用の削除、体験使用後の削除、90日内の同一メール再登録、期限後の再利用、毎時cleanup、HMAC鍵rotation、旧新記録の衝突時の停止を実SQLiteテストで確認した。stagingでは`0007`、6列だけのschema、13 table 0件、全flag停止のVersion `be6a1dbe-c9cf-4002-a997-13d93cf58c36`を受け入れた。2026年8月18日のローカル候補では、Daily Snapshotを端末内CanvasでPNG化し、既存の不透明sessionとランダムrequest IDだけを、別flagで停止できる予約・完了・解除HTTPへ送る。血糖値、接続URL、合言葉、作成画像はPlus Workerへ送らない。画像生成成功後だけ体験を完了し、生成前の失敗は予約を解除する。通信結果が曖昧な完了処理は同じrequest IDで再確認し、画像を公開せず安全側に止める。残る販売前ゲートは、この実画面とWorker候補をつないだ予約・成功・失敗解除、削除後の再登録を含む非公開E2Eである。
+この90日ルールはローカル実装済みである。migration `0007_share_trial_reuse_retention.sql` は、元に戻せないメール照合HMACと鍵version、体験成功時刻、期限、作成・更新時刻だけを保持する。体験未使用の削除、体験使用後の削除、90日内の同一メール再登録、期限後の再利用、毎時cleanup、HMAC鍵rotation、旧新記録の衝突時の停止を実SQLiteテストで確認した。stagingとproductionには`0001`から`0007`を適用し、両方の13 tableが0件であることを確認した。staging停止版は`be6a1dbe-c9cf-4002-a997-13d93cf58c36`を100%、Share Studio候補`8d206190-da81-4fa3-8e69-ee1277e3c1f5`を0%とする。production停止版`d6c5de68-bdc5-41c0-8c30-2e2f5de74b33`は全flag停止、Secret・route・Cron・preview・workers.devなしで100%である。Daily Snapshotは端末内CanvasでPNG化し、既存の不透明sessionとランダムrequest IDだけを、別flagで停止できる予約・完了・解除HTTPへ送る。血糖値、接続URL、合言葉、作成画像はPlus Workerへ送らない。画像生成成功後だけ体験を完了し、生成前の失敗は予約を解除する。通信結果が曖昧な完了処理は同じrequest IDで再確認し、画像を公開せず安全側に止める。合成データと合成アカウント応答を使った実browserでは、画像生成、注意表示、1回消費、2回目拒否、console error 0を確認した。ただしWindows `workerd`の起動停止によりremote service-binding bridgeを通した実D1 E2Eは未完であり、残る販売前ゲートである。
 
 ## 9. Stripe実装方針
 

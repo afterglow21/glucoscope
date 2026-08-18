@@ -235,7 +235,7 @@ function confirmedGuardian(email = EMAIL) {
   };
 }
 
-test("checked-in auth configuration is disabled and contains no runtime bindings or Secrets", () => {
+test("checked-in auth configuration is disabled and binds only provisioned production D1", () => {
   const config = JSON.parse(readFileSync(
     new URL("../wrangler.jsonc", import.meta.url),
     "utf8",
@@ -253,7 +253,12 @@ test("checked-in auth configuration is disabled and contains no runtime bindings
   );
   assert.equal("ACCOUNT_AUTH_VERIFY_ACTION" in config.vars, false);
   assert.equal("ACCOUNT_EMAIL_LOOKUP_HMAC_PREVIOUS_KEY" in config.vars, false);
-  assert.equal("d1_databases" in config, false);
+  assert.deepEqual(config.d1_databases, [{
+    binding: "PLUS_DB",
+    database_name: "glucoscope-plus-production",
+    database_id: "9de9b4d7-e523-428a-90b7-f657e020764c",
+    migrations_dir: "migrations",
+  }]);
   assert.equal("services" in config, false);
   assert.equal("secrets" in config, false);
   const serialized = JSON.stringify(config);

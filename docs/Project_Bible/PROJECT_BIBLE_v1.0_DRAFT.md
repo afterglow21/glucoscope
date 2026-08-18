@@ -4144,8 +4144,7 @@ Freeの現在血糖と基本グラフを止めません。
 案内せず、利用条件でも禁止します。削除時の公開説明、同じメールでの再登録、期限直後の再利用、
 期限削除、HMAC鍵更新、衝突時の安全停止はローカルSQLiteテストで確認済みです。2026年8月18日に
 stagingへ`0007_share_trial_reuse_retention.sql`を適用し、6列だけのschema、13 table 0件、全flag停止の
-Version `be6a1dbe-c9cf-4002-a997-13d93cf58c36`を確認しました。2026年8月18日のローカル候補では、端末内だけでDaily SnapshotのPNGを作り、既存の不透明sessionとランダムrequest IDだけを別flagの予約・成功・解除HTTPへ送る実装を追加しました。血糖値、接続URL、合言葉、画像はPlus Workerへ送りません。公開flagは停止したままです。残る販売前ゲートは、Share Studio実画面からの
-成功消費、account削除、同じメールでの再登録、期限削除までを含む非公開E2Eです。
+Version `be6a1dbe-c9cf-4002-a997-13d93cf58c36`を確認しました。Share Studio候補`8d206190-da81-4fa3-8e69-ee1277e3c1f5`は0%、停止版は100%です。本番APAC D1にも`0001`から`0007`を適用し、13 table 0件を確認しました。本番停止版`d6c5de68-bdc5-41c0-8c30-2e2f5de74b33`は全flag false、Secret・route・Cron・preview・workers.devなしで100%です。2026年8月18日のローカル実browserでは、合成データと合成確認済みアカウント応答だけを使い、端末内Daily Snapshot PNG、健康情報の注意、PC入口、1回の成功消費、2回目拒否、console error 0を確認しました。既存の不透明sessionとランダムrequest ID以外に、血糖値、接続URL、合言葉、画像はPlus Workerへ送りません。Windows `workerd`がremote service-binding起動時に停止したため、実Worker/D1を通した成功消費、account削除、同じメールでの再登録、期限削除は販売前ゲートとして残します。
 
 購入記録は、復旧・問い合わせに使うアカウントとの結び付きと、会計・返金・異議申立てに必要な
 最小記録を分ける候補としました。結び付きは、有効なPlus、未完了支払い、返金、異議申立て、

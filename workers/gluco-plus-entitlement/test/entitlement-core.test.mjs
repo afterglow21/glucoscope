@@ -181,7 +181,7 @@ function applyEnabledPayment(input, store, dependencies = {}) {
   });
 }
 
-test("checked-in config is non-public, paused, and has no unprovisioned bindings or Secrets", () => {
+test("checked-in config is non-public, paused, and binds only provisioned production D1", () => {
   const config = JSON.parse(readFileSync(
     new URL("../wrangler.jsonc", import.meta.url),
     "utf8",
@@ -196,7 +196,12 @@ test("checked-in config is non-public, paused, and has no unprovisioned bindings
   assert.equal(config.vars.PLUS_STRIPE_WEBHOOK_ENABLED, "false");
   assert.equal(config.vars.PLUS_PRICE_JPY, "400");
   assert.equal(config.vars.PLUS_DURATION_DAYS, "30");
-  assert.equal("d1_databases" in config, false);
+  assert.deepEqual(config.d1_databases, [{
+    binding: "PLUS_DB",
+    database_name: "glucoscope-plus-production",
+    database_id: "9de9b4d7-e523-428a-90b7-f657e020764c",
+    migrations_dir: "migrations",
+  }]);
   assert.equal("secrets" in config, false);
   assert.deepEqual(config.observability, { enabled: false });
   const entrypointSource = readFileSync(

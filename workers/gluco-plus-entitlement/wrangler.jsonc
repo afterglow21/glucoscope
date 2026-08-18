@@ -76,6 +76,14 @@
     "PLUS_DURATION_DAYS": "30",
     "SHARE_TRIAL_RESERVATION_TTL_SECONDS": "600"
   },
+  "d1_databases": [
+    {
+      "binding": "PLUS_DB",
+      "database_name": "glucoscope-plus-production",
+      "database_id": "9de9b4d7-e523-428a-90b7-f657e020764c",
+      "migrations_dir": "migrations"
+    }
+  ],
   "env": {
     "staging": {
       "name": "glucoscope-plus-entitlement-staging",
