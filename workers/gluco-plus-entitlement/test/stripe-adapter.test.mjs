@@ -464,6 +464,7 @@ test("Stripe-hosted Checkout is a test-mode one-time payment with dynamic method
   assert.equal(captured.init.headers.get("authorization"), `Bearer ${API_KEY}`);
   assert.equal(captured.init.headers.get("stripe-version"), STRIPE_API_VERSION);
   assert.equal(captured.form.get("mode"), "payment");
+  assert.equal(captured.form.get("locale"), "ja");
   assert.equal(captured.form.get("line_items[0][price]"), PRICE_ID);
   assert.equal(captured.form.get("line_items[0][quantity]"), "1");
   assert.equal(
