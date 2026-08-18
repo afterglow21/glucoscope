@@ -33,8 +33,9 @@ function toSessionSnapshot(row) {
         endsAt: Number(row.entitlement_ends_at),
       }
       : null,
-    shareTrialUsed: row.share_trial_used_at !== null
-      && row.share_trial_used_at !== undefined,
+    shareTrialUsed: (row.share_trial_used_at !== null
+      && row.share_trial_used_at !== undefined)
+      || Boolean(row.share_trial_reuse_blocked),
     shareTrialReservationExpiresAt:
       row.share_trial_reservation_expires_at === null
       || row.share_trial_reservation_expires_at === undefined
@@ -201,7 +202,8 @@ function normalizeReserveResult(row, accountId, requestId) {
   if (row.request_state === "completed") {
     return { status: "completed", grant: "trial", requestId };
   }
-  if (row.share_trial_used_at !== null && row.share_trial_used_at !== undefined) {
+  if ((row.share_trial_used_at !== null && row.share_trial_used_at !== undefined)
+    || Boolean(row.share_trial_reuse_blocked)) {
     return { status: "trial_already_used" };
   }
   if (row.request_state === "reserved") {
@@ -236,7 +238,8 @@ function normalizeCompletionResult(row, accountId, requestId) {
     return { status: "completed", grant: "trial", requestId };
   }
   if (Boolean(row.plus_active)) return { status: "plus_active", grant: "plus" };
-  if (row.share_trial_used_at !== null && row.share_trial_used_at !== undefined) {
+  if ((row.share_trial_used_at !== null && row.share_trial_used_at !== undefined)
+    || Boolean(row.share_trial_reuse_blocked)) {
     return { status: "trial_already_used" };
   }
   return { status: row.request_state, requestId };
@@ -621,6 +624,11 @@ export function createD1PlusEntitlementStore(database) {
           e.starts_at AS entitlement_starts_at,
           e.ends_at AS entitlement_ends_at,
           t.used_at AS share_trial_used_at,
+          EXISTS (
+            SELECT 1 FROM share_trial_reuse_retention AS retained_trial
+            WHERE retained_trial.email_lookup_hmac = a.email_lookup_hmac
+              AND retained_trial.expires_at > ?2
+          ) AS share_trial_reuse_blocked,
           (
             SELECT MAX(o.expires_at)
             FROM share_trial_operations AS o
@@ -858,6 +866,14 @@ export function createD1PlusEntitlementStore(database) {
             WHERE account_id = ?2 AND used_at IS NULL
           )
             AND NOT EXISTS (
+              SELECT 1
+              FROM accounts AS retained_account
+              JOIN share_trial_reuse_retention AS retained_trial
+                ON retained_trial.email_lookup_hmac = retained_account.email_lookup_hmac
+              WHERE retained_account.id = ?2
+                AND retained_trial.expires_at > ?3
+            )
+            AND NOT EXISTS (
               SELECT 1 FROM entitlements
               WHERE account_id = ?2
                 AND status = 'granted'
@@ -872,6 +888,14 @@ export function createD1PlusEntitlementStore(database) {
         db.prepare(`
           SELECT
             t.used_at AS share_trial_used_at,
+            EXISTS (
+              SELECT 1
+              FROM accounts AS retained_account
+              JOIN share_trial_reuse_retention AS retained_trial
+                ON retained_trial.email_lookup_hmac = retained_account.email_lookup_hmac
+              WHERE retained_account.id = ?1
+                AND retained_trial.expires_at > ?3
+            ) AS share_trial_reuse_blocked,
             own.account_id AS request_owner,
             own.state AS request_state,
             own.expires_at AS request_expires_at,
@@ -922,6 +946,14 @@ export function createD1PlusEntitlementStore(database) {
               WHERE account_id = ?2 AND used_at IS NULL
             )
             AND NOT EXISTS (
+              SELECT 1
+              FROM accounts AS retained_account
+              JOIN share_trial_reuse_retention AS retained_trial
+                ON retained_trial.email_lookup_hmac = retained_account.email_lookup_hmac
+              WHERE retained_account.id = ?2
+                AND retained_trial.expires_at > ?3
+            )
+            AND NOT EXISTS (
               SELECT 1 FROM entitlements
               WHERE account_id = ?2
                 AND status = 'granted'
@@ -947,6 +979,14 @@ export function createD1PlusEntitlementStore(database) {
             own.state AS request_state,
             t.used_at AS share_trial_used_at,
             t.completed_request_id,
+            EXISTS (
+              SELECT 1
+              FROM accounts AS retained_account
+              JOIN share_trial_reuse_retention AS retained_trial
+                ON retained_trial.email_lookup_hmac = retained_account.email_lookup_hmac
+              WHERE retained_account.id = ?1
+                AND retained_trial.expires_at > ?3
+            ) AS share_trial_reuse_blocked,
             EXISTS (
               SELECT 1 FROM entitlements
               WHERE account_id = ?1

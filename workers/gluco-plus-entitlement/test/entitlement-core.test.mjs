@@ -118,6 +118,7 @@ function createDatabase() {
     "0003_stripe_checkout_state.sql",
     "0004_guardian_buyer_confirmation.sql",
     "0006_plus_price_400.sql",
+    "0007_share_trial_reuse_retention.sql",
   ]) {
     const migration = readFileSync(
       new URL(`../migrations/${migrationName}`, import.meta.url),
@@ -263,7 +264,7 @@ test("staging binds only its dedicated D1 while every release path stays stopped
   assert.equal("secrets" in staging, false);
 });
 
-test("migrations move the one-time pass to JPY 400, keep exactly 30 days, and exclude health fields", () => {
+test("migrations keep JPY 400, 30 days, and a minimal 90-day Share trial retention boundary", () => {
   const migration = readFileSync(
     new URL("../migrations/0001_initial_plus_entitlement_schema.sql", import.meta.url),
     "utf8",
@@ -297,6 +298,22 @@ test("migrations move the one-time pass to JPY 400, keep exactly 30 days, and ex
   assert.match(priceMigration, /COUNT\(\*\) FROM processed_webhook_events/u);
   assert.match(priceMigration, /COUNT\(\*\) FROM entitlements/u);
   assert.match(priceMigration, /amount_jpy = 400/u);
+
+  const trialRetentionMigration = readFileSync(
+    new URL("../migrations/0007_share_trial_reuse_retention.sql", import.meta.url),
+    "utf8",
+  );
+  assert.match(
+    trialRetentionMigration,
+    /CREATE TABLE share_trial_reuse_retention/u,
+  );
+  assert.match(trialRetentionMigration, /expires_at - trial_used_at = 7776000000/u);
+  assert.match(trialRetentionMigration, /email_lookup_hmac/u);
+  const trialRetentionSchema = trialRetentionMigration.replace(/^--.*$/gmu, "");
+  assert.doesNotMatch(
+    trialRetentionSchema,
+    /email_ciphertext|display_name|glucose|nightscout|gluroo|dexcom|libre|\btir\b|\btar\b|\btbr\b|\bgmi\b|\bcgm\b|checkout|purchase|image/iu,
+  );
 });
 
 test("public fetch response stays closed without CORS or internal details", async () => {

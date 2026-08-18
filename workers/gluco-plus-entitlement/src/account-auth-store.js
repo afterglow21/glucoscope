@@ -1,4 +1,5 @@
 const EMAIL_NOT_STORED_MARKER = "email-not-stored-v1";
+const SHARE_TRIAL_REUSE_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 
 function requireDatabase(database) {
   if (
@@ -28,7 +29,8 @@ function toSessionState(row) {
     endsAt: plusActive ? Number(row.entitlement_ends_at) : null,
     shareStudioTrialAvailable: !plusActive
       && (row.share_trial_used_at === null
-        || row.share_trial_used_at === undefined),
+        || row.share_trial_used_at === undefined)
+      && !Boolean(row.share_trial_reuse_blocked),
   };
 }
 
@@ -39,6 +41,7 @@ export function createD1AccountAuthStore(database) {
     async cleanupExpiredAuthRecords({
       challengeExpiresBefore,
       reservationReservedBefore,
+      trialReuseExpiresAtOrBefore,
     }) {
       await db.batch([
         db.prepare(`
@@ -49,6 +52,10 @@ export function createD1AccountAuthStore(database) {
           DELETE FROM account_email_send_reservations
           WHERE reserved_at < ?1
         `).bind(reservationReservedBefore),
+        db.prepare(`
+          DELETE FROM share_trial_reuse_retention
+          WHERE expires_at <= ?1
+        `).bind(trialReuseExpiresAtOrBefore),
       ]);
       return { cleaned: true };
     },
@@ -378,6 +385,43 @@ export function createD1AccountAuthStore(database) {
       const guardianConfirmedAt = buyerRole === "guardian" ? verifiedAt : null;
       const results = await db.batch([
         db.prepare(`
+          DELETE FROM share_trial_reuse_retention
+          WHERE email_lookup_hmac IN (?1, ?2)
+            AND expires_at <= ?3
+        `).bind(emailLookupHmac, alternateEmailLookupHmac, verifiedAt),
+        db.prepare(`
+          UPDATE share_trial_reuse_retention
+          SET
+            email_lookup_hmac = ?1,
+            email_hmac_key_version = ?3,
+            updated_at = MAX(updated_at, ?4)
+          WHERE email_lookup_hmac = ?2
+            AND ?1 <> ?2
+            AND expires_at > ?4
+            AND (
+              SELECT COUNT(*) FROM share_trial_reuse_retention
+              WHERE email_lookup_hmac IN (?1, ?2) AND expires_at > ?4
+            ) = 1
+            AND NOT EXISTS (
+              SELECT 1 FROM share_trial_reuse_retention AS current_retention
+              WHERE current_retention.email_lookup_hmac = ?1
+                AND current_retention.expires_at > ?4
+            )
+        `).bind(
+          emailLookupHmac,
+          alternateEmailLookupHmac,
+          emailHmacKeyVersion,
+          verifiedAt,
+        ),
+        db.prepare(`
+          UPDATE share_trial_reuse_retention
+          SET
+            email_hmac_key_version = ?2,
+            updated_at = MAX(updated_at, ?3)
+          WHERE email_lookup_hmac = ?1
+            AND expires_at > ?3
+        `).bind(emailLookupHmac, emailHmacKeyVersion, verifiedAt),
+        db.prepare(`
           INSERT OR IGNORE INTO accounts (
             id, email_lookup_hmac, email_ciphertext, email_key_version,
             email_verified_at, status, created_at, updated_at,
@@ -391,6 +435,10 @@ export function createD1AccountAuthStore(database) {
             SELECT 1 FROM accounts
             WHERE email_lookup_hmac IN (?2, ?5) AND status = 'active'
           )
+            AND (
+              SELECT COUNT(*) FROM share_trial_reuse_retention
+              WHERE email_lookup_hmac IN (?2, ?5) AND expires_at > ?4
+            ) <= 1
         `).bind(
           newAccountId,
           emailLookupHmac,
@@ -420,6 +468,10 @@ export function createD1AccountAuthStore(database) {
               WHERE current_account.email_lookup_hmac = ?1
                 AND current_account.status = 'active'
             )
+            AND (
+              SELECT COUNT(*) FROM share_trial_reuse_retention
+              WHERE email_lookup_hmac IN (?1, ?2) AND expires_at > ?4
+            ) <= 1
         `).bind(
           emailLookupHmac,
           alternateEmailLookupHmac,
@@ -443,6 +495,10 @@ export function createD1AccountAuthStore(database) {
               SELECT COUNT(*) FROM accounts
               WHERE email_lookup_hmac IN (?1, ?3) AND status = 'active'
             ) = 1
+            AND (
+              SELECT COUNT(*) FROM share_trial_reuse_retention
+              WHERE email_lookup_hmac IN (?1, ?3) AND expires_at > ?2
+            ) <= 1
         `).bind(
           emailLookupHmac,
           verifiedAt,
@@ -462,6 +518,10 @@ export function createD1AccountAuthStore(database) {
               SELECT COUNT(*) FROM accounts
               WHERE email_lookup_hmac IN (?1, ?3) AND status = 'active'
             ) = 1
+            AND (
+              SELECT COUNT(*) FROM share_trial_reuse_retention
+              WHERE email_lookup_hmac IN (?1, ?3) AND expires_at > ?2
+            ) <= 1
         `).bind(
           emailLookupHmac,
           verifiedAt,
@@ -482,6 +542,10 @@ export function createD1AccountAuthStore(database) {
               ) = 1
               AND buyer_role = ?4
               AND buyer_confirmation_version = ?5
+              AND (
+                SELECT COUNT(*) FROM share_trial_reuse_retention
+                WHERE email_lookup_hmac IN (?1, ?3) AND expires_at > ?2
+              ) <= 1
           ) AND revoked_at IS NULL
         `).bind(
           emailLookupHmac,
@@ -510,6 +574,10 @@ export function createD1AccountAuthStore(database) {
               SELECT COUNT(*) FROM accounts
               WHERE email_lookup_hmac IN (?5, ?6) AND status = 'active'
             ) = 1
+            AND (
+              SELECT COUNT(*) FROM share_trial_reuse_retention
+              WHERE email_lookup_hmac IN (?5, ?6) AND expires_at > ?3
+            ) <= 1
         `).bind(
           newSessionId,
           newTokenHash,
@@ -549,7 +617,7 @@ export function createD1AccountAuthStore(database) {
           alternateEmailLookupHmac,
         ),
       ]);
-      const row = firstBatchRow(results[6]);
+      const row = firstBatchRow(results[9]);
       if (row?.session_account_id) {
         return {
           status: "ready",
@@ -573,6 +641,11 @@ export function createD1AccountAuthStore(database) {
           e.starts_at AS entitlement_starts_at,
           e.ends_at AS entitlement_ends_at,
           t.used_at AS share_trial_used_at,
+          EXISTS (
+            SELECT 1 FROM share_trial_reuse_retention AS retained_trial
+            WHERE retained_trial.email_lookup_hmac = a.email_lookup_hmac
+              AND retained_trial.expires_at > ?2
+          ) AS share_trial_reuse_blocked,
           CASE
             WHEN e.id IS NOT NULL THEN 0
             ELSE (
@@ -654,6 +727,55 @@ export function createD1AccountAuthStore(database) {
             AND a.email_verified_at IS NOT NULL
           LIMIT 1
         `).bind(tokenHash, now),
+        db.prepare(`
+          INSERT INTO share_trial_reuse_retention (
+            email_lookup_hmac, email_hmac_key_version, trial_used_at,
+            expires_at, created_at, updated_at
+          )
+          SELECT
+            a.email_lookup_hmac,
+            a.email_key_version,
+            t.used_at,
+            t.used_at + ?3,
+            ?2,
+            ?2
+          FROM sessions AS s
+          JOIN accounts AS a ON a.id = s.account_id
+          JOIN share_trial_state AS t ON t.account_id = a.id
+          WHERE s.token_hash = ?1
+            AND s.revoked_at IS NULL
+            AND s.expires_at > ?2
+            AND a.status = 'active'
+            AND a.email_verified_at IS NOT NULL
+            AND t.used_at IS NOT NULL
+            AND t.used_at + ?3 > ?2
+            AND NOT EXISTS (
+              SELECT 1 FROM entitlements AS e WHERE e.account_id = a.id
+            )
+            AND NOT EXISTS (
+              SELECT 1 FROM processed_webhook_events AS w
+              WHERE w.account_id = a.id
+            )
+            AND NOT EXISTS (
+              SELECT 1 FROM checkout_attempts AS c
+              WHERE c.account_id = a.id
+                AND c.state NOT IN ('failed', 'expired')
+            )
+            AND NOT EXISTS (
+              SELECT 1
+              FROM checkout_attempts AS c
+              JOIN processed_refund_events AS r
+                ON r.checkout_session_id = c.checkout_session_id
+              WHERE c.account_id = a.id
+            )
+          ON CONFLICT(email_lookup_hmac) DO UPDATE SET
+            email_hmac_key_version = excluded.email_hmac_key_version,
+            trial_used_at = excluded.trial_used_at,
+            expires_at = excluded.expires_at,
+            created_at = excluded.created_at,
+            updated_at = excluded.updated_at
+          WHERE share_trial_reuse_retention.expires_at <= ?2
+        `).bind(tokenHash, now, SHARE_TRIAL_REUSE_RETENTION_MS),
         db.prepare(`
           DELETE FROM account_auth_challenges
           WHERE email_lookup_hmac = (
@@ -811,7 +933,7 @@ export function createD1AccountAuthStore(database) {
       if (Boolean(eligibility.has_purchase_record)) {
         return { status: "requires_support" };
       }
-      return firstBatchRow(results[5])
+      return firstBatchRow(results[6])
         ? { status: "deleted" }
         : { status: "unavailable" };
     },

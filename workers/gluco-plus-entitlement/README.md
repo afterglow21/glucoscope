@@ -280,13 +280,18 @@ purchase timestamp is returned.
 
 Account deletion requires a valid session, an explicit confirmation, and its own
 Turnstile action. An account with no purchase record is removed together with all of its
-sessions, Share Studio trial state, and auth challenges, so the same email may create a
-fresh account later. If any entitlement or payment receipt exists, deletion makes no
+sessions, account-bound Share Studio trial state, and auth challenges, so the same email
+may create a fresh account later. If a Share Studio trial completed less than 90 days ago,
+deletion first retains only the irreversible email lookup HMAC, its key version, the trial
+completion time, and the expiry needed to prevent a second trial. It stores no recoverable
+email, display name, CGM or AI content, generated image, or purchase identifier. The
+hourly cleanup removes the retained row at expiry, and an expired row is ignored even if
+cleanup has not run yet. If any entitlement or payment receipt exists, deletion makes no
 changes and returns only `account_deletion_requires_support`. Legal, refund, and fraud
 retention rules for purchase records must be approved before that support path is enabled.
-Because a purchase-free deletion also removes Share Studio trial state, deleting and
-recreating an account currently creates a fresh trial. A disclosed retention and abuse
-rule must be approved before sale; this foundation deliberately adds no covert tombstone.
+An unused trial leaves no retention row and becomes available on a recreated account.
+During email-HMAC rotation, an active retained row is atomically rekeyed; conflicting
+current and previous rows fail closed rather than restoring trial access.
 
 The complete normalized email exists only in request memory and in the private email
 adapter call. D1 stores an HMAC lookup identifier and HMAC-protected short-lived code;

@@ -35,6 +35,7 @@ export async function runAccountAuthCleanup(
         0,
         scheduledTime - GLOBAL_SEND_RESERVATION_RETENTION_MS,
       ),
+      trialReuseExpiresAtOrBefore: scheduledTime,
     });
     if (result?.cleaned !== true) throw new Error("cleanup_failed");
     return Object.freeze({ cleaned: true });

@@ -72,3 +72,9 @@ test("English final review preserves the same commercial meaning", () => {
     "not a medical service",
   ]) assert.match(app, new RegExp(expected, "u"));
 });
+
+test("account deletion discloses the 90-day completed Share Studio trial marker", () => {
+  assert.match(html, /Share Studioの無料体験を使っていた場合[\s\S]*体験成功日から90日間/u);
+  assert.match(app, /元に戻せない再取得防止の印は体験成功日から90日後まで残ります/u);
+  assert.match(app, /irreversible reuse-prevention marker remains until 90 days after completion/u);
+});

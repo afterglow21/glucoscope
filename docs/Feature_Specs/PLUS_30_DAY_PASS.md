@@ -170,7 +170,7 @@ Resend APIのHTTP `200`や`email.sent`は、Resendが要求を受け付けて配
 - 別のメールで体験を繰り返すことは利用条件で禁止するが、技術で「1人」を完全に見分けられるとは案内しない。
 - 購入または未解決の支払いがあるアカウントは、現在の自動削除routeで「削除できた」と見せず、問い合わせへ案内する。全sessionの失効、Plus停止、返金の扱い、残す最小の購入記録、アカウントとの結び付きを外す日を本人へ確認してから処理する。削除だけで自動返金になるとは案内しない。
 
-この90日ルールは販売前の方針候補であり、まだ実装していない。現状の完全削除では無料体験が新しくなるため、90日記録の実装、期限削除、同じメールでの再登録、公開説明の受け入れテストが通るまで販売ブロッカーとする。
+この90日ルールはローカル実装済みである。migration `0007_share_trial_reuse_retention.sql` は、元に戻せないメール照合HMACと鍵version、体験成功時刻、期限、作成・更新時刻だけを保持する。体験未使用の削除、体験使用後の削除、90日内の同一メール再登録、期限後の再利用、毎時cleanup、HMAC鍵rotation、旧新記録の衝突時の停止を実SQLiteテストで確認した。販売前にはstaging migration、停止候補、削除画面とPrivacy説明、Share Studio実画面からの成功時消費を非公開で受け入れる。
 
 ## 9. Stripe実装方針
 
@@ -266,7 +266,7 @@ Plusは優先医療相談や緊急サポートを含まない。問い合わせ�
 8. 会計記録7年・アカウント結び付き最大180日の候補を、運営形態に適用される法務・税務要件へ確定し、期限削除・切り離し・訂正を自動確認する方法
 9. 公開Usage Dashboardの10件基準を、実利用が増えた後も定期的に見直す手順
 10. 利用状況記録を停止した人へ、AI上限のための必要最小限の成功回数を別記録する説明と確認
-11. account削除後、成功したShare Studio無料体験から90日だけ最小HMAC記録を残す実装、同じメールでの再登録、期限削除、公開説明
+11. 実装・ローカルSQLiteテスト・公開説明まで完了した、account削除後のShare Studio無料体験90日再取得防止を、stagingの`0007` migration、期限削除、同じメールでの再登録まで閉じた受け入れで確認する
 12. メールHMAC旧鍵の安全な廃止、認証routeの全体rate limit、challenge保持データの定期削除手順
 
 ## 14. GO条件
@@ -329,7 +329,7 @@ Plusは優先医療相談や緊急サポートを含まない。問い合わせ�
 - その後の再送安全性候補の受け入れは、`403 turnstile_failed`でD1やメールの前に停止した。繰り返し操作してもaccount、challenge、送信予約、session、購入、利用権は作られず、メール到着の証拠も採用していない。localhostのremote-dev service-binding bridgeも、有効な診断requestの中継中に失敗したため、この経路を再送修正の受け入れ証拠にしない。この失敗確認の後、運営者が値を開示せずResend keyを差し替え、公式の安全なテスト宛先へ1通だけ送る0%候補で、`200 code_sent`とchallenge・全体送信予約の`sent`を確認した。これはprovider受理の確認であり、本人受信箱への到着確認ではない。試験2行、候補、一時Custom Domainを削除し、12個のapplication tableを0件へ戻した。現在は停止Version `acff4e32-ef5c-433a-83df-14958b192d62`だけを100%へ向け、全flag `false`、route/Cron/previewなし、`workers.dev` `404`を維持する。
 - この受け入れで、Cloudflare Workers runtimeではResendへの`fetch`に `redirect: "error"` を指定すると`TypeError`になり、送信を完了できない相互運用上の問題が分かった。adapterは `redirect: "manual"` へ変更し、`3xx`を追跡せず拒否する。これによりAuthorization headerと本文をredirect先へ転送しない。`302`と`307`の実行型テストでこの境界を固定した。
 - Free 1回/日、Plus 5回/日のAI成功回数について、10分の予約、成功確定、失敗解除、重複防止、90日削除の基盤を追加した。個人上限のフラグは停止中である。
-- 7日・30日・カスタム期間、しっかり分析、Share Studioの共通権限判定を追加した。制限フラグは停止中のため、現在の公開動作は変わらない。Share Studio画面と体験消費の本番接続はまだない。
+- 7日・30日・カスタム期間、しっかり分析、Share Studioの共通権限判定を追加した。制限フラグは停止中のため、現在の公開動作は変わらない。Share Studio体験後のアカウント削除では、成功日から90日だけ最小HMAC記録を残し、再登録後も二重体験を防ぐ実装とテストを追加した。Share Studio画面と体験の予約・成功・解除をつなぐ本番接続はまだない。
 - 管理者画面は、将来のPlus内部サービスから有効なPlusアカウント合計だけを受け取れる。未接続や失敗を0件に見せず「確認できません」とする。
 - 公開Usage Dashboard候補は、前日までの完了した30日間に活動した端末プロフィールが10件以上になった時だけ全体の実数を表示する。10件未満のレスポンスには実数を入れない。
 - Stripe test mode専用のローカルadapterを追加した。CheckoutはJPY 400の`mode=payment`だけを作り、`payment_method_types`、`automatic_tax`、Subscriptionをコードから指定しない。raw bodyのWebhook署名を確認した後、Checkout Session、Price、Product、支払い状態、test mode、アカウント対応をStripeへ再取得して検証し、成功時だけ既存の利用権処理へ渡す。成功した一部・全額返金では利用権を`refunded`へ変更し、二重通知でも重複処理しない実行型SQLiteテストを追加した。既存の空stagingを400円制約へ移すfail-closed `0006_plus_price_400.sql`はremote適用済みで、適用後も12 tableはすべて0件である。

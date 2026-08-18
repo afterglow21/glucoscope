@@ -105,6 +105,10 @@ test("Plus buyer policy stays complete internally while public pages remain simp
   assert.match(privacy, /この確認に使うIPアドレスを、GlucoScopeのデータベースやログへ保存しません/);
   assert.match(privacy, /temporary verification-code records are deleted about one day/);
   assert.match(privacy, /does not save the IP address used for this check in its database or logs/);
+  assert.match(privacy, /無料体験を最後まで使った後に削除した時だけ[\s\S]*体験成功日から90日間残します/);
+  assert.match(privacy, /メールアドレス、血糖値、表示名、CGM情報、AI本文、作成画像、購入情報はこの記録へ入れません/);
+  assert.match(privacy, /Only after a completed trial[\s\S]*for 90 days from completion/);
+  assert.match(privacy, /contains no email address, glucose value, display name, CGM detail, AI content, generated image, or purchase information/);
   assert.match(privacy, /通常の画面からは消えますが、Cloudflareの復旧用バックアップには、無料プランで最大7日、有料プランで最大30日/);
   assert.match(privacy, /They disappear from normal screens, but Cloudflare recovery backups may retain them for up to 7 days on the Free plan or up to 30 days on a Paid plan/);
   assert.doesNotMatch(privacy, /宛先と内容が最長30日保存されます|keep the destination and message content for up to 30 days/u);

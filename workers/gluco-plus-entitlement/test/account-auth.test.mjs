@@ -21,6 +21,7 @@ import { enforceAccountAuthRateLimit } from "../src/account-auth-rate-limit.js";
 import { createD1AccountAuthStore } from "../src/account-auth-store.js";
 import { verifyAccountTurnstile } from "../src/account-auth-turnstile.js";
 import { hashSessionToken } from "../src/credentials.js";
+import { createD1PlusEntitlementStore } from "../src/d1-store.js";
 
 const NOW = Date.parse("2026-08-15T03:00:00.000Z");
 const ORIGIN = "https://glucoscope.app";
@@ -31,6 +32,7 @@ const EMAIL = "family@example.com";
 const ACCOUNT_IDS = [
   "11111111-1111-4111-8111-111111111111",
   "22222222-2222-4222-8222-222222222222",
+  "33333333-3333-4333-8333-333333333333",
 ];
 const CHALLENGE_IDS = [
   "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
@@ -44,8 +46,9 @@ const CHALLENGE_IDS = [
 const SESSION_IDS = [
   "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1",
   "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2",
+  "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb3",
 ];
-const SESSION_TOKENS = ["A".repeat(43), "B".repeat(43)];
+const SESSION_TOKENS = ["A".repeat(43), "B".repeat(43), "J".repeat(43)];
 const VERIFICATION_GRANTS = [
   "C".repeat(43),
   "D".repeat(43),
@@ -144,6 +147,7 @@ function createDatabase() {
     "../migrations/0004_guardian_buyer_confirmation.sql",
     "../migrations/0005_account_email_global_send_limit.sql",
     "../migrations/0006_plus_price_400.sql",
+    "../migrations/0007_share_trial_reuse_retention.sql",
   ]) {
     database.raw.exec(readFileSync(new URL(migration, import.meta.url), "utf8"));
   }
@@ -623,6 +627,115 @@ test("email HMAC rotation atomically rekeys the same Plus account without losing
   `).get(ACCOUNT_IDS[0]).count), 1);
 });
 
+test("email HMAC rotation preserves an active Share Studio reuse block", async (t) => {
+  const database = createDatabase();
+  t.after(() => database.close());
+  const oldEmailHmac = await createEmailLookupHmac(EMAIL, EMAIL_SECRET);
+  const newEmailHmac = await createEmailLookupHmac(EMAIL, NEW_EMAIL_SECRET);
+  const trialUsedAt = NOW - 24 * 60 * 60 * 1000;
+  database.raw.prepare(`
+    INSERT INTO share_trial_reuse_retention (
+      email_lookup_hmac, email_hmac_key_version, trial_used_at,
+      expires_at, created_at, updated_at
+    ) VALUES (?1, 1, ?2, ?3, ?4, ?4)
+  `).run(
+    oldEmailHmac,
+    trialUsedAt,
+    trialUsedAt + 90 * 24 * 60 * 60 * 1000,
+    trialUsedAt + 1_000,
+  );
+  const rotatedEnv = {
+    ...ENABLED_ENV,
+    ACCOUNT_EMAIL_LOOKUP_HMAC_KEY: NEW_EMAIL_SECRET,
+    ACCOUNT_EMAIL_HMAC_KEY_VERSION: "2",
+    ACCOUNT_EMAIL_LOOKUP_HMAC_PREVIOUS_KEY: EMAIL_SECRET,
+    ACCOUNT_EMAIL_PREVIOUS_HMAC_KEY_VERSION: "1",
+  };
+  const store = createD1AccountAuthStore(database);
+  const clock = { value: NOW };
+  const delivered = [];
+  const service = createAccountAuthService(
+    rotatedEnv,
+    createDeterministicDependencies(store, clock, delivered),
+  );
+  const requested = await service.requestCode(
+    confirmedSelf(),
+    { turnstileVerified: true },
+  );
+  const verified = await service.verifyCode({
+    email: EMAIL,
+    code: delivered[0].code,
+    verificationGrant: requested.verificationGrant,
+  });
+  assert.equal(verified.session.shareStudioTrialAvailable, false);
+  assert.deepEqual({ ...database.raw.prepare(`
+    SELECT email_lookup_hmac, email_hmac_key_version, trial_used_at, expires_at
+    FROM share_trial_reuse_retention
+  `).get() }, {
+    email_lookup_hmac: newEmailHmac,
+    email_hmac_key_version: 2,
+    trial_used_at: trialUsedAt,
+    expires_at: trialUsedAt + 90 * 24 * 60 * 60 * 1000,
+  });
+});
+
+test("conflicting current and previous Share Studio reuse blocks fail closed", async (t) => {
+  const database = createDatabase();
+  t.after(() => database.close());
+  const oldEmailHmac = await createEmailLookupHmac(EMAIL, EMAIL_SECRET);
+  const newEmailHmac = await createEmailLookupHmac(EMAIL, NEW_EMAIL_SECRET);
+  const trialUsedAt = NOW - 24 * 60 * 60 * 1000;
+  for (const [hmac, version, offset] of [
+    [oldEmailHmac, 1, 0],
+    [newEmailHmac, 2, 1_000],
+  ]) {
+    database.raw.prepare(`
+      INSERT INTO share_trial_reuse_retention (
+        email_lookup_hmac, email_hmac_key_version, trial_used_at,
+        expires_at, created_at, updated_at
+      ) VALUES (?1, ?2, ?3, ?4, ?5, ?5)
+    `).run(
+      hmac,
+      version,
+      trialUsedAt + offset,
+      trialUsedAt + offset + 90 * 24 * 60 * 60 * 1000,
+      trialUsedAt + offset + 1,
+    );
+  }
+  const rotatedEnv = {
+    ...ENABLED_ENV,
+    ACCOUNT_EMAIL_LOOKUP_HMAC_KEY: NEW_EMAIL_SECRET,
+    ACCOUNT_EMAIL_HMAC_KEY_VERSION: "2",
+    ACCOUNT_EMAIL_LOOKUP_HMAC_PREVIOUS_KEY: EMAIL_SECRET,
+    ACCOUNT_EMAIL_PREVIOUS_HMAC_KEY_VERSION: "1",
+  };
+  const store = createD1AccountAuthStore(database);
+  const clock = { value: NOW };
+  const delivered = [];
+  const service = createAccountAuthService(
+    rotatedEnv,
+    createDeterministicDependencies(store, clock, delivered),
+  );
+  const requested = await service.requestCode(
+    confirmedSelf(),
+    { turnstileVerified: true },
+  );
+  await assert.rejects(service.verifyCode({
+    email: EMAIL,
+    code: delivered[0].code,
+    verificationGrant: requested.verificationGrant,
+  }), assertAuthError("service_unavailable", 503));
+  assert.equal(Number(database.raw.prepare(`
+    SELECT COUNT(*) AS count FROM share_trial_reuse_retention
+  `).get().count), 2);
+  assert.equal(Number(database.raw.prepare(`
+    SELECT COUNT(*) AS count FROM accounts
+  `).get().count), 0);
+  assert.equal(Number(database.raw.prepare(`
+    SELECT COUNT(*) AS count FROM sessions
+  `).get().count), 0);
+});
+
 test("email HMAC rotation fails closed for unsafe key configuration or duplicate identities", async (t) => {
   const database = createDatabase();
   t.after(() => database.close());
@@ -953,6 +1066,21 @@ test("hourly cleanup keeps the exact 24-hour boundary and deletes it one millise
       ('dddddddd-dddd-4ddd-8ddd-ddddddddddd2', 'sent', ?2, ?2),
       ('dddddddd-dddd-4ddd-8ddd-ddddddddddd3', 'pending', ?3, ?3)
   `).run(threshold - 1, threshold, NOW);
+  database.raw.prepare(`
+    INSERT INTO share_trial_reuse_retention (
+      email_lookup_hmac, email_hmac_key_version, trial_used_at,
+      expires_at, created_at, updated_at
+    ) VALUES
+      (?1, 1, ?3, ?4, ?4 - 1, ?4 - 1),
+      (?2, 1, ?5, ?6, ?6 - 1, ?6 - 1)
+  `).run(
+    "D".repeat(43),
+    "E".repeat(43),
+    NOW - 90 * 24 * 60 * 60 * 1000,
+    NOW,
+    NOW + 1 - 90 * 24 * 60 * 60 * 1000,
+    NOW + 1,
+  );
 
   const env = {
     ACCOUNT_AUTH_CLEANUP_ENABLED: "true",
@@ -975,6 +1103,9 @@ test("hourly cleanup keeps the exact 24-hour boundary and deletes it one millise
     "dddddddd-dddd-4ddd-8ddd-ddddddddddd2",
     "dddddddd-dddd-4ddd-8ddd-ddddddddddd3",
   ]);
+  assert.deepEqual(database.raw.prepare(`
+    SELECT email_lookup_hmac FROM share_trial_reuse_retention
+  `).all().map((row) => row.email_lookup_hmac), ["E".repeat(43)]);
 
   await runAccountAuthCleanup(env, { scheduledTime: NOW + 1 });
   assert.deepEqual(database.raw.prepare(`
@@ -988,6 +1119,9 @@ test("hourly cleanup keeps the exact 24-hour boundary and deletes it one millise
   `).all().map((row) => row.challenge_id), [
     "dddddddd-dddd-4ddd-8ddd-ddddddddddd3",
   ]);
+  assert.equal(Number(database.raw.prepare(`
+    SELECT COUNT(*) AS count FROM share_trial_reuse_retention
+  `).get().count), 0);
 });
 
 test("disabled cleanup touches neither controller time, D1, nor store factory", async () => {
@@ -1219,6 +1353,7 @@ test("authenticated deletion removes the account and allows a fresh registration
     "sessions",
     "share_trial_state",
     "share_trial_operations",
+    "share_trial_reuse_retention",
     "account_auth_challenges",
     "processed_checkout_failure_events",
     "processed_checkout_expiry_events",
@@ -1238,10 +1373,115 @@ test("authenticated deletion removes the account and allows a fresh registration
     verificationGrant: recreateRequest.verificationGrant,
   });
   assert.equal(recreated.status, "verified");
+  assert.equal(recreated.session.shareStudioTrialAvailable, true);
   assert.equal(Number(database.raw.prepare(`
     SELECT COUNT(*) AS count FROM accounts
   `).get().count), 1);
   assert.equal(database.raw.prepare("SELECT id FROM accounts").get().id, ACCOUNT_IDS[1]);
+});
+
+test("a completed Share Studio trial stays unavailable for 90 days after account deletion", async (t) => {
+  const database = createDatabase();
+  t.after(() => database.close());
+  const authStore = createD1AccountAuthStore(database);
+  const trialStore = createD1PlusEntitlementStore(database);
+  const clock = { value: NOW };
+  const delivered = [];
+  const service = createAccountAuthService(
+    ENABLED_ENV,
+    createDeterministicDependencies(authStore, clock, delivered),
+  );
+  const firstRequest = await service.requestCode(
+    confirmedSelf(),
+    { turnstileVerified: true },
+  );
+  const first = await service.verifyCode({
+    email: EMAIL,
+    code: delivered[0].code,
+    verificationGrant: firstRequest.verificationGrant,
+  });
+  const completedRequestId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+  database.raw.prepare(`
+    UPDATE share_trial_state
+    SET used_at = ?2, completed_request_id = ?3, updated_at = ?2
+    WHERE account_id = ?1
+  `).run(ACCOUNT_IDS[0], NOW, completedRequestId);
+
+  clock.value += 1_000;
+  assert.deepEqual(await service.deleteAccount(first.sessionToken, {
+    confirmDelete: true,
+  }, { turnstileVerified: true }), {
+    ok: true,
+    status: "account_deleted",
+  });
+  const retained = database.raw.prepare(`
+    SELECT
+      email_lookup_hmac, email_hmac_key_version, trial_used_at,
+      expires_at, created_at, updated_at
+    FROM share_trial_reuse_retention
+  `).get();
+  assert.match(retained.email_lookup_hmac, /^[A-Za-z0-9_-]{43}$/u);
+  assert.equal(Number(retained.email_hmac_key_version), 1);
+  assert.equal(Number(retained.trial_used_at), NOW);
+  assert.equal(Number(retained.expires_at), NOW + 90 * 24 * 60 * 60 * 1000);
+  assert.equal(Number(retained.created_at), clock.value);
+  assert.equal(Number(retained.updated_at), clock.value);
+  assert.deepEqual(database.raw.prepare(`
+    PRAGMA table_info(share_trial_reuse_retention)
+  `).all().map((column) => column.name), [
+    "email_lookup_hmac",
+    "email_hmac_key_version",
+    "trial_used_at",
+    "expires_at",
+    "created_at",
+    "updated_at",
+  ]);
+  assert.doesNotMatch(
+    JSON.stringify(retained),
+    /family|example|glucose|display|purchase|checkout|image/iu,
+  );
+
+  clock.value = NOW + 61_000;
+  const recreateRequest = await service.requestCode(
+    confirmedSelf(),
+    { turnstileVerified: true },
+  );
+  const recreated = await service.verifyCode({
+    email: EMAIL,
+    code: delivered[1].code,
+    verificationGrant: recreateRequest.verificationGrant,
+  });
+  assert.equal(recreated.session.shareStudioTrialAvailable, false);
+  assert.deepEqual(await trialStore.reserveShareTrial({
+    accountId: ACCOUNT_IDS[1],
+    requestId: "ffffffff-ffff-4fff-8fff-ffffffffffff",
+    reservedAt: clock.value,
+    expiresAt: clock.value + 5 * 60 * 1000,
+  }), { status: "trial_already_used" });
+
+  clock.value = NOW + 90 * 24 * 60 * 60 * 1000 + 1;
+  assert.equal(
+    (await service.getSessionStatus(recreated.sessionToken)).shareStudioTrialAvailable,
+    true,
+  );
+  assert.deepEqual(await trialStore.reserveShareTrial({
+    accountId: ACCOUNT_IDS[1],
+    requestId: "99999999-9999-4999-8999-999999999999",
+    reservedAt: clock.value,
+    expiresAt: clock.value + 5 * 60 * 1000,
+  }), {
+    status: "reserved",
+    grant: "trial",
+    requestId: "99999999-9999-4999-8999-999999999999",
+    reservationExpiresAt: clock.value + 5 * 60 * 1000,
+  });
+  await runAccountAuthCleanup({
+    ACCOUNT_AUTH_CLEANUP_ENABLED: "true",
+    PLUS_DB: database,
+  }, { scheduledTime: clock.value });
+  assert.equal(Number(database.raw.prepare(`
+    SELECT COUNT(*) AS count FROM share_trial_reuse_retention
+  `).get().count), 0);
 });
 
 test("an account with a purchase receipt stays intact and requires private support", async (t) => {

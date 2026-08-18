@@ -382,7 +382,7 @@ const translations = {
     plusAccountRefreshButton: "状態を更新する",
     plusAccountLogoutButton: "この端末からログアウト",
     plusAccountDeleteDetails: "詳しい管理",
-    plusAccountDeleteLead: "Plusアカウントを削除しても、血糖の接続や利用記録は別に残ります。購入記録がある場合は、この画面では削除できません。",
+    plusAccountDeleteLead: "Plusアカウントを削除しても、血糖の接続や利用記録は別に残ります。Share Studioの無料体験を使っていた場合は、二重体験を防ぐため、元に戻せないメールの照合用の印と期限だけを体験成功日から90日間残します。購入記録がある場合は、この画面では削除できません。",
     plusAccountDeleteButton: "Plusアカウントを削除する",
     plusAccountSafety: "カード番号はStripeの画面だけで入力します。Stripeへ血糖値や接続情報を送ることはありません。",
     dataSourceDialogTitle: "データ接続（先行体験）",
@@ -799,7 +799,7 @@ const translations = {
     plusAccountRefreshButton: "Refresh status",
     plusAccountLogoutButton: "Sign out on this device",
     plusAccountDeleteDetails: "More account options",
-    plusAccountDeleteLead: "Deleting the Plus account does not remove the glucose connection or the separate usage record. An account with a purchase record cannot be deleted here.",
+    plusAccountDeleteLead: "Deleting the Plus account does not remove the glucose connection or the separate usage record. If the one-time Share Studio trial was completed, only an irreversible email lookup marker and its expiry remain for 90 days from completion to prevent a second trial. An account with a purchase record cannot be deleted here.",
     plusAccountDeleteButton: "Delete Plus account",
     plusAccountSafety: "Card details are entered only on Stripe’s page. GlucoScope does not send glucose values or connection details to Stripe.",
     dataSourceDialogTitle: "Data connection (early access)",
@@ -3975,8 +3975,8 @@ function setupPlusAccountFoundation() {
       return;
     }
     const confirmed = window.confirm(currentLanguage === "en"
-      ? "Delete this Plus account? The glucose connection and the separate usage record will not be deleted."
-      : "Plusアカウントを削除しますか？ 血糖の接続と、別の利用記録は削除されません。");
+      ? "Delete this Plus account? The glucose connection and the separate usage record will not be deleted. If the Share Studio trial was completed, its irreversible reuse-prevention marker remains until 90 days after completion."
+      : "Plusアカウントを削除しますか？ 血糖の接続と、別の利用記録は削除されません。Share Studioの無料体験を使っていた場合、元に戻せない再取得防止の印は体験成功日から90日後まで残ります。");
     if (!confirmed) return;
     setPlusAccountControlsDisabled(true);
     setPlusAccountStatus(currentLanguage === "en"
