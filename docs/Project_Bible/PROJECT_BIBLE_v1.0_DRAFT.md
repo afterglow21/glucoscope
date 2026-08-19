@@ -4235,6 +4235,23 @@ no route or Cron exists, the Stripe webhook destination is disabled, and its tem
 Domain has been deleted. Earlier stopped and test-candidate Versions are historical and are not
 current rollback targets.
 
+On August 19, 2026, Stripe live mode created a separate active
+`GlucoScope Plus 30日パス` Product (`prod_V6ASxKCkGvR0Cs`) with one default JPY 400
+one-time Price (`price_1U5y7tQk6xCYKhx8v3S5tn8j`). It has no recurring interval or
+subscription. The adapter now requires an explicit `STRIPE_MODE` and rejects any
+restricted-key, Checkout Session, API-response, refund, charge, or signed-webhook
+live/test mismatch. The non-secret live Product/Price identifiers are checked in, but
+Checkout, webhook, purchase, entitlement, sales, tax, and receipt gates all remain off;
+this is preparation, not production-payment acceptance.
+
+2026年8月19日、Stripe live modeにも別の有効な`GlucoScope Plus 30日パス` Product
+`prod_V6ASxKCkGvR0Cs`と、デフォルトの400円・1回限りPrice
+`price_1U5y7tQk6xCYKhx8v3S5tn8j`を作成した。定期価格とSubscriptionはない。
+adapterは`STRIPE_MODE`を必須にし、restricted key、Checkout Session、API応答、返金、
+Charge、署名済みWebhookのlive/test不一致をすべて拒否する。非Secretのlive Product/Price
+IDはchecked-in済みだが、Checkout、Webhook、purchase、利用権、販売、税、領収書の全gateは
+停止中であり、これは本番準備であって実決済の受け入れではない。
+
 同日、運営者は `glucoscope.app` を年間14.20米ドルで取得しました。自動更新はオフです。
 Plusの確認メールには `auth.glucoscope.app` を専用の送信元として使う方針です。期限前に、
 ドメインを続けるかと、その時点の更新価格を運営者があらためて確認します。

@@ -11,12 +11,15 @@ import { createPlusEntitlementService } from "../src/entitlement-core.js";
 import { readCommerceReadiness } from "../src/commerce-readiness.js";
 import { handleStripeHttpRequest } from "../src/stripe-http.js";
 import {
+  createStripeClient,
   createStripeTestClient,
+  readStripeConfig,
   StripeAdapterError,
   validateRetrievedPlusCheckout,
   validateReusablePlusCheckout,
 } from "../src/stripe-client.js";
 import {
+  parseStripeWebhookEvent,
   verifyStripeWebhookSignature,
 } from "../src/stripe-webhook.js";
 
@@ -37,8 +40,16 @@ const REFUND_ID = `re_${"r".repeat(24)}`;
 const PRICE_ID = `price_${"p".repeat(24)}`;
 const PRODUCT_ID = `prod_${"d".repeat(24)}`;
 const API_KEY = ["rk", "test", "k".repeat(32)].join("_");
+const LIVE_API_KEY = ["rk", "live", "l".repeat(32)].join("_");
 const WEBHOOK_SECRET = ["whsec", "w".repeat(32)].join("_");
 const ALLOWED_ORIGIN = "https://glucoscope.app";
+const TEST_STRIPE_CONFIG = Object.freeze({
+  mode: "test",
+  livemode: false,
+  checkoutPrefix: "cs_test_",
+  priceId: PRICE_ID,
+  productId: PRODUCT_ID,
+});
 
 class NodeD1Statement {
   constructor(database, sql, bindings = []) {
@@ -148,6 +159,7 @@ async function createVerifiedAccount(store, {
 
 function stripeConfigEnv() {
   return {
+    STRIPE_MODE: "test",
     STRIPE_RESTRICTED_API_KEY: API_KEY,
     STRIPE_PLUS_PRICE_ID: PRICE_ID,
     STRIPE_PLUS_PRODUCT_ID: PRODUCT_ID,
@@ -269,13 +281,14 @@ function validOpenSession({
 
 function fakeStripeClient(session = validRetrievedSession()) {
   return {
-    config: { priceId: PRICE_ID, productId: PRODUCT_ID },
+    config: TEST_STRIPE_CONFIG,
     async retrieveCheckoutSession() {
       return structuredClone(session);
     },
     async retrieveRefund() {
       return {
         id: REFUND_ID,
+        livemode: false,
         status: "succeeded",
         amount: 400,
         currency: "jpy",
@@ -369,7 +382,7 @@ function plusCheckoutRequest(requestId = REQUEST_ID) {
   });
 }
 
-test("checked-in Stripe switches stay off while only staging has test identifiers", () => {
+test("checked-in Stripe switches stay off with explicit production and staging modes", () => {
   const config = JSON.parse(readFileSync(
     new URL("../wrangler.jsonc", import.meta.url),
     "utf8",
@@ -394,6 +407,9 @@ test("checked-in Stripe switches stay off while only staging has test identifier
   assert.equal(config.vars.PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED, "false");
   assert.equal(config.vars.PLUS_SALES_READINESS_CONFIRMED, "false");
   assert.equal(config.vars.PLUS_ALLOWED_ORIGIN, "https://glucoscope.app");
+  assert.equal(config.vars.STRIPE_MODE, "live");
+  assert.equal(config.vars.STRIPE_PLUS_PRODUCT_ID, "prod_V6ASxKCkGvR0Cs");
+  assert.equal(config.vars.STRIPE_PLUS_PRICE_ID, "price_1U5y7tQk6xCYKhx8v3S5tn8j");
   assert.equal(
     config.vars.PLUS_CHECKOUT_SUCCESS_PATH,
     "/?mode=user&checkout=success#settings",
@@ -403,6 +419,7 @@ test("checked-in Stripe switches stay off while only staging has test identifier
     "/?mode=user&checkout=cancelled#settings",
   );
   assert.equal(config.env.staging.vars.PLUS_ALLOWED_ORIGIN, "https://glucoscope.app");
+  assert.equal(config.env.staging.vars.STRIPE_MODE, "test");
   assert.equal(config.env.staging.vars.PLUS_CHECKOUT_SUCCESS_PATH, "/?mode=user&checkout=success#settings");
   assert.equal(config.env.staging.vars.PLUS_CHECKOUT_CANCEL_PATH, "/?mode=user&checkout=cancelled#settings");
   assert.equal(config.env.staging.vars.PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED, "false");
@@ -417,8 +434,6 @@ test("checked-in Stripe switches stay off while only staging has test identifier
   for (const forbidden of [
     "STRIPE_RESTRICTED_API_KEY",
     "STRIPE_WEBHOOK_SECRET",
-    "STRIPE_PLUS_PRICE_ID",
-    "STRIPE_PLUS_PRODUCT_ID",
   ]) assert.equal(forbidden in config.vars, false);
 });
 
@@ -528,7 +543,7 @@ test("Stripe redirects are rejected without following or retrying", async () => 
   }
 });
 
-test("Checkout client rejects a non-restricted or live-mode key before network access", async () => {
+test("Checkout client rejects non-restricted or mode-mismatched keys before network access", async () => {
   let calls = 0;
   const invalidKeys = [
     ["sk", "test", "x".repeat(32)].join("_"),
@@ -545,8 +560,43 @@ test("Checkout client rejects a non-restricted or live-mode key before network a
   assert.equal(calls, 0);
 });
 
-test("re-fetched Checkout facts reject live mode, wrong price, product, or account mapping", () => {
-  const config = { priceId: PRICE_ID, productId: PRODUCT_ID };
+test("live Checkout requires an explicit live mode and accepts only live Stripe facts", async () => {
+  const liveSessionId = `cs_live_${"l".repeat(24)}`;
+  const liveEnv = {
+    STRIPE_MODE: "live",
+    STRIPE_RESTRICTED_API_KEY: LIVE_API_KEY,
+    STRIPE_PLUS_PRICE_ID: PRICE_ID,
+    STRIPE_PLUS_PRODUCT_ID: PRODUCT_ID,
+  };
+  assert.equal(readStripeConfig(liveEnv).livemode, true);
+  const client = createStripeClient(liveEnv, {
+    fetch: async () => Response.json({
+      id: liveSessionId,
+      livemode: true,
+      mode: "payment",
+      status: "open",
+      payment_status: "unpaid",
+      expires_at: NOW_SECONDS + 60 * 60,
+      url: `https://checkout.stripe.com/c/pay/${liveSessionId}`,
+    }),
+    now: () => NOW,
+  });
+  const result = await client.createPlusCheckout({
+    accountId: ACCOUNT_ID,
+    requestId: REQUEST_ID,
+    successUrl: `${ALLOWED_ORIGIN}/?mode=user&checkout=success#settings`,
+    cancelUrl: `${ALLOWED_ORIGIN}/?mode=user&checkout=cancelled#settings`,
+  });
+  assert.equal(result.checkoutSessionId, liveSessionId);
+  assert.throws(() => readStripeConfig({
+    ...liveEnv,
+    STRIPE_MODE: "test",
+  }), (error) => error instanceof StripeAdapterError
+    && error.code === "stripe_mode_mismatch");
+});
+
+test("re-fetched Checkout facts reject a mode mismatch, wrong price, product, or account mapping", () => {
+  const config = TEST_STRIPE_CONFIG;
   assert.equal(validateRetrievedPlusCheckout(validRetrievedSession(), config).status, "paid");
   const invalidSessions = [
     validRetrievedSession({ livemode: true }),
@@ -620,6 +670,28 @@ test("raw webhook verification rejects changed bytes and stale timestamps", asyn
     secret: WEBHOOK_SECRET,
     now: NOW + 6 * 60 * 1000,
   }), false);
+});
+
+test("webhook event parsing requires the configured live or test mode", () => {
+  const testEvent = stripeEvent({
+    id: "evt_testmode123456",
+    type: "checkout.session.completed",
+    objectId: CHECKOUT_ID,
+  });
+  const liveEvent = { ...testEvent, id: "evt_livemode12345", livemode: true };
+  const bytes = (event) => new TextEncoder().encode(JSON.stringify(event));
+  assert.equal(parseStripeWebhookEvent(bytes(testEvent), false).livemode, false);
+  assert.equal(parseStripeWebhookEvent(bytes(liveEvent), true).livemode, true);
+  assert.throws(
+    () => parseStripeWebhookEvent(bytes(liveEvent), false),
+    (error) => error instanceof StripeAdapterError
+      && error.code === "invalid_webhook_event",
+  );
+  assert.throws(
+    () => parseStripeWebhookEvent(bytes(testEvent), true),
+    (error) => error instanceof StripeAdapterError
+      && error.code === "invalid_webhook_event",
+  );
 });
 
 test("disabled routes fail before authentication, body parsing, Stripe, or D1", async () => {
@@ -751,7 +823,7 @@ test("real guardian confirmation can open one Checkout", async (t) => {
           : "x".repeat(43),
       }),
       stripeClient: {
-        config: { priceId: PRICE_ID, productId: PRODUCT_ID },
+        config: TEST_STRIPE_CONFIG,
         async createPlusCheckout(input) {
           createCalls += 1;
           assert.equal(input.accountId, ACCOUNT_ID);
@@ -953,7 +1025,7 @@ test("parallel Checkout clicks create at most one Session and later reuse its UR
   const pendingCreate = new Promise((resolve) => { releaseCreate = resolve; });
   const checkoutUrl = `https://checkout.stripe.com/c/pay/${CHECKOUT_ID}`;
   const stripeClient = {
-    config: { priceId: PRICE_ID, productId: PRODUCT_ID },
+    config: TEST_STRIPE_CONFIG,
     async createPlusCheckout() {
       createCalls += 1;
       signalStarted();
@@ -1041,7 +1113,7 @@ test("a Stripe-confirmed expired Checkout is replaced once with the new request"
       },
     },
     stripeClient: {
-      config: { priceId: PRICE_ID, productId: PRODUCT_ID },
+      config: TEST_STRIPE_CONFIG,
       async retrieveCheckoutSession() {
         retrieveCalls += 1;
         return validOpenSession({ overrides: { status: "expired" } });
@@ -1100,12 +1172,12 @@ test("a completed Checkout stays blocked while payment confirmation is pending",
   });
   assert.equal(validateReusablePlusCheckout(
     pendingSession,
-    { priceId: PRICE_ID, productId: PRODUCT_ID },
+    TEST_STRIPE_CONFIG,
     { accountId: ACCOUNT_ID, requestId: REQUEST_ID, now: NOW + 2 * 60 * 60 * 1000 },
   ).status, "confirmation_pending");
   assert.equal(validateReusablePlusCheckout(
     validOpenSession({ expiresAt: NOW + 60 * 60 * 1000 }),
-    { priceId: PRICE_ID, productId: PRODUCT_ID },
+    TEST_STRIPE_CONFIG,
     { accountId: ACCOUNT_ID, requestId: REQUEST_ID, now: NOW + 2 * 60 * 60 * 1000 },
   ).status, "confirmation_pending");
   const response = await handleStripeHttpRequest(
@@ -1120,7 +1192,7 @@ test("a completed Checkout stays blocked while payment confirmation is pending",
         },
       },
       stripeClient: {
-        config: { priceId: PRICE_ID, productId: PRODUCT_ID },
+        config: TEST_STRIPE_CONFIG,
         async retrieveCheckoutSession() { return pendingSession; },
         async createPlusCheckout() { createCalls += 1; },
       },

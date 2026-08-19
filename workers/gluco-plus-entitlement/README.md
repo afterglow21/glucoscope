@@ -12,6 +12,10 @@ staging checkpoints and no public account or sales path.
   one-time JPY 400 Price (`price_1U5HIhQk6xCYKhx8oHxg44Ep`). No recurring Price exists.
   Their non-secret IDs and encrypted test-only Stripe bindings remain only on stopped
   staging; public Checkout and sales remain disabled.
+- Stripe live mode has one separate active Product (`prod_V6ASxKCkGvR0Cs`) and one
+  default one-time JPY 400 Price (`price_1U5y7tQk6xCYKhx8v3S5tn8j`). No recurring
+  Price or subscription exists. The checked-in production mode and identifiers are
+  non-secret, but every Checkout, webhook, purchase, and sales gate remains disabled.
 - Usage profiles, display names, CGM data, connection credentials, AI input and output,
   and payment-card data never enter this service.
 - Email HMAC identifiers, provider event identifiers, and Checkout Session identifiers
@@ -459,7 +463,7 @@ currently active entitlement inside D1 and never returns an account row or ident
 No RPC response includes an email address, encrypted email, provider event identifier,
 payment reference, or health data.
 
-## Stripe test-mode adapter boundary
+## Stripe environment-bound adapter boundary
 
 The local adapter defines two future routes. Both remain disabled:
 
@@ -477,9 +481,11 @@ The local adapter defines two future routes. Both remain disabled:
   of raw bytes, verifies the timestamped `Stripe-Signature` HMAC before JSON parsing,
   and returns no CORS header. Opening a Checkout success page never grants Plus.
 
-The adapter is hard-limited to test mode: it accepts only a test-mode restricted API
-key, test Checkout Session IDs, `livemode=false`, and Stripe API version
-`2026-06-24.dahlia`. For `checkout.session.completed` and
+The adapter requires an explicit `STRIPE_MODE` of `test` or `live`. It accepts only a
+restricted key, Checkout Session prefix, API response `livemode`, and webhook
+`livemode` that all match that configured mode, plus Stripe API version
+`2026-06-24.dahlia`. A test/live mismatch fails before any grant. For
+`checkout.session.completed` and
 `checkout.session.async_payment_succeeded`, it retrieves the Checkout Session again and
 validates `payment_status=paid`, `mode=payment`, the exact Price and Product, JPY 400,
 one-time pricing, and the server-created account metadata before calling
@@ -493,7 +499,7 @@ both `302` and `307` responses. This matches the provider boundary already accep
 Resend after `redirect: "error"` proved incompatible with the Workers runtime path.
 
 For `checkout.session.async_payment_failed`, the signed payload is likewise only a
-pointer: the Session is re-fetched and the same test mode, account, request, product,
+pointer: the Session is re-fetched and the same configured mode, account, request, product,
 and amount facts are validated. The exact open attempt then moves to `failed` in one D1
 transaction so the account may try again. Duplicate or out-of-order events are
 idempotent; `completed` and `refunded` attempts never move backward to `failed`, and an
@@ -519,10 +525,10 @@ re-retrieved through Stripe. Any successful partial or full refund changes the l
 entitlement to `refunded`; repeated refund notifications are idempotent. The browser and
 administrator aggregate never receive Stripe IDs or payment details.
 
-Future test setup requires a separately scoped test restricted key with only Checkout
-Session create/read and Charge and Refund read access, a webhook signing Secret, and the
-exact test Price and Product IDs. Add another permission only if test-mode Workbench
-request logs show that the adapter actually needs it. Set all values with
+Each environment requires its own separately scoped restricted key with only Checkout
+Session create/read and Charge and Refund read access, its own webhook signing Secret,
+and that environment's exact Price and Product IDs. Add another permission only if
+Workbench request logs show that the adapter actually needs it. Set all secret values with
 Cloudflare's secret or dashboard configuration facilities; never put their values in
 Git or `.dev.vars`.
 

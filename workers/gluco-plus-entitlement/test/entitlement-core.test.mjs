@@ -230,11 +230,22 @@ test("staging binds only its dedicated D1 while every release path stays stopped
   assert.deepEqual(staging.observability, { enabled: false });
   assert.deepEqual(staging.triggers, { crons: [] });
   const {
+    STRIPE_MODE: productionStripeMode,
+    STRIPE_PLUS_PRODUCT_ID: productionProductId,
+    STRIPE_PLUS_PRICE_ID: productionPriceId,
+    ...productionBaseVars
+  } = config.vars;
+  const {
+    STRIPE_MODE: stagingStripeMode,
     STRIPE_PLUS_PRODUCT_ID: stagingProductId,
     STRIPE_PLUS_PRICE_ID: stagingPriceId,
     ...stagingBaseVars
   } = staging.vars;
-  assert.deepEqual(stagingBaseVars, config.vars);
+  assert.deepEqual(stagingBaseVars, productionBaseVars);
+  assert.equal(productionStripeMode, "live");
+  assert.equal(productionProductId, "prod_V6ASxKCkGvR0Cs");
+  assert.equal(productionPriceId, "price_1U5y7tQk6xCYKhx8v3S5tn8j");
+  assert.equal(stagingStripeMode, "test");
   assert.equal(stagingProductId, "prod_V5SDrFKGSiwaql");
   assert.equal(stagingPriceId, "price_1U5HIhQk6xCYKhx8oHxg44Ep");
   assert.deepEqual(staging.d1_databases, [{

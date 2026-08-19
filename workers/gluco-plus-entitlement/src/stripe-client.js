@@ -9,7 +9,7 @@ import {
 const STRIPE_API_ORIGIN = "https://api.stripe.com";
 const STRIPE_CHECKOUT_ORIGIN = "https://checkout.stripe.com";
 const STRIPE_RESPONSE_LIMIT_BYTES = 256 * 1024;
-const TEST_RESTRICTED_KEY_PATTERN = /^rk_test_[A-Za-z0-9]{16,}$/u;
+const RESTRICTED_KEY_PATTERN = /^rk_(?:test|live)_[A-Za-z0-9]{16,}$/u;
 const PRICE_ID_PATTERN = /^price_[A-Za-z0-9]{8,247}$/u;
 const PRODUCT_ID_PATTERN = /^prod_[A-Za-z0-9]{8,247}$/u;
 const PAYMENT_INTENT_ID_PATTERN = /^pi_[A-Za-z0-9]{8,247}$/u;
@@ -121,35 +121,56 @@ function normalizeObjectId(value) {
   return "";
 }
 
-export function readStripeTestConfig(env = {}) {
+export function readStripeMode(env = {}) {
+  const mode = String(env.STRIPE_MODE ?? "").trim();
+  if (mode === "test") {
+    return Object.freeze({ mode, livemode: false, checkoutPrefix: "cs_test_" });
+  }
+  if (mode === "live") {
+    return Object.freeze({ mode, livemode: true, checkoutPrefix: "cs_live_" });
+  }
+  throw new StripeAdapterError("stripe_mode_unavailable", 503);
+}
+
+export function readStripeConfig(env = {}) {
+  const stripeMode = readStripeMode(env);
+  const apiKey = requirePattern(
+    env.STRIPE_RESTRICTED_API_KEY,
+    RESTRICTED_KEY_PATTERN,
+    "stripe_restricted_key_unavailable",
+  );
+  if (!apiKey.startsWith(`rk_${stripeMode.mode}_`)) {
+    throw new StripeAdapterError("stripe_mode_mismatch", 503);
+  }
   return Object.freeze({
-    apiKey: requirePattern(
-      env.STRIPE_RESTRICTED_API_KEY,
-      TEST_RESTRICTED_KEY_PATTERN,
-      "stripe_test_restricted_key_unavailable",
-    ),
+    ...stripeMode,
+    apiKey,
     priceId: requirePattern(
       env.STRIPE_PLUS_PRICE_ID,
       PRICE_ID_PATTERN,
-      "stripe_test_price_unavailable",
+      "stripe_price_unavailable",
     ),
     productId: requirePattern(
       env.STRIPE_PLUS_PRODUCT_ID,
       PRODUCT_ID_PATTERN,
-      "stripe_test_product_unavailable",
+      "stripe_product_unavailable",
     ),
   });
 }
+
+// Backward-compatible export for the already accepted sandbox tests. New code
+// uses the mode-neutral name and requires STRIPE_MODE to be explicit.
+export const readStripeTestConfig = readStripeConfig;
 
 function validateCommonPlusCheckout(session, config) {
   if (!session || typeof session !== "object") {
     throw new StripeAdapterError("invalid_checkout_session", 400);
   }
   if (!CHECKOUT_SESSION_ID_PATTERN.test(String(session.id ?? ""))
-    || !String(session.id).startsWith("cs_test_")) {
+    || !String(session.id).startsWith(config.checkoutPrefix)) {
     throw new StripeAdapterError("invalid_checkout_session", 400);
   }
-  if (session.livemode !== false || session.mode !== "payment") {
+  if (session.livemode !== config.livemode || session.mode !== "payment") {
     throw new StripeAdapterError("invalid_checkout_mode", 400);
   }
   if (session.amount_total !== PLUS_PRICE_JPY
@@ -275,10 +296,13 @@ export function validateExpiredPlusCheckout(session, config) {
   return Object.freeze({ ...common, expiresAt });
 }
 
-export function validateRetrievedRefund(refund) {
+export function validateRetrievedRefund(refund, config) {
   if (!refund || typeof refund !== "object"
     || !REFUND_ID_PATTERN.test(String(refund.id ?? ""))) {
     throw new StripeAdapterError("invalid_refund", 400);
+  }
+  if (refund.livemode !== config.livemode) {
+    throw new StripeAdapterError("invalid_refund_mode", 400);
   }
   if (refund.status !== "succeeded") {
     return Object.freeze({ status: "not_succeeded" });
@@ -296,13 +320,13 @@ export function validateRetrievedRefund(refund) {
   return Object.freeze({ status: "succeeded", refundId: refund.id, chargeId });
 }
 
-export function validateRetrievedRefundedCharge(charge) {
+export function validateRetrievedRefundedCharge(charge, config) {
   if (!charge || typeof charge !== "object"
     || !CHARGE_ID_PATTERN.test(String(charge.id ?? ""))) {
     throw new StripeAdapterError("invalid_refunded_charge", 400);
   }
   const paymentIntentId = normalizeObjectId(charge.payment_intent);
-  if (charge.livemode !== false
+  if (charge.livemode !== config.livemode
     || charge.currency !== "jpy"
     || charge.amount !== PLUS_PRICE_JPY
     || charge.paid !== true
@@ -320,8 +344,8 @@ export function validateRetrievedRefundedCharge(charge) {
   });
 }
 
-export function createStripeTestClient(env = {}, dependencies = {}) {
-  const config = readStripeTestConfig(env);
+export function createStripeClient(env = {}, dependencies = {}) {
+  const config = readStripeConfig(env);
   const fetchImpl = dependencies.fetch || fetch;
   const now = dependencies.now || Date.now;
   const apiOrigin = dependencies.apiOrigin || STRIPE_API_ORIGIN;
@@ -400,8 +424,8 @@ export function createStripeTestClient(env = {}, dependencies = {}) {
         idempotencyKey: `glucoscope-plus:${accountId}:${requestId}`,
       });
       if (!CHECKOUT_SESSION_ID_PATTERN.test(String(session?.id ?? ""))
-        || !String(session.id).startsWith("cs_test_")
-        || session.livemode !== false
+        || !String(session.id).startsWith(config.checkoutPrefix)
+        || session.livemode !== config.livemode
         || session.mode !== "payment"
         || session.status !== "open"
         || session.payment_status !== "unpaid") {
@@ -427,7 +451,7 @@ export function createStripeTestClient(env = {}, dependencies = {}) {
 
     async retrieveCheckoutSession(checkoutSessionId) {
       if (!CHECKOUT_SESSION_ID_PATTERN.test(String(checkoutSessionId ?? ""))
-        || !String(checkoutSessionId).startsWith("cs_test_")) {
+        || !String(checkoutSessionId).startsWith(config.checkoutPrefix)) {
         throw new StripeAdapterError("invalid_checkout_session", 400);
       }
       return request(`/v1/checkout/sessions/${encodeURIComponent(checkoutSessionId)}`, {
@@ -467,3 +491,5 @@ export function createStripeTestClient(env = {}, dependencies = {}) {
     },
   });
 }
+
+export const createStripeTestClient = createStripeClient;

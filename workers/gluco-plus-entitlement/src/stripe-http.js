@@ -14,7 +14,7 @@ import {
 } from "./entitlement-core.js";
 import { createD1PlusEntitlementStore } from "./d1-store.js";
 import {
-  createStripeTestClient,
+  createStripeClient,
   StripeAdapterError,
   validateReusablePlusCheckout,
 } from "./stripe-client.js";
@@ -356,7 +356,7 @@ async function handleCheckout(request, env, dependencies) {
     const store = dependencies.store
       || createD1PlusEntitlementStore(env.PLUS_DB);
     const stripe = dependencies.stripeClient
-      || createStripeTestClient(env, dependencies.stripeDependencies);
+      || createStripeClient(env, dependencies.stripeDependencies);
     const now = dependencies.now || Date.now;
     const checkoutUrl = await createOrReuseCheckout({
       accountId: subject.subjectId,
@@ -412,7 +412,7 @@ async function handleWebhook(request, env, dependencies) {
     if (!verified) {
       return jsonResponse({ received: false, error: "invalid_signature" }, 400);
     }
-    const event = parseStripeWebhookEvent(rawBody);
+    const event = parseStripeWebhookEvent(rawBody, webhookConfig.livemode);
     await processStripeWebhookEvent(event, env, {
       ...dependencies,
       now,

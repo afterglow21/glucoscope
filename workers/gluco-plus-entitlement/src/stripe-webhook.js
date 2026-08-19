@@ -11,7 +11,8 @@ import {
 import { createD1PlusEntitlementStore } from "./d1-store.js";
 import { applyVerifiedPlusPayment } from "./entitlement-core.js";
 import {
-  createStripeTestClient,
+  createStripeClient,
+  readStripeMode,
   StripeAdapterError,
   validateExpiredPlusCheckout,
   validateRetrievedPlusCheckout,
@@ -20,7 +21,7 @@ import {
 } from "./stripe-client.js";
 
 const EVENT_ID_PATTERN = /^evt_[A-Za-z0-9]{8,247}$/u;
-const TEST_WEBHOOK_SECRET_PATTERN = /^whsec_[A-Za-z0-9]{16,}$/u;
+const WEBHOOK_SECRET_PATTERN = /^whsec_[A-Za-z0-9]{16,}$/u;
 const REFUND_ID_PATTERN = /^re_[A-Za-z0-9]{8,247}$/u;
 const CHARGE_ID_PATTERN = /^ch_[A-Za-z0-9]{8,247}$/u;
 
@@ -39,9 +40,11 @@ function readInteger(value, fallback, minimum, maximum) {
 export function readStripeWebhookConfig(env = {}) {
   const enabled = readBoolean(env.PLUS_STRIPE_WEBHOOK_ENABLED, false);
   const secret = String(env.STRIPE_WEBHOOK_SECRET ?? "").trim();
+  const stripeMode = enabled ? readStripeMode(env) : null;
   return Object.freeze({
     enabled,
     secret,
+    livemode: stripeMode?.livemode ?? null,
     signatureToleranceSeconds: readInteger(
       env.STRIPE_WEBHOOK_TOLERANCE_SECONDS,
       STRIPE_WEBHOOK_TOLERANCE_SECONDS,
@@ -95,7 +98,7 @@ export async function verifyStripeWebhookSignature({
   cryptoImpl = crypto,
 }) {
   if (!(rawBody instanceof Uint8Array)
-    || !TEST_WEBHOOK_SECRET_PATTERN.test(String(secret ?? ""))) {
+    || !WEBHOOK_SECRET_PATTERN.test(String(secret ?? ""))) {
     return false;
   }
   const { timestamps, signatures } = parseSignatureHeader(signatureHeader);
@@ -123,7 +126,7 @@ export async function verifyStripeWebhookSignature({
   return false;
 }
 
-export function parseStripeWebhookEvent(rawBody) {
+export function parseStripeWebhookEvent(rawBody, expectedLivemode = false) {
   try {
     const text = new TextDecoder("utf-8", { fatal: true }).decode(rawBody);
     const event = JSON.parse(text);
@@ -132,7 +135,7 @@ export function parseStripeWebhookEvent(rawBody) {
       || typeof event.type !== "string"
       || !Number.isSafeInteger(event.created)
       || event.created < 0
-      || event.livemode !== false
+      || event.livemode !== expectedLivemode
       || event.api_version !== STRIPE_API_VERSION
       || (event.account !== null && event.account !== undefined)
       || !event.data
@@ -196,7 +199,10 @@ export async function processStripeWebhookEvent(event, env = {}, dependencies = 
   }
   const eventTime = requireSafeEventTime(event, observedAt);
   const stripe = dependencies.stripeClient
-    || createStripeTestClient(env, dependencies.stripeDependencies);
+    || createStripeClient(env, dependencies.stripeDependencies);
+  if (event.livemode !== stripe.config.livemode) {
+    throw new StripeAdapterError("invalid_webhook_mode", 400);
+  }
   const store = dependencies.store
     || createD1PlusEntitlementStore(env.PLUS_DB);
 
@@ -308,7 +314,7 @@ export async function processStripeWebhookEvent(event, env = {}, dependencies = 
     if (retrievedRefund?.id !== refundId) {
       throw new StripeAdapterError("refund_mismatch", 400);
     }
-    const refund = validateRetrievedRefund(retrievedRefund);
+    const refund = validateRetrievedRefund(retrievedRefund, stripe.config);
     if (refund.status === "not_succeeded") {
       return Object.freeze({ status: "refund_pending" });
     }
@@ -319,7 +325,7 @@ export async function processStripeWebhookEvent(event, env = {}, dependencies = 
   if (retrievedCharge?.id !== chargeId) {
     throw new StripeAdapterError("charge_mismatch", 400);
   }
-  const charge = validateRetrievedRefundedCharge(retrievedCharge);
+  const charge = validateRetrievedRefundedCharge(retrievedCharge, stripe.config);
   const refundPaymentIntentId = objectId(retrievedRefund?.payment_intent);
   if (refundPaymentIntentId && refundPaymentIntentId !== charge.paymentIntentId) {
     throw new StripeAdapterError("refund_payment_mismatch", 400);
