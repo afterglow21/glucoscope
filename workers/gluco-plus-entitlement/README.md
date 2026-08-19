@@ -69,6 +69,18 @@ production rollback. Temporary account-acceptance Versions, earlier webhook-only
 stopped Versions, and every Version carrying the retired Turnstile Secret must not be
 restored.
 
+On 2026-08-19, the production scheduled-cleanup path was accepted with three anonymous
+expired synthetic rows: one verification challenge, one global send reservation, and one
+Share Studio trial-reuse marker. Cleanup candidate
+`ba7b1e0b-c8a4-4ecf-927a-29c1ca4a69c5` briefly received 100% traffic with a temporary
+one-minute Cron. The next completed scheduled run removed all three rows. The Cron was
+immediately removed, webhook-only Version `16b489ba-1b15-407d-a6f2-dee82c5244e1` was
+restored to 100%, and the three target tables were zero. Public account, Checkout, and
+Share requests returned `503`; an unsigned webhook returned `400`. No real account,
+email, code, session, health data, or Secret was used. Cleanup remains disabled until the
+final account release; this acceptance does not settle broader account, purchase, or
+accounting retention.
+
 Stripe has one enabled live, non-Connect webhook destination at
 `https://plus.glucoscope.app/v1/stripe/webhook`. It uses API Version
 `2026-06-24.dahlia` and subscribes only to `checkout.session.completed`,
@@ -563,9 +575,10 @@ tables returned to zero. Production is back on webhook-only Version
 payment, duplicate delivery, full refund, concurrent-click protection, pending reuse, expiry,
 recreation, and declined-card acceptance also passed. Small-group operational observation,
 retention and professional review, the full support exercise, any additionally enabled payment
-method, feature-gating acceptance, and the complete release review remain. Account, Checkout,
-Share, cleanup, sales, tax, and receipt switches must not be enabled merely because these closed
-checks passed.
+method, feature-gating acceptance, and the complete release review remain. The production
+scheduled-cleanup acceptance also passed. Account, Checkout, Share, sales, tax, and receipt
+switches must not be enabled merely because these closed checks passed; the accepted cleanup
+switch is enabled only as part of the final account release.
 
 ## Local verification
 

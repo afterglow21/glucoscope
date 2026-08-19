@@ -4144,7 +4144,7 @@ Freeの現在血糖と基本グラフを止めません。
 案内せず、利用条件でも禁止します。削除時の公開説明、同じメールでの再登録、期限直後の再利用、
 期限削除、HMAC鍵更新、衝突時の安全停止はローカルSQLiteテストで確認済みです。2026年8月18日に
 stagingへ`0007_share_trial_reuse_retention.sql`を適用し、6列だけのschema、13 table 0件、全flag停止の
-Version `be6a1dbe-c9cf-4002-a997-13d93cf58c36`を確認しました。Share Studio候補`8d206190-da81-4fa3-8e69-ee1277e3c1f5`は0%、停止版は100%です。本番APAC D1にも`0001`から`0007`を適用し、13 table 0件を確認しました。2026年8月19日、本番停止版`b81b0833-7948-48bd-8b99-88b6eb5f4845`を100%へ配信し、13 table 0件を再確認しました。その後、本番専用Managed Turnstile widget `GlucoScope Plus Production`を`glucoscope.app`だけ許可、pre-clearanceなしで作成し、Secret値を表示・記録せず本番Workerへ直接追加しました。続いて本番専用Resend送信鍵も値を開示せず本番Workerへ直接追加しました。コード指紋、D1、rate limit、販売条件、全flag falseを維持し、専用TurnstileとResendのSecret名を持つ停止Version `4e267db3-efe6-4374-bbfa-dafd1a50c3a7`を100%へ切り替えました。本番専用Custom Domain `plus.glucoscope.app`だけを先に準備し、Cronと`workers.dev`はありません。許可Originからのpreflightは、bodyを読んだりD1へ書いたりする前に`no-store`付きの`503 service_unavailable`で停止しました。これはendpoint準備であり、公開アカウントや販売開始ではありません。`4e267db3-efe6-4374-bbfa-dafd1a50c3a7`だけを確認済みの本番復帰先とし、`4c3ca08d-6d52-434e-8d93-779b09ccf0b0`、`b81b0833-7948-48bd-8b99-88b6eb5f4845`を含むそれ以前の本番Versionへtrafficを戻しません。未配信のVersion `7dc440a4-6fc5-4907-8590-9c2b3ef97b3f`は利用不能な仮鍵を含むため、特に配信禁止です。2026年8月18日のローカル実browserでは、合成データと合成確認済みアカウント応答だけを使い、端末内Daily Snapshot PNG、健康情報の注意、PC入口、1回の成功消費、2回目拒否、console error 0を確認しました。既存の不透明sessionとランダムrequest ID以外に、血糖値、接続URL、合言葉、画像はPlus Workerへ送りません。Windows `workerd`がremote service-binding起動時に停止したため、実Worker/D1を通した成功消費、account削除、同じメールでの再登録、期限削除は販売前ゲートとして残します。
+Version `be6a1dbe-c9cf-4002-a997-13d93cf58c36`を確認しました。Share Studio候補`8d206190-da81-4fa3-8e69-ee1277e3c1f5`は0%、停止版は100%です。本番APAC D1にも`0001`から`0007`を適用し、13 table 0件を確認しました。2026年8月19日、本番停止版`b81b0833-7948-48bd-8b99-88b6eb5f4845`を100%へ配信し、13 table 0件を再確認しました。その後、本番専用Managed Turnstile widget `GlucoScope Plus Production`を`glucoscope.app`だけ許可、pre-clearanceなしで作成し、Secret値を表示・記録せず本番Workerへ直接追加しました。続いて本番専用Resend送信鍵も値を開示せず本番Workerへ直接追加しました。コード指紋、D1、rate limit、販売条件、全flag falseを維持し、専用TurnstileとResendのSecret名を持つ停止Version `4e267db3-efe6-4374-bbfa-dafd1a50c3a7`を100%へ切り替えました。本番専用Custom Domain `plus.glucoscope.app`だけを先に準備し、Cronと`workers.dev`はありません。許可Originからのpreflightは、bodyを読んだりD1へ書いたりする前に`no-store`付きの`503 service_unavailable`で停止しました。これはendpoint準備であり、公開アカウントや販売開始ではありません。`4e267db3-efe6-4374-bbfa-dafd1a50c3a7`だけを確認済みの本番復帰先とし、`4c3ca08d-6d52-434e-8d93-779b09ccf0b0`、`b81b0833-7948-48bd-8b99-88b6eb5f4845`を含むそれ以前の本番Versionへtrafficを戻しません。未配信のVersion `7dc440a4-6fc5-4907-8590-9c2b3ef97b3f`は利用不能な仮鍵を含むため、特に配信禁止です。2026年8月18日のローカル実browserでは、合成データと合成確認済みアカウント応答だけを使い、端末内Daily Snapshot PNG、健康情報の注意、PC入口、1回の成功消費、2回目拒否、console error 0を確認しました。既存の不透明sessionとランダムrequest ID以外に、血糖値、接続URL、合言葉、画像はPlus Workerへ送りません。Windows `workerd`がremote service-binding起動時に停止したため、実Worker/D1を通したShare Studioの成功消費と、90日再利用防止を含む一連のaccount削除・同じメールでの再登録は販売前ゲートとして残します。期限切れ記録の削除処理自体は、後述の本番cleanup受け入れで確認済みです。
 
 購入記録は、復旧・問い合わせに使うアカウントとの結び付きと、会計・返金・異議申立てに必要な
 最小記録を分ける候補としました。結び付きは、有効なPlus、未完了支払い、返金、異議申立て、
@@ -4324,8 +4324,9 @@ hard bounceまたは迷惑メール報告があった宛先はチーム全体の
 D1で原子的に確保し、pending、sent、failedのすべてを消費として扱うローカル基盤を追加しました。
 確認コードの一時記録は `expires_at < cleanup時刻 - 24時間`、全体送信予約は
 `reserved_at < cleanup時刻 - 24時間` を毎時cleanupの対象とします。毎時実行のため通常は基準から
-約24〜25時間で削除され、公開文では「おおむね1日」と説明します。checked-inのcleanup flagは`false`で、
-D1と実環境cleanupの受け入れ後だけ有効にします。確認済みアカウントのメール照合HMACと購入・会計記録の
+約24〜25時間で削除され、公開文では「おおむね1日」と説明します。Share Studio体験後の90日再利用防止記録も、
+期限を過ぎた行を同じcleanupで削除します。checked-inのcleanup flagは`false`で、本番cleanup受け入れ後も
+最終アカウント公開時だけ有効にします。確認済みアカウントのメール照合HMACと購入・会計記録の
 保持期間は、この一時記録とは別で未決です。
 
 確認コード送信は同じ接続元ごとに5回/60秒、コード確認は30回/60秒のCloudflare Rate Limiting bindingを
@@ -4376,6 +4377,14 @@ Version `16b489ba-1b15-407d-a6f2-dee82c5244e1`が100%で、未配信の全停止
 `6d9de56d-0d74-44a1-b3a2-398669bb035e`だけを復帰先とします。受入用Version、以前のWebhook専用／
 停止Version、無効化したTurnstile Secretを持つ全Versionへは戻しません。メールアドレス、コード、
 session、Secret、site key、provider識別子は記録しません。
+
+同日、本番D1へ期限切れの匿名合成行を、確認コード、全体送信予約、Share Studioの90日再利用防止記録に
+各1件だけ追加しました。cleanup候補 `ba7b1e0b-c8a4-4ecf-927a-29c1ca4a69c5` を一時的に100%へ向け、
+1分間隔のCronでscheduled handlerを実行しました。次の完了runで3行すべてが削除されたため、直ちにCronを
+削除し、Webhook専用Version `16b489ba-1b15-407d-a6f2-dee82c5244e1`を100%へ戻しました。対象3表は0件、
+account・Checkout・Shareは`503`、署名なしWebhookは`400`へ復帰しています。利用者の記録、メール、コード、
+session、健康情報、Secretは使っていません。cleanupは最終アカウント公開時まで停止し、確認済みアカウント、
+購入、会計記録のより長い保持期間は別の未決事項として残します。
 
 同日、再送安全性候補の受け入れは、`403 turnstile_failed`でD1やメールの前に停止しました。
 繰り返し操作してもaccount、challenge、送信予約、session、購入、利用権は作られず、メール到着の証拠も
