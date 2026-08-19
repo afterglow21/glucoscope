@@ -95,14 +95,18 @@ const USAGE_PROFILE_ENDPOINT = "https://glucoscope-usage.afterglow21.workers.dev
 const AI_PER_USER_QUOTA_ENABLED = document
   .querySelector('meta[name="glucoscope-ai-per-user-quota-enabled"]')
   ?.getAttribute("content") === "true";
-// Keep this false until verified-account recovery, purchase support, and server-side
-// entitlement checks have passed production acceptance. False preserves today's UI.
-const PLUS_FEATURE_GATING_ENABLED = false;
-// The account and purchase UI stay absent until the email and Stripe adapters have
-// passed test-mode acceptance. These flags are independent so login can be tested
-// before any purchase button is ever shown.
-const PLUS_ACCOUNT_UI_ENABLED = false;
-const PLUS_PURCHASE_UI_ENABLED = false;
+// These independent release switches stay false in checked-in HTML until each reviewed
+// production dependency is enabled. Keeping them in meta allows an exact Pages release
+// without editing application logic during the final rollout.
+const PLUS_FEATURE_GATING_ENABLED = document
+  .querySelector('meta[name="glucoscope-plus-feature-gating-enabled"]')
+  ?.getAttribute("content") === "true";
+const PLUS_ACCOUNT_UI_ENABLED = document
+  .querySelector('meta[name="glucoscope-plus-account-enabled"]')
+  ?.getAttribute("content") === "true";
+const PLUS_PURCHASE_UI_ENABLED = document
+  .querySelector('meta[name="glucoscope-plus-purchases-enabled"]')
+  ?.getAttribute("content") === "true";
 const PLUS_ACCOUNT_RESEND_WAIT_SECONDS = 60;
 const PRODUCTION_AI_LETTER_WORKER_ENDPOINT = "https://gluco-letter-worker.afterglow21.workers.dev/api/gluco-letter";
 const LOCAL_AI_LETTER_WORKER_ENDPOINT = "http://127.0.0.1:8787/api/gluco-letter";

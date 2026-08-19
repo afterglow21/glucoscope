@@ -1043,7 +1043,7 @@ test("local display-name storage remains network-free and server sync is separat
   assert.match(index, /js\/usage-client\.js\?v=20260815-guardian-confirmation-1/);
   assert.match(index, /js\/plus-feature-access\.js\?v=20260815-guardian-confirmation-1/);
   assert.match(index, /style\.css\?v=20260818-share-studio-1/);
-  assert.match(index, /js\/app\.js\?v=20260819-plus-turnstile-1/);
+  assert.match(index, /js\/app\.js\?v=20260819-plus-release-switches-1/);
   assert.match(app, /updateUsageProfileDisplayName\(result\.profile\.displayName\)/);
   assert.doesNotMatch(app, /handleLocalProfileDelete|localProfileDeleteButton/);
   assert.match(app, /if \(!state\.enabled \|\| !state\.registered\) return;/);

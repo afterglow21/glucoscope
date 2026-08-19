@@ -78,6 +78,7 @@ test("defaults to unavailable and rejects unsafe endpoints", async () => {
 
 test("the checked-in account and purchase UI stays hidden and network-inert", () => {
   assert.match(index, /name="glucoscope-plus-account-enabled" content="false"/u);
+  assert.match(index, /name="glucoscope-plus-feature-gating-enabled" content="false"/u);
   assert.match(index, /name="glucoscope-plus-purchases-enabled" content="false"/u);
   assert.match(index, /name="glucoscope-plus-entitlement-endpoint" content=""/u);
   assert.match(
@@ -90,8 +91,8 @@ test("the checked-in account and purchase UI stays hidden and network-inert", ()
   );
   assert.match(index, /id="plusAccountCard"[^>]*hidden/u);
   assert.ok(index.indexOf("js/plus-entitlement-client.js") < index.indexOf("js/plus-feature-access.js"));
-  assert.match(app, /const PLUS_ACCOUNT_UI_ENABLED = false;/u);
-  assert.match(app, /const PLUS_PURCHASE_UI_ENABLED = false;/u);
+  assert.match(app, /meta\[name="glucoscope-plus-account-enabled"\]/u);
+  assert.match(app, /meta\[name="glucoscope-plus-purchases-enabled"\]/u);
   assert.match(app, /action: "glucoscope-plus-request-code"/u);
   assert.match(app, /action: "glucoscope-plus-delete-account"/u);
   assert.match(app, /sitekey: config\.turnstileSiteKey/gmu);
