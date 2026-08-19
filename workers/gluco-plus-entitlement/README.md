@@ -240,10 +240,12 @@ visible final order review and gives the Stripe PaymentIntent a fixed non-person
 matching JPY 400, 30 days, one payment, and no automatic renewal. Commerce readiness also
 requires `PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED=true`, so Checkout cannot open until the operator
 has verified Stripe's successful-payment email and ordinary receipt in the actual sale
-environment. It deliberately does not create a paid invoice or call the ordinary receipt a
-Japanese qualified invoice. Retention, real receipt-email acceptance, acceptance of any
-additionally enabled payment method, and professional review remain sale blockers; checked-in
-release flags therefore remain false.
+environment. On 2026-08-19, a private live JPY 400 payment and approved full refund delivered
+Stripe's automatic successful-payment and refund emails to the operator, so that delivery gate
+is accepted. It deliberately does not create a paid invoice or call the ordinary receipt a
+Japanese qualified invoice. Retention, acceptance of any additionally enabled payment method,
+professional review, and the remaining production release checks remain sale blockers;
+checked-in release flags therefore remain false.
 
 Keep the existing staging deployment stopped and unreachable. Do not add a route, Cron,
 public `workers.dev` endpoint, preview URL, sender, or commerce identifier merely because

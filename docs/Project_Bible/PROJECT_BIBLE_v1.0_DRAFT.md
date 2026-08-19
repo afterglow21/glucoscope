@@ -4172,17 +4172,19 @@ Cloudflare Email Routingによる非公開受信箱への転送と必要な受�
 18歳以上の本人または18歳以上の保護者を対象とすることを決めました。販売者は個人事業の
 免税事業者で、適格請求書発行事業者ではありません。「税込」とは表示せず、適格請求書は
 発行しません。販売者の氏名、住所、電話番号はGitへ保存せず、請求があれば購入申込み前に
-確認できる時間を確保して遅滞なく提供する方針です。この表示と実運用、通常の支払確認・領収書、
-Stripe Taxを使わない初期構成、商品税コードは専門家確認が必要です。
+確認できる時間を確保して遅滞なく提供する方針です。この表示と実運用、Stripe Taxを使わない
+初期構成、商品税コードは専門家確認が必要です。通常の支払確認・領収書の自動配信は、下記の
+本番受入で確認しました。
 
 購入前のchecked-in候補は、短いブラウザ確認を廃止し、商品名、数量1、支払総額400円、
 Stripeでの1回払い、30日、自動更新なし、購入条件、返金、医療サービスではないこと、
 特定商取引法に基づく表記・利用条件・Privacy・問い合わせを見える最終確認画面へ置き換えました。
 2026年8月18日、決定済みの支払総額400円、18歳以上の本人または確認済み保護者、3つの同一サイト
-公開ページ、規約と購入確認の版をWorker設定へ反映しました。税の最終確認、通常のStripe領収書、
-全体の販売準備、すべての公開flagは`false`のままです。
+公開ページ、規約と購入確認の版をWorker設定へ反映しました。税の最終確認、全体の販売準備、
+すべての公開flagは`false`のままです。
 Stripeへ渡す決済説明は個人情報を含まない固定文です。実際の成功決済メールと通常の領収書を
-受け入れるまで、独立した`PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED=false`でCheckoutを停止します。
+受け入れるまで独立したreceipt gateでCheckoutを停止し、受入後も全体releaseまではchecked-in
+`PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED=false`を維持します。
 通常の領収書を適格請求書と呼ばず、有料の単発請求書作成は自動で有効にしません。公開アカウント、
 決済、販売flagは引き続き停止中です。
 
@@ -4192,7 +4194,9 @@ Stripeへ渡す決済説明は個人情報を含まない固定文です。実�
 領収書では、日本語、400円、公開問い合わせ先、現在のサイトを確認しました。手動送信した返金
 領収書は2通とも本人受信箱へ届き、2通目はメール側で迷惑メールへ振り分けられていたことを
 運営者本人が確認しました。日本語、400円、返金状態、公開問い合わせ先を実メールでも確認できたため、
-返金領収書の配信と文面は受入済みです。通常の成功決済メール・領収書は販売ブロッカーとして残し、
+返金領収書の配信と文面は受入済みです。さらに2026年8月19日の本番受入で、Stripeの「支払い成功」と
+「返金」の自動メールを有効にし、本人受信箱で両方の到着を確認しました。通常の成功決済メール・
+領収書の配信ゲートは合格です。公開release前のfail-closed設定として、checked-in
 `PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED`は`false`のままです。
 
 On 2026-08-17, the operator approved an initial Japan-only boundary: a JPY 400 total,
@@ -4208,8 +4212,9 @@ The checked-in pre-payment candidate now uses a visible final order review inste
 browser prompt. It shows the product, quantity one, JPY 400 total, one payment, 30 days, no
 automatic renewal, eligibility, refund boundary, medical disclaimer, and links to the commercial
 disclosure, terms, privacy, and support pages. Stripe receives only a fixed non-personal payment
-description. A separate `PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED=false` gate keeps Checkout closed
-until the successful-payment email and ordinary receipt are accepted in the actual environment.
+description. A separate receipt gate keeps Checkout closed until the successful-payment email
+and ordinary receipt are accepted in the actual environment. They were accepted on August 19,
+2026; the checked-in flag remains false until the complete public release is reviewed.
 The ordinary receipt is not called a Japanese qualified invoice, and paid one-time invoice
 creation is not enabled automatically. Public account, Checkout, and sale flags remain off.
 
@@ -4221,8 +4226,10 @@ refund receipt then showed Japanese copy, JPY 400, the public support contact, a
 website. Both manually sent refund receipts reached the operator; the second was initially missed
 because the mailbox placed it in spam. The real message confirmed Japanese copy, JPY 400, the
 refund state, and the public support contact, so refund-receipt delivery and wording are accepted.
-An ordinary successful-payment email and receipt remain unverified,
-`PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED` remains `false`, and public sales remain blocked.
+On August 19, 2026, Stripe's automatic successful-payment and refund emails were enabled and
+both arrived in the operator's inbox after a private live JPY 400 payment and approved full
+refund. Receipt-email delivery is accepted. The checked-in flag remains false and public sales
+remain blocked until the complete release is reviewed.
 
 On the same day, Stripe test mode created exactly one active `GlucoScope Plus 30日パス`
 Product (`prod_V5SDrFKGSiwaql`) with one default JPY 400 one-time Price
@@ -4285,8 +4292,15 @@ URL、Secret値、健康情報は記録しない。現在はVersion
 `da51939d-7805-45fe-9ddd-45a3cc8e8ceb`を100%とし、署名検証Webhookとpurchase状態処理だけを
 有効にする。Checkout HTTP、account HTTP、Share trial HTTP、cleanup、販売、税、領収書readyは
 停止中で、公開3 routeは`503`、署名なしWebhookは`400`である。唯一の停止rollbackは
-`12857f78-e233-4159-84bc-78c3fa56c76a`であり、それ以前へ戻さない。通常の成功決済メールの
-本人受信確認は未完了なので、`PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED=false`を維持する。
+`12857f78-e233-4159-84bc-78c3fa56c76a`であり、それ以前へ戻さない。
+
+続いてStripe本番の「支払い成功」と「返金」の自動メールを有効にし、同じ非公開経路で2回目の
+400円・1回払いを実施した。決済は1件だけ成功し、署名済みWebhookが30日利用権を1件だけ付与し、
+Stripeの自動支払確認メールが本人受信箱へ届いた。承認済みの全額返金後、利用権とCheckout attemptは
+`refunded`になり、自動返金メールも届いた。合成accountと関連行をexact削除し、本番13 tableを
+再び0件に戻した。localhost harnessを停止し、0% Checkout候補も外した。領収書配信ゲートは合格だが、
+全体releaseが完了するまでchecked-in `PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED=false`、公開Checkout停止を
+維持する。
 
 同日、運営者は `glucoscope.app` を年間14.20米ドルで取得しました。自動更新はオフです。
 Plusの確認メールには `auth.glucoscope.app` を専用の送信元として使う方針です。期限前に、
