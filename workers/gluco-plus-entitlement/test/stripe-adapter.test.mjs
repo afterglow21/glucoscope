@@ -378,15 +378,21 @@ test("checked-in Stripe switches stay off while only staging has test identifier
   assert.equal(config.vars.PLUS_CHECKOUT_HTTP_ENABLED, "false");
   assert.equal(config.vars.PLUS_STRIPE_WEBHOOK_ENABLED, "false");
   assert.equal(config.vars.PLUS_SALES_READINESS_CONFIRMED, "false");
-  assert.equal(config.vars.PLUS_FINAL_PRICE_DISPLAY, "undecided");
   assert.equal(config.vars.PLUS_TAX_TREATMENT_CONFIRMED, "false");
   assert.equal(config.vars.PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED, "false");
-  assert.equal(config.vars.PLUS_BUYER_POLICY, "undecided");
-  assert.equal(config.vars.PLUS_COMMERCIAL_DISCLOSURE_PATH, "");
-  assert.equal(config.vars.PLUS_REFUND_POLICY_PATH, "");
-  assert.equal(config.vars.PLUS_SUPPORT_PATH, "");
-  assert.equal(config.vars.PLUS_TERMS_VERSION, "");
-  assert.equal(config.vars.PLUS_BUYER_CONFIRMATION_VERSION, "");
+  assert.equal(
+    config.vars.PLUS_COMMERCIAL_DISCLOSURE_PATH,
+    "/pages/trust/commercial-transactions.html",
+  );
+  assert.equal(config.vars.PLUS_REFUND_POLICY_PATH, "/pages/trust/plus-terms.html");
+  assert.equal(config.vars.PLUS_SUPPORT_PATH, "/pages/trust/plus-support.html");
+  assert.equal(config.vars.PLUS_TERMS_VERSION, "2026-08-18");
+  assert.equal(config.vars.PLUS_BUYER_CONFIRMATION_VERSION, "2026-08-18");
+  assert.equal(config.vars.PLUS_FINAL_PRICE_DISPLAY, "total_400_confirmed");
+  assert.equal(config.vars.PLUS_BUYER_POLICY, "adult_self_or_confirmed_guardian");
+  assert.equal(config.vars.PLUS_TAX_TREATMENT_CONFIRMED, "false");
+  assert.equal(config.vars.PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED, "false");
+  assert.equal(config.vars.PLUS_SALES_READINESS_CONFIRMED, "false");
   assert.equal(config.vars.PLUS_ALLOWED_ORIGIN, "https://glucoscope.app");
   assert.equal(
     config.vars.PLUS_CHECKOUT_SUCCESS_PATH,

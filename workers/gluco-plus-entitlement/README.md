@@ -188,8 +188,11 @@ is enabled, it returns `503 sales_not_ready` before authentication, D1, or Strip
 all of the following are explicitly confirmed: JPY 400 as the buyer's final total,
 the seller's separately reviewed tax treatment, the reviewed buyer policy, a dated terms
 version, and same-site public pages for the commercial disclosure, refund policy, and
-support. Checked-in values remain false, undecided, or empty. The gate is defense in
-depth, not a substitute for reviewing the actual pages and Stripe screen.
+support. The checked-in configuration now records the approved JPY 400 total, the
+adult-self-or-confirmed-guardian policy, the three same-site public pages, and the
+2026-08-18 terms and buyer-confirmation versions. Tax treatment, ordinary Stripe receipt,
+overall sales readiness, and every release switch remain explicitly false. The gate is
+defense in depth, not a substitute for reviewing the actual pages and Stripe screen.
 
 The owner-approved working refund policy is intentionally short: correct duplicate
 charges or a paid-but-missing Plus grant, and issue a full refund if the operator cannot

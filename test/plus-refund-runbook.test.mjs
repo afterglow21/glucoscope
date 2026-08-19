@@ -66,8 +66,8 @@ test("refund runbook requires verified webhooks and keeps the sale stopped", () 
     assert.equal(vars.PLUS_STRIPE_WEBHOOK_ENABLED, "false");
     assert.equal(vars.PLUS_SALES_READINESS_CONFIRMED, "false");
     assert.equal(vars.PLUS_TAX_TREATMENT_CONFIRMED, "false");
-    assert.equal(vars.PLUS_REFUND_POLICY_PATH, "");
-    assert.equal(vars.PLUS_SUPPORT_PATH, "");
+    assert.equal(vars.PLUS_REFUND_POLICY_PATH, "/pages/trust/plus-terms.html");
+    assert.equal(vars.PLUS_SUPPORT_PATH, "/pages/trust/plus-support.html");
   }
 });
 

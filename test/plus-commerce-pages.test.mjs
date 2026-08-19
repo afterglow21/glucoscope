@@ -39,9 +39,16 @@ test("Plus sale pages stay noindex and clearly unavailable before acceptance", (
     assert.equal(vars.PLUS_SALES_READINESS_CONFIRMED, "false");
     assert.equal(vars.PLUS_TAX_TREATMENT_CONFIRMED, "false");
     assert.equal(vars.PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED, "false");
-    assert.equal(vars.PLUS_COMMERCIAL_DISCLOSURE_PATH, "");
-    assert.equal(vars.PLUS_REFUND_POLICY_PATH, "");
-    assert.equal(vars.PLUS_SUPPORT_PATH, "");
+    assert.equal(
+      vars.PLUS_COMMERCIAL_DISCLOSURE_PATH,
+      "/pages/trust/commercial-transactions.html",
+    );
+    assert.equal(vars.PLUS_REFUND_POLICY_PATH, "/pages/trust/plus-terms.html");
+    assert.equal(vars.PLUS_SUPPORT_PATH, "/pages/trust/plus-support.html");
+    assert.equal(vars.PLUS_FINAL_PRICE_DISPLAY, "total_400_confirmed");
+    assert.equal(vars.PLUS_BUYER_POLICY, "adult_self_or_confirmed_guardian");
+    assert.equal(vars.PLUS_TERMS_VERSION, "2026-08-18");
+    assert.equal(vars.PLUS_BUYER_CONFIRMATION_VERSION, "2026-08-18");
   }
 });
 
