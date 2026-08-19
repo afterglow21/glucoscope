@@ -80,12 +80,15 @@ test("the checked-in account and purchase UI stays hidden and network-inert", ()
   assert.match(index, /name="glucoscope-plus-account-enabled" content="false"/u);
   assert.match(index, /name="glucoscope-plus-purchases-enabled" content="false"/u);
   assert.match(index, /name="glucoscope-plus-entitlement-endpoint" content=""/u);
+  assert.match(index, /name="glucoscope-plus-turnstile-sitekey" content=""/u);
   assert.match(index, /id="plusAccountCard"[^>]*hidden/u);
   assert.ok(index.indexOf("js/plus-entitlement-client.js") < index.indexOf("js/plus-feature-access.js"));
   assert.match(app, /const PLUS_ACCOUNT_UI_ENABLED = false;/u);
   assert.match(app, /const PLUS_PURCHASE_UI_ENABLED = false;/u);
   assert.match(app, /action: "glucoscope-plus-request-code"/u);
   assert.match(app, /action: "glucoscope-plus-delete-account"/u);
+  assert.match(app, /sitekey: config\.turnstileSiteKey/gmu);
+  assert.match(app, /Boolean\(endpoint\)[\s\S]*Boolean\(turnstileSiteKey\)/u);
   assert.match(index, /id="plusAccountDeleteDetails"/u);
   assert.match(index, /基本の血糖表示は、Plusを買わなくても使えます。/u);
   assert.match(index, /400円で30日間使う（支払い画面へ）/u);

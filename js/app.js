@@ -3229,16 +3229,25 @@ function readPlusEndpointMeta() {
   return document.querySelector('meta[name="glucoscope-plus-entitlement-endpoint"]')?.content || "";
 }
 
+function readPlusTurnstileSiteKeyMeta() {
+  return document.querySelector('meta[name="glucoscope-plus-turnstile-sitekey"]')?.content || "";
+}
+
 function getPlusAccountRolloutConfig() {
+  const endpoint = readPlusEndpointMeta();
+  const turnstileSiteKey = readPlusTurnstileSiteKeyMeta();
   const accountEnabled = PLUS_ACCOUNT_UI_ENABLED
     && readEnabledMeta("glucoscope-plus-account-enabled")
+    && Boolean(endpoint)
+    && Boolean(turnstileSiteKey)
     && isUserDataSourceMode();
   return Object.freeze({
     accountEnabled,
     purchasesEnabled: accountEnabled
       && PLUS_PURCHASE_UI_ENABLED
       && readEnabledMeta("glucoscope-plus-purchases-enabled"),
-    endpoint: accountEnabled ? readPlusEndpointMeta() : ""
+    endpoint: accountEnabled ? endpoint : "",
+    turnstileSiteKey: accountEnabled ? turnstileSiteKey : ""
   });
 }
 
@@ -3573,7 +3582,7 @@ function renderPlusAccountTurnstile(attempt = 0) {
 
   try {
     plusAccountTurnstileWidgetId = window.turnstile.render(container, {
-      sitekey: TURNSTILE_SITE_KEY,
+      sitekey: config.turnstileSiteKey,
       action: "glucoscope-plus-request-code",
       theme: "dark",
       size: "flexible",
@@ -3633,7 +3642,7 @@ function renderPlusAccountDeleteTurnstile(attempt = 0) {
   }
   try {
     plusAccountDeleteTurnstileWidgetId = window.turnstile.render(container, {
-      sitekey: TURNSTILE_SITE_KEY,
+      sitekey: config.turnstileSiteKey,
       action: "glucoscope-plus-delete-account",
       theme: "dark",
       size: "flexible",
