@@ -47,18 +47,20 @@ The staging `PLUS_DB` binding points to `glucoscope-plus-staging` in APAC. The p
 binding points to `glucoscope-plus-production` in APAC. Both have migrations `0001`
 through `0007`, including the JPY 400 constraint and minimal 90-day Share trial reuse
 marker. All 13 application tables in both databases were verified at zero rows.
-Production stopped Version `4c3ca08d-6d52-434e-8d93-779b09ccf0b0` is at 100% with all
+Production stopped Version `4e267db3-efe6-4374-bbfa-dafd1a50c3a7` is at 100% with all
 release flags false, the production D1 and account rate-limit bindings, the approved
-JPY 400 sale terms, dedicated production `TURNSTILE_SECRET_KEY`, and the newly generated
-`ACCOUNT_EMAIL_LOOKUP_HMAC_KEY` and `ACCOUNT_CODE_HMAC_KEY` Secret bindings. Its script
-etag is identical to preceding stopped Version `b81b0833-7948-48bd-8b99-88b6eb5f4845`;
-the dedicated Turnstile binding is the only binding-name addition. The
+JPY 400 sale terms, dedicated production `TURNSTILE_SECRET_KEY` and `RESEND_API_KEY`,
+and the newly generated `ACCOUNT_EMAIL_LOOKUP_HMAC_KEY` and `ACCOUNT_CODE_HMAC_KEY`
+Secret bindings. Its script etag is identical to preceding stopped Version
+`4c3ca08d-6d52-434e-8d93-779b09ccf0b0`; the dedicated Resend binding is the only
+binding-name addition. The
 production-only Custom Domain `plus.glucoscope.app` is provisioned with no Cron or
 `workers.dev` target. With every release flag still false, an allowed-Origin preflight on
 that domain returned `503 service_unavailable` with `no-store` before any request-body read
 or D1 write. This is endpoint preparation, not public account access or a sale. It is the
 only reviewed production rollback.
-Earlier production Versions, including `b81b0833-7948-48bd-8b99-88b6eb5f4845`,
+Earlier production Versions, including `4c3ca08d-6d52-434e-8d93-779b09ccf0b0`,
+`b81b0833-7948-48bd-8b99-88b6eb5f4845`,
 `c3a49718-e961-4557-b2bf-5f9224e8225f`, and
 unserved unusable-key Version
 `7dc440a4-6fc5-4907-8590-9c2b3ef97b3f`, must not receive traffic.
