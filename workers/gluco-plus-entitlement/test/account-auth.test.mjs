@@ -1196,7 +1196,10 @@ test("cleanup binding, clock, and D1 failures stay generic with no logging", asy
   assert.doesNotMatch(cleanupSource, /console\s*\.|email_lookup|code_hmac/u);
   assert.match(indexSource, /runAccountAuthCleanup\(this\.env, controller\)/u);
   assert.equal(config.vars.ACCOUNT_AUTH_CLEANUP_ENABLED, "false");
-  assert.deepEqual(config.triggers.crons, ["0 * * * *"]);
+  assert.deepEqual(config.triggers.crons, []);
+  assert.deepEqual(config.routes, [
+    { pattern: "plus.glucoscope.app", custom_domain: true },
+  ]);
 });
 
 test("adult and guardian confirmations are explicit and role-specific", async (t) => {

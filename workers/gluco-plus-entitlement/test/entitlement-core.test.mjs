@@ -190,6 +190,9 @@ test("checked-in config is non-public, paused, and binds only provisioned produc
   assert.deepEqual(config.compatibility_flags, ["nodejs_compat"]);
   assert.equal(config.workers_dev, false);
   assert.equal(config.preview_urls, false);
+  assert.deepEqual(config.routes, [
+    { pattern: "plus.glucoscope.app", custom_domain: true },
+  ]);
   assert.equal(config.vars.PLUS_ENTITLEMENT_RPC_ENABLED, "false");
   assert.equal(config.vars.PLUS_PURCHASES_ENABLED, "false");
   assert.equal(config.vars.PLUS_CHECKOUT_HTTP_ENABLED, "false");

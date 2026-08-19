@@ -11,10 +11,14 @@
   "observability": {
     "enabled": false
   },
+  "routes": [
+    {
+      "pattern": "plus.glucoscope.app",
+      "custom_domain": true
+    }
+  ],
   "triggers": {
-    "crons": [
-      "0 * * * *"
-    ]
+    "crons": []
   },
   "ratelimits": [
     {
