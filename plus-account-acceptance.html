@@ -44,6 +44,7 @@
     </fieldset>
     <label><input id="adult" type="checkbox"> 購入やメールを管理する私は18歳以上です</label>
     <label id="guardianRow" hidden><input id="guardian" type="checkbox"> 保護者として、購入・復旧・返金の問い合わせを管理します</label>
+    <p class="muted">下の安全確認が終わると、メールを送るボタンが緑色になります。</p>
     <div id="requestTurnstile" aria-label="確認メールの安全確認"></div>
     <button id="sendButton" type="button" disabled>最初の確認メールを1通送る</button>
   </section>
@@ -226,7 +227,9 @@
     requestWidgetId = window.turnstile.render("#requestTurnstile", {
       sitekey: SITE_KEY,
       action: "glucoscope-plus-request-code",
-      appearance: "interaction-only",
+      appearance: "always",
+      theme: "dark",
+      size: "flexible",
       callback: (token) => { requestToken = String(token || ""); updateSend(); },
       "expired-callback": resetRequestWidget,
       "error-callback": () => { requestToken = ""; updateSend(); setStatus("安全確認を読み込めませんでした。操作を止めて知らせてください。"); }
@@ -236,7 +239,9 @@
     deleteWidgetId = window.turnstile.render("#deleteTurnstile", {
       sitekey: SITE_KEY,
       action: "glucoscope-plus-delete-account",
-      appearance: "interaction-only",
+      appearance: "always",
+      theme: "dark",
+      size: "flexible",
       callback: (token) => { deleteToken = String(token || ""); elements.deleteButton.disabled = busy || !deleteToken; },
       "expired-callback": () => { deleteToken = ""; elements.deleteButton.disabled = true; },
       "error-callback": () => { deleteToken = ""; elements.deleteButton.disabled = true; setStatus("削除の安全確認を読み込めませんでした。操作を止めて知らせてください。"); }
