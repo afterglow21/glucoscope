@@ -4260,8 +4260,17 @@ Version `7e823112-d8c1-4f8d-b563-101641169ce8`が短時間100%へ配信され、
 検出後ただちに確認済み停止版へ戻し、checked-inのlive-modeコード、live Product/Price、5つの
 暗号化Secret、全release flag falseを持つ停止Version
 `0cbbc227-6da0-41c3-9fd5-f280cd291152`を作成して100%へ切り替えた。公開Custom Domainは
-`no-store`付き`503`を返し、本番D1の13 application tableはすべて0件だった。今後の本番復帰先は
-このVersionだけとし、誤配信Version、未配信Secret Version
+`no-store`付き`503`を返し、本番D1の13 application tableはすべて0件だった。
+
+続いてStripe本番に、Connectではない専用Webhook送信先
+`https://plus.glucoscope.app/v1/stripe/webhook`を作成した。API Versionは
+`2026-06-24.dahlia`へ固定し、Checkout完了、非同期決済の成功・失敗、Checkout期限切れ、
+refund作成・更新、charge返金のレビュー済み7 eventだけを有効にした。署名Secretは値を
+表示・記録せず、暗号化された`STRIPE_WEBHOOK_SECRET`へ直接登録した。6つのSecret名、
+全release flag false、同じcode fingerprintとbindingを確認した停止Version
+`12857f78-e233-4159-84bc-78c3fa56c76a`だけを100%へ配信し、公開Custom Domainが引き続き
+`no-store`付き`503`を返すことを確認した。今後の本番復帰先はこのVersionだけとし、
+`0cbbc227-6da0-41c3-9fd5-f280cd291152`、誤配信Version、未配信Secret Version
 `0b4842a9-9a62-4705-8358-612f926ad767`、それ以前のVersionへtrafficを戻さない。
 
 同日、運営者は `glucoscope.app` を年間14.20米ドルで取得しました。自動更新はオフです。

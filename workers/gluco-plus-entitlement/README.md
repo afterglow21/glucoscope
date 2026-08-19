@@ -51,22 +51,33 @@ The staging `PLUS_DB` binding points to `glucoscope-plus-staging` in APAC. The p
 binding points to `glucoscope-plus-production` in APAC. Both have migrations `0001`
 through `0007`, including the JPY 400 constraint and minimal 90-day Share trial reuse
 marker. All 13 application tables in both databases were verified at zero rows.
-Production stopped Version `0cbbc227-6da0-41c3-9fd5-f280cd291152` is at 100% with all
+Production stopped Version `12857f78-e233-4159-84bc-78c3fa56c76a` is at 100% with all
 release flags false, the production D1 and account rate-limit bindings, the approved
 JPY 400 sale terms, explicit Stripe live mode and live Product/Price IDs, dedicated
-production `TURNSTILE_SECRET_KEY`, `RESEND_API_KEY`, and `STRIPE_RESTRICTED_API_KEY`,
+production `TURNSTILE_SECRET_KEY`, `RESEND_API_KEY`, `STRIPE_RESTRICTED_API_KEY`, and
+`STRIPE_WEBHOOK_SECRET`,
 and the generated `ACCOUNT_EMAIL_LOOKUP_HMAC_KEY` and `ACCOUNT_CODE_HMAC_KEY` Secret
 bindings. The production-only Custom Domain `plus.glucoscope.app` has no Cron or
 `workers.dev` target and returns `503 service_unavailable` with `no-store`. This is
 endpoint preparation, not public account access or a sale. It is the only reviewed
 production rollback.
 
+Stripe has one enabled live, non-Connect webhook destination at
+`https://plus.glucoscope.app/v1/stripe/webhook`. It uses API Version
+`2026-06-24.dahlia` and subscribes only to `checkout.session.completed`,
+`checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`,
+`checkout.session.expired`, `refund.created`, `refund.updated`, and `charge.refunded`.
+The signing Secret was transferred directly from Stripe to the encrypted Worker binding
+without being recorded in Git or documentation. Because the Worker webhook gate remains
+false, this is stopped endpoint preparation rather than payment processing.
+
 A Dashboard update of the Stripe Secret briefly deployed candidate-derived Version
 `7e823112-d8c1-4f8d-b563-101641169ce8` with account HTTP enabled, although every
 commerce flag remained false. It was detected and removed from traffic. A subsequent
 read found all 13 production application tables at zero rows. That Version, unserved
 Secret Version `0b4842a9-9a62-4705-8358-612f926ad767`, and every Version before the
-current stopped checkpoint must not receive traffic.
+current stopped checkpoint, including `0cbbc227-6da0-41c3-9fd5-f280cd291152`, must not
+receive traffic.
 
 Historical unserved Version `a0805f46-8585-47c5-b431-dfcb463d2993` first staged the
 JPY 400 code and the two non-secret test identifiers with every flag false. It is not a
