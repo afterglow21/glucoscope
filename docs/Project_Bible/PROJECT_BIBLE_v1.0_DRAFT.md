@@ -4252,6 +4252,18 @@ Charge、署名済みWebhookのlive/test不一致をすべて拒否する。非S
 IDはchecked-in済みだが、Checkout、Webhook、purchase、利用権、販売、税、領収書の全gateは
 停止中であり、これは本番準備であって実決済の受け入れではない。
 
+同日、本番専用restricted live keyをStripeで新規作成し、Checkout Sessionsの作成・読み取りと、
+Charge、Refund、Product、Priceの読み取りだけを許可して、値を表示・記録せずCloudflareの
+`STRIPE_RESTRICTED_API_KEY`へ直接登録した。DashboardでSecretを更新した際、試験候補由来の
+Version `7e823112-d8c1-4f8d-b563-101641169ce8`が短時間100%へ配信され、account HTTPだけが
+有効になったが、Checkout、Webhook、purchase、利用権、販売、税、領収書はすべて停止していた。
+検出後ただちに確認済み停止版へ戻し、checked-inのlive-modeコード、live Product/Price、5つの
+暗号化Secret、全release flag falseを持つ停止Version
+`0cbbc227-6da0-41c3-9fd5-f280cd291152`を作成して100%へ切り替えた。公開Custom Domainは
+`no-store`付き`503`を返し、本番D1の13 application tableはすべて0件だった。今後の本番復帰先は
+このVersionだけとし、誤配信Version、未配信Secret Version
+`0b4842a9-9a62-4705-8358-612f926ad767`、それ以前のVersionへtrafficを戻さない。
+
 同日、運営者は `glucoscope.app` を年間14.20米ドルで取得しました。自動更新はオフです。
 Plusの確認メールには `auth.glucoscope.app` を専用の送信元として使う方針です。期限前に、
 ドメインを続けるかと、その時点の更新価格を運営者があらためて確認します。

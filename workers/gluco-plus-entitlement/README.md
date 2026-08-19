@@ -51,23 +51,22 @@ The staging `PLUS_DB` binding points to `glucoscope-plus-staging` in APAC. The p
 binding points to `glucoscope-plus-production` in APAC. Both have migrations `0001`
 through `0007`, including the JPY 400 constraint and minimal 90-day Share trial reuse
 marker. All 13 application tables in both databases were verified at zero rows.
-Production stopped Version `4e267db3-efe6-4374-bbfa-dafd1a50c3a7` is at 100% with all
+Production stopped Version `0cbbc227-6da0-41c3-9fd5-f280cd291152` is at 100% with all
 release flags false, the production D1 and account rate-limit bindings, the approved
-JPY 400 sale terms, dedicated production `TURNSTILE_SECRET_KEY` and `RESEND_API_KEY`,
-and the newly generated `ACCOUNT_EMAIL_LOOKUP_HMAC_KEY` and `ACCOUNT_CODE_HMAC_KEY`
-Secret bindings. Its script etag is identical to preceding stopped Version
-`4c3ca08d-6d52-434e-8d93-779b09ccf0b0`; the dedicated Resend binding is the only
-binding-name addition. The
-production-only Custom Domain `plus.glucoscope.app` is provisioned with no Cron or
-`workers.dev` target. With every release flag still false, an allowed-Origin preflight on
-that domain returned `503 service_unavailable` with `no-store` before any request-body read
-or D1 write. This is endpoint preparation, not public account access or a sale. It is the
-only reviewed production rollback.
-Earlier production Versions, including `4c3ca08d-6d52-434e-8d93-779b09ccf0b0`,
-`b81b0833-7948-48bd-8b99-88b6eb5f4845`,
-`c3a49718-e961-4557-b2bf-5f9224e8225f`, and
-unserved unusable-key Version
-`7dc440a4-6fc5-4907-8590-9c2b3ef97b3f`, must not receive traffic.
+JPY 400 sale terms, explicit Stripe live mode and live Product/Price IDs, dedicated
+production `TURNSTILE_SECRET_KEY`, `RESEND_API_KEY`, and `STRIPE_RESTRICTED_API_KEY`,
+and the generated `ACCOUNT_EMAIL_LOOKUP_HMAC_KEY` and `ACCOUNT_CODE_HMAC_KEY` Secret
+bindings. The production-only Custom Domain `plus.glucoscope.app` has no Cron or
+`workers.dev` target and returns `503 service_unavailable` with `no-store`. This is
+endpoint preparation, not public account access or a sale. It is the only reviewed
+production rollback.
+
+A Dashboard update of the Stripe Secret briefly deployed candidate-derived Version
+`7e823112-d8c1-4f8d-b563-101641169ce8` with account HTTP enabled, although every
+commerce flag remained false. It was detected and removed from traffic. A subsequent
+read found all 13 production application tables at zero rows. That Version, unserved
+Secret Version `0b4842a9-9a62-4705-8358-612f926ad767`, and every Version before the
+current stopped checkpoint must not receive traffic.
 
 Historical unserved Version `a0805f46-8585-47c5-b431-dfcb463d2993` first staged the
 JPY 400 code and the two non-secret test identifiers with every flag false. It is not a
