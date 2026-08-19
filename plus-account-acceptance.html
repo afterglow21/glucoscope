@@ -23,7 +23,6 @@
     #status { min-height: 2.8em; margin: 16px 0 0; line-height: 1.5; }
     [hidden] { display: none !important; }
   </style>
-  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 </head>
 <body>
 <main>
@@ -248,8 +247,29 @@
     });
   }
 
+  const showTurnstileLoadError = () => {
+    requestToken = "";
+    updateSend();
+    setStatus("安全確認を読み込めませんでした。通信を確認して、この画面を再読み込みしてください。");
+  };
+  const loadTurnstile = () => {
+    const script = document.createElement("script");
+    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    script.async = true;
+    script.onload = () => {
+      if (typeof window.turnstile?.render !== "function") return showTurnstileLoadError();
+      try {
+        renderRequestWidget();
+      } catch {
+        showTurnstileLoadError();
+      }
+    };
+    script.onerror = showTurnstileLoadError;
+    document.head.append(script);
+  };
+
   void client.configure({ enabled: true, endpoint: ENDPOINT, timeoutMs: 15000 });
-  window.addEventListener("load", () => window.turnstile.ready(renderRequestWidget), { once: true });
+  loadTurnstile();
 })();
 </script>
 </body>
