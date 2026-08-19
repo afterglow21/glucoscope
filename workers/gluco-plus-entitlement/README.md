@@ -49,18 +49,23 @@ a sales release.
 
 The staging `PLUS_DB` binding points to `glucoscope-plus-staging` in APAC. The production
 binding points to `glucoscope-plus-production` in APAC. Both have migrations `0001`
-through `0007`, including the JPY 400 constraint and minimal 90-day Share trial reuse
-marker. All 13 application tables in both databases were verified at zero rows.
-Production stopped Version `12857f78-e233-4159-84bc-78c3fa56c76a` is at 100% with all
-release flags false, the production D1 and account rate-limit bindings, the approved
+through `0008`, including the JPY 400 constraint, minimal 90-day Share trial reuse
+marker, and fail-closed support for both test and live Stripe Checkout IDs. Migration
+`0008` required all four Checkout/refund state tables to be empty before rebuilding them.
+All 13 application tables in both databases were verified at zero rows. Production
+Version `da51939d-7805-45fe-9ddd-45a3cc8e8ceb` is at 100% with entitlement RPC,
+purchase-state processing, and the signature-verified webhook enabled. Checkout HTTP,
+account HTTP, Share trial HTTP, cleanup, sales, tax, and receipt readiness remain false.
+It keeps the production D1 and account rate-limit bindings, the approved
 JPY 400 sale terms, explicit Stripe live mode and live Product/Price IDs, dedicated
 production `TURNSTILE_SECRET_KEY`, `RESEND_API_KEY`, `STRIPE_RESTRICTED_API_KEY`, and
 `STRIPE_WEBHOOK_SECRET`,
 and the generated `ACCOUNT_EMAIL_LOOKUP_HMAC_KEY` and `ACCOUNT_CODE_HMAC_KEY` Secret
 bindings. The production-only Custom Domain `plus.glucoscope.app` has no Cron or
-`workers.dev` target and returns `503 service_unavailable` with `no-store`. This is
-endpoint preparation, not public account access or a sale. It is the only reviewed
-production rollback.
+`workers.dev` target. Public Checkout, account, and Share requests return
+`503 service_unavailable` with `no-store`; unsigned webhook requests return `400`.
+Stopped Version `12857f78-e233-4159-84bc-78c3fa56c76a` is the only reviewed production
+rollback.
 
 Stripe has one enabled live, non-Connect webhook destination at
 `https://plus.glucoscope.app/v1/stripe/webhook`. It uses API Version
@@ -68,8 +73,8 @@ Stripe has one enabled live, non-Connect webhook destination at
 `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`,
 `checkout.session.expired`, `refund.created`, `refund.updated`, and `charge.refunded`.
 The signing Secret was transferred directly from Stripe to the encrypted Worker binding
-without being recorded in Git or documentation. Because the Worker webhook gate remains
-false, this is stopped endpoint preparation rather than payment processing.
+without being recorded in Git or documentation. The Worker accepts this webhook only
+after raw-body signature verification; no public Checkout or account route is enabled.
 
 A Dashboard update of the Stripe Secret briefly deployed candidate-derived Version
 `7e823112-d8c1-4f8d-b563-101641169ce8` with account HTTP enabled, although every

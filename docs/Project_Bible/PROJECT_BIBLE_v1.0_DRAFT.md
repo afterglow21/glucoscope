@@ -4273,6 +4273,21 @@ refund作成・更新、charge返金のレビュー済み7 eventだけを有効�
 `0cbbc227-6da0-41c3-9fd5-f280cd291152`、誤配信Version、未配信Secret Version
 `0b4842a9-9a62-4705-8358-612f926ad767`、それ以前のVersionへtrafficを戻さない。
 
+同日、本番とstagingの4つのCheckout・返金状態表が0件であることを直前確認し、空でなければ
+停止するmigration `0008_live_stripe_checkout_ids.sql`を適用した。既存の金額、状態、外部キー、
+文字種制約を保ったまま、Stripe Checkout IDは`cs_test_`と`cs_live_`の両方を許可した。
+private service bindingと0%候補だけで本番Checkoutを1件作り、公開Checkoutは開かなかった。
+運営者が明示承認した実400円・1回払いは、Stripe側でpaid、本番D1では署名済み
+`checkout.session.completed` 1件、30日利用権1件として一致した。400円全額返金は成功し、
+`charge.refunded`でCheckout attemptと利用権がともに`refunded`へ変わった。合成accountと
+関連行をexact削除し、本番13 application tableは0件へ戻した。メール、カード情報、Checkout
+URL、Secret値、健康情報は記録しない。現在はVersion
+`da51939d-7805-45fe-9ddd-45a3cc8e8ceb`を100%とし、署名検証Webhookとpurchase状態処理だけを
+有効にする。Checkout HTTP、account HTTP、Share trial HTTP、cleanup、販売、税、領収書readyは
+停止中で、公開3 routeは`503`、署名なしWebhookは`400`である。唯一の停止rollbackは
+`12857f78-e233-4159-84bc-78c3fa56c76a`であり、それ以前へ戻さない。通常の成功決済メールの
+本人受信確認は未完了なので、`PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED=false`を維持する。
+
 同日、運営者は `glucoscope.app` を年間14.20米ドルで取得しました。自動更新はオフです。
 Plusの確認メールには `auth.glucoscope.app` を専用の送信元として使う方針です。期限前に、
 ドメインを続けるかと、その時点の更新価格を運営者があらためて確認します。
