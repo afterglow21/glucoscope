@@ -52,6 +52,18 @@ test("Plus sale pages stay noindex and clearly unavailable before acceptance", (
   }
 });
 
+test("temporary Share Studio acceptance stays unlinked, noindex, synthetic, and purchase-free", () => {
+  const html = read("plus-share-acceptance.html");
+  assert.match(html, /name="robots" content="noindex,nofollow,noarchive"/u);
+  assert.match(html, /固定の合成値/u);
+  assert.match(html, /90日間残ります/u);
+  assert.match(html, /glucose: "123"/u);
+  assert.match(html, /reserveShareStudio/u);
+  assert.match(html, /completeShareStudio/u);
+  assert.doesNotMatch(html, /createCheckout|checkout\.stripe\.com|STRIPE_/u);
+  assert.doesNotMatch(read("index.html"), /plus-share-acceptance\.html/u);
+});
+
 test("commercial disclosure contains every approved one-time sale boundary", () => {
   const html = read(PAGE_PATHS[0]);
   for (const expected of [

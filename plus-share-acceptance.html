@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>GlucoScope Share Studio 最終確認</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, -apple-system, "Hiragino Sans", sans-serif; }
+    body { margin: 0; background: #0c172b; color: #f3f7ff; }
+    main { box-sizing: border-box; width: min(680px, 100%); margin: 0 auto; padding: max(24px, env(safe-area-inset-top)) 18px max(36px, env(safe-area-inset-bottom)); }
+    h1 { margin: 0 0 12px; font-size: 1.5rem; }
+    .notice, section { margin: 14px 0; padding: 18px; border: 1px solid #36506e; border-radius: 18px; background: #17243a; }
+    .notice { border-color: #2f9e73; background: #15352f; }
+    .muted { color: #c1cee0; line-height: 1.7; }
+    label { display: block; margin: 14px 0; line-height: 1.6; }
+    input[type="email"], input[type="text"] { box-sizing: border-box; width: 100%; margin-top: 6px; padding: 13px; border: 1px solid #607793; border-radius: 10px; background: #0e192b; color: #fff; font-size: 1rem; }
+    fieldset { margin: 18px 0; border: 1px solid #607793; border-radius: 12px; }
+    button { width: 100%; margin-top: 12px; padding: 14px 16px; border: 0; border-radius: 12px; background: #20a875; color: #fff; font-size: 1rem; font-weight: 700; }
+    button.secondary { background: #334763; }
+    button.danger { background: #b93f59; }
+    button:disabled { opacity: .55; }
+    #preview { display: block; width: min(100%, 360px); margin: 16px auto; border-radius: 14px; }
+    #status { min-height: 2.8em; margin: 16px 0 0; line-height: 1.5; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>🍀 Share Studio 最終確認</h1>
+  <div class="notice">
+    <strong>公開前の受入確認専用です。</strong>
+    <p class="muted">購入や支払いはできません。画像には固定の合成値だけを使い、血糖データや接続情報は送りません。体験を完了してアカウントを削除すると、二重体験を防ぐため、元に戻せないメール照合用の印と期限だけが90日間残ります。</p>
+  </div>
+
+  <section id="identityPanel">
+    <label>確認できるメール
+      <input id="email" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" required>
+    </label>
+    <fieldset>
+      <legend>だれがメールを管理しますか？</legend>
+      <label><input type="radio" name="role" value="self"> 自分のために、自分で管理します</label>
+      <label><input type="radio" name="role" value="guardian"> 子どものために、保護者として管理します</label>
+    </fieldset>
+    <label><input id="adult" type="checkbox"> メールを管理する私は18歳以上です</label>
+    <label id="guardianRow" hidden><input id="guardian" type="checkbox"> 保護者として、復旧や問い合わせを管理します</label>
+    <div id="requestTurnstile" aria-label="確認メールの安全確認"></div>
+    <button id="sendButton" type="button" disabled>確認メールを1通送る</button>
+  </section>
+
+  <section id="codePanel" hidden>
+    <label>メールに届いた6桁の確認コード
+      <input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required>
+    </label>
+    <p class="muted">届くまで数分かかることがあります。この画面を閉じず、いちばん新しいメールのコードを入力してください。</p>
+    <button id="verifyButton" type="button">確認する</button>
+  </section>
+
+  <section id="sharePanel" hidden>
+    <p class="muted">固定の合成値から画像を端末内で作り、成功した時だけ1回体験を完了します。画像は外部へ共有しません。</p>
+    <button id="shareButton" type="button">合成画像を作って1回体験を確認する</button>
+    <img id="preview" alt="合成値から作ったGlucoScope画像" hidden>
+  </section>
+
+  <section id="deletePanel" hidden>
+    <p class="muted" id="deleteLead">1回体験と2回目の拒否を確認できました。次にアカウントを削除します。</p>
+    <div id="deleteTurnstile" aria-label="アカウント削除の安全確認"></div>
+    <button id="deleteButton" type="button" class="danger" disabled>テストアカウントを削除する</button>
+  </section>
+
+  <p id="status" role="status" aria-live="polite"></p>
+</main>
+<script src="js/plus-entitlement-client.js?v=20260818-share-studio-1"></script>
+<script src="js/share-studio.js?v=20260818-plus-trial-1"></script>
+<script>
+(() => {
+  "use strict";
+  const ENDPOINT = "https://plus.glucoscope.app";
+  const SITE_KEY = "0x4AAAAAAEUvQ9ymAJlyrxyC";
+  const client = window.GlucoScopePlusEntitlement;
+  const elements = Object.freeze({
+    email: document.getElementById("email"), adult: document.getElementById("adult"),
+    guardian: document.getElementById("guardian"), guardianRow: document.getElementById("guardianRow"),
+    send: document.getElementById("sendButton"), codePanel: document.getElementById("codePanel"),
+    code: document.getElementById("code"), verify: document.getElementById("verifyButton"),
+    sharePanel: document.getElementById("sharePanel"), share: document.getElementById("shareButton"),
+    preview: document.getElementById("preview"), deletePanel: document.getElementById("deletePanel"),
+    deleteLead: document.getElementById("deleteLead"), deleteButton: document.getElementById("deleteButton"),
+    status: document.getElementById("status")
+  });
+  let requestWidgetId = null;
+  let deleteWidgetId = null;
+  let requestToken = "";
+  let deleteToken = "";
+  let busy = false;
+  let phase = "trial";
+  let previewUrl = "";
+
+  const setStatus = (message) => { elements.status.textContent = message; };
+  const selectedRole = () => document.querySelector('input[name="role"]:checked')?.value || "";
+  const updateGuardian = () => {
+    const guardian = selectedRole() === "guardian";
+    elements.guardianRow.hidden = !guardian;
+    if (!guardian) elements.guardian.checked = false;
+  };
+  const updateSend = () => { elements.send.disabled = busy || !requestToken; };
+  const setBusy = (value) => {
+    busy = value;
+    elements.verify.disabled = value;
+    elements.share.disabled = value;
+    elements.deleteButton.disabled = value || !deleteToken;
+    updateSend();
+  };
+  const resetRequestWidget = () => {
+    requestToken = "";
+    if (requestWidgetId !== null) window.turnstile.reset(requestWidgetId);
+    updateSend();
+  };
+  const friendlyError = (error) => ({
+    turnstile_failed: "安全確認を完了できませんでした。操作を止めて知らせてください。",
+    email_delivery_failed: "確認メールを送れませんでした。操作を止めて知らせてください。",
+    invalid_code: "確認コードが違うか、期限が切れています。",
+    share_trial_unavailable: "無料体験はすでに使用済みです。"
+  }[String(error || "")] || `確認できませんでした（${String(error || "unknown")}）。操作を止めて知らせてください。`);
+
+  document.querySelectorAll('input[name="role"]').forEach((input) => input.addEventListener("change", updateGuardian));
+
+  elements.send.addEventListener("click", async () => {
+    if (busy) return;
+    const role = selectedRole();
+    if (!elements.email.checkValidity()) return elements.email.reportValidity();
+    if (!role) return setStatus("メールを管理する人を選んでください。");
+    if (!elements.adult.checked) return setStatus("18歳以上であることを確認してください。");
+    if (role === "guardian" && !elements.guardian.checked) return setStatus("保護者としての確認にチェックしてください。");
+    if (!requestToken) return setStatus("先に安全確認を完了してください。");
+    setBusy(true);
+    setStatus(phase === "trial" ? "確認メールを送っています…" : "再登録の確認メールを送っています…");
+    const result = await client.requestCode({
+      email: elements.email.value, turnstileToken: requestToken, contactRole: role,
+      adultConfirmed: true, guardianConfirmed: role === "guardian"
+    });
+    resetRequestWidget();
+    setBusy(false);
+    if (!result?.ok) return setStatus(friendlyError(result?.error));
+    elements.code.value = "";
+    elements.codePanel.hidden = false;
+    setStatus("確認メールを1通送りました。いちばん新しいメールのコードを入力してください。");
+    elements.code.focus();
+  });
+
+  elements.verify.addEventListener("click", async () => {
+    if (busy) return;
+    if (!elements.code.checkValidity()) return elements.code.reportValidity();
+    setBusy(true);
+    setStatus("確認コードを確かめています…");
+    const result = await client.verifyCode({ email: elements.email.value, code: elements.code.value });
+    setBusy(false);
+    if (!result?.ok) return setStatus(friendlyError(result?.error));
+    elements.codePanel.hidden = true;
+    if (phase === "trial") {
+      elements.sharePanel.hidden = false;
+      setStatus("メール確認ができました。次に合成画像を作ってください。");
+      return;
+    }
+    const state = client.getState();
+    if (state?.shareStudioTrialAvailable !== false) {
+      return setStatus("再登録後の二重体験防止を確認できませんでした。操作を止めて知らせてください。");
+    }
+    elements.deleteLead.textContent = "同じメールで再登録でき、無料体験は再び使えないことを確認しました。最後に再登録したテストアカウントを削除します。";
+    elements.deletePanel.hidden = false;
+    setStatus("再登録と二重体験防止は成功です。安全確認後にアカウントを削除してください。");
+    if (deleteWidgetId === null) renderDeleteWidget();
+  });
+
+  elements.share.addEventListener("click", async () => {
+    if (busy) return;
+    setBusy(true);
+    setStatus("端末内で合成画像を作っています…");
+    let reservation = null;
+    try {
+      reservation = await client.reserveShareStudio();
+      if (!reservation?.ok || reservation.grant !== "trial") throw new Error(reservation?.error || "reservation_failed");
+      const blob = await window.GlucoScopeShareStudio.generateBlob({
+        glucose: "123", arrow: "→", tir: "72%", tar: "25%", tbr: "3%",
+        date: "公開前の合成データ", language: "ja"
+      });
+      const completion = await client.completeShareStudio(reservation.requestId);
+      if (!completion?.ok || completion.status !== "completed") throw new Error(completion?.error || "completion_failed");
+      const second = await client.reserveShareStudio();
+      if (second?.ok || !["share_trial_unavailable", "trial_unavailable"].includes(second?.error)) {
+        throw new Error("second_trial_not_rejected");
+      }
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = URL.createObjectURL(blob);
+      elements.preview.src = previewUrl;
+      elements.preview.hidden = false;
+      elements.share.disabled = true;
+      elements.deletePanel.hidden = false;
+      setStatus("画像作成、1回体験の完了、2回目の拒否を確認できました。次にアカウントを削除してください。");
+      if (deleteWidgetId === null) renderDeleteWidget();
+    } catch (error) {
+      if (reservation?.ok && reservation?.grant === "trial" && reservation?.requestId) {
+        await client.releaseShareStudio(reservation.requestId).catch(() => {});
+      }
+      setStatus(friendlyError(error?.message));
+    } finally {
+      setBusy(false);
+    }
+  });
+
+  elements.deleteButton.addEventListener("click", async () => {
+    if (busy || !deleteToken) return;
+    if (!window.confirm("この受入用Plusアカウントを削除しますか？")) return;
+    setBusy(true);
+    setStatus("テストアカウントを削除しています…");
+    const result = await client.deleteAccount({ turnstileToken: deleteToken });
+    setBusy(false);
+    if (!result?.ok) return setStatus(friendlyError(result?.error));
+    deleteToken = "";
+    if (deleteWidgetId !== null) window.turnstile.reset(deleteWidgetId);
+    elements.deletePanel.hidden = true;
+    if (phase === "trial") {
+      phase = "reregister";
+      elements.sharePanel.hidden = true;
+      elements.email.readOnly = true;
+      elements.send.textContent = "同じメールで再登録の確認メールを送る";
+      resetRequestWidget();
+      setStatus("最初のアカウントを削除しました。同じメールのまま安全確認を完了し、再登録メールを1通送ってください。");
+      document.getElementById("identityPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    setStatus("すべて完了です。再登録したテストアカウントも削除しました。この画面を閉じて知らせてください。");
+  });
+
+  const renderRequestWidget = () => {
+    requestWidgetId = window.turnstile.render("#requestTurnstile", {
+      sitekey: SITE_KEY, action: "glucoscope-plus-request-code", appearance: "always",
+      theme: "dark", size: "flexible",
+      callback: (token) => { requestToken = String(token || ""); updateSend(); },
+      "expired-callback": resetRequestWidget,
+      "error-callback": () => { requestToken = ""; updateSend(); setStatus("安全確認を読み込めませんでした。操作を止めて知らせてください。"); }
+    });
+  };
+  function renderDeleteWidget() {
+    deleteWidgetId = window.turnstile.render("#deleteTurnstile", {
+      sitekey: SITE_KEY, action: "glucoscope-plus-delete-account", appearance: "always",
+      theme: "dark", size: "flexible",
+      callback: (token) => { deleteToken = String(token || ""); elements.deleteButton.disabled = busy || !deleteToken; },
+      "expired-callback": () => { deleteToken = ""; elements.deleteButton.disabled = true; },
+      "error-callback": () => { deleteToken = ""; elements.deleteButton.disabled = true; setStatus("削除の安全確認を読み込めませんでした。操作を止めて知らせてください。"); }
+    });
+  }
+  const loadTurnstile = () => {
+    const script = document.createElement("script");
+    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    script.async = true;
+    script.onload = () => {
+      try { renderRequestWidget(); } catch { setStatus("安全確認を読み込めませんでした。画面を再読み込みしてください。"); }
+    };
+    script.onerror = () => setStatus("安全確認を読み込めませんでした。画面を再読み込みしてください。");
+    document.head.append(script);
+  };
+
+  void client.configure({ enabled: true, endpoint: ENDPOINT, timeoutMs: 15000 });
+  loadTurnstile();
+})();
+</script>
+</body>
+</html>
