@@ -50,8 +50,12 @@ marker. All 13 application tables in both databases were verified at zero rows.
 Production stopped Version `b81b0833-7948-48bd-8b99-88b6eb5f4845` is at 100% with all
 release flags false, the production D1 and account rate-limit bindings, the approved
 JPY 400 sale terms, and only the newly generated
-`ACCOUNT_EMAIL_LOOKUP_HMAC_KEY` and `ACCOUNT_CODE_HMAC_KEY` Secret bindings. It has no
-route, Cron, or `workers.dev` target. It is the only reviewed production rollback.
+`ACCOUNT_EMAIL_LOOKUP_HMAC_KEY` and `ACCOUNT_CODE_HMAC_KEY` Secret bindings. The
+production-only Custom Domain `plus.glucoscope.app` is provisioned with no Cron or
+`workers.dev` target. With every release flag still false, an allowed-Origin preflight on
+that domain returned `503 service_unavailable` with `no-store` before any request-body read
+or D1 write. This is endpoint preparation, not public account access or a sale. It is the
+only reviewed production rollback.
 Earlier production Versions, including `c3a49718-e961-4557-b2bf-5f9224e8225f` and
 unserved unusable-key Version
 `7dc440a4-6fc5-4907-8590-9c2b3ef97b3f`, must not receive traffic.
