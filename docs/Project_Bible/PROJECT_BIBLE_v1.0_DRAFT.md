@@ -4288,11 +4288,12 @@ private service bindingと0%候補だけで本番Checkoutを1件作り、公開C
 `checkout.session.completed` 1件、30日利用権1件として一致した。400円全額返金は成功し、
 `charge.refunded`でCheckout attemptと利用権がともに`refunded`へ変わった。合成accountと
 関連行をexact削除し、本番13 application tableは0件へ戻した。メール、カード情報、Checkout
-URL、Secret値、健康情報は記録しない。現在はVersion
+URL、Secret値、健康情報は記録しない。この本番決済受入の時点ではVersion
 `da51939d-7805-45fe-9ddd-45a3cc8e8ceb`を100%とし、署名検証Webhookとpurchase状態処理だけを
 有効にする。Checkout HTTP、account HTTP、Share trial HTTP、cleanup、販売、税、領収書readyは
-停止中で、公開3 routeは`503`、署名なしWebhookは`400`である。唯一の停止rollbackは
-`12857f78-e233-4159-84bc-78c3fa56c76a`であり、それ以前へ戻さない。
+停止中で、公開3 routeは`503`、署名なしWebhookは`400`だった。この時点の停止rollbackは
+`12857f78-e233-4159-84bc-78c3fa56c76a`だったが、現在の配信版と復帰先は後段のproduction
+account受入記録を正とし、この旧Versionへは戻さない。
 
 続いてStripe本番の「支払い成功」と「返金」の自動メールを有効にし、同じ非公開経路で2回目の
 400円・1回払いを実施した。決済は1件だけ成功し、署名済みWebhookが30日利用権を1件だけ付与し、
@@ -4362,6 +4363,19 @@ Secretの不一致はD1やメールへ触れる前に`403`で安全に停止し�
 停止Version `809ecd8b-8e37-40f9-9f6b-7d006cdd52b6`だけを100%へ向けていました。公開アカウント、
 Checkout、販売、route、Cronは停止したままです。追加の少人数受信、配信失敗時の実地運用と残る
 公開前確認を終えるまで、公開アカウントとPlus販売は開始しません。
+
+2026年8月19日、本番ドメイン上の一時的な非公開導線で、production Managed Turnstileと
+運営者本人の受信箱を使うアカウント受入を行いました。Checkout、Share Studio、販売準備、税、
+領収書準備、cleanupは停止したまま、最初の確認メールとコードでsession Aを作り、明示的に
+依頼した復旧メールの最新コードでsession Bを作りました。session Aは`401`、session Bは`200`、
+認証済みアカウント削除も完了しました。診断コマンドが古いTurnstile Secretを予期せず返したため、
+その値を直ちに無効化し、新しい値は表示・記録せずWorkerへ直接差し替えました。受入後はaccount
+HTTPを停止し、受入で増えた不透明な送信予約2行だけを削除して、本番13 application tableをすべて
+0件へ戻しました。一時ページも削除しました。現在はWebhookとpurchase状態処理だけを有効にする
+Version `16b489ba-1b15-407d-a6f2-dee82c5244e1`が100%で、未配信の全停止Version
+`6d9de56d-0d74-44a1-b3a2-398669bb035e`だけを復帰先とします。受入用Version、以前のWebhook専用／
+停止Version、無効化したTurnstile Secretを持つ全Versionへは戻しません。メールアドレス、コード、
+session、Secret、site key、provider識別子は記録しません。
 
 同日、再送安全性候補の受け入れは、`403 turnstile_failed`でD1やメールの前に停止しました。
 繰り返し操作してもaccount、challenge、送信予約、session、購入、利用権は作られず、メール到着の証拠も

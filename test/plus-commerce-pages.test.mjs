@@ -119,13 +119,3 @@ test("new Plus page local links and assets resolve", () => {
     }
   }
 });
-
-test("temporary Plus acceptance loads Turnstile deterministically and explains load failure", () => {
-  const html = read("plus-account-acceptance.html");
-  assert.match(html, /document\.createElement\("script"\)/u);
-  assert.match(html, /script\.onload\s*=\s*\(\)\s*=>/u);
-  assert.match(html, /script\.onerror\s*=\s*showTurnstileLoadError/u);
-  assert.match(html, /window\.turnstile\?\.render/u);
-  assert.match(html, /安全確認を読み込めませんでした。通信を確認して、この画面を再読み込みしてください。/u);
-  assert.doesNotMatch(html, /window\.addEventListener\("load"/u);
-});

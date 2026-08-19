@@ -53,7 +53,7 @@ through `0008`, including the JPY 400 constraint, minimal 90-day Share trial reu
 marker, and fail-closed support for both test and live Stripe Checkout IDs. Migration
 `0008` required all four Checkout/refund state tables to be empty before rebuilding them.
 All 13 application tables in both databases were verified at zero rows. Production
-Version `da51939d-7805-45fe-9ddd-45a3cc8e8ceb` is at 100% with entitlement RPC,
+Version `16b489ba-1b15-407d-a6f2-dee82c5244e1` is at 100% with entitlement RPC,
 purchase-state processing, and the signature-verified webhook enabled. Checkout HTTP,
 account HTTP, Share trial HTTP, cleanup, sales, tax, and receipt readiness remain false.
 It keeps the production D1 and account rate-limit bindings, the approved
@@ -64,8 +64,10 @@ and the generated `ACCOUNT_EMAIL_LOOKUP_HMAC_KEY` and `ACCOUNT_CODE_HMAC_KEY` Se
 bindings. The production-only Custom Domain `plus.glucoscope.app` has no Cron or
 `workers.dev` target. Public Checkout, account, and Share requests return
 `503 service_unavailable` with `no-store`; unsigned webhook requests return `400`.
-Stopped Version `12857f78-e233-4159-84bc-78c3fa56c76a` is the only reviewed production
-rollback.
+Unserved stopped Version `6d9de56d-0d74-44a1-b3a2-398669bb035e` is the only reviewed
+production rollback. Temporary account-acceptance Versions, earlier webhook-only or
+stopped Versions, and every Version carrying the retired Turnstile Secret must not be
+restored.
 
 Stripe has one enabled live, non-Connect webhook destination at
 `https://plus.glucoscope.app/v1/stripe/webhook`. It uses API Version
@@ -550,15 +552,20 @@ Cloudflare's secret or dashboard configuration facilities; never put their value
 Git or `.dev.vars`.
 
 Live sales remain blocked. The stopped staging D1 schema-and-binding checkpoint, official
-Resend test-recipient acceptance, the first personal-inbox and Turnstile closed E2E, and the
-same-email session-replacement recovery acceptance passed. Stripe-hosted full payment,
-duplicate delivery, full refund,
-concurrent-click protection, pending reuse, expiry, recreation, and declined-card acceptance
-also passed. Delivery-failure acceptance, user-facing terms, tax and receipt
-review, the full support exercise, any additionally enabled payment method, and production
-acceptance are still required. The
-payment, account, RPC, cleanup, sales, and tax switches must not be enabled merely because
-these closed checks passed.
+Resend test-recipient acceptance, the first personal-inbox and Turnstile closed E2E, the
+same-email session-replacement recovery, and the production account lifecycle acceptance all
+passed. The production check used the real hostname, Managed Turnstile, and operator inbox;
+it completed initial verification, explicit recovery, old-session rejection, and account deletion.
+The two acceptance-only opaque send reservations were deleted and all 13 production application
+tables returned to zero. Production is back on webhook-only Version
+`16b489ba-1b15-407d-a6f2-dee82c5244e1`; unserved fully stopped Version
+`6d9de56d-0d74-44a1-b3a2-398669bb035e` is the only reviewed rollback. Stripe-hosted full
+payment, duplicate delivery, full refund, concurrent-click protection, pending reuse, expiry,
+recreation, and declined-card acceptance also passed. Small-group operational observation,
+retention and professional review, the full support exercise, any additionally enabled payment
+method, feature-gating acceptance, and the complete release review remain. Account, Checkout,
+Share, cleanup, sales, tax, and receipt switches must not be enabled merely because these closed
+checks passed.
 
 ## Local verification
 

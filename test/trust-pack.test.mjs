@@ -139,10 +139,10 @@ test("Roadmap stays simple for users while technical evidence stays internal", a
   assert.match(roadmap, /この保護者確認のために、子どもの名前や血糖値は集めません/);
   assert.match(roadmap, /確認メールにはResendというメール送信サービスを使う予定です/);
   assert.match(roadmap, /10分で使えなくなる6桁の確認コード、コードの入力方法を伝える短い案内/);
-  assert.match(roadmap, /運営者本人の受信箱への到着、同じメールでの復旧、古い端末の確認を無効にすること、新しい端末で使えること、アカウント削除までの非公開確認は完了しました/);
+  assert.match(roadmap, /本番環境でも、運営者本人の受信箱への到着、同じメールでの復旧、古い端末の確認を無効にすること、新しい端末で使えること、アカウント削除まで確認しました/);
   assert.match(roadmap, /60秒待ってからの安全な再送、最新メールだけを使う案内、失敗した再送で先のコードを失わない仕組み/);
   assert.match(roadmap, /安全なテスト宛先で受信拒否・迷惑メール報告・送信抑止の表示も確認しました/);
-  assert.match(roadmap, /追加の少人数確認、実際の配信遅延への対応、問い合わせ・返金・税・決済の準備が整うまで、販売は始めません/);
+  assert.match(roadmap, /追加の少人数での運用確認、実際の配信遅延への対応、残る販売準備が整うまで、販売は始めません/);
   assert.match(roadmap, /GlucoScopeをよくするため、表示名、利用した日/);
   assert.match(roadmap, /血糖値、接続情報、AIお手紙の内容は記録しません/);
   assert.match(roadmap, /GlucoScopeは医療機器ではなく、診断、治療、インスリン量の判断をしません/);
@@ -157,6 +157,7 @@ test("Roadmap stays simple for users while technical evidence stays internal", a
   assert.match(roadmap, /public demo displays a reviewed fixed sample without a new AI generation/);
   assert.match(roadmap, /an adult guardian age 18 or older/);
   assert.match(roadmap, /It is not yet available for purchase/);
+  assert.match(roadmap, /Production acceptance confirmed inbox delivery, same-email recovery, rejection of the old session, continued access through the new session, and account deletion/);
   assert.match(roadmap, /To improve GlucoScope, we record a display name/);
   assert.doesNotMatch(roadmap, /Usage records contain only/);
 
