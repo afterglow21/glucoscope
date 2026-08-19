@@ -122,6 +122,7 @@ function createDatabase() {
     "0004_guardian_buyer_confirmation.sql",
     "0006_plus_price_400.sql",
     "0007_share_trial_reuse_retention.sql",
+    "0008_live_stripe_checkout_ids.sql",
   ]) {
     const migration = readFileSync(
       new URL(`../migrations/${migrationName}`, import.meta.url),
@@ -1725,4 +1726,95 @@ test("Checkout/refund migration is narrow and contains no health, email, or card
     migration,
     /glucose|nightscout|gluroo|dexcom|libre|email|card_number|password|\btir\b|\bgmi\b/iu,
   );
+
+  const liveIdMigration = readFileSync(
+    new URL("../migrations/0008_live_stripe_checkout_ids.sql", import.meta.url),
+    "utf8",
+  );
+  assert.match(liveIdMigration, /live_stripe_checkout_ids_migration_guard/u);
+  assert.match(liveIdMigration, /CHECK \(row_count = 0\)/u);
+  for (const table of [
+    "checkout_attempts",
+    "processed_checkout_failure_events",
+    "processed_checkout_expiry_events",
+    "processed_refund_events",
+  ]) {
+    assert.match(
+      liveIdMigration,
+      new RegExp(`COUNT\\(\\*\\) FROM ${table}`, "u"),
+    );
+  }
+  assert.equal(
+    (liveIdMigration.match(/IN \('cs_test_', 'cs_live_'\)/gu) || []).length,
+    4,
+  );
+  assert.doesNotMatch(
+    liveIdMigration,
+    /glucose|nightscout|gluroo|dexcom|libre|email|card_number|password|\btir\b|\bgmi\b/iu,
+  );
+});
+
+test("live Stripe Checkout IDs are accepted by every Checkout/refund state table", async () => {
+  const database = createDatabase();
+  const store = createD1PlusEntitlementStore(database);
+  await createVerifiedAccount(store);
+
+  const liveCheckoutIds = ["a", "b", "c", "d"].map(
+    (marker) => `cs_live_${marker.repeat(24)}`,
+  );
+  database.raw.prepare(`
+    INSERT INTO checkout_attempts (
+      account_id, request_id, state, checkout_session_id,
+      reserved_at, reservation_expires_at, checkout_expires_at, updated_at
+    ) VALUES (?1, ?2, 'open', ?3, ?4, ?5, ?6, ?4)
+  `).run(
+    ACCOUNT_ID,
+    REQUEST_ID,
+    liveCheckoutIds[0],
+    NOW,
+    NOW + 60_000,
+    NOW + 3_600_000,
+  );
+  database.raw.prepare(`
+    INSERT INTO processed_checkout_failure_events (
+      event_id, checkout_session_id, event_type, account_id, request_id,
+      failed_at, received_at
+    ) VALUES (
+      'evt_livefailure0001', ?1, 'checkout.session.async_payment_failed',
+      ?2, ?3, ?4, ?4
+    )
+  `).run(liveCheckoutIds[1], ACCOUNT_ID, SECOND_REQUEST_ID, NOW);
+  database.raw.prepare(`
+    INSERT INTO processed_checkout_expiry_events (
+      event_id, checkout_session_id, event_type, account_id, request_id,
+      expired_at, received_at
+    ) VALUES (
+      'evt_liveexpiry00001', ?1, 'checkout.session.expired',
+      ?2, ?3, ?4, ?4
+    )
+  `).run(liveCheckoutIds[2], ACCOUNT_ID, SECOND_REQUEST_ID, NOW);
+  database.raw.prepare(`
+    INSERT INTO processed_refund_events (
+      event_id, event_type, checkout_session_id, refund_id, charge_id,
+      refunded_at, received_at
+    ) VALUES (
+      'evt_liverefunda0001', 'refund.created', ?1,
+      're_liverefunda000000000000', 'ch_livechargea000000000000', ?2, ?2
+    )
+  `).run(liveCheckoutIds[3], NOW);
+
+  const counts = database.raw.prepare(`
+    SELECT
+      (SELECT COUNT(*) FROM checkout_attempts) AS checkout_attempts,
+      (SELECT COUNT(*) FROM processed_checkout_failure_events) AS failures,
+      (SELECT COUNT(*) FROM processed_checkout_expiry_events) AS expiries,
+      (SELECT COUNT(*) FROM processed_refund_events) AS refunds
+  `).get();
+  assert.deepEqual({ ...counts }, {
+    checkout_attempts: 1,
+    failures: 1,
+    expiries: 1,
+    refunds: 1,
+  });
+  database.close();
 });

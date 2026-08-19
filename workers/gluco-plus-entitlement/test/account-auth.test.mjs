@@ -148,6 +148,7 @@ function createDatabase() {
     "../migrations/0005_account_email_global_send_limit.sql",
     "../migrations/0006_plus_price_400.sql",
     "../migrations/0007_share_trial_reuse_retention.sql",
+    "../migrations/0008_live_stripe_checkout_ids.sql",
   ]) {
     database.raw.exec(readFileSync(new URL(migration, import.meta.url), "utf8"));
   }

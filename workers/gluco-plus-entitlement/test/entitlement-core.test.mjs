@@ -119,6 +119,7 @@ function createDatabase() {
     "0004_guardian_buyer_confirmation.sql",
     "0006_plus_price_400.sql",
     "0007_share_trial_reuse_retention.sql",
+    "0008_live_stripe_checkout_ids.sql",
   ]) {
     const migration = readFileSync(
       new URL(`../migrations/${migrationName}`, import.meta.url),
