@@ -72,11 +72,12 @@ test("commercial disclosure contains every approved one-time sale boundary", () 
     "部分返金は行わず",
     "支払確認・領収書",
     "適格請求書（インボイス）ではありません",
-    "実際のメールと表示内容を確認するまで販売を始めません",
+    "実環境で両方の自動メールが届くことを確認済みです",
   ]) assert.match(html, new RegExp(expected, "u"));
 
   assert.doesNotMatch(html, /400円（税込）/u);
   assert.match(html, /公開問い合わせ先の実受信は確認済み/u);
+  assert.match(html, /本番の支払い・全額返金、自動メールの受信も確認済み/u);
   assert.match(html, /事業者の氏名・住所・電話番号の開示請求/u);
   assert.match(html, /優先して遅滞なく対応/u);
   assert.doesNotMatch(html, /問い合わせ受信、決済、返金/u);

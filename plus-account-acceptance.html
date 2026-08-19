@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>GlucoScope Plus アカウント最終確認</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, -apple-system, "Hiragino Sans", sans-serif; }
+    body { margin: 0; background: #0c172b; color: #f3f7ff; }
+    main { box-sizing: border-box; width: min(680px, 100%); margin: 0 auto; padding: max(24px, env(safe-area-inset-top)) 18px max(36px, env(safe-area-inset-bottom)); }
+    h1 { margin: 0 0 12px; font-size: 1.55rem; }
+    .notice, section { margin: 14px 0; padding: 18px; border: 1px solid #36506e; border-radius: 18px; background: #17243a; }
+    .notice { border-color: #2f9e73; background: #15352f; }
+    .muted { color: #c1cee0; line-height: 1.7; }
+    label { display: block; margin: 14px 0; line-height: 1.6; }
+    input[type="email"], input[type="text"] { box-sizing: border-box; width: 100%; margin-top: 6px; padding: 13px; border: 1px solid #607793; border-radius: 10px; background: #0e192b; color: #fff; font-size: 1rem; }
+    fieldset { margin: 18px 0; border: 1px solid #607793; border-radius: 12px; }
+    button { width: 100%; margin-top: 12px; padding: 14px 16px; border: 0; border-radius: 12px; background: #20a875; color: #fff; font-size: 1rem; font-weight: 700; }
+    button.secondary { background: #334763; }
+    button.danger { background: #b93f59; }
+    button:disabled { opacity: .55; }
+    #status { min-height: 2.8em; margin: 16px 0 0; line-height: 1.5; }
+    [hidden] { display: none !important; }
+  </style>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+</head>
+<body>
+<main>
+  <h1>🍀 Plusアカウント 最終確認</h1>
+  <div class="notice">
+    <strong>公開前の受入確認専用です。</strong>
+    <p class="muted">購入や支払いはできません。通常の利用者は確認メール1通だけで完了します。この確認では、機種変更などの復旧も確かめるため、初回確認のあとに同じメールへ2通目を1回だけ送ります。</p>
+  </div>
+
+  <section id="identityPanel">
+    <label>確認できるメール
+      <input id="email" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" required>
+    </label>
+    <fieldset>
+      <legend>だれが購入やメールを管理しますか？</legend>
+      <label><input type="radio" name="role" value="self"> 自分のために、自分で管理します</label>
+      <label><input type="radio" name="role" value="guardian"> 子どものために、保護者として管理します</label>
+    </fieldset>
+    <label><input id="adult" type="checkbox"> 購入やメールを管理する私は18歳以上です</label>
+    <label id="guardianRow" hidden><input id="guardian" type="checkbox"> 保護者として、購入・復旧・返金の問い合わせを管理します</label>
+    <div id="requestTurnstile" aria-label="確認メールの安全確認"></div>
+    <button id="sendButton" type="button" disabled>最初の確認メールを1通送る</button>
+  </section>
+
+  <section id="codePanel" hidden>
+    <label>メールに届いた6桁の確認コード
+      <input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required>
+    </label>
+    <p class="muted">届くまで数分かかることがあります。迷惑メールや以前のGlucoScopeメールと同じ会話も確認してください。この画面は閉じずにお待ちください。</p>
+    <button id="verifyButton" type="button">確認する</button>
+  </section>
+
+  <section id="verifiedPanel" hidden>
+    <p id="verifiedMessage"></p>
+    <button id="recoveryButton" type="button" class="secondary">同じメールで復旧確認へ進む</button>
+    <div id="deletePanel" hidden>
+      <p class="muted">復旧と古いセッションの無効化を確認できました。最後にテストアカウントを削除します。</p>
+      <div id="deleteTurnstile" aria-label="アカウント削除の安全確認"></div>
+      <button id="deleteButton" type="button" class="danger" disabled>テストアカウントを削除する</button>
+    </div>
+  </section>
+
+  <p id="status" role="status" aria-live="polite"></p>
+</main>
+<script src="js/plus-entitlement-client.js?v=20260819-production-account-acceptance-1"></script>
+<script>
+(() => {
+  "use strict";
+  const ENDPOINT = "https://plus.glucoscope.app";
+  const SITE_KEY = "0x4AAAAAAEUvQ9ymAJlyrxyC";
+  const client = window.GlucoScopePlusEntitlement;
+  const elements = Object.freeze({
+    email: document.getElementById("email"),
+    adult: document.getElementById("adult"),
+    guardian: document.getElementById("guardian"),
+    guardianRow: document.getElementById("guardianRow"),
+    send: document.getElementById("sendButton"),
+    codePanel: document.getElementById("codePanel"),
+    code: document.getElementById("code"),
+    verify: document.getElementById("verifyButton"),
+    verifiedPanel: document.getElementById("verifiedPanel"),
+    verifiedMessage: document.getElementById("verifiedMessage"),
+    recovery: document.getElementById("recoveryButton"),
+    deletePanel: document.getElementById("deletePanel"),
+    deleteButton: document.getElementById("deleteButton"),
+    status: document.getElementById("status")
+  });
+  let requestWidgetId = null;
+  let deleteWidgetId = null;
+  let requestToken = "";
+  let deleteToken = "";
+  let phase = "initial";
+  let busy = false;
+  let previousSessionToken = "";
+
+  const setStatus = (message) => { elements.status.textContent = message; };
+  const selectedRole = () => document.querySelector('input[name="role"]:checked')?.value || "";
+  const updateGuardian = () => {
+    const guardian = selectedRole() === "guardian";
+    elements.guardianRow.hidden = !guardian;
+    if (!guardian) elements.guardian.checked = false;
+  };
+  const updateSend = () => {
+    elements.send.disabled = busy || !requestToken;
+  };
+  const resetRequestWidget = () => {
+    requestToken = "";
+    if (requestWidgetId !== null) window.turnstile.reset(requestWidgetId);
+    updateSend();
+  };
+  const setBusy = (value) => {
+    busy = value;
+    elements.verify.disabled = value;
+    elements.recovery.disabled = value;
+    elements.deleteButton.disabled = value || !deleteToken;
+    updateSend();
+  };
+  const friendlyError = (error) => ({
+    turnstile_failed: "安全確認を完了できませんでした。操作を止めて知らせてください。",
+    email_delivery_failed: "確認メールを送れませんでした。操作を止めて知らせてください。",
+    invalid_code: "確認コードが違うか、期限が切れています。",
+    account_role_conflict: "このメールは別の立場で確認済みです。操作を止めて知らせてください。"
+  }[String(error || "")] || "確認できませんでした。操作を止めて知らせてください。");
+
+  document.querySelectorAll('input[name="role"]').forEach((input) => {
+    input.addEventListener("change", updateGuardian);
+  });
+
+  elements.send.addEventListener("click", async () => {
+    if (busy) return;
+    const role = selectedRole();
+    if (!elements.email.checkValidity()) return elements.email.reportValidity();
+    if (!role) return setStatus("購入やメールを管理する人を選んでください。");
+    if (!elements.adult.checked) return setStatus("18歳以上であることを確認してください。");
+    if (role === "guardian" && !elements.guardian.checked) return setStatus("保護者としての確認にチェックしてください。");
+    if (!requestToken) return setStatus("先に安全確認を完了してください。");
+    setBusy(true);
+    setStatus(phase === "initial" ? "最初の確認メールを送っています…" : "復旧確認メールを送っています…");
+    const result = await client.requestCode({
+      email: elements.email.value,
+      turnstileToken: requestToken,
+      contactRole: role,
+      adultConfirmed: true,
+      guardianConfirmed: role === "guardian"
+    });
+    resetRequestWidget();
+    setBusy(false);
+    if (!result?.ok) return setStatus(friendlyError(result?.error));
+    elements.code.value = "";
+    elements.codePanel.hidden = false;
+    setStatus(phase === "initial"
+      ? "最初の確認メールを1通送りました。届いた6桁のコードを入力してください。"
+      : "復旧確認メールを1通送りました。いちばん新しいメールのコードを入力してください。");
+    elements.code.focus();
+  });
+
+  elements.verify.addEventListener("click", async () => {
+    if (busy) return;
+    if (!elements.code.checkValidity()) return elements.code.reportValidity();
+    setBusy(true);
+    setStatus("確認コードを確かめています…");
+    const result = await client.verifyCode({ email: elements.email.value, code: elements.code.value });
+    setBusy(false);
+    if (!result?.ok) return setStatus(friendlyError(result?.error));
+    elements.codePanel.hidden = true;
+    elements.verifiedPanel.hidden = false;
+    if (phase === "initial") {
+      previousSessionToken = client._testing.readStoredToken().token || "";
+      elements.verifiedMessage.textContent = "初回のメール確認ができました。次は同じメールで復旧を1回だけ確認します。";
+      elements.recovery.hidden = false;
+      setStatus("初回確認は成功です。『同じメールで復旧確認へ進む』を押してください。");
+      return;
+    }
+    const oldResponse = previousSessionToken
+      ? await fetch(`${ENDPOINT}/v1/session`, {
+          headers: { Authorization: `Bearer ${previousSessionToken}` },
+          cache: "no-store",
+          credentials: "omit",
+          mode: "cors",
+          referrerPolicy: "no-referrer"
+        })
+      : null;
+    previousSessionToken = "";
+    if (!oldResponse || oldResponse.status !== 401) {
+      setStatus("復旧後の古いセッション無効化を確認できませんでした。操作を止めて知らせてください。");
+      return;
+    }
+    elements.verifiedMessage.textContent = "復旧と古いセッションの無効化を確認できました。";
+    elements.recovery.hidden = true;
+    elements.deletePanel.hidden = false;
+    setStatus("復旧確認は成功です。安全確認のあと、テストアカウントを削除してください。");
+    if (deleteWidgetId === null) renderDeleteWidget();
+  });
+
+  elements.recovery.addEventListener("click", () => {
+    if (busy) return;
+    phase = "recovery";
+    elements.verifiedPanel.hidden = true;
+    elements.codePanel.hidden = true;
+    elements.send.textContent = "復旧確認メールを1通送る";
+    resetRequestWidget();
+    setStatus("同じメールのまま、新しい安全確認を完了して『復旧確認メールを1通送る』を押してください。");
+    document.getElementById("identityPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  elements.deleteButton.addEventListener("click", async () => {
+    if (busy || !deleteToken) return;
+    if (!window.confirm("この受入用Plusアカウントを削除しますか？")) return;
+    setBusy(true);
+    setStatus("テストアカウントを削除しています…");
+    const result = await client.deleteAccount({ turnstileToken: deleteToken });
+    setBusy(false);
+    if (!result?.ok) return setStatus(friendlyError(result?.error));
+    elements.deletePanel.hidden = true;
+    elements.verifiedMessage.textContent = "すべて完了しました。テストアカウントは削除されました。";
+    setStatus("完了です。この画面を閉じて『削除まで完了した』と知らせてください。");
+  });
+
+  const renderRequestWidget = () => {
+    requestWidgetId = window.turnstile.render("#requestTurnstile", {
+      sitekey: SITE_KEY,
+      action: "glucoscope-plus-request-code",
+      appearance: "interaction-only",
+      callback: (token) => { requestToken = String(token || ""); updateSend(); },
+      "expired-callback": resetRequestWidget,
+      "error-callback": () => { requestToken = ""; updateSend(); setStatus("安全確認を読み込めませんでした。操作を止めて知らせてください。"); }
+    });
+  };
+  function renderDeleteWidget() {
+    deleteWidgetId = window.turnstile.render("#deleteTurnstile", {
+      sitekey: SITE_KEY,
+      action: "glucoscope-plus-delete-account",
+      appearance: "interaction-only",
+      callback: (token) => { deleteToken = String(token || ""); elements.deleteButton.disabled = busy || !deleteToken; },
+      "expired-callback": () => { deleteToken = ""; elements.deleteButton.disabled = true; },
+      "error-callback": () => { deleteToken = ""; elements.deleteButton.disabled = true; setStatus("削除の安全確認を読み込めませんでした。操作を止めて知らせてください。"); }
+    });
+  }
+
+  void client.configure({ enabled: true, endpoint: ENDPOINT, timeoutMs: 15000 });
+  window.addEventListener("load", () => window.turnstile.ready(renderRequestWidget), { once: true });
+})();
+</script>
+</body>
+</html>
