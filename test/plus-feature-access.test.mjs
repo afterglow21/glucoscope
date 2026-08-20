@@ -6,6 +6,7 @@ import vm from "node:vm";
 const source = fs.readFileSync(new URL("../js/plus-feature-access.js", import.meta.url), "utf8");
 const app = fs.readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
 const index = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const style = fs.readFileSync(new URL("../style.css", import.meta.url), "utf8");
 
 function loadModule() {
   const context = { Object, Set, String };
@@ -162,6 +163,8 @@ test("the frontend loads the access module first and gates extended ranges and d
   assert.match(app, /FEATURE_DEEP_ANALYSIS \|\| "deep_analysis"/);
   assert.match(app, /if \(!setAiLetterMode\(analysisMode, \{ announce: true \}\)\) return;/);
   assert.match(app, /plusDeepAnalysisRequired/);
+  assert.match(app, /plusExtendedRangeRequired: "7日・30日・カスタムはPlus機能です。\\n購入は「その他」→「Plus・あなたの設定」へ。"/u);
+  assert.match(style, /\.plus-feature-notice\s*\{[^}]*white-space:pre-line/su);
   assert.match(index, /data-period="seven"[\s\S]*?plus-feature-badge[^>]*>Plus</u);
   assert.match(index, /data-period="thirty"[\s\S]*?plus-feature-badge[^>]*>Plus</u);
   assert.match(index, /data-period="custom"[\s\S]*?plus-feature-badge[^>]*>Plus</u);

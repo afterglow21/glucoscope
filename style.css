@@ -626,6 +626,7 @@ body{
   font-size:12px;
   line-height:1.6;
   text-align:right;
+  white-space:pre-line;
 }
 
 .plus-feature-notice[hidden]{
