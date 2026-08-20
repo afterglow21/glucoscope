@@ -2609,6 +2609,18 @@ reviewed static file was saved, and Version `97b14023-f9dd-440a-8b79-e2bb2b47169
 restored to 100%. The public page now uses that archived anonymized dataset and no longer
 requests the temporary live endpoints.
 
+On August 21, 2026, after separate explicit approval, a newest-first recovery scan checked each
+Japan-time day from August 15 through August 7. A day qualified only when Guardian 4, Libre 2,
+and Dexcom G7 each had at least 200 valid readings. Guardian history was still available on
+several dates and G7 history on part of the range, but the current Libre source returned no
+readings on every scanned date. No replacement dataset was created. Cloudflare rejected an
+attempt to inherit the encrypted source bindings from the historical three-source Version before
+creating a candidate because the active script Versions API supports only `latest` inheritance.
+No Secret value was read, copied, or changed. The temporary Worker returned only stopped `503`,
+its recovery KV keys were deleted, the five-minute trigger and Version
+`97b14023-f9dd-440a-8b79-e2bb2b471697` were restored, and the existing honest two-source archive
+remains the current static record.
+
 Guardian remains on Kazuma's existing Azure Nightscout.
 Its verified browser-direct route is the Guardian input for the live comparison.
 Libre 2 uses a separate, demo-only Cloudflare Worker.
@@ -4084,6 +4096,12 @@ IndexedDBへ保存して読み戻せた後だけ無料体験の完了を送り�
 予約を解除し、体験を消費しません。保存済みの4枚は、Share Studio内で削除するかブラウザデータを
 削除するまで再表示・再保存できます。別端末へは同期しません。画像、血糖値、接続先URL、合言葉を
 Plus Workerへ送りません。
+
+同じ2026年8月21日、運営者がこの4枚版を本人のアカウントでもう一度確認するため、無料体験1回の
+解除を明示承認しました。匿名件数だけで、購入記録とPlus利用権のないアクティブなアカウント1件、
+使用済み体験状態1件、完了処理1件、再利用防止記録0件を確認しました。対象の完了処理だけを先に削除し、
+その成功と全体件数を条件に体験状態だけを未使用へ戻しました。アカウントとsessionは維持し、Usage、
+利用権、Checkout、支払い、メール、照合HMAC、session token、健康情報は読み取りも変更もしませんでした。
 
 実装基盤を拡張しましたが、すべて停止状態で未公開です。AI回数の原子的な予約台帳、
 公開しないPlus利用権Worker、Share Studio無料体験のサーバー側予約、停止中の7日・30日・カスタム
