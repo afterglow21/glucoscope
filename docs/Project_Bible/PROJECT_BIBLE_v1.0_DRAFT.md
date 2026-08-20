@@ -4213,8 +4213,9 @@ named RPCだけを接続しました。Pages commit `edd6dcf`は、Plusアカウ
 `https://plus.glucoscope.app`を有効にし、公開HTMLから400円・30日・自動更新なし、販売条件、Privacy、
 問い合わせの現在形を確認しました。切替直前の本番D1は、account・session・challenge・Checkout・Webhook・
 refund・entitlementが0件で、24時間送信上限用の匿名予約2件と、90日無料体験再利用防止記録1件だけが
-設計どおり残っていました。毎時cleanupは自動削除を伴うため、この公開切替では有効にせず、対象と保持期間を
-示した別の明示承認後に有効にします。
+設計どおり残っていました。毎時cleanupは自動削除を伴うため公開切替とは分け、対象と保持期間を示して別の明示承認を得た後、
+2026年8月20日に `0 * * * *` で有効化しました。対象は期限後24時間を超えた確認コード、作成後24時間を超えた匿名送信予約、
+期限切れのShare Studio再利用防止記録だけです。Plusの配信Versionは変更せず、`3414c567-6328-4361-8105-e9d6e83c5018`を100%で維持しました。
 
 On 2026-08-17, the operator approved an initial Japan-only boundary: a JPY 400 total,
 one-time payment for an adult buyer or adult guardian. The seller is a Japanese
@@ -4256,8 +4257,11 @@ service-binding and public-UI cutover. Public HTML confirms JPY 400, 30 days, no
 the commercial disclosure, privacy notice, and support contact. Immediately before the cutover,
 all account, session, challenge, Checkout, webhook, refund, and entitlement rows were zero; only
 two anonymous 24-hour send-cap reservations and one irreversible 90-day trial-reuse marker remained
-by design. The hourly cleanup trigger stays off until a separate explicit approval covers its
-automatic-deletion scope and retention boundaries.
+by design. The hourly cleanup was kept separate from the public cut. After a separate explicit
+approval covered its automatic-deletion scope and retention boundaries, the production trigger
+was enabled at `0 * * * *` on August 20, 2026. It deletes only expired verification challenges,
+anonymous send reservations past their retention window, and expired Share Studio trial-reuse
+markers. Plus Version `3414c567-6328-4361-8105-e9d6e83c5018` remained at 100%.
 
 On the same day, Stripe test mode created exactly one active `GlucoScope Plus 30日パス`
 Product (`prod_V5SDrFKGSiwaql`) with one default JPY 400 one-time Price

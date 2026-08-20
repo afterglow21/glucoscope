@@ -56,6 +56,8 @@ test("Plus 30-day pass records the approved one-time boundary and live release",
   assert.match(spec, /文書・品質チェックで止まった/);
   assert.match(spec, /グラフの7日・30日・カスタム期間/);
   assert.match(spec, /認証済みアカウントごとに1回だけ無料体験/);
+  assert.match(spec, /2026年8月20日に本番の毎時cleanupを `0 \* \* \* \*` で有効化した/);
+  assert.match(spec, /The small public release is live/);
   assert.match(spec, /利用記録の端末プロフィール、profile ID、token、表示名を、購入者の本人確認やPlus利用権に流用しない/);
   assert.match(spec, /Stripeへ血糖値、グラフ、TIR\/TAR\/TBR/);
   assert.match(spec, /利用権の付与は、成功ページを開いたことではなく、Stripeの署名付きWebhook/);

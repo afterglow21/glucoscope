@@ -278,8 +278,9 @@ additional payment method is enabled for the initial sale. On 2026-08-20, review
 `3414c567-6328-4361-8105-e9d6e83c5018` moved to 100%, and unserved stopped Version
 `6faa0065-8fdd-4563-985e-9e775999717b` became the direct rollback point. The public Pages release
 enables the account, purchase, and feature-gating UI. Checked-in release flags remain false as a
-fail-safe and must not be deployed without the exact reviewed production overrides. The hourly
-cleanup trigger remains off pending separate approval for the automatic deletion scope.
+fail-safe and must not be deployed without the exact reviewed production overrides. After separate
+explicit approval of the automatic-deletion scope, the production hourly cleanup trigger was
+enabled at `0 * * * *`; it does not change the Worker Version receiving traffic.
 
 Keep the existing staging deployment stopped and unreachable. Do not add a route, Cron,
 public `workers.dev` endpoint, preview URL, sender, or commerce identifier merely because
