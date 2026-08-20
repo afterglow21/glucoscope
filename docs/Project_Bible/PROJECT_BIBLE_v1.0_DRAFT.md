@@ -4169,7 +4169,7 @@ Plusの主要特典をほとんど利用できず、運営側でも解決でき�
 案内せず、それ以外の相談も個別に受け付けます。2026年8月17日、公開問い合わせ先は
 `support@glucoscope.app`、平日受付、原則5営業日以内の返信とする方針を決めました。
 Cloudflare Email Routingによる非公開受信箱への転送と必要な受信DNSは有効化済みです。2026年8月17日、別の送信元から`support@glucoscope.app`へ送った健康情報を含まないテストメールが非公開受信箱へ届くことを、運営者本人が確認しました。送信元、転送先、件名、本文は記録しません。`docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md`に、購入メールとおおよその購入日による最小照合、訂正優先、Stripe Dashboardでの全額返金、openな異議申立てとの二重処理禁止、成功したWebhook後のPlus終了、状態別返信、問い合わせ180日・最小会計記録7年の運用を定義しました。Stripe test modeの400円決済・重複Webhook・全額返金・Plus終了・二重操作・未完了Checkout再利用・期限切れ・再作成・カード拒否と、本番400円決済・全額返金・自動メール受信は合格しました。
-公開ページ、決済、Worker、Stripe設定は、この方針だけでは有効にしません。
+この方針を決めた時点では、公開ページ、決済、Worker、Stripe設定は有効にしませんでした。
 
 同日、初期販売は日本国内に居住する人に限り、お支払い総額400円、購入とメールを管理する
 18歳以上の本人または18歳以上の保護者を対象とすることを決めました。販売者は個人事業の
@@ -4183,13 +4183,13 @@ Cloudflare Email Routingによる非公開受信箱への転送と必要な受�
 Stripeでの1回払い、30日、自動更新なし、購入条件、返金、医療サービスではないこと、
 特定商取引法に基づく表記・利用条件・Privacy・問い合わせを見える最終確認画面へ置き換えました。
 2026年8月18日、決定済みの支払総額400円、18歳以上の本人または確認済み保護者、3つの同一サイト
-公開ページ、規約と購入確認の版をWorker設定へ反映しました。税の最終確認、全体の販売準備、
-すべての公開flagは`false`のままです。
+公開ページ、規約と購入確認の版をWorker設定へ反映しました。この時点では、税の最終確認、全体の販売準備、
+すべての公開flagを`false`のまま維持しました。
 Stripeへ渡す決済説明は個人情報を含まない固定文です。実際の成功決済メールと通常の領収書を
 受け入れるまで独立したreceipt gateでCheckoutを停止し、受入後も全体releaseまではchecked-in
 `PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED=false`を維持します。
-通常の領収書を適格請求書と呼ばず、有料の単発請求書作成は自動で有効にしません。公開アカウント、
-決済、販売flagは引き続き停止中です。
+通常の領収書を適格請求書と呼ばず、有料の単発請求書作成は自動で有効にしません。この受入時点では、公開アカウント、
+決済、販売flagを停止したままにしました。
 
 2026年8月18日、Stripeの公開問い合わせ先を`support@glucoscope.app`、既定の顧客メール言語を
 日本語、ビジネスサイトを`https://glucoscope.app/`へ揃え、任意支援だけを扱う古い事業説明を、
@@ -4199,8 +4199,22 @@ Stripeへ渡す決済説明は個人情報を含まない固定文です。実�
 運営者本人が確認しました。日本語、400円、返金状態、公開問い合わせ先を実メールでも確認できたため、
 返金領収書の配信と文面は受入済みです。さらに2026年8月19日の本番受入で、Stripeの「支払い成功」と
 「返金」の自動メールを有効にし、本人受信箱で両方の到着を確認しました。通常の成功決済メール・
-領収書の配信ゲートは合格です。公開release前のfail-closed設定として、checked-in
-`PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED`は`false`のままです。
+領収書の配信ゲートは合格です。checked-in設定はfail-closedの正本として、
+`PLUS_STRIPE_RECEIPT_EMAIL_CONFIRMED=false`を維持します。
+
+2026年8月20日、Plusの小規模な一般提供を開始しました。Plus Version
+`3414c567-6328-4361-8105-e9d6e83c5018`を100%へ切り替え、アカウント、400円の1回払い、
+署名済みWebhook、利用権RPC、Share Studioの1回体験、販売・税・領収書の確認gateを有効にしました。
+停止Version `6faa0065-8fdd-4563-985e-9e775999717b`だけを直接の復帰先とし、それ以前のWebhook専用、
+停止、受入、古いSecretを持つVersionへは戻しません。Usage Version
+`ab21208a-b0e5-4075-be36-a9ace1483abb`と、Cloudflare Accessで保護した管理画面Version
+`b2748c12-4edd-4a99-84c2-3e779f3c84b8`も100%へ切り替え、Plus D1そのものではなく、必要最小限の
+named RPCだけを接続しました。Pages commit `edd6dcf`は、Plusアカウント、特典制限、購入UIと
+`https://plus.glucoscope.app`を有効にし、公開HTMLから400円・30日・自動更新なし、販売条件、Privacy、
+問い合わせの現在形を確認しました。切替直前の本番D1は、account・session・challenge・Checkout・Webhook・
+refund・entitlementが0件で、24時間送信上限用の匿名予約2件と、90日無料体験再利用防止記録1件だけが
+設計どおり残っていました。毎時cleanupは自動削除を伴うため、この公開切替では有効にせず、対象と保持期間を
+示した別の明示承認後に有効にします。
 
 On 2026-08-17, the operator approved an initial Japan-only boundary: a JPY 400 total,
 one-time payment for an adult buyer or adult guardian. The seller is a Japanese
@@ -4209,7 +4223,7 @@ copy does not call the price tax-inclusive and does not promise a qualified invo
 name, address, and telephone details stay out of Git and are to be supplied without delay on
 request, with enough time before purchase. The planned contact is `support@glucoscope.app`,
 weekdays, with a target reply within five business days. Cloudflare Email Routing and the
-required receiving DNS are enabled with a private destination. On August 17, 2026, the operator confirmed that a test message containing no health information, sent from a separate sender to `support@glucoscope.app`, reached the private destination. The sender, destination, subject, and body are not recorded. `docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md` defines minimum purchase matching, correction before refund, full refunds in Stripe Dashboard, no separate refund during an open dispute, entitlement termination only after a verified successful refund, status-specific replies, 180-day resolved-support-mail deletion, and seven-year minimum accounting retention. The JPY 400 payment, duplicate-webhook, full-refund, entitlement-termination, concurrent-click, pending-reuse, expiry, recreation, and declined-card sandbox drills passed. Live JPY 400 payment, full refund, automatic receipt delivery, account recovery and deletion, and one-time Share Studio trial acceptance also passed. No additional payment method is enabled for the initial sale. The remaining blocker is the staged Worker-to-Pages release and supervised browser acceptance; legal, tax, dispute, refund-failure, and delivery-failure conditions remain ongoing monitoring duties.
+required receiving DNS are enabled with a private destination. On August 17, 2026, the operator confirmed that a test message containing no health information, sent from a separate sender to `support@glucoscope.app`, reached the private destination. The sender, destination, subject, and body are not recorded. `docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md` defines minimum purchase matching, correction before refund, full refunds in Stripe Dashboard, no separate refund during an open dispute, entitlement termination only after a verified successful refund, status-specific replies, 180-day resolved-support-mail deletion, and seven-year minimum accounting retention. The JPY 400 payment, duplicate-webhook, full-refund, entitlement-termination, concurrent-click, pending-reuse, expiry, recreation, and declined-card sandbox drills passed. Live JPY 400 payment, full refund, automatic receipt delivery, account recovery and deletion, and one-time Share Studio trial acceptance also passed. No additional payment method is enabled for the initial sale. The staged Worker-to-Pages release completed on August 20, 2026; legal, tax, dispute, refund-failure, and delivery-failure conditions remain ongoing monitoring duties.
 
 The checked-in pre-payment candidate now uses a visible final order review instead of a short
 browser prompt. It shows the product, quantity one, JPY 400 total, one payment, 30 days, no
@@ -4219,7 +4233,7 @@ description. A separate receipt gate keeps Checkout closed until the successful-
 and ordinary receipt are accepted in the actual environment. They were accepted on August 19,
 2026; the checked-in flag remains false until the complete public release is reviewed.
 The ordinary receipt is not called a Japanese qualified invoice, and paid one-time invoice
-creation is not enabled automatically. Public account, Checkout, and sale flags remain off.
+creation is not enabled automatically. At this acceptance checkpoint, public account, Checkout, and sale flags remained off.
 
 On August 18, 2026, the public Stripe support contact was aligned to
 `support@glucoscope.app`, the default customer-email language to Japanese, and the business
@@ -4231,8 +4245,19 @@ because the mailbox placed it in spam. The real message confirmed Japanese copy,
 refund state, and the public support contact, so refund-receipt delivery and wording are accepted.
 On August 19, 2026, Stripe's automatic successful-payment and refund emails were enabled and
 both arrived in the operator's inbox after a private live JPY 400 payment and approved full
-refund. Receipt-email delivery is accepted. The checked-in flag remains false and public sales
-remain blocked until the complete release is reviewed.
+refund. Receipt-email delivery is accepted. The checked-in flag remains false as a fail-safe;
+the reviewed production Version carries the explicit live override used for the August 20 release.
+
+On August 20, 2026, Plus Version `3414c567-6328-4361-8105-e9d6e83c5018` moved to 100%,
+with stopped Version `6faa0065-8fdd-4563-985e-9e775999717b` as the only direct rollback.
+Usage Version `ab21208a-b0e5-4075-be36-a9ace1483abb`, Access-protected admin Version
+`b2748c12-4edd-4a99-84c2-3e779f3c84b8`, and Pages commit `edd6dcf` completed the narrow
+service-binding and public-UI cutover. Public HTML confirms JPY 400, 30 days, no automatic renewal,
+the commercial disclosure, privacy notice, and support contact. Immediately before the cutover,
+all account, session, challenge, Checkout, webhook, refund, and entitlement rows were zero; only
+two anonymous 24-hour send-cap reservations and one irreversible 90-day trial-reuse marker remained
+by design. The hourly cleanup trigger stays off until a separate explicit approval covers its
+automatic-deletion scope and retention boundaries.
 
 On the same day, Stripe test mode created exactly one active `GlucoScope Plus 30日パス`
 Product (`prod_V5SDrFKGSiwaql`) with one default JPY 400 one-time Price

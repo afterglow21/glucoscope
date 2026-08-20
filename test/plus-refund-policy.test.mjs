@@ -19,7 +19,7 @@ const workerReadmeUrl = new URL(
   import.meta.url,
 );
 
-test("Plus refund policy is short, conditional, and gated by the final staged release", async () => {
+test("Plus refund policy is short, conditional, and recorded with the live rollback boundary", async () => {
   const [spec, salesDraft, bible, readme] = await Promise.all([
     readFile(plusSpecUrl, "utf8"),
     readFile(salesDraftUrl, "utf8"),
@@ -37,7 +37,7 @@ test("Plus refund policy is short, conditional, and gated by the final staged re
   assert.match(salesDraft, /本番の400円決済、全額返金、支払・返金メール[\s\S]*最終候補を停止状態から段階公開/);
   assert.match(bible, /返金方針は、細かな時間条件や長い除外一覧を作らず/);
   assert.match(bible, /PLUS_REFUND_SUPPORT_RUNBOOK\.md[\s\S]*本番400円決済・全額返金・自動メール受信は合格しました/);
-  assert.match(readme, /public contact `support@glucoscope\.app` has passed[\s\S]*PLUS_REFUND_SUPPORT_RUNBOOK\.md[\s\S]*concurrent-click, pending-reuse, expiry, recreation, and declined-card sandbox drills have[\s\S]*The remaining blocker is the final[\s\S]*staged production release/);
+  assert.match(readme, /public contact `support@glucoscope\.app` has passed[\s\S]*PLUS_REFUND_SUPPORT_RUNBOOK\.md[\s\S]*concurrent-click, pending-reuse, expiry, recreation, and declined-card sandbox drills have[\s\S]*`3414c567-6328-4361-8105-e9d6e83c5018` moved to 100%[\s\S]*`6faa0065-8fdd-4563-985e-9e775999717b` became the direct rollback point/);
   assert.match(readme, /Two simultaneous[\s\S]*`checkout_ready`[\s\S]*`409 checkout_creation_in_progress`[\s\S]*reused that Checkout/);
   assert.match(bible, /correctly[\s\S]{0,20}signed, manually re-sent `checkout\.session\.expired` event[\s\S]*from `open` to[\s\S]*`expired` exactly once/);
   assert.match(bible, /declined-card test and created no[\s\S]*entitlement/);

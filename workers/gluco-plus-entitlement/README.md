@@ -274,9 +274,12 @@ is accepted. It deliberately does not create a paid invoice or call the ordinary
 Japanese qualified invoice. Account deletion now immediately detaches the recovery identity
 when no payment or refund is in progress, while settled minimum accounting rows remain for
 seven years; ordinary resolved support mail is targeted for deletion after 180 days. No
-additional payment method is enabled for the initial sale. The remaining blocker is the final
-staged production release and supervised browser acceptance; checked-in release flags therefore
-remain false until that cutover.
+additional payment method is enabled for the initial sale. On 2026-08-20, reviewed live Version
+`3414c567-6328-4361-8105-e9d6e83c5018` moved to 100%, and unserved stopped Version
+`6faa0065-8fdd-4563-985e-9e775999717b` became the direct rollback point. The public Pages release
+enables the account, purchase, and feature-gating UI. Checked-in release flags remain false as a
+fail-safe and must not be deployed without the exact reviewed production overrides. The hourly
+cleanup trigger remains off pending separate approval for the automatic deletion scope.
 
 Keep the existing staging deployment stopped and unreachable. Do not add a route, Cron,
 public `workers.dev` endpoint, preview URL, sender, or commerce identifier merely because

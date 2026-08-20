@@ -45,9 +45,10 @@ test("Usage Dashboard separates AI operations from privacy-protected personal-us
   assert.match(dashboard, /sharedCache\.enabled === false[\s\S]*?停止中（先行体験）/);
 });
 
-test("Plus 30-day pass records the approved one-time boundary without claiming sale", async () => {
+test("Plus 30-day pass records the approved one-time boundary and live release", async () => {
   const spec = await read(plusSpecUrl);
-  assert.match(spec, /not available for purchase/);
+  assert.match(spec, /Status: live small public release/);
+  assert.match(spec, /販売開始 \| 2026年8月20日。小規模な一般提供として開始/);
   assert.match(spec, /価格 \| 400円/);
   assert.match(spec, /自動更新 \| なし/);
   assert.match(spec, /成功した「やさしい分析」を1日1回/);
@@ -59,7 +60,7 @@ test("Plus 30-day pass records the approved one-time boundary without claiming s
   assert.match(spec, /Stripeへ血糖値、グラフ、TIR\/TAR\/TBR/);
   assert.match(spec, /利用権の付与は、成功ページを開いたことではなく、Stripeの署名付きWebhook/);
   assert.match(spec, /Plusは医療サービスではない/);
-  assert.doesNotMatch(spec, /販売中|購入できます|自動更新あり/);
+  assert.doesNotMatch(spec, /自動更新あり/);
   assert.match(spec, /Subscriptionや自動更新を使わない/);
 });
 
