@@ -6,6 +6,7 @@ import vm from "node:vm";
 const source = fs.readFileSync(new URL("../js/share-studio.js", import.meta.url), "utf8");
 const app = fs.readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
 const index = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const about = fs.readFileSync(new URL("../pages/about/share-studio.html", import.meta.url), "utf8");
 
 function loadModule() {
   const context = { Object, String, URL, Blob, File: class {}, setTimeout };
@@ -53,4 +54,28 @@ test("Share Studio is rollout-hidden and completes a trial only after local imag
   assert.match(app, /shareStudioOpener\?\.focus/u);
   assert.match(app, /setInlinePlusNotice\(noticeId, messageKey, \{ focus: true \}\)/u);
   assert.doesNotMatch(source, /localStorage|sessionStorage|fetch\(/u);
+});
+
+test("the free trial is separate from purchase and explains Share Studio before email verification", () => {
+  assert.match(index, /id="shareStudioTrialDialog"[^>]*aria-modal="true"[^>]*hidden/u);
+  assert.match(index, /この確認では料金はかかりません/u);
+  assert.match(index, /カード情報は入力しません/u);
+  assert.match(index, /Stripeで400円の支払いを完了した時だけ料金が発生します/u);
+  assert.match(index, /id="shareStudioTrialVerifyButton"[^>]*>無料体験のためメールを確認する（課金なし）<\/button>/u);
+  assert.match(index, /href="pages\/about\/share-studio\.html"/u);
+  assert.match(app, /openShareStudioTrialDialog\(event\?\.currentTarget \|\| document\.activeElement\)/u);
+  assert.match(app, /entryContext: "share_trial"/u);
+  assert.match(app, /shareStudioTrialSendCodeButton: "無料体験の確認コードを送る（課金なし）"/u);
+  assert.match(app, /shareStudioTrialGuardianConfirmed: "私は保護者として、この無料体験のメール確認を管理します"/u);
+
+  const openStart = app.indexOf("const openShareStudio = (event) => {");
+  const openEnd = app.indexOf('["mobileShareStudioButton", "plusAccountShareStudioButton"]', openStart);
+  const openHandler = app.slice(openStart, openEnd);
+  assert.doesNotMatch(openHandler, /setPlusFeatureNotice\(/u);
+
+  assert.match(about, /今の血糖と今日のTIR・TAR・TBR/u);
+  assert.match(about, /メール確認だけでは料金はかかりません/u);
+  assert.match(about, /画像はこのブラウザの中で作ります/u);
+  assert.match(about, /健康情報が含まれます/u);
+  assert.match(about, /analytics-loader\.js/u);
 });

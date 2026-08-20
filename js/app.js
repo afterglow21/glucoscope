@@ -47,6 +47,8 @@ let plusCheckoutConfirmationPending = false;
 let plusCheckoutCancelledReturn = false;
 let plusCheckoutPollGeneration = 0;
 let plusPurchaseReviewOpen = false;
+let plusAccountEntryContext = "settings";
+let shareStudioTrialDialogOpener = null;
 
 let glucoseChart = null;
 let currentLanguage = localStorage.getItem("glucoscope.language.v1") || "ja";
@@ -286,6 +288,7 @@ const translations = {
     mobileMoreLead: "GlucoScopeのほかのページや設定を開けます。",
     mobileMoreJournal: "Journal",
     mobileMoreShareStudioNote: "Plus・1回体験あり",
+    mobileMoreShareStudioLearnMore: "Share Studioとは？ できることを見る",
     shareStudioTitle: "今日のふりかえり画像",
     shareStudioLead: "今の血糖と今日のTIR・TAR・TBRを、端末の中だけで1枚の画像にします。",
     shareStudioPrivacyTitle: "共有する前に",
@@ -358,6 +361,27 @@ const translations = {
     plusAccountAdultConfirmed: "購入やメールを管理する私は18歳以上です",
     plusAccountGuardianConfirmed: "私は保護者として、購入・別の端末で使うための確認・返金の問い合わせを管理します",
     plusAccountSendCodeButton: "確認コードを送る",
+    shareStudioTrialEyebrow: "🍀 購入前の無料体験",
+    shareStudioTrialTitle: "Share Studioを1回無料で試せます",
+    shareStudioTrialLead: "メールを確認するだけで、ふりかえり画像を1回作れます。",
+    shareStudioTrialFreeTitle: "この確認では料金はかかりません",
+    shareStudioTrialFreeEmail: "メール確認だけで使えます",
+    shareStudioTrialFreeCard: "カード情報は入力しません",
+    shareStudioTrialFreeCharge: "Plus 30日パスを別画面で選び、Stripeで400円の支払いを完了した時だけ料金が発生します",
+    shareStudioTrialReason: "メール確認は、同じ人が無料体験を繰り返すことを防ぐために使います。",
+    shareStudioTrialVerifyButton: "無料体験のためメールを確認する（課金なし）",
+    shareStudioTrialCancelButton: "今はやめる",
+    shareStudioTrialLearnMore: "Share Studioでできることを見る",
+    shareStudioTrialVerificationTitle: "Share Studio 1回無料体験",
+    shareStudioTrialVerificationBadge: "無料・課金なし",
+    shareStudioTrialEmailHelp: "メール確認だけでは料金は発生しません。カード情報も入力しません。二重体験を防ぐために使います。",
+    shareStudioTrialRoleLegend: "このメールをだれが管理しますか？",
+    shareStudioTrialRoleSelf: "自分のメールを、自分で管理します",
+    shareStudioTrialRoleGuardian: "子どもの代わりに、保護者が管理します",
+    shareStudioTrialAdultConfirmed: "メール確認を管理する私は18歳以上です",
+    shareStudioTrialGuardianConfirmed: "私は保護者として、この無料体験のメール確認を管理します",
+    shareStudioTrialSendCodeButton: "無料体験の確認コードを送る（課金なし）",
+    shareStudioTrialOpenButton: "無料体験で画像を作る",
     plusAccountCodeLabel: "メールに届いた6桁の確認コード",
     plusAccountCodeHelp: "10分以内に入力してください。この画面は閉じずに待ってください。",
     plusAccountDeliveryHelp: "届くまで数分かかることがあります。迷惑メール・プロモーション・以前のGlucoScopeメールと同じ会話も確認してください。再送した時は、いちばん新しいメールのコードを使います。",
@@ -643,7 +667,7 @@ const translations = {
     plusAccessUnavailable: "Plusの利用状況を確認できませんでした。少し待って、もう一度お試しください。",
     plusVerifiedAccountRequired: "Share StudioはPlusの機能で、メール確認済みのアカウントなら購入前に1回だけ体験できます。ここからメール確認へ進めます。",
     plusShareStudioRequired: "Share Studioの1回体験は使用済みです。Plus 30日パスを購入すると続けて利用できます。ここから購入へ進めます。",
-    plusShareStudioVerifyGuide: "メール確認が終わると、Share Studioを購入前に1回だけ体験できます。確認コードを受け取るメールを入力してください。",
+    plusShareStudioVerifyGuide: "無料体験のためのメール確認です。この操作では料金は発生せず、カード情報も入力しません。確認コードを受け取るメールを入力してください。",
     plusShareStudioPurchaseGuide: "Share Studioの1回体験は使用済みです。Plus 30日パスを購入すると、続けて利用できます。",
     selectedRangeLabel: "表示中の期間",
     periodPreviousDay: "前日",
@@ -715,6 +739,7 @@ const translations = {
     mobileMoreLead: "Open other GlucoScope pages and settings.",
     mobileMoreJournal: "Journal",
     mobileMoreShareStudioNote: "Plus · one trial included",
+    mobileMoreShareStudioLearnMore: "What is Share Studio? See what it can do",
     shareStudioTitle: "Today's reflection image",
     shareStudioLead: "Create one image from the current glucose and today's TIR, TAR, and TBR, entirely on this device.",
     shareStudioPrivacyTitle: "Before sharing",
@@ -787,6 +812,27 @@ const translations = {
     plusAccountAdultConfirmed: "I am 18 or older and will manage the purchase and email",
     plusAccountGuardianConfirmed: "As the guardian, I will manage the purchase, use on another device, and refund questions",
     plusAccountSendCodeButton: "Send verification code",
+    shareStudioTrialEyebrow: "🍀 Free trial before purchase",
+    shareStudioTrialTitle: "Try Share Studio once for free",
+    shareStudioTrialLead: "Verify an email to create one reflection image.",
+    shareStudioTrialFreeTitle: "This verification does not charge you",
+    shareStudioTrialFreeEmail: "Only email verification is needed",
+    shareStudioTrialFreeCard: "No card information is entered",
+    shareStudioTrialFreeCharge: "A charge occurs only if you separately choose the Plus 30-day pass and complete the JPY 400 payment on Stripe",
+    shareStudioTrialReason: "Email verification is used to prevent the same person from repeating the free trial.",
+    shareStudioTrialVerifyButton: "Verify email for the free trial (no charge)",
+    shareStudioTrialCancelButton: "Not now",
+    shareStudioTrialLearnMore: "See what Share Studio can do",
+    shareStudioTrialVerificationTitle: "One free Share Studio trial",
+    shareStudioTrialVerificationBadge: "Free · no charge",
+    shareStudioTrialEmailHelp: "Email verification does not charge you, and no card information is entered. It is used to prevent repeated trials.",
+    shareStudioTrialRoleLegend: "Who manages this email?",
+    shareStudioTrialRoleSelf: "I manage my own email",
+    shareStudioTrialRoleGuardian: "A guardian manages it for a child",
+    shareStudioTrialAdultConfirmed: "I am 18 or older and manage this email verification",
+    shareStudioTrialGuardianConfirmed: "As the guardian, I will manage the email verification for this free trial",
+    shareStudioTrialSendCodeButton: "Send free-trial verification code (no charge)",
+    shareStudioTrialOpenButton: "Create an image with the free trial",
     plusAccountCodeLabel: "Six-digit code from the email",
     plusAccountCodeHelp: "Enter it within 10 minutes. Keep this page open while you wait.",
     plusAccountDeliveryHelp: "Delivery can take a few minutes. Check junk, promotions, and the existing GlucoScope email thread. After a resend, use the code in the newest email.",
@@ -1072,7 +1118,7 @@ const translations = {
     plusAccessUnavailable: "We could not confirm your Plus access. Please wait a moment and try again.",
     plusVerifiedAccountRequired: "Share Studio is a Plus feature, with one trial before purchase for a verified account. Continue from here to verify your email.",
     plusShareStudioRequired: "The one-time Share Studio trial has been used. Continue from here to purchase the Plus 30-day pass.",
-    plusShareStudioVerifyGuide: "After email verification, you can try Share Studio once before purchase. Enter the email where you want to receive the verification code.",
+    plusShareStudioVerifyGuide: "This email verification is for the free trial. It does not charge you or ask for card information. Enter the email where you want to receive the verification code.",
     plusShareStudioPurchaseGuide: "The one-time Share Studio trial has been used. Purchase the Plus 30-day pass to keep using Share Studio.",
     selectedRangeLabel: "Selected range",
     periodPreviousDay: "Previous day",
@@ -2659,9 +2705,13 @@ function getLocalProfileDialogFocusableElements() {
     ));
 }
 
-function openLocalProfileDialog(opener = null, { focusTargetId = "localProfileDisplayName" } = {}) {
+function openLocalProfileDialog(opener = null, {
+  focusTargetId = "localProfileDisplayName",
+  entryContext = "settings"
+} = {}) {
   const dialog = document.getElementById("localProfileDialog");
   if (!dialog) return;
+  plusAccountEntryContext = entryContext === "share_trial" ? "share_trial" : "settings";
   localProfileDialogOpener = opener || document.activeElement;
   setUsageProfileStatus();
   populateLocalProfileForm();
@@ -2687,6 +2737,7 @@ function closeLocalProfileDialog() {
   document.body.classList.remove("local-profile-dialog-open");
   const opener = localProfileDialogOpener;
   localProfileDialogOpener = null;
+  plusAccountEntryContext = "settings";
   if (opener && typeof opener.focus === "function") opener.focus();
 }
 
@@ -3476,6 +3527,7 @@ function updatePlusAccountUi() {
   const accountState = plusEntitlementClient?.getState?.() || { status: "unavailable" };
   const hasStoredSession = plusEntitlementClient?.hasStoredSession?.() === true;
   const signedIn = accountState.status === "ready" || hasStoredSession;
+  const shareTrialEntry = plusAccountEntryContext === "share_trial";
   const signedOutPanel = document.getElementById("plusAccountSignedOut");
   const signedInPanel = document.getElementById("plusAccountSignedIn");
   const rolloutBadge = card.querySelector(".plus-account-badge");
@@ -3483,10 +3535,49 @@ function updatePlusAccountUi() {
   const summary = document.getElementById("plusAccountSummary");
   const purchaseButton = document.getElementById("plusAccountPurchaseButton");
   const purchaseReview = document.getElementById("plusPurchaseReview");
+  const cardTitle = document.getElementById("plusAccountCardTitle");
+  const emailHelp = document.getElementById("plusAccountEmailHelp");
+  const roleLegend = document.getElementById("plusAccountRoleLegend");
+  const roleSelfLabel = document.getElementById("plusAccountRoleSelfLabel");
+  const roleGuardianLabel = document.getElementById("plusAccountRoleGuardianLabel");
+  const adultConfirmedLabel = document.getElementById("plusAccountAdultConfirmedLabel");
+  const guardianConfirmedLabel = document.getElementById("plusAccountGuardianConfirmedLabel");
+  const sendCodeButton = document.getElementById("plusAccountSendCodeButton");
+  const shareStudioButton = document.getElementById("plusAccountShareStudioButton");
+  card.classList.toggle("is-share-trial-entry", shareTrialEntry);
+  if (cardTitle) cardTitle.textContent = t(shareTrialEntry
+    ? "shareStudioTrialVerificationTitle"
+    : "plusAccountCardTitle");
+  if (emailHelp) emailHelp.textContent = t(shareTrialEntry
+    ? "shareStudioTrialEmailHelp"
+    : "plusAccountEmailHelp");
+  if (roleLegend) roleLegend.textContent = t(shareTrialEntry
+    ? "shareStudioTrialRoleLegend"
+    : "plusAccountRoleLegend");
+  if (roleSelfLabel) roleSelfLabel.textContent = t(shareTrialEntry
+    ? "shareStudioTrialRoleSelf"
+    : "plusAccountRoleSelf");
+  if (roleGuardianLabel) roleGuardianLabel.textContent = t(shareTrialEntry
+    ? "shareStudioTrialRoleGuardian"
+    : "plusAccountRoleGuardian");
+  if (adultConfirmedLabel) adultConfirmedLabel.textContent = t(shareTrialEntry
+    ? "shareStudioTrialAdultConfirmed"
+    : "plusAccountAdultConfirmed");
+  if (guardianConfirmedLabel) guardianConfirmedLabel.textContent = t(shareTrialEntry
+    ? "shareStudioTrialGuardianConfirmed"
+    : "plusAccountGuardianConfirmed");
+  if (sendCodeButton) sendCodeButton.textContent = t(shareTrialEntry
+    ? "shareStudioTrialSendCodeButton"
+    : "plusAccountSendCodeButton");
+  if (shareStudioButton) shareStudioButton.textContent = accountState.plusActive
+    ? t("plusAccountShareStudioButton")
+    : t("shareStudioTrialOpenButton");
   if (signedOutPanel) signedOutPanel.hidden = signedIn;
   if (signedInPanel) signedInPanel.hidden = !signedIn;
   if (rolloutBadge) {
-    rolloutBadge.textContent = config.purchasesEnabled
+    rolloutBadge.textContent = shareTrialEntry
+      ? t("shareStudioTrialVerificationBadge")
+      : config.purchasesEnabled
       ? (currentLanguage === "en" ? "Available" : "利用できます")
       : (currentLanguage === "en" ? "In preparation" : "準備中");
   }
@@ -3506,6 +3597,10 @@ function updatePlusAccountUi() {
       summary.textContent = currentLanguage === "en"
         ? "Payment is being confirmed. Please do not pay again."
         : "支払いを確認しています。もう一度支払わず、そのままお待ちください。";
+    } else if (accountState.status === "ready" && shareTrialEntry) {
+      summary.textContent = currentLanguage === "en"
+        ? "Email verification is complete. You can now create one Share Studio image for free. No payment was made."
+        : "メール確認ができました。Share Studioの画像を1回無料で作れます。支払いは行われていません。";
     } else if (accountState.status === "ready") {
       badge.textContent = currentLanguage === "en" ? "Verified" : "確認済み";
     } else {
@@ -3542,7 +3637,7 @@ function updatePlusAccountUi() {
     const canReopenCancelledCheckout = plusCheckoutCancelledReturn
       && accountState.purchasePending
       && !plusCheckoutConfirmationPending;
-    purchaseButton.hidden = plusPurchaseReviewOpen || !(
+    purchaseButton.hidden = shareTrialEntry || plusPurchaseReviewOpen || !(
       config.purchasesEnabled
       && accountState.status === "ready"
       && !accountState.plusActive
@@ -3555,7 +3650,7 @@ function updatePlusAccountUi() {
       : t("plusAccountPurchaseButton");
   }
   if (purchaseReview) {
-    purchaseReview.hidden = !(
+    purchaseReview.hidden = shareTrialEntry || !(
       plusPurchaseReviewOpen
       && config.purchasesEnabled
       && accountState.status === "ready"
@@ -4224,6 +4319,64 @@ let shareStudioPreviewUrl = "";
 let shareStudioBusy = false;
 let shareStudioOpener = null;
 
+function closeShareStudioTrialDialog({ restoreFocus = true } = {}) {
+  const dialog = document.getElementById("shareStudioTrialDialog");
+  if (dialog) dialog.hidden = true;
+  const opener = shareStudioTrialDialogOpener;
+  shareStudioTrialDialogOpener = null;
+  if (restoreFocus) opener?.focus?.();
+}
+
+function openShareStudioTrialDialog(opener = null) {
+  const dialog = document.getElementById("shareStudioTrialDialog");
+  if (!dialog) return;
+  shareStudioTrialDialogOpener = opener || document.activeElement;
+  dialog.hidden = false;
+  window.requestAnimationFrame(() => document.getElementById("shareStudioTrialVerifyButton")?.focus?.());
+}
+
+function setupShareStudioTrialDialog() {
+  const dialog = document.getElementById("shareStudioTrialDialog");
+  document.getElementById("shareStudioTrialCloseButton")?.addEventListener("click", () => {
+    closeShareStudioTrialDialog();
+  });
+  document.getElementById("shareStudioTrialCancelButton")?.addEventListener("click", () => {
+    closeShareStudioTrialDialog();
+  });
+  document.getElementById("shareStudioTrialVerifyButton")?.addEventListener("click", () => {
+    const opener = shareStudioTrialDialogOpener;
+    closeShareStudioTrialDialog({ restoreFocus: false });
+    openLocalProfileDialog(opener, {
+      focusTargetId: "plusAccountEmail",
+      entryContext: "share_trial"
+    });
+    setPlusAccountStatus(t("plusShareStudioVerifyGuide"));
+  });
+  dialog?.addEventListener("click", (event) => {
+    if (event.target === dialog) closeShareStudioTrialDialog();
+  });
+  dialog?.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeShareStudioTrialDialog();
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const controls = [...dialog.querySelectorAll("a[href], button:not([disabled])")]
+      .filter((element) => !element.hidden && element.closest("[hidden]") === null);
+    if (!controls.length) return;
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+}
+
 function setShareStudioStatus(message = "") {
   const status = document.getElementById("shareStudioStatus");
   if (status) status.textContent = message;
@@ -4267,12 +4420,18 @@ function setupShareStudio() {
   const shareButton = document.getElementById("shareStudioShareButton");
   const preview = document.getElementById("shareStudioPreview");
   const previewImage = document.getElementById("shareStudioPreviewImage");
+  setupShareStudioTrialDialog();
 
   const openShareStudio = (event) => {
     if (!dialog) return;
     const feature = plusFeatureAccessManager?.FEATURE_SHARE_STUDIO || "share_studio";
     const access = getPlusFeatureAccess(feature);
     if (!access.allowed) {
+      if (access.reason === "verified_account_required") {
+        setInlinePlusNotice("shareStudioAccessNotice");
+        openShareStudioTrialDialog(event?.currentTarget || document.activeElement);
+        return;
+      }
       const messageKey = access.reason === "verified_account_required"
         ? "plusVerifiedAccountRequired"
         : access.reason === "entitlement_unavailable"
@@ -4281,23 +4440,19 @@ function setupShareStudio() {
       const noticeId = event?.currentTarget?.id === "plusAccountShareStudioButton"
         ? "plusAccountShareStudioNotice"
         : "shareStudioAccessNotice";
-      setPlusFeatureNotice(messageKey);
       setInlinePlusNotice(noticeId, messageKey, { focus: true });
       if (
         event?.currentTarget?.id === "mobileShareStudioButton"
-        && (access.reason === "verified_account_required" || access.reason === "plus_required")
+        && access.reason === "plus_required"
       ) {
-        const needsVerification = access.reason === "verified_account_required";
         openLocalProfileDialog(event.currentTarget, {
-          focusTargetId: needsVerification ? "plusAccountEmail" : "plusAccountPurchaseButton"
+          focusTargetId: "plusAccountPurchaseButton",
+          entryContext: "settings"
         });
-        setPlusAccountStatus(t(needsVerification
-          ? "plusShareStudioVerifyGuide"
-          : "plusShareStudioPurchaseGuide"));
+        setPlusAccountStatus(t("plusShareStudioPurchaseGuide"));
       }
       return;
     }
-    setPlusFeatureNotice("");
     setInlinePlusNotice("shareStudioAccessNotice");
     setInlinePlusNotice("plusAccountShareStudioNotice");
     shareStudioOpener = event?.currentTarget || document.activeElement;

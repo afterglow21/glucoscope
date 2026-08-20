@@ -41,9 +41,32 @@
   <meta name="glucoscope-plus-purchases-enabled" content="true">
   <meta name="glucoscope-plus-entitlement-endpoint" content="https://plus.glucoscope.app">
   <meta name="glucoscope-plus-turnstile-sitekey" content="0x4AAAAAAEUvQ9ymAJlyrxyC">
-  <link rel="stylesheet" href="style.css?v=20260820-plus-labels-1">
+  <link rel="stylesheet" href="style.css?v=20260820-share-trial-1">
 </head>
 <body>
+
+<div id="shareStudioTrialDialog" class="share-studio-dialog" role="dialog" aria-modal="true" aria-labelledby="shareStudioTrialTitle" aria-describedby="shareStudioTrialLead" hidden>
+  <div class="share-studio-card share-studio-trial-card">
+    <button id="shareStudioTrialCloseButton" class="share-studio-close" type="button" aria-label="閉じる">×</button>
+    <p class="share-studio-eyebrow" data-i18n-key="shareStudioTrialEyebrow">🍀 購入前の無料体験</p>
+    <h2 id="shareStudioTrialTitle" data-i18n-key="shareStudioTrialTitle">Share Studioを1回無料で試せます</h2>
+    <p id="shareStudioTrialLead" data-i18n-key="shareStudioTrialLead">メールを確認するだけで、ふりかえり画像を1回作れます。</p>
+    <div class="share-studio-trial-free">
+      <strong data-i18n-key="shareStudioTrialFreeTitle">この確認では料金はかかりません</strong>
+      <ul>
+        <li data-i18n-key="shareStudioTrialFreeEmail">メール確認だけで使えます</li>
+        <li data-i18n-key="shareStudioTrialFreeCard">カード情報は入力しません</li>
+        <li data-i18n-key="shareStudioTrialFreeCharge">Plus 30日パスを別画面で選び、Stripeで400円の支払いを完了した時だけ料金が発生します</li>
+      </ul>
+    </div>
+    <p class="share-studio-trial-note" data-i18n-key="shareStudioTrialReason">メール確認は、同じ人が無料体験を繰り返すことを防ぐために使います。</p>
+    <a class="share-studio-trial-learn-more" href="pages/about/share-studio.html" data-i18n-key="shareStudioTrialLearnMore">Share Studioでできることを見る</a>
+    <div class="share-studio-actions share-studio-trial-actions">
+      <button id="shareStudioTrialVerifyButton" type="button" class="primary-button" data-i18n-key="shareStudioTrialVerifyButton">無料体験のためメールを確認する（課金なし）</button>
+      <button id="shareStudioTrialCancelButton" type="button" class="secondary-button" data-i18n-key="shareStudioTrialCancelButton">今はやめる</button>
+    </div>
+  </div>
+</div>
 
 <div id="shareStudioDialog" class="share-studio-dialog" role="dialog" aria-modal="true" aria-labelledby="shareStudioTitle" hidden>
   <div class="share-studio-card">
@@ -354,9 +377,9 @@
           <span id="plusAccountStateBadge" class="plus-account-state-badge"></span>
         </div>
 
-        <p class="plus-account-price" data-i18n-key="plusAccountPrice">400円・30日間・1回払い・自動更新なし</p>
-        <p class="plus-account-lead" data-i18n-key="plusAccountLead">メールで本人確認すると、機種変更やブラウザの保存を消した後もPlusを確認できます。</p>
-        <ul class="plus-account-benefits">
+        <p id="plusAccountPrice" class="plus-account-price" data-i18n-key="plusAccountPrice">400円・30日間・1回払い・自動更新なし</p>
+        <p id="plusAccountLead" class="plus-account-lead" data-i18n-key="plusAccountLead">メールで本人確認すると、機種変更やブラウザの保存を消した後もPlusを確認できます。</p>
+        <ul id="plusAccountBenefits" class="plus-account-benefits">
           <li data-i18n-key="plusAccountBenefitFree">基本の血糖表示は、Plusを買わなくても使えます。</li>
           <li data-i18n-key="plusAccountBenefitAi">Freeでは、やさしい分析を1日1回。Plusでは、しっかり分析を含めて1日最大5回まで使えます。</li>
           <li data-i18n-key="plusAccountBenefitRange">7日・30日・カスタム期間のグラフを使えます。</li>
@@ -371,26 +394,26 @@
           </label>
 
           <fieldset id="plusAccountBuyerRole" class="plus-account-confirmation" aria-describedby="plusAccountRoleHelp">
-            <legend data-i18n-key="plusAccountRoleLegend">だれが購入やメールを管理しますか？</legend>
+            <legend id="plusAccountRoleLegend" data-i18n-key="plusAccountRoleLegend">だれが購入やメールを管理しますか？</legend>
             <label>
               <input id="plusAccountRoleSelf" type="radio" name="plusAccountContactRole" value="self" required>
-              <span data-i18n-key="plusAccountRoleSelf">自分のために、自分で管理します</span>
+              <span id="plusAccountRoleSelfLabel" data-i18n-key="plusAccountRoleSelf">自分のために、自分で管理します</span>
             </label>
             <label>
               <input id="plusAccountRoleGuardian" type="radio" name="plusAccountContactRole" value="guardian">
-              <span data-i18n-key="plusAccountRoleGuardian">子どものために、保護者として管理します</span>
+              <span id="plusAccountRoleGuardianLabel" data-i18n-key="plusAccountRoleGuardian">子どものために、保護者として管理します</span>
             </label>
             <small id="plusAccountRoleHelp" data-i18n-key="plusAccountRoleHelp">子どもの名前・生年月日・血糖値は入力しません。兄弟姉妹を別々に管理する家族機能は、まだ準備中です。</small>
           </fieldset>
 
           <label class="plus-account-check">
             <input id="plusAccountAdultConfirmed" type="checkbox" required>
-            <span data-i18n-key="plusAccountAdultConfirmed">購入やメールを管理する私は18歳以上です</span>
+            <span id="plusAccountAdultConfirmedLabel" data-i18n-key="plusAccountAdultConfirmed">購入やメールを管理する私は18歳以上です</span>
           </label>
 
           <label id="plusAccountGuardianConfirmation" class="plus-account-check" hidden>
             <input id="plusAccountGuardianConfirmed" type="checkbox">
-            <span data-i18n-key="plusAccountGuardianConfirmed">私は保護者として、購入・別の端末で使うための確認・返金の問い合わせを管理します</span>
+            <span id="plusAccountGuardianConfirmedLabel" data-i18n-key="plusAccountGuardianConfirmed">私は保護者として、購入・別の端末で使うための確認・返金の問い合わせを管理します</span>
           </label>
 
           <div id="plusAccountTurnstile" class="plus-account-turnstile" aria-label="Plusのメール確認の安全確認"></div>
@@ -770,6 +793,7 @@
       <button type="button" class="mobile-more-link" data-mobile-open-view="about"><span>✨</span><strong data-i18n-key="mobileMoreAbout">About</strong><small data-i18n-key="mobileMoreAboutNote">GlucoScopeについて</small></button>
       <button type="button" class="mobile-more-link" data-mobile-open-view="journal"><span>📖</span><strong data-i18n-key="mobileMoreJournal">Journal</strong><small data-i18n-key="comingSoonEyebrow">準備中</small></button>
       <button id="mobileShareStudioButton" type="button" class="mobile-more-link" hidden><span>🖼️</span><strong>Share Studio</strong><small data-i18n-key="mobileMoreShareStudioNote">Plus・1回体験あり</small></button>
+      <a class="mobile-share-studio-learn-more" href="pages/about/share-studio.html" data-i18n-key="mobileMoreShareStudioLearnMore">Share Studioとは？ できることを見る</a>
       <div class="mobile-more-gluco-slot" aria-hidden="true">
         <img src="assets/gluco/ui/gluco-peek-clover.png?v=20260713-transparent-2" alt="" class="mobile-more-gluco-image" width="772" height="547">
       </div>
@@ -1049,7 +1073,7 @@
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js?v=20260721-user-foundation-3"></script>
-<script src="js/app.js?v=20260820-plus-guidance-1"></script>
+<script src="js/app.js?v=20260820-share-trial-1"></script>
 <!-- Cloudflare Web Analytics: aggregate page-view and performance metrics only -->
 <script src="js/analytics-loader.js?v=20260811-usage-profile-stage-1"></script>
 <!-- End Cloudflare Web Analytics -->

@@ -617,6 +617,7 @@ body{
 .plus-inline-action-notice:focus{outline:2px solid rgba(250,204,21,.55);outline-offset:2px}
 .ai-mode-plus-notice{flex-basis:100%;max-width:620px;margin-left:auto}
 .mobile-share-studio-notice{margin-top:12px}
+.mobile-share-studio-learn-more{display:inline-flex;min-height:44px;align-items:center;margin:4px 8px 0;color:#bbf7d0;font-size:13px;font-weight:800;text-decoration:underline;text-underline-offset:3px}
 
 .plus-feature-notice{
   max-width:520px;
@@ -8965,6 +8966,20 @@ body.local-profile-dialog-open {
 .share-studio-eyebrow{margin:0 52px 8px 0;color:#6ee7a7;font-weight:850;letter-spacing:.04em}
 .share-studio-card h2{margin:0 48px 10px 0;font-size:26px}
 .share-studio-card>p{line-height:1.75;color:#bdcadd}
+.share-studio-trial-free{margin:18px 0;padding:18px;border:1px solid rgba(74,222,128,.36);border-radius:18px;background:rgba(34,197,94,.1)}
+.share-studio-trial-free strong{display:block;margin-bottom:10px;color:#bbf7d0;font-size:17px}
+.share-studio-trial-free ul{display:grid;gap:9px;margin:0;padding-left:22px;color:#e2e8f0;line-height:1.65}
+.share-studio-trial-note{margin:16px 0;color:#cbd5e1!important;font-size:14px}
+.share-studio-trial-learn-more{display:inline-flex;min-height:44px;align-items:center;margin-bottom:12px;color:#bbf7d0;font-weight:800;text-decoration:underline;text-underline-offset:3px}
+.share-studio-trial-actions{display:grid;grid-template-columns:1fr!important}
+.share-studio-trial-actions .primary-button{min-height:52px;white-space:normal;line-height:1.45}
+.plus-account-card.is-share-trial-entry .plus-account-price,
+.plus-account-card.is-share-trial-entry .plus-account-lead,
+.plus-account-card.is-share-trial-entry .plus-account-benefits{display:none}
+.share-studio-about-free{border-color:rgba(74,222,128,.38);background:linear-gradient(145deg,rgba(34,197,94,.14),rgba(15,23,42,.94))}
+.share-studio-about-free h2{margin-top:4px;color:#dcfce7}
+.share-studio-about-list{display:grid;gap:10px;margin:12px 0 0;padding-left:22px;color:#dbe7f4;line-height:1.7}
+.share-studio-about-cta{display:flex;justify-content:center;margin:24px 0 8px}
 .share-studio-privacy{margin:18px 0;padding:16px;border:1px solid rgba(96,165,250,.24);border-radius:16px;background:rgba(59,130,246,.08)}
 .share-studio-privacy strong{color:#dbeafe}
 .share-studio-privacy p{margin:6px 0 0;color:#c7d5e8;font-size:14px;line-height:1.7}
