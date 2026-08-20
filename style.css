@@ -621,10 +621,11 @@ body{
 .mobile-share-studio-learn-more span{display:block}
 
 .plus-feature-notice{
-  max-width:520px;
-  margin:0;
-  color:#dbeafe;
+  width:min(100%,520px);
+  margin:2px 0 0 auto;
+  color:#fda4af;
   font-size:12px;
+  font-weight:700;
   line-height:1.6;
   text-align:right;
   white-space:pre-line;

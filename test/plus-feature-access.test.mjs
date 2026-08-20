@@ -165,6 +165,7 @@ test("the frontend loads the access module first and gates extended ranges and d
   assert.match(app, /plusDeepAnalysisRequired/);
   assert.match(app, /plusExtendedRangeRequired: "7日・30日・カスタムはPlus機能です。\\n購入は「その他」→「Plus・あなたの設定」へ。"/u);
   assert.match(style, /\.plus-feature-notice\s*\{[^}]*white-space:pre-line/su);
+  assert.match(style, /\.plus-feature-notice\s*\{[^}]*width:min\(100%,520px\);[^}]*margin:2px 0 0 auto;[^}]*color:#fda4af;[^}]*text-align:right;/su);
   assert.match(index, /data-period="seven"[\s\S]*?plus-feature-badge[^>]*>Plus</u);
   assert.match(index, /data-period="thirty"[\s\S]*?plus-feature-badge[^>]*>Plus</u);
   assert.match(index, /data-period="custom"[\s\S]*?plus-feature-badge[^>]*>Plus</u);

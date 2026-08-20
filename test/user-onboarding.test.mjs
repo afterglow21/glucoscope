@@ -116,7 +116,7 @@ test("GlucoScore is omitted from reflections unless it rises by at least two", (
 test("public data connection remains clickable and clearly marked as early access", () => {
   assert.match(index, /データ接続（先行体験）/);
   assert.match(index, /Gluroo接続は少人数で確認しながら提供しています/);
-  assert.match(index, /style\.css\?v=20260820-share-trial-ui-1/);
+  assert.match(index, /style\.css\?v=20260820-plus-notice-align-1/);
   assert.match(index, /js\/app\.js\?v=20260820-share-trial-ui-1/);
   assert.match(app, /dataSourceButtonDemo: "データ接続（先行体験）"/);
   assert.match(app, /dataSourceDialogTitle: "Data connection \(early access\)"/);
