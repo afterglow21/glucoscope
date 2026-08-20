@@ -41,7 +41,7 @@
   <meta name="glucoscope-plus-purchases-enabled" content="true">
   <meta name="glucoscope-plus-entitlement-endpoint" content="https://plus.glucoscope.app">
   <meta name="glucoscope-plus-turnstile-sitekey" content="0x4AAAAAAEUvQ9ymAJlyrxyC">
-  <link rel="stylesheet" href="style.css?v=20260818-share-studio-1">
+  <link rel="stylesheet" href="style.css?v=20260820-plus-labels-1">
 </head>
 <body>
 
@@ -414,7 +414,8 @@
         <div id="plusAccountSignedIn" class="plus-account-panel" hidden>
           <p id="plusAccountSummary" tabindex="-1"></p>
           <div class="usage-profile-actions">
-            <button id="plusAccountShareStudioButton" class="usage-profile-primary-button" type="button" data-i18n-key="plusAccountShareStudioButton" hidden>Share Studioを開く</button>
+            <button id="plusAccountShareStudioButton" class="usage-profile-primary-button" type="button" data-i18n-key="plusAccountShareStudioButton" hidden>Share Studioを開く（Plus）</button>
+            <p id="plusAccountShareStudioNotice" class="plus-inline-action-notice" role="status" aria-live="polite" tabindex="-1" hidden></p>
             <button id="plusAccountPurchaseButton" class="usage-profile-primary-button" type="button" data-i18n-key="plusAccountPurchaseButton" hidden>400円で30日間使う（支払い画面へ）</button>
             <button id="plusAccountRefreshButton" class="usage-profile-secondary-button" type="button" data-i18n-key="plusAccountRefreshButton">状態を更新する</button>
             <button id="plusAccountLogoutButton" class="usage-profile-secondary-button" type="button" data-i18n-key="plusAccountLogoutButton">この端末からログアウト</button>
@@ -663,9 +664,9 @@
         <div class="period-switch" aria-label="Chart period">
           <button type="button" class="period-button active" data-period="today" data-i18n-key="periodToday">今日</button>
           <button type="button" class="period-button" data-period="yesterday" data-i18n-key="periodYesterday">昨日</button>
-          <button type="button" class="period-button" data-period="seven" data-i18n-key="periodSevenDays">7日</button>
-          <button type="button" class="period-button" data-period="thirty" data-i18n-key="periodThirtyDays">30日</button>
-          <button type="button" class="period-button" data-period="custom" data-i18n-key="periodCustom">カスタム</button>
+          <button type="button" class="period-button plus-labeled-control" data-period="seven"><span data-i18n-key="periodSevenDays">7日</span><small class="plus-feature-badge">Plus</small></button>
+          <button type="button" class="period-button plus-labeled-control" data-period="thirty"><span data-i18n-key="periodThirtyDays">30日</span><small class="plus-feature-badge">Plus</small></button>
+          <button type="button" class="period-button plus-labeled-control" data-period="custom"><span data-i18n-key="periodCustom">カスタム</span><small class="plus-feature-badge">Plus</small></button>
         </div>
         <div id="customRangeControls" class="custom-range-controls" role="dialog" aria-modal="true" aria-labelledby="customRangeDialogTitle" hidden>
           <div class="custom-range-dialog-header">
@@ -694,8 +695,9 @@
             <span id="glucoLetterModeTitle" class="gluco-letter-control-title">分析</span>
             <div class="gluco-letter-mode-toggle" role="group" aria-label="分析モード">
               <button id="aiModeLetterToggle" type="button" class="gluco-letter-mode-toggle-button" data-ai-mode-toggle="letter" onclick="window.glucoSetAiLetterMode?.('letter')">🍀 やさしい分析</button>
-              <button id="aiModeDeepToggle" type="button" class="gluco-letter-mode-toggle-button" data-ai-mode-toggle="deep" onclick="window.glucoSetAiLetterMode?.('deep')">📊 しっかり分析</button>
+              <button id="aiModeDeepToggle" type="button" class="gluco-letter-mode-toggle-button" data-ai-mode-toggle="deep" onclick="window.glucoSetAiLetterMode?.('deep')"><span>📊 しっかり分析</span><small class="plus-feature-badge">Plus</small></button>
             </div>
+            <p id="aiModePlusNotice" class="plus-inline-action-notice ai-mode-plus-notice" role="status" aria-live="polite" tabindex="-1" hidden></p>
           </div>
         </div>
       </div>
@@ -767,11 +769,12 @@
       <button type="button" class="mobile-more-link" data-mobile-open-view="collection"><span>🍀</span><strong data-i18n-key="mobileMoreCollection">想い出</strong><small data-i18n-key="mobileMoreCollectionNote">グルコとの記録</small></button>
       <button type="button" class="mobile-more-link" data-mobile-open-view="about"><span>✨</span><strong data-i18n-key="mobileMoreAbout">About</strong><small data-i18n-key="mobileMoreAboutNote">GlucoScopeについて</small></button>
       <button type="button" class="mobile-more-link" data-mobile-open-view="journal"><span>📖</span><strong data-i18n-key="mobileMoreJournal">Journal</strong><small data-i18n-key="comingSoonEyebrow">準備中</small></button>
-      <button id="mobileShareStudioButton" type="button" class="mobile-more-link" hidden><span>🖼️</span><strong>Share Studio</strong><small data-i18n-key="mobileMoreShareStudioNote">ふりかえり画像を作る</small></button>
+      <button id="mobileShareStudioButton" type="button" class="mobile-more-link" hidden><span>🖼️</span><strong>Share Studio</strong><small data-i18n-key="mobileMoreShareStudioNote">Plus・1回体験あり</small></button>
       <div class="mobile-more-gluco-slot" aria-hidden="true">
         <img src="assets/gluco/ui/gluco-peek-clover.png?v=20260713-transparent-2" alt="" class="mobile-more-gluco-image" width="772" height="547">
       </div>
     </div>
+    <p id="shareStudioAccessNotice" class="plus-inline-action-notice mobile-share-studio-notice" role="status" aria-live="polite" tabindex="-1" hidden></p>
     <button id="mobileDataSourceButton" type="button" class="mobile-data-source-button">
       <span aria-hidden="true">🔗</span>
       <span><strong data-i18n-key="mobileMoreDataSource">データ接続（先行体験）</strong><small data-i18n-key="mobileMoreDataSourceNote">先行体験 · Gluroo / Nightscout</small></span>
@@ -1046,7 +1049,7 @@
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js?v=20260721-user-foundation-3"></script>
-<script src="js/app.js?v=20260820-plus-public-release-1"></script>
+<script src="js/app.js?v=20260820-plus-labels-1"></script>
 <!-- Cloudflare Web Analytics: aggregate page-view and performance metrics only -->
 <script src="js/analytics-loader.js?v=20260811-usage-profile-stage-1"></script>
 <!-- End Cloudflare Web Analytics -->

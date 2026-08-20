@@ -285,7 +285,7 @@ const translations = {
     mobileMoreTitle: "その他",
     mobileMoreLead: "GlucoScopeのほかのページや設定を開けます。",
     mobileMoreJournal: "Journal",
-    mobileMoreShareStudioNote: "ふりかえり画像を作る",
+    mobileMoreShareStudioNote: "Plus・1回体験あり",
     shareStudioTitle: "今日のふりかえり画像",
     shareStudioLead: "今の血糖と今日のTIR・TAR・TBRを、端末の中だけで1枚の画像にします。",
     shareStudioPrivacyTitle: "共有する前に",
@@ -348,7 +348,7 @@ const translations = {
     plusAccountBenefitAi: "Freeでは、やさしい分析を1日1回。Plusでは、しっかり分析を含めて1日最大5回まで使えます。",
     plusAccountBenefitRange: "7日・30日・カスタム期間のグラフを使えます。",
     plusAccountBenefitShare: "Share Studioを使えます。確認済みアカウントなら、購入前にも1回だけ試せます。",
-    plusAccountShareStudioButton: "Share Studioを開く",
+    plusAccountShareStudioButton: "Share Studioを開く（Plus）",
     plusAccountEmailLabel: "確認に使うメール",
     plusAccountEmailHelp: "パスワードは入力しません。1つのメールで管理できるPlusアカウントは1つです。",
     plusAccountRoleLegend: "だれが購入やメールを管理しますか？",
@@ -544,9 +544,9 @@ const translations = {
     aiLetterUserConsentQuota: "利用上限の確認のため、成功したAI分析の日と回数だけを最大90日保存します。Freeはやさしい分析を1日1回、Plusはやさしい分析としっかり分析を合わせて1日5回までです。",
     aiLetterButtonNoData: "この期間はデータなし",
     aiLetterButtonUnavailable: "データを読み込めませんでした",
-    aiLetterButtonReady: "AI分析を試す",
+    aiLetterButtonReady: "AI分析を試す（2回目からPlus）",
     aiLetterButtonCached: "保存済みの分析を表示",
-    aiLetterButtonRefresh: "もう一度AI分析",
+    aiLetterButtonRefresh: "もう一度AI分析（Plus）",
     aiLetterButtonLoading: "グルコがお手紙を書いてるよ...",
     aiLetterStatusGeneratingDeep: "しっかり分析を最後まで丁寧にまとめているよ。少しだけ待ってね🍀",
     aiLetterStatusRecoveredAfterRetry: "途中で切れないように整え直して、最後まで表示しました🍀",
@@ -638,11 +638,11 @@ const translations = {
     customFromLabel: "開始",
     customToLabel: "終了",
     customApplyLabel: "表示",
-    plusExtendedRangeRequired: "7日・30日・カスタム期間はPlus 30日パスで使えます。今日と昨日は、Plusがなくても使えます。",
-    plusDeepAnalysisRequired: "しっかり分析のグルコのお話し・AIお手紙・ChatGPTに相談は、Plus 30日パスで使えます。Freeでは、やさしい分析を1日1回試せます。",
+    plusExtendedRangeRequired: "7日・30日・カスタム期間はPlusの機能です。Plus 30日パスを購入すると利用できます。「その他」のPlusアカウントから確認・購入できます。今日と昨日はFreeで使えます。",
+    plusDeepAnalysisRequired: "しっかり分析のグルコのお話し・AIお手紙・ChatGPTに相談はPlusの機能です。Plus 30日パスを購入すると利用できます。「その他」のPlusアカウントから確認・購入できます。Freeでは、やさしい分析を1日1回試せます。",
     plusAccessUnavailable: "Plusの利用状況を確認できませんでした。少し待って、もう一度お試しください。",
-    plusVerifiedAccountRequired: "Share Studioの1回体験には、メール確認済みのPlusアカウントが必要です。",
-    plusShareStudioRequired: "Share Studioの無料体験は使用済みです。続けて使う場合はPlus 30日パスをご利用ください。",
+    plusVerifiedAccountRequired: "Share StudioはPlusの機能で、メール確認済みのアカウントなら購入前に1回だけ体験できます。「その他」のPlusアカウントでメールを確認してください。",
+    plusShareStudioRequired: "Share Studioの1回体験は使用済みです。Plus 30日パスを購入すると続けて利用できます。「その他」のPlusアカウントから確認・購入できます。",
     selectedRangeLabel: "表示中の期間",
     periodPreviousDay: "前日",
     periodPreviousRange: "前期間",
@@ -712,7 +712,7 @@ const translations = {
     mobileMoreTitle: "More",
     mobileMoreLead: "Open other GlucoScope pages and settings.",
     mobileMoreJournal: "Journal",
-    mobileMoreShareStudioNote: "Create a reflection image",
+    mobileMoreShareStudioNote: "Plus · one trial included",
     shareStudioTitle: "Today's reflection image",
     shareStudioLead: "Create one image from the current glucose and today's TIR, TAR, and TBR, entirely on this device.",
     shareStudioPrivacyTitle: "Before sharing",
@@ -775,7 +775,7 @@ const translations = {
     plusAccountBenefitAi: "Free includes one gentle analysis per day. Plus includes detailed analysis and up to five successful analyses per day.",
     plusAccountBenefitRange: "Use 7-day, 30-day, and custom graph ranges.",
     plusAccountBenefitShare: "Use Share Studio, with one trial per verified account before purchase.",
-    plusAccountShareStudioButton: "Open Share Studio",
+    plusAccountShareStudioButton: "Open Share Studio (Plus)",
     plusAccountEmailLabel: "Email for verification",
     plusAccountEmailHelp: "No password is needed. One email address can manage one Plus account.",
     plusAccountRoleLegend: "Who will manage the purchase and email?",
@@ -971,9 +971,9 @@ const translations = {
     aiLetterUserConsentQuota: "To enforce the usage limit, only the day and count of successful AI analyses are kept for up to 90 days. Free includes one gentle analysis per day; Plus includes five gentle or detailed analyses in total.",
     aiLetterButtonNoData: "No data for this range",
     aiLetterButtonUnavailable: "Could not load data",
-    aiLetterButtonReady: "Try AI analysis",
+    aiLetterButtonReady: "Try AI analysis (Plus after the first)",
     aiLetterButtonCached: "Show saved analysis",
-    aiLetterButtonRefresh: "Run AI analysis again",
+    aiLetterButtonRefresh: "Run AI analysis again (Plus)",
     aiLetterButtonLoading: "Gluco is writing...",
     aiLetterStatusGeneratingDeep: "Gluco is carefully completing the detailed analysis. This may take a little longer 🍀",
     aiLetterStatusRecoveredAfterRetry: "The reflection was regenerated so it could finish cleanly 🍀",
@@ -1065,11 +1065,11 @@ const translations = {
     customFromLabel: "From",
     customToLabel: "To",
     customApplyLabel: "Show",
-    plusExtendedRangeRequired: "The 7-day, 30-day, and custom ranges are included with the Plus 30-day pass. Today and yesterday remain available without Plus.",
-    plusDeepAnalysisRequired: "Detailed Gluco stories, AI letters, and ChatGPT handoff are included with the Plus 30-day pass. Free includes one gentle analysis per day.",
+    plusExtendedRangeRequired: "The 7-day, 30-day, and custom ranges are Plus features. Purchase the Plus 30-day pass to use them. Review or purchase it under Plus Account in More. Today and yesterday remain available with Free.",
+    plusDeepAnalysisRequired: "Detailed Gluco stories, AI letters, and ChatGPT handoff are Plus features. Purchase the Plus 30-day pass to use them. Review or purchase it under Plus Account in More. Free includes one gentle analysis per day.",
     plusAccessUnavailable: "We could not confirm your Plus access. Please wait a moment and try again.",
-    plusVerifiedAccountRequired: "A verified Plus account is required for the one-time Share Studio trial.",
-    plusShareStudioRequired: "The free Share Studio trial has been used. Continued use is included with the Plus 30-day pass.",
+    plusVerifiedAccountRequired: "Share Studio is a Plus feature, with one trial before purchase for a verified account. Verify your email under Plus Account in More.",
+    plusShareStudioRequired: "The one-time Share Studio trial has been used. Purchase the Plus 30-day pass to keep using it under Plus Account in More.",
     selectedRangeLabel: "Selected range",
     periodPreviousDay: "Previous day",
     periodPreviousRange: "Previous range",
@@ -3183,8 +3183,12 @@ function setLetterPanel(panel) {
 function setAiLetterMode(mode, options = {}) {
   const nextMode = normalizeAiLetterMode(mode);
   if (!canUseAiLetterMode(nextMode, { announce: options.announce === true })) {
+    if (options.announce === true) {
+      setInlinePlusNotice("aiModePlusNotice", "plusDeepAnalysisRequired", { focus: true });
+    }
     return false;
   }
+  setInlinePlusNotice("aiModePlusNotice");
   const previousMode = currentAiLetterMode;
   currentAiLetterMode = nextMode;
   if (previousMode !== currentAiLetterMode) {
@@ -4119,6 +4123,34 @@ function setPlusFeatureNotice(messageKey = "") {
   notice.hidden = !messageKey;
 }
 
+function setInlinePlusNotice(elementId, messageKey = "", { focus = false } = {}) {
+  const notice = document.getElementById(elementId);
+  if (!notice) return;
+
+  notice.dataset.messageKey = messageKey;
+  notice.textContent = messageKey ? t(messageKey) : "";
+  notice.hidden = !messageKey;
+
+  if (messageKey && focus) {
+    notice.focus?.({ preventScroll: true });
+    notice.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
+  }
+}
+
+function setPlusLabeledButton(button, label, badgeLabel = "Plus") {
+  if (!button) return;
+  button.textContent = "";
+
+  const text = document.createElement("span");
+  text.textContent = label;
+  button.appendChild(text);
+
+  const badge = document.createElement("small");
+  badge.className = "plus-feature-badge";
+  badge.textContent = badgeLabel;
+  button.appendChild(badge);
+}
+
 function getGraphPeriodFeature(periodKey) {
   if (periodKey === "seven") {
     return plusFeatureAccessManager?.FEATURE_SEVEN_DAY_RANGE || "seven_day_range";
@@ -4229,16 +4261,21 @@ function setupShareStudio() {
     const feature = plusFeatureAccessManager?.FEATURE_SHARE_STUDIO || "share_studio";
     const access = getPlusFeatureAccess(feature);
     if (!access.allowed) {
-      setPlusFeatureNotice(
-        access.reason === "verified_account_required"
-          ? "plusVerifiedAccountRequired"
-          : access.reason === "entitlement_unavailable"
-            ? "plusAccessUnavailable"
-            : "plusShareStudioRequired"
-      );
+      const messageKey = access.reason === "verified_account_required"
+        ? "plusVerifiedAccountRequired"
+        : access.reason === "entitlement_unavailable"
+          ? "plusAccessUnavailable"
+          : "plusShareStudioRequired";
+      const noticeId = event?.currentTarget?.id === "plusAccountShareStudioButton"
+        ? "plusAccountShareStudioNotice"
+        : "shareStudioAccessNotice";
+      setPlusFeatureNotice(messageKey);
+      setInlinePlusNotice(noticeId, messageKey, { focus: true });
       return;
     }
     setPlusFeatureNotice("");
+    setInlinePlusNotice("shareStudioAccessNotice");
+    setInlinePlusNotice("plusAccountShareStudioNotice");
     shareStudioOpener = event?.currentTarget || document.activeElement;
     dialog.hidden = false;
     setShareStudioStatus("");
@@ -5397,6 +5434,10 @@ function applyLanguage() {
   if (plusFeatureNotice?.dataset.messageKey) {
     plusFeatureNotice.textContent = t(plusFeatureNotice.dataset.messageKey);
   }
+  ["aiModePlusNotice", "shareStudioAccessNotice", "plusAccountShareStudioNotice"].forEach((id) => {
+    const notice = document.getElementById(id);
+    if (notice?.dataset.messageKey) notice.textContent = t(notice.dataset.messageKey);
+  });
   updatePlusAccountUi();
   updatePlusAccountResendButton();
   syncMobileApp();
@@ -6156,8 +6197,9 @@ function ensureAiLetterModeSwitcher() {
           <span id="glucoLetterModeTitle" class="gluco-letter-control-title">分析</span>
           <div class="gluco-letter-mode-toggle" role="group" aria-label="Analysis mode">
             <button id="aiModeLetterToggle" type="button" class="gluco-letter-mode-toggle-button" data-ai-mode-toggle="letter">🍀 やさしい分析</button>
-            <button id="aiModeDeepToggle" type="button" class="gluco-letter-mode-toggle-button" data-ai-mode-toggle="deep">📊 しっかり分析</button>
+            <button id="aiModeDeepToggle" type="button" class="gluco-letter-mode-toggle-button" data-ai-mode-toggle="deep"><span>📊 しっかり分析</span><small class="plus-feature-badge">Plus</small></button>
           </div>
+          <p id="aiModePlusNotice" class="plus-inline-action-notice ai-mode-plus-notice" role="status" aria-live="polite" tabindex="-1" hidden></p>
         </div>
       </div>
     `;
@@ -6188,7 +6230,8 @@ function updateAiModeSwitcher() {
     const label = mode === "deep"
       ? (currentLanguage === "en" ? "📊 Detailed analysis" : "📊 しっかり分析")
       : (currentLanguage === "en" ? "🍀 Gentle analysis" : "🍀 やさしい分析");
-    button.textContent = label;
+    if (mode === "deep") setPlusLabeledButton(button, label);
+    else button.textContent = label;
     button.classList.toggle("is-active", mode === currentAiLetterMode);
     button.setAttribute("aria-pressed", mode === currentAiLetterMode ? "true" : "false");
     button.disabled = aiLetterRequestInFlight;

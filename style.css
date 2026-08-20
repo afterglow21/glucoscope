@@ -572,6 +572,52 @@ body{
   cursor:pointer;
 }
 
+.period-button.plus-labeled-control{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+}
+
+.plus-feature-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  min-height:16px;
+  padding:2px 6px;
+  border:1px solid rgba(250,204,21,.48);
+  border-radius:999px;
+  color:#fff7c2;
+  background:rgba(161,98,7,.30);
+  font-size:9px !important;
+  font-weight:950;
+  line-height:1;
+  letter-spacing:.01em;
+}
+
+.gluco-letter-mode-toggle-button .plus-feature-badge{
+  margin-left:6px;
+}
+
+.plus-inline-action-notice{
+  width:100%;
+  margin:8px 0 0;
+  padding:12px 14px;
+  border:1px solid rgba(250,204,21,.28);
+  border-radius:14px;
+  color:#fef3c7;
+  background:rgba(120,78,10,.16);
+  font-size:13px;
+  font-weight:750;
+  line-height:1.65;
+}
+
+.plus-inline-action-notice[hidden]{display:none}
+.plus-inline-action-notice:focus{outline:2px solid rgba(250,204,21,.55);outline-offset:2px}
+.ai-mode-plus-notice{flex-basis:100%;max-width:620px;margin-left:auto}
+.mobile-share-studio-notice{margin-top:12px}
+
 .plus-feature-notice{
   max-width:520px;
   margin:0;
@@ -4422,6 +4468,17 @@ canvas{
     font-size:9px;
   }
 
+  body.mobile-page-graph .period-button.plus-labeled-control{
+    flex-direction:column;
+    gap:2px;
+  }
+
+  body.mobile-page-graph .period-button .plus-feature-badge{
+    min-height:11px;
+    padding:1px 4px;
+    font-size:6.5px !important;
+  }
+
   body.mobile-page-graph .chart-range{
     font-size:9px;
   }
@@ -6720,6 +6777,10 @@ body.public-demo-mode .public-demo-banner{
     content:"指定";
     font-size:9px;
     letter-spacing:0;
+  }
+
+  html:not(.force-desktop-view) body.mobile-page-graph .period-button[data-period="custom"] > span{
+    display:none;
   }
 
   html[lang="en"]:not(.force-desktop-view) body.mobile-page-graph .period-button[data-period="custom"]::after{

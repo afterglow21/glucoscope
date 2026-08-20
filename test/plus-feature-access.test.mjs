@@ -149,4 +149,12 @@ test("the frontend loads the access module first and gates extended ranges and d
   assert.match(app, /FEATURE_DEEP_ANALYSIS \|\| "deep_analysis"/);
   assert.match(app, /if \(!setAiLetterMode\(analysisMode, \{ announce: true \}\)\) return;/);
   assert.match(app, /plusDeepAnalysisRequired/);
+  assert.match(index, /data-period="seven"[\s\S]*?plus-feature-badge[^>]*>Plus</u);
+  assert.match(index, /data-period="thirty"[\s\S]*?plus-feature-badge[^>]*>Plus</u);
+  assert.match(index, /data-period="custom"[\s\S]*?plus-feature-badge[^>]*>Plus</u);
+  assert.match(index, /id="aiModeDeepToggle"[\s\S]*?plus-feature-badge[^>]*>Plus</u);
+  assert.match(index, /id="aiModePlusNotice"[^>]*role="status"[^>]*hidden/u);
+  assert.match(app, /setInlinePlusNotice\("aiModePlusNotice", "plusDeepAnalysisRequired"/u);
+  assert.match(app, /AI分析を試す（2回目からPlus）/u);
+  assert.match(app, /もう一度AI分析（Plus）/u);
 });

@@ -41,6 +41,9 @@ test("Share Studio normalizes only bounded display metrics", () => {
 test("Share Studio is rollout-hidden and completes a trial only after local image creation", () => {
   assert.match(index, /id="mobileShareStudioButton"[^>]*hidden/u);
   assert.match(index, /id="plusAccountShareStudioButton"[^>]*hidden/u);
+  assert.match(index, /id="mobileShareStudioButton"[\s\S]*Plus・1回体験あり/u);
+  assert.match(index, /id="shareStudioAccessNotice"[^>]*role="status"[^>]*hidden/u);
+  assert.match(index, /id="plusAccountShareStudioNotice"[^>]*role="status"[^>]*hidden/u);
   assert.match(index, /js\/share-studio\.js/u);
   assert.match(index, /接続URLや合言葉は画像にもサーバーにも送りません/u);
   assert.match(app, /reserveShareStudio[\s\S]*generateBlob[\s\S]*completeShareStudio/u);
@@ -48,5 +51,6 @@ test("Share Studio is rollout-hidden and completes a trial only after local imag
   assert.match(app, /completionStarted[\s\S]*体験の完了を確認できなかったため/u);
   assert.match(app, /event\.key === "Escape"[\s\S]*closeShareStudio/u);
   assert.match(app, /shareStudioOpener\?\.focus/u);
+  assert.match(app, /setInlinePlusNotice\(noticeId, messageKey, \{ focus: true \}\)/u);
   assert.doesNotMatch(source, /localStorage|sessionStorage|fetch\(/u);
 });
