@@ -265,18 +265,33 @@ test("Share Studio exposes a rejected trial status as the client error", async (
     schemaVersion: 1,
     sessionToken: TOKEN
   }));
+  let calls = 0;
   const { api } = loadClient({
     storage,
-    fetchImpl: async () => jsonResponse({
-      ok: false,
-      status: "trial_already_used"
-    }, 409)
+    fetchImpl: async (url) => {
+      calls += 1;
+      if (url.endsWith("/v1/session")) {
+        return jsonResponse({
+          ok: true,
+          status: "ready",
+          accountVerified: true,
+          plusActive: false,
+          shareStudioTrialAvailable: false
+        });
+      }
+      return jsonResponse({
+        ok: false,
+        status: "trial_already_used"
+      }, 409);
+    }
   });
   await api.configure({ enabled: true, endpoint: "https://plus.example" });
   const result = await api.reserveShareStudio();
   assert.equal(result.ok, false);
   assert.equal(result.status, 409);
   assert.equal(result.error, "trial_already_used");
+  assert.equal(calls, 2);
+  assert.equal(api.getState().shareStudioTrialAvailable, false);
 });
 
 test("verification fails locally without a request-code grant", async () => {

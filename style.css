@@ -8976,6 +8976,9 @@ body.local-profile-dialog-open {
 .share-studio-trial-free strong{display:block;margin-bottom:10px;color:#bbf7d0;font-size:17px}
 .share-studio-trial-free ul{display:grid;gap:9px;margin:0;padding-left:22px;color:#e2e8f0;line-height:1.65}
 .share-studio-trial-note{margin:16px 0;color:#cbd5e1!important;font-size:14px}
+.share-studio-trial-used{margin:18px 0;padding:18px;border:1px solid rgba(250,204,21,.4);border-radius:18px;background:rgba(161,98,7,.13)}
+.share-studio-trial-used strong{display:block;margin-bottom:8px;color:#fef3c7;font-size:17px}
+.share-studio-trial-used p{margin:0;color:#e2e8f0;line-height:1.7}
 .share-studio-trial-learn-more{display:inline-flex;min-height:44px;align-items:center;margin-bottom:12px;color:#bbf7d0;font-weight:800;text-decoration:underline;text-underline-offset:3px}
 .share-studio-trial-actions{display:grid;grid-template-columns:1fr!important}
 .share-studio-trial-actions .primary-button{min-height:52px;white-space:normal;line-height:1.45}

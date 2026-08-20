@@ -41,7 +41,7 @@
   <meta name="glucoscope-plus-purchases-enabled" content="true">
   <meta name="glucoscope-plus-entitlement-endpoint" content="https://plus.glucoscope.app">
   <meta name="glucoscope-plus-turnstile-sitekey" content="0x4AAAAAAEUvQ9ymAJlyrxyC">
-  <link rel="stylesheet" href="style.css?v=20260820-plus-notice-align-1">
+  <link rel="stylesheet" href="style.css?v=20260820-share-access-panel-1">
 </head>
 <body>
 
@@ -51,6 +51,7 @@
     <p class="share-studio-eyebrow" data-i18n-key="shareStudioTrialEyebrow">🍀 購入前の無料体験</p>
     <h2 id="shareStudioTrialTitle" data-i18n-key="shareStudioTrialTitle">Share Studioを1回無料で試せます</h2>
     <p id="shareStudioTrialLead" data-i18n-key="shareStudioTrialLead">メールを確認するだけで、ふりかえり画像を1回作れます。</p>
+    <div id="shareStudioTrialAvailableContent">
     <div class="share-studio-trial-free">
       <strong data-i18n-key="shareStudioTrialFreeTitle">この確認では料金はかかりません</strong>
       <ul>
@@ -60,9 +61,15 @@
       </ul>
     </div>
     <p class="share-studio-trial-note" data-i18n-key="shareStudioTrialReason">メール確認は、同じ人が無料体験を繰り返すことを防ぐために使います。</p>
+    </div>
+    <div id="shareStudioTrialUsedContent" class="share-studio-trial-used" hidden>
+      <strong data-i18n-key="shareStudioTrialUsedHeading">無料体験は1回分を使用済みです</strong>
+      <p data-i18n-key="shareStudioTrialUsedBody">このメールでは無料体験をすでに利用しています。アカウントを削除しても、二重体験を防ぐ記録は90日間だけ残ります。</p>
+    </div>
     <a class="share-studio-trial-learn-more" href="pages/about/share-studio.html" data-i18n-key="shareStudioTrialLearnMore">Share Studioでできることを見る</a>
     <div class="share-studio-actions share-studio-trial-actions">
       <button id="shareStudioTrialVerifyButton" type="button" class="primary-button" data-i18n-key="shareStudioTrialVerifyButton">無料体験のためメールを確認する（課金なし）</button>
+      <button id="shareStudioTrialPurchaseButton" type="button" class="primary-button" data-i18n-key="shareStudioTrialPurchaseButton" hidden>Plus 30日パスを見る</button>
       <button id="shareStudioTrialCancelButton" type="button" class="secondary-button" data-i18n-key="shareStudioTrialCancelButton">今はやめる</button>
     </div>
   </div>
@@ -1067,13 +1074,13 @@
 <script src="js/data-relay-client.js?v=20260816-device-session-1"></script>
 <script src="js/local-profile.js?v=20260811-usage-profile-stage-1"></script>
 <script src="js/usage-client.js?v=20260815-guardian-confirmation-1"></script>
-<script src="js/plus-entitlement-client.js?v=20260818-share-studio-1"></script>
+<script src="js/plus-entitlement-client.js?v=20260820-share-access-panel-1"></script>
 <script src="js/plus-feature-access.js?v=20260820-plus-guidance-1"></script>
 <script src="js/share-studio.js?v=20260818-plus-trial-1"></script>
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js?v=20260721-user-foundation-3"></script>
-<script src="js/app.js?v=20260820-share-trial-ui-1"></script>
+<script src="js/app.js?v=20260820-share-access-panel-1"></script>
 <!-- Cloudflare Web Analytics: aggregate page-view and performance metrics only -->
 <script src="js/analytics-loader.js?v=20260811-usage-profile-stage-1"></script>
 <!-- End Cloudflare Web Analytics -->

@@ -376,6 +376,13 @@ const translations = {
     shareStudioTrialVerifyButton: "無料体験のためメールを確認する（課金なし）",
     shareStudioTrialCancelButton: "今はやめる",
     shareStudioTrialLearnMore: "Share Studioでできることを見る",
+    shareStudioTrialUsedEyebrow: "🍀 Share Studioの利用状況",
+    shareStudioTrialUsedTitle: "Share Studioの無料体験は使用済みです",
+    shareStudioTrialUsedLead: "引き続き使うには、Plus 30日パスをご利用ください。",
+    shareStudioTrialUsedHeading: "無料体験は1回分を使用済みです",
+    shareStudioTrialUsedBody: "このメールでは無料体験をすでに利用しています。アカウントを削除しても、二重体験を防ぐ記録は90日間だけ残ります。",
+    shareStudioTrialPurchaseButton: "Plus 30日パスを見る",
+    shareStudioTrialUsedButton: "無料体験の利用状況を見る",
     shareStudioTrialVerificationTitle: "Share Studio 1回無料体験",
     shareStudioTrialVerificationBadge: "無料・課金なし",
     shareStudioTrialEmailHelp: "メール確認だけでは料金は発生しません。クレジットカード情報も入力しません。二重体験を防ぐために使います。",
@@ -831,6 +838,13 @@ const translations = {
     shareStudioTrialVerifyButton: "Verify email for the free trial (no charge)",
     shareStudioTrialCancelButton: "Not now",
     shareStudioTrialLearnMore: "See what Share Studio can do",
+    shareStudioTrialUsedEyebrow: "🍀 Share Studio access",
+    shareStudioTrialUsedTitle: "The Share Studio free trial has been used",
+    shareStudioTrialUsedLead: "Use a Plus 30-day pass to continue.",
+    shareStudioTrialUsedHeading: "The one free trial has been used",
+    shareStudioTrialUsedBody: "This email has already used the free trial. To prevent repeated trials, the record remains for 90 days even after the account is deleted.",
+    shareStudioTrialPurchaseButton: "See the Plus 30-day pass",
+    shareStudioTrialUsedButton: "View free-trial status",
     shareStudioTrialVerificationTitle: "One free Share Studio trial",
     shareStudioTrialVerificationBadge: "Free · no charge",
     shareStudioTrialEmailHelp: "Email verification does not charge you, and no credit card information is entered. It is used to prevent repeated trials.",
@@ -3593,7 +3607,9 @@ function updatePlusAccountUi() {
     : "plusAccountSendCodeButton");
   if (shareStudioButton) shareStudioButton.textContent = accountState.plusActive
     ? t("plusAccountShareStudioButton")
-    : t("shareStudioTrialOpenButton");
+    : accountState.shareStudioTrialAvailable
+      ? t("shareStudioTrialOpenButton")
+      : t("shareStudioTrialUsedButton");
   if (signedOutPanel) signedOutPanel.hidden = signedIn;
   if (signedInPanel) signedInPanel.hidden = !signedIn;
   if (rolloutBadge) {
@@ -3620,9 +3636,7 @@ function updatePlusAccountUi() {
         ? "Payment is being confirmed. Please do not pay again."
         : "支払いを確認しています。もう一度支払わず、そのままお待ちください。";
     } else if (accountState.status === "ready" && shareTrialEntry) {
-      summary.textContent = currentLanguage === "en"
-        ? "Email verification is complete. You can now create one Share Studio image for free. No payment was made."
-        : "メール確認ができました。Share Studioの画像を1回無料で作れます。支払いは行われていません。";
+      badge.textContent = currentLanguage === "en" ? "Verified" : "確認済み";
     } else if (accountState.status === "ready") {
       badge.textContent = currentLanguage === "en" ? "Verified" : "確認済み";
     } else {
@@ -3638,6 +3652,14 @@ function updatePlusAccountUi() {
       summary.textContent = currentLanguage === "en"
         ? `Plus is active until ${endsAt}. It will not renew automatically.`
         : `Plusは${endsAt}まで利用できます。自動更新はありません。`;
+    } else if (accountState.status === "ready" && shareTrialEntry) {
+      summary.textContent = accountState.shareStudioTrialAvailable
+        ? (currentLanguage === "en"
+          ? "Email verification is complete. You can create one Share Studio image for free. No payment was made."
+          : "メール確認ができました。Share Studioの画像を1回無料で作れます。支払いは行われていません。")
+        : (currentLanguage === "en"
+          ? "This email has already used the one free Share Studio trial. No payment was made."
+          : "このメールではShare Studioの1回無料体験を使用済みです。支払いは行われていません。");
     } else if (accountState.status === "ready") {
       summary.textContent = config.purchasesEnabled
         ? (currentLanguage === "en"
@@ -4349,12 +4371,33 @@ function closeShareStudioTrialDialog({ restoreFocus = true } = {}) {
   if (restoreFocus) opener?.focus?.();
 }
 
-function openShareStudioTrialDialog(opener = null) {
+function configureShareStudioTrialDialog(mode = "verify") {
+  const used = mode === "used";
+  const eyebrow = document.querySelector("#shareStudioTrialDialog .share-studio-eyebrow");
+  const title = document.getElementById("shareStudioTrialTitle");
+  const lead = document.getElementById("shareStudioTrialLead");
+  const availableContent = document.getElementById("shareStudioTrialAvailableContent");
+  const usedContent = document.getElementById("shareStudioTrialUsedContent");
+  const verifyButton = document.getElementById("shareStudioTrialVerifyButton");
+  const purchaseButton = document.getElementById("shareStudioTrialPurchaseButton");
+  if (eyebrow) eyebrow.textContent = t(used ? "shareStudioTrialUsedEyebrow" : "shareStudioTrialEyebrow");
+  if (title) title.textContent = t(used ? "shareStudioTrialUsedTitle" : "shareStudioTrialTitle");
+  if (lead) lead.textContent = t(used ? "shareStudioTrialUsedLead" : "shareStudioTrialLead");
+  if (availableContent) availableContent.hidden = used;
+  if (usedContent) usedContent.hidden = !used;
+  if (verifyButton) verifyButton.hidden = used;
+  if (purchaseButton) purchaseButton.hidden = !used;
+}
+
+function openShareStudioTrialDialog(opener = null, { mode = "verify" } = {}) {
   const dialog = document.getElementById("shareStudioTrialDialog");
   if (!dialog) return;
   shareStudioTrialDialogOpener = opener || document.activeElement;
+  configureShareStudioTrialDialog(mode);
   dialog.hidden = false;
-  window.requestAnimationFrame(() => document.getElementById("shareStudioTrialVerifyButton")?.focus?.());
+  window.requestAnimationFrame(() => document.getElementById(
+    mode === "used" ? "shareStudioTrialPurchaseButton" : "shareStudioTrialVerifyButton"
+  )?.focus?.());
 }
 
 function setupShareStudioTrialDialog() {
@@ -4373,6 +4416,15 @@ function setupShareStudioTrialDialog() {
       entryContext: "share_trial"
     });
     setPlusAccountStatus(t("plusShareStudioVerifyGuide"));
+  });
+  document.getElementById("shareStudioTrialPurchaseButton")?.addEventListener("click", () => {
+    const opener = shareStudioTrialDialogOpener;
+    closeShareStudioTrialDialog({ restoreFocus: false });
+    openLocalProfileDialog(opener, {
+      focusTargetId: "plusAccountPurchaseButton",
+      entryContext: "settings"
+    });
+    setPlusAccountStatus(t("plusShareStudioPurchaseGuide"));
   });
   dialog?.addEventListener("click", (event) => {
     if (event.target === dialog) closeShareStudioTrialDialog();
@@ -4451,7 +4503,17 @@ function setupShareStudio() {
     if (!access.allowed) {
       if (access.reason === "verified_account_required") {
         setInlinePlusNotice("shareStudioAccessNotice");
-        openShareStudioTrialDialog(event?.currentTarget || document.activeElement);
+        openShareStudioTrialDialog(event?.currentTarget || document.activeElement, { mode: "verify" });
+        return;
+      }
+      if (access.reason === "plus_required") {
+        const opener = event?.currentTarget || document.activeElement;
+        setInlinePlusNotice("shareStudioAccessNotice");
+        setInlinePlusNotice("plusAccountShareStudioNotice");
+        if (event?.currentTarget?.id === "plusAccountShareStudioButton") {
+          closeLocalProfileDialog();
+        }
+        openShareStudioTrialDialog(opener, { mode: "used" });
         return;
       }
       const messageKey = access.reason === "verified_account_required"
@@ -4463,16 +4525,6 @@ function setupShareStudio() {
         ? "plusAccountShareStudioNotice"
         : "shareStudioAccessNotice";
       setInlinePlusNotice(noticeId, messageKey, { focus: true });
-      if (
-        event?.currentTarget?.id === "mobileShareStudioButton"
-        && access.reason === "plus_required"
-      ) {
-        openLocalProfileDialog(event.currentTarget, {
-          focusTargetId: "plusAccountPurchaseButton",
-          entryContext: "settings"
-        });
-        setPlusAccountStatus(t("plusShareStudioPurchaseGuide"));
-      }
       return;
     }
     setInlinePlusNotice("shareStudioAccessNotice");
@@ -4548,21 +4600,31 @@ function setupShareStudio() {
         ? "The image is ready. Check it before sharing or saving."
         : "画像ができました。内容を確認してから共有・保存してください。");
     } catch (error) {
+      const trialAlreadyUsed = error?.message === "trial_already_used";
       if (reservation?.grant === "trial" && reservation?.requestId && !completionStarted) {
         await plusEntitlementClient?.releaseShareStudio?.(reservation.requestId).catch(() => {});
       }
-      if (completionStarted) {
+      if (completionStarted || trialAlreadyUsed) {
         await plusEntitlementClient?.refresh?.().catch(() => {});
+        updatePlusAccountUi();
         configurePlusFeatureGating();
       }
       shareStudioBlob = null;
-      setShareStudioStatus(completionStarted
+      setShareStudioStatus(trialAlreadyUsed
+        ? ""
+        : completionStarted
         ? (currentLanguage === "en"
           ? "The trial result could not be confirmed, so the image is not shown. Check your connection, then refresh the account status."
           : "体験の完了を確認できなかったため、画像は表示していません。通信を確認して、アカウントの状態を更新してください。")
         : (currentLanguage === "en"
           ? "The image could not be created. The trial was not used. Please try again."
           : "画像を作れませんでした。体験回数は使っていません。もう一度お試しください。"));
+      if (trialAlreadyUsed) {
+        setInlinePlusNotice("shareStudioAccessNotice");
+        setInlinePlusNotice("plusAccountShareStudioNotice");
+        dialog.hidden = true;
+        window.setTimeout(() => openShareStudioTrialDialog(shareStudioOpener, { mode: "used" }), 0);
+      }
     } finally {
       shareStudioBusy = false;
       dialog?.removeAttribute("aria-busy");

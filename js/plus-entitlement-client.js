@@ -480,6 +480,9 @@
     const requestId = createRequestId();
     if (!requestId) return { ok: false, error: "share_studio_unavailable" };
     const result = await runShareTrialOperation("reserve", requestId);
+    if (!result.ok && result.error === "trial_already_used") {
+      await refresh();
+    }
     return result.ok ? { ...result, requestId } : result;
   }
 

@@ -63,8 +63,13 @@ test("the free trial is separate from purchase and explains Share Studio before 
   assert.match(index, /クレジットカード情報は入力しません/u);
   assert.match(index, /Stripeで400円の支払いを完了した時だけ料金が発生します/u);
   assert.match(index, /id="shareStudioTrialVerifyButton"[^>]*>無料体験のためメールを確認する（課金なし）<\/button>/u);
+  assert.match(index, /id="shareStudioTrialUsedContent"[^>]*hidden/u);
+  assert.match(index, /id="shareStudioTrialPurchaseButton"[^>]*hidden>Plus 30日パスを見る<\/button>/u);
   assert.match(index, /href="pages\/about\/share-studio\.html"/u);
-  assert.match(app, /openShareStudioTrialDialog\(event\?\.currentTarget \|\| document\.activeElement\)/u);
+  assert.match(app, /openShareStudioTrialDialog\(event\?\.currentTarget \|\| document\.activeElement, \{ mode: "verify" \}\)/u);
+  assert.match(app, /access\.reason === "plus_required"[\s\S]*openShareStudioTrialDialog\(opener, \{ mode: "used" \}\)/u);
+  assert.doesNotMatch(app, /event\?\.currentTarget\?\.id === "mobileShareStudioButton"[\s\S]*openLocalProfileDialog/u);
+  assert.match(app, /trialAlreadyUsed[\s\S]*plusEntitlementClient\?\.refresh[\s\S]*mode: "used"/u);
   assert.match(app, /entryContext: "share_trial"/u);
   assert.match(app, /shareStudioTrialSendCodeButton: "無料体験の確認コードを送る（課金なし）"/u);
   assert.match(app, /shareStudioTrialGuardianConfirmed: "私は保護者として、この無料体験のメール確認を管理します"/u);
