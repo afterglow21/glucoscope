@@ -3675,6 +3675,17 @@ require completion. The entitlement remains separate from the browser Usage prof
 the administrator dashboard may show only an aggregate active-Plus count, never individual
 payment or account details.
 
+On 2026-08-21, the public Share Studio boundary was aligned with the protected administrator
+Social Share Studio: it creates a four-image carousel for today instead of one Daily Snapshot.
+Slide 1 uses the exact Gluco already encountered and stored by the same GlucoScope browser;
+the person does not choose a replacement. Slide 2 contains daily metrics and the glucose
+graph, slide 3 contains a gentle reflection, and slide 4 is a stable GlucoScope closing card.
+All four PNGs are generated locally and written to browser IndexedDB before a free-trial
+completion is sent. A storage or read-back failure releases the reservation and does not
+consume the trial. The saved carousel can be reopened and saved again until the person
+deletes it in Share Studio or clears browser data. It does not sync across devices. The
+images, glucose values, source URL, and passphrase are never sent to the Plus Worker.
+
 The expanded implementation foundation remains disabled and unpublished. It includes an
 atomic AI-quota reservation ledger, a separate non-public Plus entitlement Worker, server-side
 Share Studio trial reservation, disabled 7-day/30-day/custom-range and detailed-analysis
@@ -4064,6 +4075,15 @@ AI回数を消費しません。この決定はローカル実装とStripeテス
 本番決済の開始承認ではありません。利用権の本人確認と復旧、返金、税、サポートは完了が必要です。
 Plus利用権はブラウザの利用記録プロフィールから分離し、管理者画面には有効なPlus合計だけを表示し、
 個別の購入・アカウント情報を表示しません。
+
+2026年8月21日、利用者向けShare Studioを、管理者用Social Share Studioと同じ4枚構成へ
+揃えました。1枚目は、同じGlucoScopeのブラウザがその日に実際に出逢いとして保存したグルコを
+使い、別の候補から選び直させません。2枚目は日次指標と血糖グラフ、3枚目はやさしいふりかえり、
+4枚目は固定のGlucoScope締めくくりカードです。4枚のPNGをすべて端末内で生成し、ブラウザの
+IndexedDBへ保存して読み戻せた後だけ無料体験の完了を送ります。保存または読み戻しに失敗した時は
+予約を解除し、体験を消費しません。保存済みの4枚は、Share Studio内で削除するかブラウザデータを
+削除するまで再表示・再保存できます。別端末へは同期しません。画像、血糖値、接続先URL、合言葉を
+Plus Workerへ送りません。
 
 実装基盤を拡張しましたが、すべて停止状態で未公開です。AI回数の原子的な予約台帳、
 公開しないPlus利用権Worker、Share Studio無料体験のサーバー側予約、停止中の7日・30日・カスタム

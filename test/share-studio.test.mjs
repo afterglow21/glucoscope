@@ -40,21 +40,76 @@ test("Share Studio normalizes only bounded display metrics", () => {
   assert.equal(api._testing.safeMetric("https://secret.example"), "--");
 });
 
-test("Share Studio is rollout-hidden and completes a trial only after local image creation", () => {
+test("Share Studio creates and stores four slides before completing a trial", () => {
   assert.match(index, /id="mobileShareStudioButton"[^>]*hidden/u);
   assert.match(index, /id="plusAccountShareStudioButton"[^>]*hidden/u);
   assert.match(index, /id="mobileShareStudioButton"[\s\S]*Plus・1回体験あり/u);
   assert.match(index, /id="shareStudioAccessNotice"[^>]*role="status"[^>]*hidden/u);
   assert.match(index, /id="plusAccountShareStudioNotice"[^>]*role="status"[^>]*hidden/u);
   assert.match(index, /js\/share-studio\.js/u);
+  assert.match(index, /今日出逢ったグルコ、血糖グラフ、やさしいふりかえり/u);
+  assert.match(index, /id="shareStudioPreviewGrid"/u);
+  assert.match(index, /id="shareStudioHealthConfirm"/u);
   assert.match(index, /接続URLや合言葉は画像にもサーバーにも送りません/u);
-  assert.match(app, /reserveShareStudio[\s\S]*generateBlob[\s\S]*completeShareStudio/u);
+  assert.match(app, /reserveShareStudio[\s\S]*generateCarousel[\s\S]*saveCarousel[\s\S]*completeShareStudio/u);
   assert.match(app, /!completionStarted[\s\S]*releaseShareStudio/u);
-  assert.match(app, /completionStarted[\s\S]*体験の完了を確認できなかったため/u);
+  assert.match(app, /completionStarted[\s\S]*4枚はこの端末に保存済みです/u);
+  assert.match(app, /loadCarousel[\s\S]*保存済みの4枚を再表示しました/u);
+  assert.match(app, /deleteCarousel/u);
+  assert.match(app, /getStoredTodayUnicornDecision[\s\S]*getStoredDailyGlucoDecision/u);
   assert.match(app, /event\.key === "Escape"[\s\S]*closeShareStudio/u);
   assert.match(app, /shareStudioOpener\?\.focus/u);
   assert.match(app, /setInlinePlusNotice\(noticeId, messageKey, \{ focus: true \}\)/u);
+  assert.match(source, /generateCarousel/u);
+  assert.match(source, /indexedDB/u);
+  assert.match(source, /record\.blobs\.length === 4/u);
   assert.doesNotMatch(source, /localStorage|sessionStorage|fetch\(/u);
+});
+
+test("Share Studio keeps a verified four-slide carousel in device storage", async () => {
+  const api = loadModule();
+  let saved = null;
+  const store = {
+    put(record) {
+      saved = record;
+      return record;
+    },
+    get() {
+      return saved;
+    },
+    delete() {
+      saved = null;
+      return undefined;
+    }
+  };
+  const blobs = Array.from({ length: 4 }, () => new Blob(["png"], { type: "image/png" }));
+  const record = await api.saveCarousel(blobs, { dateKey: "2026-08-21", glucoId: 7 }, { store });
+  assert.equal(record.blobs.length, 4);
+  assert.equal(record.dateKey, "2026-08-21");
+  assert.equal(record.glucoId, 7);
+  assert.equal((await api.loadCarousel({ store })).blobs.length, 4);
+  await api.deleteCarousel({ store });
+  assert.equal(await api.loadCarousel({ store }), null);
+});
+
+test("Share Studio accepts only an exact local Gluco asset and bounded glucose entries", () => {
+  const api = loadModule();
+  const model = api._testing.normalizeCarouselModel({
+    dateKey: "2026-08-21",
+    dateLabel: "2026年8月21日",
+    language: "ja",
+    metrics: { tir: 90, tar: 8, tbr: 2, glucoScore: 88 },
+    entries: [{ date: 1, sgv: 100 }, { date: 2, sgv: 120 }],
+    gluco: { id: 7, title: "おすわり", imagePath: "assets/gluco/live/gluco-live-07.png" },
+    connectionUrl: "https://must-not-pass.example"
+  });
+  assert.equal(model.gluco.id, 7);
+  assert.equal(model.gluco.imagePath, "assets/gluco/live/gluco-live-07.png");
+  assert.equal(model.entries.length, 2);
+  assert.throws(() => api._testing.normalizeCarouselModel({
+    entries: [{ date: 1, sgv: 100 }],
+    gluco: { imagePath: "https://secret.example/gluco.png" }
+  }), /daily_gluco_unavailable/u);
 });
 
 test("the free trial is separate from purchase and explains Share Studio before email verification", () => {
@@ -66,7 +121,7 @@ test("the free trial is separate from purchase and explains Share Studio before 
   assert.match(index, /id="shareStudioTrialUsedContent"[^>]*hidden/u);
   assert.match(index, /id="shareStudioTrialPurchaseButton"[^>]*hidden>Plus 30日パスを見る<\/button>/u);
   assert.match(index, /href="pages\/about\/share-studio\.html"/u);
-  assert.match(app, /openShareStudioTrialDialog\(event\?\.currentTarget \|\| document\.activeElement, \{ mode: "verify" \}\)/u);
+  assert.match(app, /const opener = event\?\.currentTarget \|\| document\.activeElement[\s\S]*openShareStudioTrialDialog\(opener, \{ mode: "verify" \}\)/u);
   assert.match(app, /access\.reason === "plus_required"[\s\S]*openShareStudioTrialDialog\(opener, \{ mode: "used" \}\)/u);
   assert.doesNotMatch(app, /event\?\.currentTarget\?\.id === "mobileShareStudioButton"[\s\S]*openLocalProfileDialog/u);
   assert.match(app, /trialAlreadyUsed[\s\S]*plusEntitlementClient\?\.refresh[\s\S]*mode: "used"/u);
@@ -80,15 +135,17 @@ test("the free trial is separate from purchase and explains Share Studio before 
     assert.match(style, new RegExp(`\\.local-profile-dialog-card\\.is-share-trial-entry #${id}`, "u"), id);
   }
 
-  const openStart = app.indexOf("const openShareStudio = (event) => {");
+  const openStart = app.indexOf("const openShareStudio = async (event) => {");
   const openEnd = app.indexOf('["mobileShareStudioButton", "plusAccountShareStudioButton"]', openStart);
   const openHandler = app.slice(openStart, openEnd);
   assert.doesNotMatch(openHandler, /setPlusFeatureNotice\(/u);
 
-  assert.match(about, /今の血糖と今日のTIR・TAR・TBR/u);
+  assert.match(about, /4枚のカルーセル/u);
+  assert.match(about, /その日にGlucoScopeで実際に出逢ったグルコ/u);
+  assert.match(about, /画面を閉じても、保存済みの4枚/u);
   assert.match(about, /メール確認だけでは料金はかかりません/u);
   assert.match(about, /クレジットカード情報も入力しません/u);
-  assert.match(about, /画像はこのブラウザの中で作ります/u);
+  assert.match(about, /4枚はこのブラウザの中で作り/u);
   assert.match(about, /確認済みメールを見分ける印だけを保存します/u);
   assert.match(about, /メールアドレスそのものは、この記録に残しません/u);
   assert.doesNotMatch(about, /メールへ戻せない照合用の印/u);

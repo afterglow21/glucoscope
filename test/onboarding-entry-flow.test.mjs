@@ -71,7 +71,7 @@ test("the in-app browser is a hard stop and ordinary Safari gets install-first g
 });
 
 test("optional Usage enrollment happens only in the iPhone Home Screen app", () => {
-  assert.match(index, /js\/app\.js\?v=20260820-share-access-panel-1/);
+  assert.match(index, /js\/app\.js\?v=20260821-carousel-1/);
   const shouldCreate = loadUsageEnrollmentPolicy();
   assert.equal(shouldCreate({ isIphone: true, isStandalone: false }), false);
   assert.equal(shouldCreate({ isIphone: true, isStandalone: true }), true);

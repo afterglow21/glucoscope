@@ -8998,8 +8998,14 @@ body.local-profile-dialog-open {
 .share-studio-privacy strong{color:#dbeafe}
 .share-studio-privacy p{margin:6px 0 0;color:#c7d5e8;font-size:14px;line-height:1.7}
 .share-studio-preview{overflow:hidden;border:1px solid rgba(255,255,255,.12);border-radius:18px;background:#08111f}
-.share-studio-preview img{display:block;width:100%;height:auto}
+.share-studio-preview-grid{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(78%,1fr);gap:10px;overflow-x:auto;padding:12px;scroll-snap-type:x mandatory}
+.share-studio-preview-grid figure{position:relative;margin:0;scroll-snap-align:center}
+.share-studio-preview-grid img{display:block;width:100%;height:auto;border-radius:12px}
+.share-studio-preview-grid figcaption{position:absolute;right:10px;bottom:10px;padding:5px 9px;border-radius:999px;background:rgba(2,6,23,.78);color:#f8fafc;font-size:12px;font-weight:850}
+.share-studio-health-confirm{display:flex;gap:10px;align-items:flex-start;margin:14px 0;padding:13px;border:1px solid rgba(250,204,21,.30);border-radius:14px;background:rgba(161,98,7,.10);color:#e8eef8;font-size:14px;line-height:1.6}
+.share-studio-health-confirm input{width:20px;height:20px;flex:none;margin-top:2px;accent-color:#22c55e}
 .share-studio-status{min-height:1.7em;margin:14px 0;color:#b9f6d2;font-size:14px}
 .share-studio-actions{display:flex;flex-wrap:wrap;gap:10px}
 .share-studio-actions button{min-height:48px;flex:1 1 190px}
+.share-studio-actions .share-studio-delete{border-color:rgba(248,113,113,.30);color:#fecaca}
 @media(max-width:640px){.share-studio-dialog{padding:12px}.share-studio-card{max-height:calc(100vh - 24px);padding:22px 18px;border-radius:22px}.share-studio-card h2{font-size:23px}}

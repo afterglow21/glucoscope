@@ -116,6 +116,7 @@ const LOCAL_AI_LETTER_WORKER_ENDPOINT = "http://127.0.0.1:8787/api/gluco-letter"
 let currentLivePeriod = localStorage.getItem(LIVE_PERIOD_STORAGE_KEY) || "today";
 let currentAiLetterMode = localStorage.getItem(AI_LETTER_MODE_STORAGE_KEY) === "deep" ? "deep" : "letter";
 let latestAiLetterSummary = null;
+let latestShareStudioTodayModel = null;
 let aiLetterSummaryState = "loading";
 let aiLetterSummaryRangeIdentity = "";
 let latestRuleCommentMetrics = null;
@@ -290,12 +291,14 @@ const translations = {
     mobileMoreShareStudioNote: "Plus・1回体験あり",
     mobileMoreShareStudioLearnMoreTitle: "Share Studioとは？",
     mobileMoreShareStudioLearnMoreAction: "できることを見る",
-    shareStudioTitle: "今日のふりかえり画像",
-    shareStudioLead: "今の血糖と今日のTIR・TAR・TBRを、端末の中だけで1枚の画像にします。",
+    shareStudioTitle: "今日のふりかえりを4枚に",
+    shareStudioLead: "今日出逢ったグルコ、血糖グラフ、やさしいふりかえりを、端末の中だけで4枚のカルーセル画像にします。",
     shareStudioPrivacyTitle: "共有する前に",
     shareStudioPrivacyBody: "画像には健康情報が含まれます。共有相手と公開範囲を確認してください。接続URLや合言葉は画像にもサーバーにも送りません。",
-    shareStudioCreate: "画像を作る",
-    shareStudioShare: "共有・保存する",
+    shareStudioCreate: "4枚を作る",
+    shareStudioShare: "4枚を共有・保存する",
+    shareStudioDelete: "保存した4枚を削除する",
+    shareStudioHealthConfirm: "4枚には血糖などの健康情報が含まれます。共有先と公開範囲を自分で確認します。",
     mobileMoreCollection: "想い出",
     mobileMoreCollectionNote: "グルコとの記録",
     mobileMoreAbout: "About",
@@ -752,12 +755,14 @@ const translations = {
     mobileMoreShareStudioNote: "Plus · one trial included",
     mobileMoreShareStudioLearnMoreTitle: "What is Share Studio?",
     mobileMoreShareStudioLearnMoreAction: "See what it can do",
-    shareStudioTitle: "Today's reflection image",
-    shareStudioLead: "Create one image from the current glucose and today's TIR, TAR, and TBR, entirely on this device.",
+    shareStudioTitle: "Turn today's reflection into four slides",
+    shareStudioLead: "Create a four-image carousel with today's Gluco, glucose graph, and gentle reflection, entirely on this device.",
     shareStudioPrivacyTitle: "Before sharing",
     shareStudioPrivacyBody: "This image contains health information. Check the recipient and audience. Connection URLs and passphrases are never included or sent to the server.",
-    shareStudioCreate: "Create image",
-    shareStudioShare: "Share or save",
+    shareStudioCreate: "Create four slides",
+    shareStudioShare: "Share or save four slides",
+    shareStudioDelete: "Delete the saved slides",
+    shareStudioHealthConfirm: "The four slides contain health information such as glucose data. I will check the destination and audience before sharing.",
     mobileMoreCollection: "Memories",
     mobileMoreCollectionNote: "Your moments with Gluco",
     mobileMoreAbout: "About",
@@ -4358,8 +4363,8 @@ function canUseAiLetterMode(mode, { announce = false } = {}) {
   return false;
 }
 
-let shareStudioBlob = null;
-let shareStudioPreviewUrl = "";
+let shareStudioRecord = null;
+let shareStudioPreviewUrls = [];
 let shareStudioBusy = false;
 let shareStudioOpener = null;
 
@@ -4464,20 +4469,48 @@ function closeShareStudio() {
   shareStudioOpener = null;
 }
 
-function readShareStudioSnapshot() {
-  const read = (id) => document.getElementById(id)?.textContent?.trim() || "--";
-  return {
-    glucose: read("glucoseValue"),
-    arrow: read("glucoseArrow"),
-    tir: read("tirValue"),
-    tar: read("tarValue"),
-    tbr: read("tbrValue"),
-    date: new Intl.DateTimeFormat(currentLanguage === "en" ? "en" : "ja-JP", {
-      dateStyle: "long",
-      timeStyle: "short"
-    }).format(new Date()),
-    language: currentLanguage
-  };
+function clearShareStudioPreviewUrls() {
+  shareStudioPreviewUrls.forEach((url) => URL.revokeObjectURL(url));
+  shareStudioPreviewUrls = [];
+}
+
+function renderShareStudioRecord(record) {
+  const preview = document.getElementById("shareStudioPreview");
+  const previewGrid = document.getElementById("shareStudioPreviewGrid");
+  const shareButton = document.getElementById("shareStudioShareButton");
+  const deleteButton = document.getElementById("shareStudioDeleteButton");
+  const healthRow = document.getElementById("shareStudioHealthConfirmRow");
+  const healthConfirm = document.getElementById("shareStudioHealthConfirm");
+  clearShareStudioPreviewUrls();
+  shareStudioRecord = record || null;
+  if (previewGrid) previewGrid.replaceChildren();
+  if (!record?.blobs?.length) {
+    if (preview) preview.hidden = true;
+    if (shareButton) shareButton.hidden = true;
+    if (deleteButton) deleteButton.hidden = true;
+    if (healthRow) healthRow.hidden = true;
+    if (healthConfirm) healthConfirm.checked = false;
+    return;
+  }
+  record.blobs.forEach((blob, index) => {
+    const url = URL.createObjectURL(blob);
+    shareStudioPreviewUrls.push(url);
+    const figure = document.createElement("figure");
+    const image = document.createElement("img");
+    const caption = document.createElement("figcaption");
+    image.src = url;
+    image.alt = currentLanguage === "en" ? `Share Studio slide ${index + 1}` : `Share Studio ${index + 1}枚目`;
+    caption.textContent = `${index + 1} / 4`;
+    figure.append(image, caption);
+    previewGrid?.append(figure);
+  });
+  if (preview) preview.hidden = false;
+  if (shareButton) {
+    shareButton.hidden = false;
+    shareButton.disabled = !healthConfirm?.checked;
+  }
+  if (deleteButton) deleteButton.hidden = false;
+  if (healthRow) healthRow.hidden = false;
 }
 
 function updateShareStudioAvailability() {
@@ -4492,22 +4525,41 @@ function setupShareStudio() {
   const dialog = document.getElementById("shareStudioDialog");
   const createButton = document.getElementById("shareStudioCreateButton");
   const shareButton = document.getElementById("shareStudioShareButton");
+  const deleteButton = document.getElementById("shareStudioDeleteButton");
+  const healthConfirm = document.getElementById("shareStudioHealthConfirm");
   const preview = document.getElementById("shareStudioPreview");
-  const previewImage = document.getElementById("shareStudioPreviewImage");
   setupShareStudioTrialDialog();
 
-  const openShareStudio = (event) => {
+  const openShareStudio = async (event) => {
     if (!dialog) return;
+    const opener = event?.currentTarget || document.activeElement;
     const feature = plusFeatureAccessManager?.FEATURE_SHARE_STUDIO || "share_studio";
     const access = getPlusFeatureAccess(feature);
+    try {
+      const saved = await window.GlucoScopeShareStudio?.loadCarousel?.();
+      if (saved) {
+        setInlinePlusNotice("shareStudioAccessNotice");
+        setInlinePlusNotice("plusAccountShareStudioNotice");
+        shareStudioOpener = opener;
+        dialog.hidden = false;
+        renderShareStudioRecord(saved);
+        if (createButton) createButton.hidden = !access.allowed;
+        setShareStudioStatus(currentLanguage === "en"
+          ? "Your saved four slides are still here. You can share or save them again."
+          : "保存済みの4枚を再表示しました。いつでも共有・保存できます。");
+        createButton?.focus?.();
+        return;
+      }
+    } catch (error) {
+      // A storage failure must not hide the normal entitlement path.
+    }
     if (!access.allowed) {
       if (access.reason === "verified_account_required") {
         setInlinePlusNotice("shareStudioAccessNotice");
-        openShareStudioTrialDialog(event?.currentTarget || document.activeElement, { mode: "verify" });
+        openShareStudioTrialDialog(opener, { mode: "verify" });
         return;
       }
       if (access.reason === "plus_required") {
-        const opener = event?.currentTarget || document.activeElement;
         setInlinePlusNotice("shareStudioAccessNotice");
         setInlinePlusNotice("plusAccountShareStudioNotice");
         if (event?.currentTarget?.id === "plusAccountShareStudioButton") {
@@ -4529,8 +4581,10 @@ function setupShareStudio() {
     }
     setInlinePlusNotice("shareStudioAccessNotice");
     setInlinePlusNotice("plusAccountShareStudioNotice");
-    shareStudioOpener = event?.currentTarget || document.activeElement;
+    shareStudioOpener = opener;
     dialog.hidden = false;
+    if (createButton) createButton.hidden = false;
+    renderShareStudioRecord(null);
     setShareStudioStatus("");
     createButton?.focus?.();
   };
@@ -4570,15 +4624,23 @@ function setupShareStudio() {
     createButton.disabled = true;
     shareButton.hidden = true;
     if (preview) preview.hidden = true;
-    setShareStudioStatus(currentLanguage === "en" ? "Creating the image on this device…" : "この端末の中で画像を作っています…");
+    setShareStudioStatus(currentLanguage === "en" ? "Creating four slides on this device…" : "この端末の中で4枚を作っています…");
 
     let reservation = null;
     let completionStarted = false;
     try {
+      if (!latestShareStudioTodayModel) throw new Error("today_data_unavailable");
       reservation = await plusEntitlementClient?.reserveShareStudio?.();
       if (!reservation?.ok) throw new Error(reservation?.error || "reservation_failed");
-      const blob = await window.GlucoScopeShareStudio?.generateBlob?.(readShareStudioSnapshot());
-      if (!(blob instanceof Blob)) throw new Error("image_failed");
+      const blobs = await window.GlucoScopeShareStudio?.generateCarousel?.(latestShareStudioTodayModel);
+      if (!Array.isArray(blobs) || blobs.length !== 4 || blobs.some((blob) => !(blob instanceof Blob))) {
+        throw new Error("image_failed");
+      }
+      const savedRecord = await window.GlucoScopeShareStudio?.saveCarousel?.(blobs, {
+        dateKey: latestShareStudioTodayModel.dateKey,
+        glucoId: latestShareStudioTodayModel.gluco?.id
+      });
+      if (!savedRecord?.blobs?.length) throw new Error("storage_failed");
 
       if (reservation.grant === "trial") {
         completionStarted = true;
@@ -4590,15 +4652,10 @@ function setupShareStudio() {
         configurePlusFeatureGating();
       }
 
-      if (shareStudioPreviewUrl) URL.revokeObjectURL(shareStudioPreviewUrl);
-      shareStudioBlob = blob;
-      shareStudioPreviewUrl = URL.createObjectURL(blob);
-      if (previewImage) previewImage.src = shareStudioPreviewUrl;
-      if (preview) preview.hidden = false;
-      if (shareButton) shareButton.hidden = false;
+      renderShareStudioRecord(savedRecord);
       setShareStudioStatus(currentLanguage === "en"
-        ? "The image is ready. Check it before sharing or saving."
-        : "画像ができました。内容を確認してから共有・保存してください。");
+        ? "Four slides are saved on this device. Closing this screen will not remove them."
+        : "4枚をこの端末に保存しました。この画面を閉じても、あとから再表示できます。");
     } catch (error) {
       const trialAlreadyUsed = error?.message === "trial_already_used";
       if (reservation?.grant === "trial" && reservation?.requestId && !completionStarted) {
@@ -4609,21 +4666,31 @@ function setupShareStudio() {
         updatePlusAccountUi();
         configurePlusFeatureGating();
       }
-      shareStudioBlob = null;
+      const savedAfterError = await window.GlucoScopeShareStudio?.loadCarousel?.().catch(() => null);
+      if (savedAfterError) renderShareStudioRecord(savedAfterError);
+      const unavailableToday = error?.message === "today_data_unavailable" || error?.message === "daily_gluco_unavailable";
       setShareStudioStatus(trialAlreadyUsed
-        ? ""
+        ? (savedAfterError
+          ? (currentLanguage === "en" ? "Your saved slides are still available here." : "保存済みの4枚は、この画面から引き続き利用できます。")
+          : "")
         : completionStarted
         ? (currentLanguage === "en"
-          ? "The trial result could not be confirmed, so the image is not shown. Check your connection, then refresh the account status."
-          : "体験の完了を確認できなかったため、画像は表示していません。通信を確認して、アカウントの状態を更新してください。")
-        : (currentLanguage === "en"
-          ? "The image could not be created. The trial was not used. Please try again."
-          : "画像を作れませんでした。体験回数は使っていません。もう一度お試しください。"));
+          ? "The four slides were saved on this device. Account status could not be confirmed, so refresh the status before creating new slides."
+          : "4枚はこの端末に保存済みです。体験状態を確認できなかったため、新しく作る前にアカウント状態を更新してください。")
+        : unavailableToday
+          ? (currentLanguage === "en"
+            ? "Open today’s glucose screen once, then try again. No trial was used."
+            : "今日の血糖画面を一度表示してから、もう一度お試しください。体験回数は使っていません。")
+          : (currentLanguage === "en"
+            ? "The four slides could not be saved on this device. The trial was not used. Please try again."
+            : "4枚をこの端末に保存できませんでした。体験回数は使っていません。もう一度お試しください。"));
       if (trialAlreadyUsed) {
         setInlinePlusNotice("shareStudioAccessNotice");
         setInlinePlusNotice("plusAccountShareStudioNotice");
-        dialog.hidden = true;
-        window.setTimeout(() => openShareStudioTrialDialog(shareStudioOpener, { mode: "used" }), 0);
+        if (!savedAfterError) {
+          dialog.hidden = true;
+          window.setTimeout(() => openShareStudioTrialDialog(shareStudioOpener, { mode: "used" }), 0);
+        }
       }
     } finally {
       shareStudioBusy = false;
@@ -4632,19 +4699,47 @@ function setupShareStudio() {
     }
   });
 
+  healthConfirm?.addEventListener("change", () => {
+    if (shareButton) shareButton.disabled = !healthConfirm.checked || !shareStudioRecord;
+  });
+
   shareButton?.addEventListener("click", async () => {
-    if (!shareStudioBlob || shareStudioBusy) return;
+    if (!shareStudioRecord || shareStudioBusy || !healthConfirm?.checked) return;
     try {
-      await window.GlucoScopeShareStudio?.shareBlob?.(shareStudioBlob, currentLanguage);
+      await window.GlucoScopeShareStudio?.shareCarousel?.(shareStudioRecord, currentLanguage);
       setShareStudioStatus(currentLanguage === "en"
-        ? "The share or save screen was opened."
-        : "共有または保存の画面を開きました。");
+        ? "The share or save screen opened for the four slides."
+        : "4枚の共有・保存画面を開きました。");
     } catch (error) {
       if (error?.name !== "AbortError") {
         setShareStudioStatus(currentLanguage === "en"
           ? "Sharing was not completed. The image remains here."
           : "共有は完了しませんでした。画像はこの画面に残っています。");
       }
+    }
+  });
+
+  deleteButton?.addEventListener("click", async () => {
+    if (shareStudioBusy || !shareStudioRecord) return;
+    const confirmed = window.confirm(currentLanguage === "en"
+      ? "Delete the four saved slides from this device? This does not restore a used free trial."
+      : "この端末に保存した4枚を削除しますか？ 使用済みの無料体験回数は戻りません。");
+    if (!confirmed) return;
+    shareStudioBusy = true;
+    deleteButton.disabled = true;
+    try {
+      await window.GlucoScopeShareStudio?.deleteCarousel?.();
+      renderShareStudioRecord(null);
+      setShareStudioStatus(currentLanguage === "en"
+        ? "The saved slides were deleted from this device."
+        : "この端末から保存済みの4枚を削除しました。");
+    } catch (error) {
+      setShareStudioStatus(currentLanguage === "en"
+        ? "The saved slides could not be deleted. Please try again."
+        : "保存済みの4枚を削除できませんでした。もう一度お試しください。");
+    } finally {
+      shareStudioBusy = false;
+      deleteButton.disabled = false;
     }
   });
 
@@ -8604,6 +8699,7 @@ async function loadDailyStats() {
     const values = getSgvValuesInRange(entries, rangeStart, rangeEnd);
 
     if (values.length === 0) {
+      if (requestedPeriod === "today") latestShareStudioTodayModel = null;
       latestRuleCommentMetrics = null;
       document.getElementById("comment").textContent = t("noDailyData");
       setAiLetterSummary(null, "no-data");
@@ -8661,7 +8757,7 @@ async function loadDailyStats() {
       .filter((entry) => Number.isFinite(getEntryTime(entry)))
       .sort((a, b) => getEntryTime(b) - getEntryTime(a))[0] || null;
 
-    setAiLetterSummary(buildAiLetterSummary({
+    const aiLetterSummary = buildAiLetterSummary({
       periodKey: requestedPeriod,
       rangeStart,
       rangeEnd,
@@ -8676,7 +8772,50 @@ async function loadDailyStats() {
       glucoScore: glucoScore.score,
       previousScore,
       sevenDayAverageScore
-    }));
+    });
+    setAiLetterSummary(aiLetterSummary);
+
+    if (requestedPeriod === "today") {
+      const dateKey = getLocalDateKey();
+      const encounteredGluco = getStoredTodayUnicornDecision(dateKey)
+        || getStoredDailyGlucoDecision(dateKey);
+      latestShareStudioTodayModel = encounteredGluco ? {
+        dateKey,
+        dateLabel: new Intl.DateTimeFormat(currentLanguage === "en" ? "en-US" : "ja-JP", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          weekday: "short"
+        }).format(new Date()),
+        language: currentLanguage,
+        metrics: {
+          glucose: latestInRange?.sgv ?? null,
+          direction: directionMap[latestInRange?.direction] || "→",
+          tir,
+          tar,
+          tbr,
+          averageGlucose: avg,
+          cv,
+          gmi,
+          glucoScore: glucoScore.score,
+          previousScore,
+          sevenDayAverageScore
+        },
+        entries: entries.map((entry) => ({
+          date: getEntryTime(entry),
+          sgv: Number(entry?.sgv)
+        })).filter((entry) => Number.isFinite(entry.date) && Number.isFinite(entry.sgv)),
+        gluco: {
+          id: Number(encounteredGluco.item?.id),
+          title: encounteredGluco.item?.title?.[currentLanguage]
+            || encounteredGluco.item?.title?.ja
+            || (currentLanguage === "en" ? "Today’s Gluco" : "今日のグルコ"),
+          imagePath: encounteredGluco.imagePath,
+          isUnicorn: Boolean(encounteredGluco.isUnicorn)
+        },
+        letter: getFreshCachedAiLetter(aiLetterSummary, "letter")?.text || ""
+      } : null;
+    }
 
     latestRuleCommentMetrics = {
       tir,
@@ -8708,6 +8847,7 @@ async function loadDailyStats() {
     updateScoreMetaDisplay(null, null, null, requestedPeriod);
     setAiLetterSummary(null, "error");
     latestRuleCommentMetrics = null;
+    if (requestedPeriod === "today") latestShareStudioTodayModel = null;
     document.getElementById("comment").textContent = sourceErrorMessage;
 
     if (

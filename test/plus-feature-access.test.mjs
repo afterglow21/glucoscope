@@ -177,7 +177,7 @@ test("the frontend loads the access module first and gates extended ranges and d
   assert.match(app, /保存済みの分析を見る（回数に含みません）/u);
   assert.match(
     app,
-    /access\.reason === "verified_account_required"[\s\S]*openShareStudioTrialDialog\(event\?\.currentTarget \|\| document\.activeElement, \{ mode: "verify" \}\)/u
+    /access\.reason === "verified_account_required"[\s\S]*openShareStudioTrialDialog\(opener, \{ mode: "verify" \}\)/u
   );
 });
 
