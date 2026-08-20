@@ -41,7 +41,7 @@
   <meta name="glucoscope-plus-purchases-enabled" content="true">
   <meta name="glucoscope-plus-entitlement-endpoint" content="https://plus.glucoscope.app">
   <meta name="glucoscope-plus-turnstile-sitekey" content="0x4AAAAAAEUvQ9ymAJlyrxyC">
-  <link rel="stylesheet" href="style.css?v=20260820-plus-range-copy-1">
+  <link rel="stylesheet" href="style.css?v=20260820-share-trial-ui-1">
 </head>
 <body>
 
@@ -55,7 +55,7 @@
       <strong data-i18n-key="shareStudioTrialFreeTitle">この確認では料金はかかりません</strong>
       <ul>
         <li data-i18n-key="shareStudioTrialFreeEmail">メール確認だけで使えます</li>
-        <li data-i18n-key="shareStudioTrialFreeCard">カード情報は入力しません</li>
+        <li data-i18n-key="shareStudioTrialFreeCard">クレジットカード情報は入力しません</li>
         <li data-i18n-key="shareStudioTrialFreeCharge">Plus 30日パスを別画面で選び、Stripeで400円の支払いを完了した時だけ料金が発生します</li>
       </ul>
     </div>
@@ -315,7 +315,7 @@
     <div class="local-profile-dialog-heading">
       <span class="local-profile-dialog-icon" aria-hidden="true">🍀</span>
       <div>
-        <p class="local-profile-eyebrow" data-i18n-key="localProfileEyebrow">Plus購入と端末設定</p>
+        <p id="localProfileEyebrow" class="local-profile-eyebrow" data-i18n-key="localProfileEyebrow">Plus購入と端末設定</p>
         <h2 id="localProfileDialogTitle" data-i18n-key="localProfileDialogTitle">Plus・あなたの設定</h2>
       </div>
     </div>
@@ -323,7 +323,7 @@
     <p id="localProfileDialogLead" class="local-profile-lead" data-i18n-key="localProfileDialogLead">Plusのメール確認・購入と、表示名・利用記録を管理できます。</p>
 
     <form id="localProfileForm" class="local-profile-form" novalidate>
-      <label class="local-profile-field" for="localProfileDisplayName">
+      <label id="localProfileDisplayNameField" class="local-profile-field" for="localProfileDisplayName">
         <span data-i18n-key="localProfileDisplayNameLabel">表示名</span>
         <input id="localProfileDisplayName" name="displayName" type="text" autocomplete="nickname" required aria-describedby="localProfileDisplayNameHelp">
         <small id="localProfileDisplayNameHelp" data-i18n-key="localProfileDisplayNameHelp">本名でなくて大丈夫です。あとから変更できます（最大30文字）。</small>
@@ -489,7 +489,7 @@
       <div id="usageProfileStatus" class="usage-profile-status" role="status" aria-live="polite"></div>
       <div id="localProfileStatus" class="local-profile-status" role="status" aria-live="polite"></div>
 
-      <div class="local-profile-actions">
+      <div id="localProfileActions" class="local-profile-actions">
         <button id="localProfileSaveButton" class="local-profile-save-button" type="submit" data-i18n-key="localProfileSaveButton">保存する</button>
       </div>
     </form>
@@ -793,7 +793,7 @@
       <button type="button" class="mobile-more-link" data-mobile-open-view="about"><span>✨</span><strong data-i18n-key="mobileMoreAbout">About</strong><small data-i18n-key="mobileMoreAboutNote">GlucoScopeについて</small></button>
       <button type="button" class="mobile-more-link" data-mobile-open-view="journal"><span>📖</span><strong data-i18n-key="mobileMoreJournal">Journal</strong><small data-i18n-key="comingSoonEyebrow">準備中</small></button>
       <button id="mobileShareStudioButton" type="button" class="mobile-more-link" hidden><span>🖼️</span><strong>Share Studio</strong><small data-i18n-key="mobileMoreShareStudioNote">Plus・1回体験あり</small></button>
-      <a class="mobile-share-studio-learn-more" href="pages/about/share-studio.html" data-i18n-key="mobileMoreShareStudioLearnMore">Share Studioとは？ できることを見る</a>
+      <a class="mobile-share-studio-learn-more" href="pages/about/share-studio.html"><span data-i18n-key="mobileMoreShareStudioLearnMoreTitle">Share Studioとは？</span><span data-i18n-key="mobileMoreShareStudioLearnMoreAction">できることを見る</span></a>
       <div class="mobile-more-gluco-slot" aria-hidden="true">
         <img src="assets/gluco/ui/gluco-peek-clover.png?v=20260713-transparent-2" alt="" class="mobile-more-gluco-image" width="772" height="547">
       </div>
@@ -1073,7 +1073,7 @@
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js?v=20260721-user-foundation-3"></script>
-<script src="js/app.js?v=20260820-plus-range-copy-1"></script>
+<script src="js/app.js?v=20260820-share-trial-ui-1"></script>
 <!-- Cloudflare Web Analytics: aggregate page-view and performance metrics only -->
 <script src="js/analytics-loader.js?v=20260811-usage-profile-stage-1"></script>
 <!-- End Cloudflare Web Analytics -->

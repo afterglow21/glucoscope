@@ -94,7 +94,7 @@ test("main page advertises the manifest and iPhone standalone metadata", () => {
   assert.doesNotMatch(index, /<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">/u);
   assert.match(index, /<meta name="apple-mobile-web-app-title" content="GlucoScope">/u);
   assert.match(index, /<link rel="apple-touch-icon" href="assets\/gluco\/about\/gluco-small-notice\.png">/u);
-  assert.match(index, /<link rel="stylesheet" href="style\.css\?v=20260820-plus-range-copy-1">/u);
+  assert.match(index, /<link rel="stylesheet" href="style\.css\?v=20260820-share-trial-ui-1">/u);
 });
 
 test("early launch detection marks only an installed Home Screen app", () => {
@@ -107,8 +107,8 @@ test("early launch detection marks only an installed Home Screen app", () => {
 
 test("portrait Home Screen layout reserves a WebKit-safe top inset with iPhone fallbacks", () => {
   assert.match(css, /@media \(orientation:portrait\) and \(hover:none\) and \(pointer:coarse\)/u);
-  assert.match(css, /html\.ios-home-screen-app:not\(\.force-desktop-view\) \.dashboard\{\s*padding-top:max\(6px,env\(safe-area-inset-top,0px\)\);/u);
-  assert.match(css, /\(min-aspect-ratio:27\/50\)[^{]*\(max-aspect-ratio:57\/100\)[^{]*\{\s*html\.ios-home-screen-app:not\(\.force-desktop-view\) \.dashboard\{\s*padding-top:max\(20px,env\(safe-area-inset-top,0px\)\);/u);
-  assert.match(css, /\(max-aspect-ratio:10\/21\)[^{]*\{\s*html\.ios-home-screen-app:not\(\.force-desktop-view\) \.dashboard\{\s*padding-top:max\(59px,env\(safe-area-inset-top,0px\)\);/u);
+  assert.match(css, /html\.ios-home-screen-app:not\(\.force-desktop-view\) \.dashboard,\s*html\.ios-home-screen-app:not\(\.force-desktop-view\) \.about-detail-wrap\{\s*padding-top:max\(6px,env\(safe-area-inset-top,0px\)\);/u);
+  assert.match(css, /\(min-aspect-ratio:27\/50\)[^{]*\(max-aspect-ratio:57\/100\)[^{]*\{\s*html\.ios-home-screen-app:not\(\.force-desktop-view\) \.dashboard,\s*html\.ios-home-screen-app:not\(\.force-desktop-view\) \.about-detail-wrap\{\s*padding-top:max\(20px,env\(safe-area-inset-top,0px\)\);/u);
+  assert.match(css, /\(max-aspect-ratio:10\/21\)[^{]*\{\s*html\.ios-home-screen-app:not\(\.force-desktop-view\) \.dashboard,\s*html\.ios-home-screen-app:not\(\.force-desktop-view\) \.about-detail-wrap\{\s*padding-top:max\(59px,env\(safe-area-inset-top,0px\)\);/u);
   assert.doesNotMatch(css, /@media[^{}]*\(orientation:landscape\)[^{]*\{[^{}]*html\.ios-home-screen-app/u);
 });

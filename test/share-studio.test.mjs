@@ -7,6 +7,7 @@ const source = fs.readFileSync(new URL("../js/share-studio.js", import.meta.url)
 const app = fs.readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
 const index = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const about = fs.readFileSync(new URL("../pages/about/share-studio.html", import.meta.url), "utf8");
+const style = fs.readFileSync(new URL("../style.css", import.meta.url), "utf8");
 
 function loadModule() {
   const context = { Object, String, URL, Blob, File: class {}, setTimeout };
@@ -59,7 +60,7 @@ test("Share Studio is rollout-hidden and completes a trial only after local imag
 test("the free trial is separate from purchase and explains Share Studio before email verification", () => {
   assert.match(index, /id="shareStudioTrialDialog"[^>]*aria-modal="true"[^>]*hidden/u);
   assert.match(index, /この確認では料金はかかりません/u);
-  assert.match(index, /カード情報は入力しません/u);
+  assert.match(index, /クレジットカード情報は入力しません/u);
   assert.match(index, /Stripeで400円の支払いを完了した時だけ料金が発生します/u);
   assert.match(index, /id="shareStudioTrialVerifyButton"[^>]*>無料体験のためメールを確認する（課金なし）<\/button>/u);
   assert.match(index, /href="pages\/about\/share-studio\.html"/u);
@@ -67,6 +68,12 @@ test("the free trial is separate from purchase and explains Share Studio before 
   assert.match(app, /entryContext: "share_trial"/u);
   assert.match(app, /shareStudioTrialSendCodeButton: "無料体験の確認コードを送る（課金なし）"/u);
   assert.match(app, /shareStudioTrialGuardianConfirmed: "私は保護者として、この無料体験のメール確認を管理します"/u);
+  assert.match(index, /Share Studioとは？<\/span><span[^>]*>できることを見る<\/span>/u);
+  assert.match(app, /shareStudioTrialProfileTitle: "Share Studioを1回無料で試す"/u);
+  assert.match(app, /profileDialogCard\?\.classList\.toggle\("is-share-trial-entry", shareTrialEntry\)/u);
+  for (const id of ["localProfileDisplayNameField", "usageProfileCard", "usageProfileStatus", "localProfileStatus", "localProfileActions"]) {
+    assert.match(style, new RegExp(`\\.local-profile-dialog-card\\.is-share-trial-entry #${id}`, "u"), id);
+  }
 
   const openStart = app.indexOf("const openShareStudio = (event) => {");
   const openEnd = app.indexOf('["mobileShareStudioButton", "plusAccountShareStudioButton"]', openStart);
@@ -75,7 +82,13 @@ test("the free trial is separate from purchase and explains Share Studio before 
 
   assert.match(about, /今の血糖と今日のTIR・TAR・TBR/u);
   assert.match(about, /メール確認だけでは料金はかかりません/u);
+  assert.match(about, /クレジットカード情報も入力しません/u);
   assert.match(about, /画像はこのブラウザの中で作ります/u);
+  assert.match(about, /確認済みメールを見分ける印だけを保存します/u);
+  assert.match(about, /メールアドレスそのものは、この記録に残しません/u);
+  assert.doesNotMatch(about, /メールへ戻せない照合用の印/u);
   assert.match(about, /健康情報が含まれます/u);
+  assert.match(about, /window\.navigator\.standalone === true[\s\S]*ios-home-screen-app/u);
+  assert.match(style, /html\.ios-home-screen-app:not\(\.force-desktop-view\) \.about-detail-wrap/u);
   assert.match(about, /analytics-loader\.js/u);
 });

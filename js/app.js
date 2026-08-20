@@ -288,7 +288,8 @@ const translations = {
     mobileMoreLead: "GlucoScopeのほかのページや設定を開けます。",
     mobileMoreJournal: "Journal",
     mobileMoreShareStudioNote: "Plus・1回体験あり",
-    mobileMoreShareStudioLearnMore: "Share Studioとは？ できることを見る",
+    mobileMoreShareStudioLearnMoreTitle: "Share Studioとは？",
+    mobileMoreShareStudioLearnMoreAction: "できることを見る",
     shareStudioTitle: "今日のふりかえり画像",
     shareStudioLead: "今の血糖と今日のTIR・TAR・TBRを、端末の中だけで1枚の画像にします。",
     shareStudioPrivacyTitle: "共有する前に",
@@ -313,6 +314,9 @@ const translations = {
     localProfileEyebrow: "Plus購入と端末設定",
     localProfileDialogTitle: "Plus・あなたの設定",
     localProfileDialogLead: "Plusのメール確認・購入と、表示名・利用記録を管理できます。",
+    shareStudioTrialProfileEyebrow: "無料体験・課金なし",
+    shareStudioTrialProfileTitle: "Share Studioを1回無料で試す",
+    shareStudioTrialProfileLead: "メール確認だけで無料体験できます。クレジットカード情報は入力しません。",
     localProfileDisplayNameLabel: "表示名",
     localProfileDisplayNameHelp: "本名でなくて大丈夫です。GlucoScopeで呼ばれたい名前を入力してね（最大30文字）。",
     localProfileSaveButton: "表示名を変更する",
@@ -366,7 +370,7 @@ const translations = {
     shareStudioTrialLead: "メールを確認するだけで、ふりかえり画像を1回作れます。",
     shareStudioTrialFreeTitle: "この確認では料金はかかりません",
     shareStudioTrialFreeEmail: "メール確認だけで使えます",
-    shareStudioTrialFreeCard: "カード情報は入力しません",
+    shareStudioTrialFreeCard: "クレジットカード情報は入力しません",
     shareStudioTrialFreeCharge: "Plus 30日パスを別画面で選び、Stripeで400円の支払いを完了した時だけ料金が発生します",
     shareStudioTrialReason: "メール確認は、同じ人が無料体験を繰り返すことを防ぐために使います。",
     shareStudioTrialVerifyButton: "無料体験のためメールを確認する（課金なし）",
@@ -374,7 +378,7 @@ const translations = {
     shareStudioTrialLearnMore: "Share Studioでできることを見る",
     shareStudioTrialVerificationTitle: "Share Studio 1回無料体験",
     shareStudioTrialVerificationBadge: "無料・課金なし",
-    shareStudioTrialEmailHelp: "メール確認だけでは料金は発生しません。カード情報も入力しません。二重体験を防ぐために使います。",
+    shareStudioTrialEmailHelp: "メール確認だけでは料金は発生しません。クレジットカード情報も入力しません。二重体験を防ぐために使います。",
     shareStudioTrialRoleLegend: "このメールをだれが管理しますか？",
     shareStudioTrialRoleSelf: "自分のメールを、自分で管理します",
     shareStudioTrialRoleGuardian: "子どもの代わりに、保護者が管理します",
@@ -667,7 +671,7 @@ const translations = {
     plusAccessUnavailable: "Plusの利用状況を確認できませんでした。少し待って、もう一度お試しください。",
     plusVerifiedAccountRequired: "Share StudioはPlusの機能で、メール確認済みのアカウントなら購入前に1回だけ体験できます。ここからメール確認へ進めます。",
     plusShareStudioRequired: "Share Studioの1回体験は使用済みです。Plus 30日パスを購入すると続けて利用できます。ここから購入へ進めます。",
-    plusShareStudioVerifyGuide: "無料体験のためのメール確認です。この操作では料金は発生せず、カード情報も入力しません。確認コードを受け取るメールを入力してください。",
+    plusShareStudioVerifyGuide: "無料体験のためのメール確認です。この操作では料金は発生せず、クレジットカード情報も入力しません。確認コードを受け取るメールを入力してください。",
     plusShareStudioPurchaseGuide: "Share Studioの1回体験は使用済みです。Plus 30日パスを購入すると、続けて利用できます。",
     selectedRangeLabel: "表示中の期間",
     periodPreviousDay: "前日",
@@ -739,7 +743,8 @@ const translations = {
     mobileMoreLead: "Open other GlucoScope pages and settings.",
     mobileMoreJournal: "Journal",
     mobileMoreShareStudioNote: "Plus · one trial included",
-    mobileMoreShareStudioLearnMore: "What is Share Studio? See what it can do",
+    mobileMoreShareStudioLearnMoreTitle: "What is Share Studio?",
+    mobileMoreShareStudioLearnMoreAction: "See what it can do",
     shareStudioTitle: "Today's reflection image",
     shareStudioLead: "Create one image from the current glucose and today's TIR, TAR, and TBR, entirely on this device.",
     shareStudioPrivacyTitle: "Before sharing",
@@ -764,6 +769,9 @@ const translations = {
     localProfileEyebrow: "Plus purchase and device settings",
     localProfileDialogTitle: "Plus & your settings",
     localProfileDialogLead: "Manage Plus email verification and purchase, your display name, and usage records.",
+    shareStudioTrialProfileEyebrow: "Free trial · no charge",
+    shareStudioTrialProfileTitle: "Try Share Studio once for free",
+    shareStudioTrialProfileLead: "Verify an email for the free trial. No credit card information is entered.",
     localProfileDisplayNameLabel: "Display name",
     localProfileDisplayNameHelp: "It does not need to be your real name. Enter the name you want GlucoScope to use (up to 30 characters).",
     localProfileSaveButton: "Change display name",
@@ -817,7 +825,7 @@ const translations = {
     shareStudioTrialLead: "Verify an email to create one reflection image.",
     shareStudioTrialFreeTitle: "This verification does not charge you",
     shareStudioTrialFreeEmail: "Only email verification is needed",
-    shareStudioTrialFreeCard: "No card information is entered",
+    shareStudioTrialFreeCard: "No credit card information is entered",
     shareStudioTrialFreeCharge: "A charge occurs only if you separately choose the Plus 30-day pass and complete the JPY 400 payment on Stripe",
     shareStudioTrialReason: "Email verification is used to prevent the same person from repeating the free trial.",
     shareStudioTrialVerifyButton: "Verify email for the free trial (no charge)",
@@ -825,7 +833,7 @@ const translations = {
     shareStudioTrialLearnMore: "See what Share Studio can do",
     shareStudioTrialVerificationTitle: "One free Share Studio trial",
     shareStudioTrialVerificationBadge: "Free · no charge",
-    shareStudioTrialEmailHelp: "Email verification does not charge you, and no card information is entered. It is used to prevent repeated trials.",
+    shareStudioTrialEmailHelp: "Email verification does not charge you, and no credit card information is entered. It is used to prevent repeated trials.",
     shareStudioTrialRoleLegend: "Who manages this email?",
     shareStudioTrialRoleSelf: "I manage my own email",
     shareStudioTrialRoleGuardian: "A guardian manages it for a child",
@@ -1118,7 +1126,7 @@ const translations = {
     plusAccessUnavailable: "We could not confirm your Plus access. Please wait a moment and try again.",
     plusVerifiedAccountRequired: "Share Studio is a Plus feature, with one trial before purchase for a verified account. Continue from here to verify your email.",
     plusShareStudioRequired: "The one-time Share Studio trial has been used. Continue from here to purchase the Plus 30-day pass.",
-    plusShareStudioVerifyGuide: "This email verification is for the free trial. It does not charge you or ask for card information. Enter the email where you want to receive the verification code.",
+    plusShareStudioVerifyGuide: "This email verification is for the free trial. It does not charge you or ask for credit card information. Enter the email where you want to receive the verification code.",
     plusShareStudioPurchaseGuide: "The one-time Share Studio trial has been used. Purchase the Plus 30-day pass to keep using Share Studio.",
     selectedRangeLabel: "Selected range",
     periodPreviousDay: "Previous day",
@@ -3528,6 +3536,10 @@ function updatePlusAccountUi() {
   const hasStoredSession = plusEntitlementClient?.hasStoredSession?.() === true;
   const signedIn = accountState.status === "ready" || hasStoredSession;
   const shareTrialEntry = plusAccountEntryContext === "share_trial";
+  const profileDialogCard = document.querySelector(".local-profile-dialog-card");
+  const profileEyebrow = document.getElementById("localProfileEyebrow");
+  const profileTitle = document.getElementById("localProfileDialogTitle");
+  const profileLead = document.getElementById("localProfileDialogLead");
   const signedOutPanel = document.getElementById("plusAccountSignedOut");
   const signedInPanel = document.getElementById("plusAccountSignedIn");
   const rolloutBadge = card.querySelector(".plus-account-badge");
@@ -3544,6 +3556,16 @@ function updatePlusAccountUi() {
   const guardianConfirmedLabel = document.getElementById("plusAccountGuardianConfirmedLabel");
   const sendCodeButton = document.getElementById("plusAccountSendCodeButton");
   const shareStudioButton = document.getElementById("plusAccountShareStudioButton");
+  profileDialogCard?.classList.toggle("is-share-trial-entry", shareTrialEntry);
+  if (profileEyebrow) profileEyebrow.textContent = t(shareTrialEntry
+    ? "shareStudioTrialProfileEyebrow"
+    : "localProfileEyebrow");
+  if (profileTitle) profileTitle.textContent = t(shareTrialEntry
+    ? "shareStudioTrialProfileTitle"
+    : "localProfileDialogTitle");
+  if (profileLead) profileLead.textContent = t(shareTrialEntry
+    ? "shareStudioTrialProfileLead"
+    : "localProfileDialogLead");
   card.classList.toggle("is-share-trial-entry", shareTrialEntry);
   if (cardTitle) cardTitle.textContent = t(shareTrialEntry
     ? "shareStudioTrialVerificationTitle"

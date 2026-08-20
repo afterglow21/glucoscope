@@ -617,7 +617,8 @@ body{
 .plus-inline-action-notice:focus{outline:2px solid rgba(250,204,21,.55);outline-offset:2px}
 .ai-mode-plus-notice{flex-basis:100%;max-width:620px;margin-left:auto}
 .mobile-share-studio-notice{margin-top:12px}
-.mobile-share-studio-learn-more{display:inline-flex;min-height:44px;align-items:center;margin:4px 8px 0;color:#bbf7d0;font-size:13px;font-weight:800;text-decoration:underline;text-underline-offset:3px}
+.mobile-share-studio-learn-more{display:inline-grid;min-height:44px;align-content:center;margin:4px 8px 0;color:#bbf7d0;font-size:13px;font-weight:800;line-height:1.45;text-decoration:underline;text-underline-offset:3px}
+.mobile-share-studio-learn-more span{display:block}
 
 .plus-feature-notice{
   max-width:520px;
@@ -8939,7 +8940,8 @@ body.local-profile-dialog-open {
    Reserve WebKit's reported top inset only inside that installed iOS app;
    Safari, other platforms, and the landscape Graph desk mode are unchanged. */
 @media (orientation:portrait) and (hover:none) and (pointer:coarse){
-  html.ios-home-screen-app:not(.force-desktop-view) .dashboard{
+  html.ios-home-screen-app:not(.force-desktop-view) .dashboard,
+  html.ios-home-screen-app:not(.force-desktop-view) .about-detail-wrap{
     padding-top:max(6px,env(safe-area-inset-top,0px));
   }
 }
@@ -8948,13 +8950,15 @@ body.local-profile-dialog-open {
    when the inset can be reported as zero. Aspect-ratio bands provide a narrow
    fallback while avoiding ordinary in-browser and landscape layouts. */
 @media (orientation:portrait) and (hover:none) and (pointer:coarse) and (min-aspect-ratio:27/50) and (max-aspect-ratio:57/100){
-  html.ios-home-screen-app:not(.force-desktop-view) .dashboard{
+  html.ios-home-screen-app:not(.force-desktop-view) .dashboard,
+  html.ios-home-screen-app:not(.force-desktop-view) .about-detail-wrap{
     padding-top:max(20px,env(safe-area-inset-top,0px));
   }
 }
 
 @media (orientation:portrait) and (hover:none) and (pointer:coarse) and (max-aspect-ratio:10/21){
-  html.ios-home-screen-app:not(.force-desktop-view) .dashboard{
+  html.ios-home-screen-app:not(.force-desktop-view) .dashboard,
+  html.ios-home-screen-app:not(.force-desktop-view) .about-detail-wrap{
     padding-top:max(59px,env(safe-area-inset-top,0px));
   }
 }
@@ -8977,6 +8981,11 @@ body.local-profile-dialog-open {
 .plus-account-card.is-share-trial-entry .plus-account-price,
 .plus-account-card.is-share-trial-entry .plus-account-lead,
 .plus-account-card.is-share-trial-entry .plus-account-benefits{display:none}
+.local-profile-dialog-card.is-share-trial-entry #localProfileDisplayNameField,
+.local-profile-dialog-card.is-share-trial-entry #usageProfileCard,
+.local-profile-dialog-card.is-share-trial-entry #usageProfileStatus,
+.local-profile-dialog-card.is-share-trial-entry #localProfileStatus,
+.local-profile-dialog-card.is-share-trial-entry #localProfileActions{display:none!important}
 .share-studio-about-free{border-color:rgba(74,222,128,.38);background:linear-gradient(145deg,rgba(34,197,94,.14),rgba(15,23,42,.94))}
 .share-studio-about-free h2{margin-top:4px;color:#dcfce7}
 .share-studio-about-list{display:grid;gap:10px;margin:12px 0 0;padding-left:22px;color:#dbe7f4;line-height:1.7}

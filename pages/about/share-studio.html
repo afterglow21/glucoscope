@@ -3,8 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <script>
+    (() => {
+      try {
+        if (window.navigator.standalone === true) {
+          document.documentElement.classList.add("ios-home-screen-app");
+        }
+      } catch (error) {
+        console.warn("Could not detect Home Screen mode", error);
+      }
+    })();
+  </script>
   <title>Share Studioとは？ | GlucoScope</title>
-  <link rel="stylesheet" href="../../style.css?v=20260820-plus-range-copy-1">
+  <link rel="stylesheet" href="../../style.css?v=20260820-share-trial-ui-1">
 </head>
 <body class="about-detail-body share-studio-about-body">
   <main class="about-detail-wrap">
@@ -25,7 +38,7 @@
     <section class="card about-detail-card share-studio-about-free" lang="ja">
       <p class="about-section-kicker">1回無料体験</p>
       <h2>メール確認だけで、購入前に1回試せます</h2>
-      <p><strong>メール確認だけでは料金はかかりません。カード情報も入力しません。</strong></p>
+      <p><strong>メール確認だけでは料金はかかりません。クレジットカード情報も入力しません。</strong></p>
       <p>料金が発生するのは、別のPlus 30日パス購入画面で内容を確認し、Stripeで400円の支払いを最後まで完了した時だけです。</p>
     </section>
 
@@ -53,7 +66,7 @@
       <article class="card about-detail-card" lang="ja">
         <h2>画像と血糖データはどこへ行くの？</h2>
         <p>画像はこのブラウザの中で作ります。画像、血糖値、接続先URL、合言葉をShare Studioの利用確認サーバーへ送りません。</p>
-        <p>無料体験では、1回体験したことを確認するために、メールへ戻せない照合用の印だけを使います。</p>
+        <p>無料体験を1人1回にするため、確認済みメールを見分ける印だけを保存します。メールアドレスそのものは、この記録に残しません。</p>
       </article>
 
       <article class="card about-detail-card" lang="ja">
@@ -66,7 +79,7 @@
     <section class="card about-detail-card about-copy-en" lang="en">
       <h2>What Share Studio does</h2>
       <p>Share Studio turns your current glucose and today’s TIR, TAR, and TBR into one image that you can save or share. The image is created in your browser. Glucose values, connection details, and the image are not sent to the Share Studio access service.</p>
-      <p>One trial is available after email verification. Email verification is free and does not require card information. A charge occurs only after you separately choose the Plus 30-day pass and complete the JPY 400 Stripe payment.</p>
+      <p>One trial is available after email verification. Email verification is free and does not require credit card information. A charge occurs only after you separately choose the Plus 30-day pass and complete the JPY 400 Stripe payment.</p>
     </section>
 
     <p class="share-studio-about-cta"><a class="data-source-primary-button" href="../../?mode=user#more">GlucoScopeの「その他」へ戻る</a></p>
