@@ -89,7 +89,7 @@ test("Plus buyer policy stays complete internally while public pages remain simp
   assert.match(privacy, /最小会計記録だけを、取引または最終返金から7年残します/);
   assert.match(privacy, /解決済みの通常問い合わせは解決後180日を目安に削除します/);
   assert.doesNotMatch(roadmap, /最小会計記録は7年|会計記録の候補は7年/u);
-  assert.match(privacy, /Plus 30日パス（まだ販売していません）/);
+  assert.match(privacy, /<h2>Plus 30日パス<\/h2>/);
   assert.match(privacy, /本人利用か保護者管理かを確認した日/);
   assert.match(privacy, /二重決済やPlusが始まらない問題/);
   assert.match(privacy, /GlucoScope側の大きな障害/);
@@ -115,7 +115,7 @@ test("Plus buyer policy stays complete internally while public pages remain simp
   assert.match(privacy, /If GlucoScope cannot correct a duplicate charge/);
   assert.match(roadmap, /18歳以上の保護者が、購入、別の端末で使うための確認、問い合わせを管理/);
   assert.match(roadmap, /This is not a refund-for-any-reason policy/);
-  assert.match(roadmap, /まだ販売していません/);
+  assert.doesNotMatch(roadmap, /まだ販売していません/);
 });
 
 test("Roadmap stays simple for users while technical evidence stays internal", async () => {
@@ -125,23 +125,21 @@ test("Roadmap stays simple for users while technical evidence stays internal", a
   assert.match(roadmap, /今できること/);
   assert.match(roadmap, /いま良くしていること/);
   assert.match(roadmap, /これから/);
-  assert.match(roadmap, /Plus 30日パス（準備中）/);
+  assert.match(roadmap, /<h2>Plus 30日パス<\/h2>/);
   assert.match(roadmap, /変わらない約束/);
   assert.match(roadmap, /登録せずに公開デモと3種類の血糖測定機器（CGM）を見比べるページを開けます/);
   assert.match(roadmap, /利用記録やAI分析で問題が起きても、血糖値やグラフの表示は続けられる/);
-  assert.match(roadmap, /400円の1回払いで30日間使える予定です。自動更新はありません/);
-  assert.match(roadmap, /Freeで成功した新しい「やさしい分析」を端末プロフィールごとに1日1回/);
+  assert.match(roadmap, /400円の1回払いで30日間使えます。自動更新はありません/);
+  assert.match(roadmap, /Freeでは、成功した新しい「やさしい分析」を端末プロフィールごとに1日1回/);
   assert.match(roadmap, /公開デモは内容を確認した固定サンプルを表示し、新しいAI生成を使いません/);
   assert.match(roadmap, /文書の確認などで失敗した回は数えません/);
   assert.match(roadmap, /グラフの7日・30日・カスタム期間とShare StudioはPlus特典/);
-  assert.match(roadmap, /確認済みの利用者ごとに1回だけ無料で試せる/);
+  assert.match(roadmap, /確認済みの利用者ごとに1回だけ無料で試せます/);
   assert.match(roadmap, /この保護者確認のために、子どもの名前や血糖値は集めません/);
-  assert.match(roadmap, /確認メールにはResendというメール送信サービスを使う予定です/);
+  assert.match(roadmap, /確認メールにはResendというメール送信サービスを使います/);
   assert.match(roadmap, /10分で使えなくなる6桁の確認コード、コードの入力方法を伝える短い案内/);
-  assert.match(roadmap, /本番環境でも、運営者本人の受信箱への到着、同じメールでの復旧、古い端末の確認を無効にすること、新しい端末で使えること、アカウント削除まで確認しました/);
+  assert.match(roadmap, /本番環境で、受信、同じメールでの復旧、古い端末の確認を無効にすること、新しい端末で使えること、アカウント削除まで確認しました/);
   assert.match(roadmap, /60秒待ってからの安全な再送、最新メールだけを使う案内、失敗した再送で先のコードを失わない仕組み/);
-  assert.match(roadmap, /安全なテスト宛先で受信拒否・迷惑メール報告・送信抑止の表示も確認しました/);
-  assert.match(roadmap, /追加の少人数での運用確認、実際の配信遅延への対応、残る販売準備が整うまで、販売は始めません/);
   assert.match(roadmap, /GlucoScopeをよくするため、表示名、利用した日/);
   assert.match(roadmap, /血糖値、接続情報、AIお手紙の内容は記録しません/);
   assert.match(roadmap, /GlucoScopeは医療機器ではなく、診断、治療、インスリン量の判断をしません/);
@@ -149,13 +147,13 @@ test("Roadmap stays simple for users while technical evidence stays internal", a
   assert.match(roadmap, /Available now/);
   assert.match(roadmap, /Improving now/);
   assert.match(roadmap, /Coming next/);
-  assert.match(roadmap, /Plus 30-day pass \(in preparation\)/);
+  assert.match(roadmap, /<h2>Plus 30-day pass<\/h2>/);
   assert.match(roadmap, /What will not change/);
   assert.match(roadmap, /Free includes one successful gentle analysis per day for each device profile/);
-  assert.match(roadmap, /The 7-day, 30-day, and custom graph ranges and continued Share Studio use will be Plus benefits/);
+  assert.match(roadmap, /The 7-day, 30-day, and custom graph ranges and continued Share Studio use are Plus benefits/);
   assert.match(roadmap, /public demo displays a reviewed fixed sample without a new AI generation/);
   assert.match(roadmap, /an adult guardian age 18 or older/);
-  assert.match(roadmap, /It is not yet available for purchase/);
+  assert.match(roadmap, /Plus is a one-time JPY 400 payment for 30 days, with no automatic renewal/);
   assert.match(roadmap, /Production acceptance confirmed inbox delivery, same-email recovery, rejection of the old session, continued access through the new session, and account deletion/);
   assert.match(roadmap, /To improve GlucoScope, we record a display name/);
   assert.doesNotMatch(roadmap, /Usage records contain only/);

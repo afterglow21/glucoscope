@@ -131,7 +131,7 @@ test("missing, throwing, asynchronous, or malformed entitlement state fails clos
 test("the frontend loads the access module first and gates extended ranges and detailed analysis", () => {
   assert.match(index, /id="plusFeatureNotice"[^>]*role="status"[^>]*hidden/);
   assert.ok(index.indexOf("js/plus-feature-access.js") < index.indexOf("js/app.js"));
-  assert.match(index, /name="glucoscope-plus-feature-gating-enabled" content="false"/u);
+  assert.match(index, /name="glucoscope-plus-feature-gating-enabled" content="true"/u);
   assert.match(app, /meta\[name="glucoscope-plus-feature-gating-enabled"\]/u);
   assert.match(app, /configurePlusFeatureGating\(\);[\s\S]*setupPeriodSwitch\(\);/);
   assert.match(

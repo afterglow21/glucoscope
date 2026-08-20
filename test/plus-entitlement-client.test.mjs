@@ -76,11 +76,11 @@ test("defaults to unavailable and rejects unsafe endpoints", async () => {
   assert.equal(api.getState().reason, "not_signed_in");
 });
 
-test("the checked-in account and purchase UI stays hidden and network-inert", () => {
-  assert.match(index, /name="glucoscope-plus-account-enabled" content="false"/u);
-  assert.match(index, /name="glucoscope-plus-feature-gating-enabled" content="false"/u);
-  assert.match(index, /name="glucoscope-plus-purchases-enabled" content="false"/u);
-  assert.match(index, /name="glucoscope-plus-entitlement-endpoint" content=""/u);
+test("the public release enables the reviewed Plus UI and exact production endpoint", () => {
+  assert.match(index, /name="glucoscope-plus-account-enabled" content="true"/u);
+  assert.match(index, /name="glucoscope-plus-feature-gating-enabled" content="true"/u);
+  assert.match(index, /name="glucoscope-plus-purchases-enabled" content="true"/u);
+  assert.match(index, /name="glucoscope-plus-entitlement-endpoint" content="https:\/\/plus\.glucoscope\.app"/u);
   assert.match(
     index,
     /name="glucoscope-plus-turnstile-sitekey" content="0x4AAAAAAEUvQ9ymAJlyrxyC"/u
