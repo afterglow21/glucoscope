@@ -43,9 +43,10 @@ document are historical evidence unless they explicitly say that they remain cur
   `0` to `1`, the monthly count from `15` to `16`, and the daily verified-Turnstile count from
   `0` to `1` exactly once; token and estimated-cost totals increased once, with no duplicate,
   cache hit, rate limit, or budget block.
-- Demo-feed new-origin Version `97b14023-f9dd-440a-8b79-e2bb2b471697` receives 100% of
-  continuous public-demo traffic. Version `4069bca4-e8cf-474a-9e9d-d7ffa42b7567`
-  records the earlier continuous three-source acceptance.
+- Demo-feed new-origin Version `97b14023-f9dd-440a-8b79-e2bb2b471697` was restored to 100%
+  after the one-time archive recovery. The public comparison page now uses the preserved
+  anonymized August 16 dataset and no longer requests the temporary live endpoints. Version
+  `4069bca4-e8cf-474a-9e9d-d7ffa42b7567` records the earlier continuous three-source acceptance.
 - Relay live Version 22 (`b4b2064d-6dd4-4de6-8a68-3d0d39aea2ec`) receives 100% of the
   approved small-group relay traffic. Unserved stopped Version 23
   (`10d0a825-c098-462e-89fd-a69937c47a9b`) is the reviewed direct rollback.
@@ -2595,6 +2596,19 @@ follow-up health check, and two five-minute browser auto-refresh checks at separ
 checkpoints have passed. Production natural-expiry behavior remains a separate,
 non-blocking stopped/failure-path check because healthy refreshes renew the KV expiration.
 
+After the Libre 2 and Dexcom G7 wear periods ended, Kazuma explicitly approved a one-time
+100% recovery Version and private anonymized KV write for the August 16 record. The first
+all-or-nothing attempt produced no archive, was restored immediately, and made no public
+dataset change. A second bounded candidate isolated source failures and, at the next Cron,
+recovered 288 Guardian 4 readings and 288 Dexcom G7 readings for the same 24-hour window.
+The Libre 2 history for that window was unavailable, so the static dataset keeps that source
+pending with no fabricated readings. Exact timestamps were converted to elapsed minutes.
+The dataset contains no source URL, credential, account field, treatment, insulin, food,
+medication, pump data, symptom, or location. Both temporary KV keys were deleted after the
+reviewed static file was saved, and Version `97b14023-f9dd-440a-8b79-e2bb2b471697` was
+restored to 100%. The public page now uses that archived anonymized dataset and no longer
+requests the temporary live endpoints.
+
 Guardian remains on Kazuma's existing Azure Nightscout.
 Its verified browser-direct route is the Guardian input for the live comparison.
 Libre 2 uses a separate, demo-only Cloudflare Worker.
@@ -2921,6 +2935,17 @@ Guardian 4、FreeStyle Libre 2、Dexcom G7を、
 目視確認しました。確認直後にデモ専用Workerを停止Versionへ戻した後、
 別の継続公開判断とフロントの安全対応を経て、22:10:05 JSTに
 3CGMの継続公開ライブデモを開始しました。
+
+Libre 2とDexcom G7の装着期間終了後、2026年8月20日、Kazumaは8月16日分を
+回収する一時Versionへの100%切替と、非公開KVへの匿名化保存を明示承認しました。
+最初の3系統一括取得はアーカイブを作らず、すぐ通常Versionへ戻しました。
+次に1系統の失敗で全体を止めない候補へ切り替え、次のCronで同じ24時間の
+Guardian 4を288件、Dexcom G7を288件回収しました。Libre 2の同日履歴は
+取得できなかったため、値を作らず「記録なし」として残します。正確な測定時刻は
+経過分へ変換し、URL、接続情報、アカウント項目、治療、インスリン、食事、薬、
+ポンプ、症状、位置情報は保存していません。確認後に一時KV 2件を削除し、
+Version `97b14023-f9dd-440a-8b79-e2bb2b471697`へ100%戻しました。
+公開ページはこの匿名化済み保存データを読み、期間限定ライブ経路は使いません。
 
 3CGM継続公開を始めるまでの履歴順は次のとおりです。
 

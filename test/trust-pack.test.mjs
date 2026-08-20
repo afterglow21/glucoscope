@@ -385,7 +385,7 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(readme, /current live Version 22 is `b4b2064d-6dd4-4de6-8a68-3d0d39aea2ec` at 100%/);
   assert.match(readme, /stopped rollback Version 23 is `10d0a825-c098-462e-89fd-a69937c47a9b`/);
   assert.match(readme, /`RELAY_ENABLED=false`, `RELAY_DEVICE_SESSIONS_ENABLED=false`, `workers_dev=false`, Preview URLs off, and observability off/);
-  assert.match(readme, /comparison lab is now a continuous public live demo/);
+  assert.match(readme, /comparison lab now displays a preserved, anonymized 24-hour record from 2026-08-16/);
   assert.match(readme, /public-demo Worker first completed source-specific G7 and Libre checks, then one approved Guardian\/Libre\/G7 public-page acceptance/);
   assert.match(readme, /global `DEMO_FEED_ENABLED=false`, source gates `DEMO_LIBRE_FEED_ENABLED=false` and `DEMO_G7_FEED_ENABLED=false`/);
   assert.match(readme, /stopped `glucoscope-demo-feed` Worker was deployed as Version/);
@@ -415,12 +415,12 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(readme, /Stopped Version `9994a142-a4ca-4885-9077-952ec8e7e8d2` was restored at 100% as deployment `e45b6547-33a4-4196-9efe-1fffd412bcd4` at 21:16:31 JST/);
   assert.match(readme, /After the 21:25 JST stopped Cron, metadata showed only the two expected source keys, no metadata payload, and unchanged expirations for both keys/);
   assert.match(readme, /At that checkpoint this was one public-page acceptance; continued operation, repeated browser display refreshes, stale behavior, and natural expiry were still unverified/);
-  assert.match(readme, /Current new-origin Version `97b14023-f9dd-440a-8b79-e2bb2b471697` receives 100% of traffic/);
+  assert.match(readme, /Version `97b14023-f9dd-440a-8b79-e2bb2b471697` was restored to 100% immediately after recovery/);
   assert.match(readme, /deployment `e96fb11c-a2e0-4097-b54c-a1d638bbffc8` record the earlier three-source acceptance at 22:10:05 JST/);
   assert.match(readme, /second scheduled aggregate check observed 526 Libre entries and 290 G7 entries/);
   assert.match(readme, /Libre displayed-point aggregate changing from 526 to 525/);
   assert.match(readme, /one further five-minute auto-refresh at a later checkpoint, bringing the total confirmed browser refreshes to two/);
-  assert.match(readme, /natural expiry is now a separate, non-blocking stopped\/failure-path test/i);
+  assert.match(readme, /natural expiry remains a separate, non-blocking stopped\/failure-path acceptance/i);
   assert.doesNotMatch(readme, /frontend endpoint remains intentionally blank/);
 });
 

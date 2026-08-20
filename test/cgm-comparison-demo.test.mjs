@@ -37,38 +37,23 @@ test("GitHub Pages custom domain is fixed to the public app hostname", async () 
   );
 });
 
-test("public sample is explicitly synthetic, three-source, and privacy-safe", async () => {
+test("public sample is an anonymized August 16 archive with unavailable data left empty", async () => {
   const sampleText = await readFile(sampleUrl, "utf8");
   const dataset = validateDataset(JSON.parse(sampleText));
-  assert.equal(dataset.status, "synthetic");
+  assert.equal(dataset.status, "anonymized");
+  assert.equal(dataset.durationMinutes, 1440);
   assert.deepEqual(dataset.sources.map((source) => source.id), ["guardian-4", "libre-2", "dexcom-g7"]);
-  assert.deepEqual(dataset.sources.map((source) => source.dataStatus), ["available", "available", "available"]);
-  assert.match(dataset.disclosure, /表示中の線は合成データ/);
-  assert.match(dataset.disclosure, /公開3CGMライブデモは継続中/);
-  assert.match(dataset.disclosure, /安全に読み込めない場合/);
-  assert.match(dataset.sources[0].captureRoute, /Azure Nightscout/);
-  assert.match(dataset.sources[1].captureRoute, /Gluroo Global Connect/);
-  assert.match(dataset.sources[2].captureRoute, /Gluroo Global Connect/);
-  assert.equal(dataset.sources[1].verificationLabel, "公開デモ経路を実機確認済み");
-  assert.match(dataset.sources[1].captureRoute, /公開デモ用Worker、GitHub Pagesまで継続公開中/);
-  assert.match(dataset.sources[1].note, /公開3CGMライブデモを継続中/);
-  assert.match(dataset.sources[1].note, /約3時間の継続稼働/);
-  assert.match(dataset.sources[1].note, /これまでの確認は合計2回/);
-  assert.match(dataset.sources[1].note, /自然失効は起きません/);
-  assert.match(dataset.sources[1].note, /表示中の線は安全なフォールバック用の合成データ/);
+  assert.deepEqual(dataset.sources.map((source) => source.dataStatus), ["available", "pending", "available"]);
+  assert.deepEqual(dataset.sources.map((source) => source.readings.length), [288, 0, 288]);
+  assert.match(dataset.disclosure, /取得できた履歴を匿名化/);
+  assert.match(dataset.disclosure, /正確な日付、接続情報/);
+  assert.equal(dataset.sources.every((source) => !("captureRoute" in source)), true);
+  assert.equal(dataset.sources[1].verificationLabel, "対象期間の履歴を取得できませんでした");
+  assert.match(dataset.sources[1].note, /線を表示しません/);
   assert.equal(dataset.sources[2].verificationLabel, "公開デモ経路を実機確認済み");
-  assert.match(dataset.sources[2].captureRoute, /公開デモ用Worker、GitHub Pagesまで継続公開中/);
-  assert.match(dataset.sources[2].note, /一般利用者向け限定中継とは別/);
-  assert.match(dataset.sources[2].note, /公開3CGMライブデモを継続中/);
-  assert.match(dataset.sources[2].note, /dexcomRouteVerified=true/);
-  assert.match(dataset.sources[2].note, /Workerの有効化ではありません/);
-  assert.match(dataset.sources[2].note, /約3時間の継続稼働/);
-  assert.match(dataset.sources[2].note, /これまでの確認は合計2回/);
-  assert.match(dataset.sources[2].note, /自然失効は起きません/);
-  assert.match(dataset.sources[2].note, /表示中の線は安全なフォールバック用の合成データ/);
   assert.doesNotMatch(sampleText, /https?:\/\//i);
   assert.doesNotMatch(sampleText, /\b\d{4}-\d{2}-\d{2}\b/);
-  assert.doesNotMatch(sampleText, /secret|password|email|account[-_ ]?id/i);
+  assert.doesNotMatch(sampleText, /Kazuma|Nightscout|Gluroo|secret|password|email|account[-_ ]?id/i);
 });
 
 test("a public dataset can keep an unstarted CGM pending without fabricated readings", async () => {
@@ -580,9 +565,9 @@ test("public demo is linked while the capture helper stays unlinked and noindex"
   assert.match(demo, /vendor\/chart\.js\/chart\.umd\.min\.js/);
   assert.match(demo, /analytics-loader\.js/);
   assert.match(demo, /js\/data-source\.js/);
-  assert.match(demo, /live-config\.js\?v=20260807-three-cgm-live-1/);
-  assert.match(demo, /comparison\.mjs\?v=20260808-simple-demo-1/);
-  assert.match(demo, /現在は合成データです。3本の線は表示確認用で、Kazumaの実測値ではありません/);
+  assert.match(demo, /live-config\.js\?v=20260820-cgm-archive-1/);
+  assert.match(demo, /comparison\.mjs\?v=20260820-cgm-archive-1/);
+  assert.match(demo, /2026年8月16日の匿名化済み実測データ/);
   assert.match(comparisonModule, /現在は実測ライブデータです。取得できた\$\{liveSourceCount\}種類/);
   assert.match(comparisonModule, /現在は合成データです。3本の線は表示確認用で、Kazumaの実測値ではありません/);
   assert.match(comparisonModule, /error instanceof DemoFeedPausedError/);
@@ -600,9 +585,9 @@ test("public demo is linked while the capture helper stays unlinked and noindex"
   assert.match(captureModule, /collectCaptureEntries\(\{/);
   assert.match(captureModule, /revokeDeviceSession\(\)/);
   assert.doesNotMatch(captureModule, /readRelaySession\(\)|約1時間|relayTicket|\/v1\/session/);
-  assert.match(liveConfig, /libreFeedEndpoint:\s*"https:\/\/glucoscope-demo-feed\.afterglow21\.workers\.dev\/v1\/libre"/);
-  assert.match(liveConfig, /dexcomFeedEndpoint:\s*"https:\/\/glucoscope-demo-feed\.afterglow21\.workers\.dev\/v1\/dexcom-g7"/);
-  assert.match(liveConfig, /dexcomRouteVerified:\s*true/);
+  assert.match(liveConfig, /libreFeedEndpoint:\s*""/);
+  assert.match(liveConfig, /dexcomFeedEndpoint:\s*""/);
+  assert.match(liveConfig, /dexcomRouteVerified:\s*false/);
   assert.doesNotMatch(liveConfig, /ns\.gluroo\.com|api.?secret|token/i);
 });
 
@@ -641,18 +626,18 @@ test("public comparison keeps the visitor-facing page simple and links to option
   assert.doesNotMatch(demo, /buy\.stripe\.com/);
   assert.doesNotMatch(comparisonModule, /computeObservationSummary|renderSourceCards|renderSummary|datasetDisclosure/);
   assert.match(comparisonModule, /表示中：\$\{selectedRange\}/);
-  assert.match(demo, /comparison\.mjs\?v=20260808-simple-demo-1/);
+  assert.match(demo, /comparison\.mjs\?v=20260820-cgm-archive-1/);
 });
 
-test("public comparison explains the limited sensor period and shows three simple range cards", async () => {
+test("public comparison explains the ended sensor period and archived August 16 record", async () => {
   const demo = await readFile(new URL("../demos/cgm-comparison/index.html", import.meta.url), "utf8");
   const comparisonModule = await readFile(new URL("../demos/cgm-comparison/comparison.mjs", import.meta.url), "utf8");
-  assert.match(demo, /実際のデータを期間限定で公開しています/);
-  assert.match(demo, /開発者のKazumaが自費で購入し、実際に装着しているセンサー/);
-  assert.match(demo, /3種類がそろう表示は、先に期限を迎えるG7の8月17日ごろまでの予定です/);
-  assert.match(demo, /datetime="2026-08-21">2026年8月21日ごろまで（予定）/);
-  assert.match(demo, /datetime="2026-08-17">2026年8月17日ごろまで（予定）/);
-  assert.match(demo, /センサーの状態により、予定より早く終了する場合があります/);
+  assert.match(demo, /2026年8月16日の匿名化記録です/);
+  assert.match(demo, /センサーの装着期間は終了しました/);
+  assert.match(demo, /Guardian 4とDexcom G7の同じ24時間/);
+  assert.match(demo, /datetime="2026-08-16">2026年8月16日の記録/);
+  assert.match(demo, /Libre 2<\/strong>同日の履歴を保存できませんでした/);
+  assert.match(demo, /取得できなかった値は補わず、存在する記録だけを表示します/);
   assert.match(demo, /それぞれのTIR・TAR・TBR/);
   assert.match(demo, /届いた値の割合です。公式アプリのレポートとは異なる場合があります/);
   assert.match(demo, /aria-describedby="chartMessage chartTextSummary"/);

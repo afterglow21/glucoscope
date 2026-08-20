@@ -21,17 +21,17 @@
         <p class="comparison-lead">
           Guardian 4、FreeStyle Libre 2、Dexcom G7の表示を、どれが「良い」と決めずに並べて観察するページです。
         </p>
-        <aside class="comparison-limited-note" aria-label="期間限定公開のお知らせ">
-          <p class="comparison-limited-title">実際のデータを期間限定で公開しています</p>
-          <p>Libre 2とDexcom G7は、開発者のKazumaが自費で購入し、実際に装着しているセンサーです。3種類がそろう表示は、先に期限を迎えるG7の8月17日ごろまでの予定です。</p>
+        <aside class="comparison-limited-note" aria-label="保存済み比較データのお知らせ">
+          <p class="comparison-limited-title">2026年8月16日の匿名化記録です</p>
+          <p>センサーの装着期間は終了しました。Guardian 4とDexcom G7の同じ24時間を、現在時刻や接続情報を含めずに残しています。</p>
           <div class="comparison-limited-dates">
-            <span><strong>Libre 2</strong><time datetime="2026-08-21">2026年8月21日ごろまで（予定）</time></span>
-            <span><strong>Dexcom G7</strong><time datetime="2026-08-17">2026年8月17日ごろまで（予定）</time></span>
+            <span><strong>Guardian 4・Dexcom G7</strong><time datetime="2026-08-16">2026年8月16日の記録</time></span>
+            <span><strong>Libre 2</strong>同日の履歴を保存できませんでした</span>
           </div>
-          <p class="comparison-limited-caveat">センサーの状態により、予定より早く終了する場合があります。</p>
+          <p class="comparison-limited-caveat">取得できなかった値は補わず、存在する記録だけを表示します。</p>
         </aside>
         <div class="comparison-status-row">
-          <span id="datasetStatus" class="comparison-status comparison-status-synthetic">準備中 · 合成データ</span>
+          <span id="datasetStatus" class="comparison-status comparison-status-anonymized">読み込み中 · 匿名化記録</span>
           <span id="datasetWindow" class="comparison-window">読み込み中…</span>
         </div>
       </div>
@@ -66,8 +66,8 @@
           <h2 id="comparisonChartTitle">同じ時間軸で重ねた表示</h2>
         </div>
       </div>
-      <div id="datasetModeNotice" class="comparison-mode-notice comparison-mode-notice-synthetic" role="status" aria-live="polite">
-        現在は合成データです。3本の線は表示確認用で、Kazumaの実測値ではありません。
+      <div id="datasetModeNotice" class="comparison-mode-notice comparison-mode-notice-anonymized" role="status" aria-live="polite">
+        2026年8月16日の匿名化済み実測データを読み込んでいます。
       </div>
       <div id="chartMessage" class="comparison-message" role="status" aria-live="polite">データを読み込んでいます。</div>
       <div class="comparison-chart-wrap">
@@ -98,8 +98,8 @@
 
   <script src="../../vendor/chart.js/chart.umd.min.js?v=4.5.1"></script>
   <script src="../../js/data-source.js?v=20260806-cgm-live-1"></script>
-  <script src="live-config.js?v=20260807-three-cgm-live-1"></script>
-  <script type="module" src="comparison.mjs?v=20260808-simple-demo-1"></script>
+  <script src="live-config.js?v=20260820-cgm-archive-1"></script>
+  <script type="module" src="comparison.mjs?v=20260820-cgm-archive-1"></script>
 <script src="../../js/analytics-loader.js?v=20260811-usage-profile-stage-1"></script>
 </body>
 </html>

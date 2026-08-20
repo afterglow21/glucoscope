@@ -109,7 +109,7 @@ function renderSourceControls() {
     button.setAttribute("aria-pressed", state.enabledSources.has(source.id) ? "true" : "false");
     button.disabled = !isAvailable;
     const sourceStatusText = !isAvailable
-      ? " · 準備中"
+      ? state.dataset.status === "anonymized" ? " · 記録なし" : " · 準備中"
       : source.isStale === true
         ? " · 更新遅れ"
         : "";
