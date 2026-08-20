@@ -58,7 +58,8 @@ test("refund runbook requires verified webhooks and keeps the sale stopped", () 
   }
   assert.match(runbook, /Stripe署名を検証したWebhookだけ/u);
   assert.match(runbook, /Stripe test mode/u);
-  assert.match(runbook, /保持期間は専門家確認後に確定/u);
+  assert.match(runbook, /取引または最終返金から7年保持する/u);
+  assert.match(runbook, /解決後180日を目安に削除する/u);
 
   for (const vars of [config.vars, config.env.staging.vars]) {
     assert.equal(vars.PLUS_PURCHASES_ENABLED, "false");

@@ -1,6 +1,75 @@
 const EMAIL_NOT_STORED_MARKER = "email-not-stored-v1";
 const SHARE_TRIAL_REUSE_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 
+const NO_UNRESOLVED_PURCHASE_SQL = `
+  AND NOT EXISTS (
+    SELECT 1 FROM checkout_attempts AS c
+    WHERE c.account_id = a.id AND c.state IN ('reserved', 'open')
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM processed_webhook_events AS w
+    WHERE w.account_id = a.id
+      AND (w.processed_at IS NULL OR w.outcome = 'pending')
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM processed_checkout_failure_events AS f
+    WHERE f.account_id = a.id
+      AND (f.processed_at IS NULL OR f.outcome = 'pending')
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM processed_checkout_expiry_events AS x
+    WHERE x.account_id = a.id
+      AND (x.processed_at IS NULL OR x.outcome = 'pending')
+  )
+  AND NOT EXISTS (
+    SELECT 1
+    FROM checkout_attempts AS c
+    JOIN processed_refund_events AS r
+      ON r.checkout_session_id = c.checkout_session_id
+    WHERE c.account_id = a.id
+      AND (r.processed_at IS NULL OR r.outcome = 'pending')
+  )
+`;
+
+const HAS_SETTLED_PURCHASE_SQL = `
+  AND (
+    EXISTS (SELECT 1 FROM entitlements AS e WHERE e.account_id = a.id)
+    OR EXISTS (
+      SELECT 1 FROM processed_webhook_events AS w
+      WHERE w.account_id = a.id
+        AND w.processed_at IS NOT NULL AND w.outcome <> 'pending'
+    )
+    OR EXISTS (
+      SELECT 1 FROM checkout_attempts AS c
+      WHERE c.account_id = a.id AND c.state IN ('completed', 'refunded')
+    )
+    OR EXISTS (
+      SELECT 1
+      FROM checkout_attempts AS c
+      JOIN processed_refund_events AS r
+        ON r.checkout_session_id = c.checkout_session_id
+      WHERE c.account_id = a.id
+        AND r.processed_at IS NOT NULL AND r.outcome <> 'pending'
+    )
+  )
+`;
+
+const NO_SETTLED_PURCHASE_SQL = `
+  AND NOT EXISTS (SELECT 1 FROM entitlements AS e WHERE e.account_id = a.id)
+  AND NOT EXISTS (SELECT 1 FROM processed_webhook_events AS w WHERE w.account_id = a.id)
+  AND NOT EXISTS (
+    SELECT 1 FROM checkout_attempts AS c
+    WHERE c.account_id = a.id AND c.state IN ('completed', 'refunded')
+  )
+  AND NOT EXISTS (
+    SELECT 1
+    FROM checkout_attempts AS c
+    JOIN processed_refund_events AS r
+      ON r.checkout_session_id = c.checkout_session_id
+    WHERE c.account_id = a.id
+  )
+`;
+
 function requireDatabase(database) {
   if (
     !database
@@ -697,27 +766,58 @@ export function createD1AccountAuthStore(database) {
       return { revoked: true };
     },
 
-    async deleteAccountBySession({ tokenHash, now }) {
+    async deleteAccountBySession({ tokenHash, detachedIdentityMarker, now }) {
+      if (!/^[A-Za-z0-9_-]{43}$/u.test(String(detachedIdentityMarker || ""))) {
+        throw new TypeError("detached identity marker is unavailable");
+      }
       const results = await db.batch([
         db.prepare(`
           SELECT
             a.id AS account_id,
             EXISTS (
-              SELECT 1 FROM entitlements AS e WHERE e.account_id = a.id
+              SELECT 1 FROM checkout_attempts AS c
+              WHERE c.account_id = a.id
+                AND c.state IN ('reserved', 'open')
             ) OR EXISTS (
               SELECT 1 FROM processed_webhook_events AS w
               WHERE w.account_id = a.id
+                AND (w.processed_at IS NULL OR w.outcome = 'pending')
             ) OR EXISTS (
-              SELECT 1 FROM checkout_attempts AS c
-              WHERE c.account_id = a.id
-                AND c.state NOT IN ('failed', 'expired')
+              SELECT 1 FROM processed_checkout_failure_events AS f
+              WHERE f.account_id = a.id
+                AND (f.processed_at IS NULL OR f.outcome = 'pending')
+            ) OR EXISTS (
+              SELECT 1 FROM processed_checkout_expiry_events AS x
+              WHERE x.account_id = a.id
+                AND (x.processed_at IS NULL OR x.outcome = 'pending')
             ) OR EXISTS (
               SELECT 1
               FROM checkout_attempts AS c
               JOIN processed_refund_events AS r
                 ON r.checkout_session_id = c.checkout_session_id
               WHERE c.account_id = a.id
-            ) AS has_purchase_record
+                AND (r.processed_at IS NULL OR r.outcome = 'pending')
+            ) AS has_unresolved_purchase,
+            EXISTS (
+              SELECT 1 FROM entitlements AS e WHERE e.account_id = a.id
+            ) OR EXISTS (
+              SELECT 1 FROM processed_webhook_events AS w
+              WHERE w.account_id = a.id
+                AND w.processed_at IS NOT NULL
+                AND w.outcome <> 'pending'
+            ) OR EXISTS (
+              SELECT 1 FROM checkout_attempts AS c
+              WHERE c.account_id = a.id
+                AND c.state IN ('completed', 'refunded')
+            ) OR EXISTS (
+              SELECT 1
+              FROM checkout_attempts AS c
+              JOIN processed_refund_events AS r
+                ON r.checkout_session_id = c.checkout_session_id
+              WHERE c.account_id = a.id
+                AND r.processed_at IS NOT NULL
+                AND r.outcome <> 'pending'
+            ) AS has_settled_purchase_record
           FROM sessions AS s
           JOIN accounts AS a ON a.id = s.account_id
           WHERE s.token_hash = ?1
@@ -747,27 +847,9 @@ export function createD1AccountAuthStore(database) {
             AND s.expires_at > ?2
             AND a.status = 'active'
             AND a.email_verified_at IS NOT NULL
+            ${NO_UNRESOLVED_PURCHASE_SQL}
             AND t.used_at IS NOT NULL
             AND t.used_at + ?3 > ?2
-            AND NOT EXISTS (
-              SELECT 1 FROM entitlements AS e WHERE e.account_id = a.id
-            )
-            AND NOT EXISTS (
-              SELECT 1 FROM processed_webhook_events AS w
-              WHERE w.account_id = a.id
-            )
-            AND NOT EXISTS (
-              SELECT 1 FROM checkout_attempts AS c
-              WHERE c.account_id = a.id
-                AND c.state NOT IN ('failed', 'expired')
-            )
-            AND NOT EXISTS (
-              SELECT 1
-              FROM checkout_attempts AS c
-              JOIN processed_refund_events AS r
-                ON r.checkout_session_id = c.checkout_session_id
-              WHERE c.account_id = a.id
-            )
           ON CONFLICT(email_lookup_hmac) DO UPDATE SET
             email_hmac_key_version = excluded.email_hmac_key_version,
             trial_used_at = excluded.trial_used_at,
@@ -785,25 +867,8 @@ export function createD1AccountAuthStore(database) {
             WHERE s.token_hash = ?1
               AND s.revoked_at IS NULL
               AND s.expires_at > ?2
-              AND NOT EXISTS (
-                SELECT 1 FROM entitlements AS e WHERE e.account_id = a.id
-              )
-              AND NOT EXISTS (
-                SELECT 1 FROM processed_webhook_events AS w
-                WHERE w.account_id = a.id
-              )
-              AND NOT EXISTS (
-                SELECT 1 FROM checkout_attempts AS c
-                WHERE c.account_id = a.id
-                  AND c.state NOT IN ('failed', 'expired')
-              )
-              AND NOT EXISTS (
-                SELECT 1
-                FROM checkout_attempts AS c
-                JOIN processed_refund_events AS r
-                  ON r.checkout_session_id = c.checkout_session_id
-                WHERE c.account_id = a.id
-              )
+              AND a.status = 'active'
+              ${NO_UNRESOLVED_PURCHASE_SQL}
           )
         `).bind(tokenHash, now),
         db.prepare(`
@@ -815,25 +880,8 @@ export function createD1AccountAuthStore(database) {
             WHERE s.token_hash = ?1
               AND s.revoked_at IS NULL
               AND s.expires_at > ?2
-              AND NOT EXISTS (
-                SELECT 1 FROM entitlements AS e WHERE e.account_id = a.id
-              )
-              AND NOT EXISTS (
-                SELECT 1 FROM processed_webhook_events AS w
-                WHERE w.account_id = a.id
-              )
-              AND NOT EXISTS (
-                SELECT 1 FROM checkout_attempts AS c
-                WHERE c.account_id = a.id
-                  AND c.state NOT IN ('failed', 'expired')
-              )
-              AND NOT EXISTS (
-                SELECT 1
-                FROM checkout_attempts AS c
-                JOIN processed_refund_events AS r
-                  ON r.checkout_session_id = c.checkout_session_id
-                WHERE c.account_id = a.id
-              )
+              AND a.status = 'active'
+              ${NO_UNRESOLVED_PURCHASE_SQL}
           )
         `).bind(tokenHash, now),
         db.prepare(`
@@ -845,58 +893,49 @@ export function createD1AccountAuthStore(database) {
             WHERE s.token_hash = ?1
               AND s.revoked_at IS NULL
               AND s.expires_at > ?2
-              AND NOT EXISTS (
-                SELECT 1 FROM entitlements AS e WHERE e.account_id = a.id
-              )
-              AND NOT EXISTS (
-                SELECT 1 FROM processed_webhook_events AS w
-                WHERE w.account_id = a.id
-              )
-              AND NOT EXISTS (
-                SELECT 1 FROM checkout_attempts AS c
-                WHERE c.account_id = a.id
-                  AND c.state NOT IN ('failed', 'expired')
-              )
-              AND NOT EXISTS (
-                SELECT 1
-                FROM checkout_attempts AS c
-                JOIN processed_refund_events AS r
-                  ON r.checkout_session_id = c.checkout_session_id
-                WHERE c.account_id = a.id
-              )
+              AND a.status = 'active'
+              ${NO_UNRESOLVED_PURCHASE_SQL}
           )
         `).bind(tokenHash, now),
         db.prepare(`
-          UPDATE sessions
-          SET revoked_at = COALESCE(revoked_at, ?2)
-          WHERE account_id = (
+          UPDATE accounts
+          SET
+            email_lookup_hmac = ?3,
+            email_verified_at = 0,
+            status = 'deleted',
+            updated_at = MAX(updated_at, ?2),
+            buyer_role = NULL,
+            buyer_confirmation_version = NULL,
+            adult_confirmed_at = NULL,
+            guardian_confirmed_at = NULL
+          WHERE id = (
             SELECT a.id
             FROM sessions AS current_session
             JOIN accounts AS a ON a.id = current_session.account_id
             WHERE current_session.token_hash = ?1
               AND current_session.revoked_at IS NULL
               AND current_session.expires_at > ?2
-              AND NOT EXISTS (
-                SELECT 1 FROM entitlements AS e WHERE e.account_id = a.id
-              )
-              AND NOT EXISTS (
-                SELECT 1 FROM processed_webhook_events AS w
-                WHERE w.account_id = a.id
-              )
-              AND NOT EXISTS (
-                SELECT 1 FROM checkout_attempts AS c
-                WHERE c.account_id = a.id
-                  AND c.state NOT IN ('failed', 'expired')
-              )
-              AND NOT EXISTS (
-                SELECT 1
-                FROM checkout_attempts AS c
-                JOIN processed_refund_events AS r
-                  ON r.checkout_session_id = c.checkout_session_id
-                WHERE c.account_id = a.id
-              )
+              AND a.status = 'active'
+              ${NO_UNRESOLVED_PURCHASE_SQL}
+              ${HAS_SETTLED_PURCHASE_SQL}
           )
-        `).bind(tokenHash, now),
+          RETURNING id
+        `).bind(tokenHash, now, detachedIdentityMarker),
+        db.prepare(`
+          UPDATE entitlements
+          SET status = 'revoked', updated_at = MAX(updated_at, ?2)
+          WHERE account_id = (
+            SELECT s.account_id
+            FROM sessions AS s
+            JOIN accounts AS a ON a.id = s.account_id
+            WHERE s.token_hash = ?1
+              AND s.expires_at > ?2
+              AND a.status = 'deleted'
+              AND a.email_lookup_hmac = ?3
+            LIMIT 1
+          )
+            AND status = 'granted'
+        `).bind(tokenHash, now, detachedIdentityMarker),
         db.prepare(`
           DELETE FROM accounts
           WHERE id = (
@@ -905,35 +944,32 @@ export function createD1AccountAuthStore(database) {
             JOIN accounts AS a ON a.id = s.account_id
             WHERE s.token_hash = ?1
               AND s.expires_at > ?2
-              AND NOT EXISTS (
-                SELECT 1 FROM entitlements AS e WHERE e.account_id = a.id
-              )
-              AND NOT EXISTS (
-                SELECT 1 FROM processed_webhook_events AS w
-                WHERE w.account_id = a.id
-              )
-              AND NOT EXISTS (
-                SELECT 1 FROM checkout_attempts AS c
-                WHERE c.account_id = a.id
-                  AND c.state NOT IN ('failed', 'expired')
-              )
-              AND NOT EXISTS (
-                SELECT 1
-                FROM checkout_attempts AS c
-                JOIN processed_refund_events AS r
-                  ON r.checkout_session_id = c.checkout_session_id
-                WHERE c.account_id = a.id
-              )
+              AND a.status = 'active'
+              ${NO_UNRESOLVED_PURCHASE_SQL}
+              ${NO_SETTLED_PURCHASE_SQL}
           )
           RETURNING id
         `).bind(tokenHash, now),
+        db.prepare(`
+          DELETE FROM sessions
+          WHERE account_id = (
+            SELECT s.account_id
+            FROM sessions AS s
+            JOIN accounts AS a ON a.id = s.account_id
+            WHERE s.token_hash = ?1
+              AND s.expires_at > ?2
+              AND a.status = 'deleted'
+              AND a.email_lookup_hmac = ?3
+            LIMIT 1
+          )
+        `).bind(tokenHash, now, detachedIdentityMarker),
       ]);
       const eligibility = firstBatchRow(results[0]);
       if (!eligibility) return { status: "invalid_session" };
-      if (Boolean(eligibility.has_purchase_record)) {
+      if (Boolean(eligibility.has_unresolved_purchase)) {
         return { status: "requires_support" };
       }
-      return firstBatchRow(results[6])
+      return firstBatchRow(results[5]) || firstBatchRow(results[7])
         ? { status: "deleted" }
         : { status: "unavailable" };
     },

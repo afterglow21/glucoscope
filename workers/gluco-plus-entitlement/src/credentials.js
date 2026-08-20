@@ -25,3 +25,9 @@ export async function createSessionCredentials(cryptoImpl = crypto) {
     tokenHash: await hashSessionToken(sessionToken, cryptoImpl),
   });
 }
+
+export function createDetachedIdentityMarker(cryptoImpl = crypto) {
+  const markerBytes = new Uint8Array(32);
+  cryptoImpl.getRandomValues(markerBytes);
+  return bytesToBase64Url(markerBytes);
+}

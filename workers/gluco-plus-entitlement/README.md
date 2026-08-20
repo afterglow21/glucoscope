@@ -271,9 +271,12 @@ has verified Stripe's successful-payment email and ordinary receipt in the actua
 environment. On 2026-08-19, a private live JPY 400 payment and approved full refund delivered
 Stripe's automatic successful-payment and refund emails to the operator, so that delivery gate
 is accepted. It deliberately does not create a paid invoice or call the ordinary receipt a
-Japanese qualified invoice. Retention, acceptance of any additionally enabled payment method,
-professional review, and the remaining production release checks remain sale blockers;
-checked-in release flags therefore remain false.
+Japanese qualified invoice. Account deletion now immediately detaches the recovery identity
+when no payment or refund is in progress, while settled minimum accounting rows remain for
+seven years; ordinary resolved support mail is targeted for deletion after 180 days. No
+additional payment method is enabled for the initial sale. The remaining blocker is the final
+staged production release and supervised browser acceptance; checked-in release flags therefore
+remain false until that cutover.
 
 Keep the existing staging deployment stopped and unreachable. Do not add a route, Cron,
 public `workers.dev` endpoint, preview URL, sender, or commerce identifier merely because
@@ -577,7 +580,7 @@ Workbench request logs show that the adapter actually needs it. Set all secret v
 Cloudflare's secret or dashboard configuration facilities; never put their values in
 Git or `.dev.vars`.
 
-Live sales remain blocked. The stopped staging D1 schema-and-binding checkpoint, official
+Live sales remain blocked only until the staged release is completed. The stopped staging D1 schema-and-binding checkpoint, official
 Resend test-recipient acceptance, the first personal-inbox and Turnstile closed E2E, the
 same-email session-replacement recovery, and the production account lifecycle acceptance all
 passed. The production check used the real hostname, Managed Turnstile, and operator inbox;
@@ -587,9 +590,10 @@ tables returned to zero. Production is back on webhook-only Version
 `16b489ba-1b15-407d-a6f2-dee82c5244e1`; unserved fully stopped Version
 `6d9de56d-0d74-44a1-b3a2-398669bb035e` is the only reviewed rollback. Stripe-hosted full
 payment, duplicate delivery, full refund, concurrent-click protection, pending reuse, expiry,
-recreation, and declined-card acceptance also passed. Small-group operational observation,
-retention and professional review, the full support exercise, any additionally enabled payment
-method, feature-gating acceptance, and the complete release review remain. The production
+recreation, and declined-card acceptance also passed. The production deletion candidate covers
+immediate recovery-identity detachment, preserved settled accounting rows, same-email
+re-registration, and the 90-day Share Studio reuse boundary. Feature-gating acceptance and the
+complete release review remain. The production
 scheduled-cleanup acceptance also passed. Account, Checkout, Share, sales, tax, and receipt
 switches must not be enabled merely because these closed checks passed; the accepted cleanup
 switch is enabled only as part of the final account release.

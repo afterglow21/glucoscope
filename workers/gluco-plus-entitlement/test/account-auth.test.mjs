@@ -1493,7 +1493,7 @@ test("a completed Share Studio trial stays unavailable for 90 days after account
   `).get().count), 0);
 });
 
-test("an account with a purchase receipt stays intact and requires private support", async (t) => {
+test("an unprocessed purchase receipt stays intact and requires private support", async (t) => {
   const database = createDatabase();
   t.after(() => database.close());
   const store = createD1AccountAuthStore(database);
@@ -1535,6 +1535,117 @@ test("an account with a purchase receipt stays intact and requires private suppo
   assert.equal(Number(database.raw.prepare(`
     SELECT COUNT(*) AS count FROM accounts
   `).get().count), 1);
+});
+
+test("deleting a settled paid account detaches its email identity and preserves accounting rows", async (t) => {
+  const database = createDatabase();
+  t.after(() => database.close());
+  const store = createD1AccountAuthStore(database);
+  const clock = { value: NOW };
+  const delivered = [];
+  const service = createAccountAuthService(
+    ENABLED_ENV,
+    createDeterministicDependencies(store, clock, delivered),
+  );
+  const requested = await service.requestCode(
+    confirmedSelf(),
+    { turnstileVerified: true },
+  );
+  const verified = await service.verifyCode({
+    email: EMAIL,
+    code: delivered[0].code,
+    verificationGrant: requested.verificationGrant,
+  });
+  const originalIdentity = database.raw.prepare(`
+    SELECT email_lookup_hmac FROM accounts WHERE id = ?1
+  `).get(ACCOUNT_IDS[0]).email_lookup_hmac;
+  database.raw.prepare(`
+    UPDATE share_trial_state
+    SET used_at = ?2,
+      completed_request_id = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+      updated_at = ?2
+    WHERE account_id = ?1
+  `).run(ACCOUNT_IDS[0], NOW);
+  database.raw.prepare(`
+    INSERT INTO processed_webhook_events (
+      event_id, checkout_session_id, event_type, account_id, amount_jpy,
+      currency, paid_at, outcome, received_at, processed_at
+    ) VALUES (
+      'evt_settled_receipt', 'cs_test_1234567890123456',
+      'checkout.session.completed', ?1, 400, 'jpy', ?2,
+      'granted', ?2, ?2
+    )
+  `).run(ACCOUNT_IDS[0], NOW);
+  database.raw.prepare(`
+    INSERT INTO entitlements (
+      id, account_id, product_code, purchase_kind, amount_jpy, currency,
+      starts_at, ends_at, status, source_event_id, created_at, updated_at
+    ) VALUES (
+      'abababab-abab-4bab-8bab-abababababab', ?1,
+      'plus_30d', 'one_time', 400, 'jpy', ?2, ?3,
+      'granted', 'evt_settled_receipt', ?2, ?2
+    )
+  `).run(ACCOUNT_IDS[0], NOW, NOW + 30 * 24 * 60 * 60 * 1000);
+
+  clock.value += 1_000;
+  assert.deepEqual(await service.deleteAccount(verified.sessionToken, {
+    confirmDelete: true,
+  }, { turnstileVerified: true }), {
+    ok: true,
+    status: "account_deleted",
+  });
+  assert.equal(await service.getSessionStatus(verified.sessionToken), null);
+
+  const detached = database.raw.prepare(`
+    SELECT
+      email_lookup_hmac, email_verified_at, status, buyer_role,
+      buyer_confirmation_version, adult_confirmed_at, guardian_confirmed_at
+    FROM accounts WHERE id = ?1
+  `).get(ACCOUNT_IDS[0]);
+  assert.match(detached.email_lookup_hmac, /^[A-Za-z0-9_-]{43}$/u);
+  assert.notEqual(detached.email_lookup_hmac, originalIdentity);
+  assert.equal(Number(detached.email_verified_at), 0);
+  assert.equal(detached.status, "deleted");
+  assert.equal(detached.buyer_role, null);
+  assert.equal(detached.buyer_confirmation_version, null);
+  assert.equal(detached.adult_confirmed_at, null);
+  assert.equal(detached.guardian_confirmed_at, null);
+  assert.equal(Number(database.raw.prepare(`
+    SELECT COUNT(*) AS count FROM sessions WHERE account_id = ?1
+  `).get(ACCOUNT_IDS[0]).count), 0);
+  assert.equal(Number(database.raw.prepare(`
+    SELECT COUNT(*) AS count FROM entitlements WHERE account_id = ?1
+  `).get(ACCOUNT_IDS[0]).count), 1);
+  assert.equal(database.raw.prepare(`
+    SELECT status FROM entitlements WHERE account_id = ?1
+  `).get(ACCOUNT_IDS[0]).status, "revoked");
+  assert.equal(Number(database.raw.prepare(`
+    SELECT COUNT(*) AS count FROM processed_webhook_events WHERE account_id = ?1
+  `).get(ACCOUNT_IDS[0]).count), 1);
+  assert.equal(Number(database.raw.prepare(`
+    SELECT COUNT(*) AS count FROM share_trial_reuse_retention
+    WHERE email_lookup_hmac = ?1
+  `).get(originalIdentity).count), 1);
+
+  clock.value += 61_000;
+  const recreateRequest = await service.requestCode(
+    confirmedSelf(),
+    { turnstileVerified: true },
+  );
+  const recreated = await service.verifyCode({
+    email: EMAIL,
+    code: delivered[1].code,
+    verificationGrant: recreateRequest.verificationGrant,
+  });
+  assert.equal(recreated.status, "verified");
+  assert.equal(recreated.session.plusActive, false);
+  assert.equal(recreated.session.shareStudioTrialAvailable, false);
+  assert.deepEqual(database.raw.prepare(`
+    SELECT status, COUNT(*) AS count FROM accounts GROUP BY status ORDER BY status
+  `).all().map((row) => ({ status: row.status, count: Number(row.count) })), [
+    { status: "active", count: 1 },
+    { status: "deleted", count: 1 },
+  ]);
 });
 
 test("an open Checkout attempt blocks deletion before an unresolved payment can be stranded", async (t) => {

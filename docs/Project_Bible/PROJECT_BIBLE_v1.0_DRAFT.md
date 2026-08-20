@@ -4115,8 +4115,9 @@ Checkoutを再利用しました。Stripeの拒否用テストカードはHosted
 期限切れにし、合成accountを特定して削除し、12 tableを0件へ戻し、停止Version
 `c917affd-74ed-4691-a3c6-b6c8e3149e3c`だけを100%へ復帰させました。Webhook送信先を無効化し、
 一時Custom Domainとlocalhost harnessも削除しました。Secret値、Hosted Checkout URL、カード情報、
-実メール、健康情報は記録していません。領収書、保持期間、追加で有効にする支払方法、専門家確認、
-本番受け入れは引き続き販売ブロッカーです。
+実メール、健康情報は記録していません。この時点では領収書、保持期間、追加で有効にする支払方法、
+専門家確認、本番受け入れを販売ブロッカーとして残していました。その後の本番決済・返金・領収書受入と、
+下記の保持方針・削除実装が新しい現在形です。
 
 privacy保護した公開Usage集計は、Usage Worker Version
 `e7b2a895-c418-4cb2-b565-d2a37bef8e1b`で本番接続済みです。未配信の停止Version
@@ -4146,15 +4147,17 @@ Freeの現在血糖と基本グラフを止めません。
 stagingへ`0007_share_trial_reuse_retention.sql`を適用し、6列だけのschema、13 table 0件、全flag停止の
 Version `be6a1dbe-c9cf-4002-a997-13d93cf58c36`を確認しました。Share Studio候補`8d206190-da81-4fa3-8e69-ee1277e3c1f5`は0%、停止版は100%です。本番APAC D1にも`0001`から`0007`を適用し、13 table 0件を確認しました。2026年8月19日、本番停止版`b81b0833-7948-48bd-8b99-88b6eb5f4845`を100%へ配信し、13 table 0件を再確認しました。その後、本番専用Managed Turnstile widget `GlucoScope Plus Production`を`glucoscope.app`だけ許可、pre-clearanceなしで作成し、Secret値を表示・記録せず本番Workerへ直接追加しました。続いて本番専用Resend送信鍵も値を開示せず本番Workerへ直接追加しました。コード指紋、D1、rate limit、販売条件、全flag falseを維持し、専用TurnstileとResendのSecret名を持つ停止Version `4e267db3-efe6-4374-bbfa-dafd1a50c3a7`を100%へ切り替えました。本番専用Custom Domain `plus.glucoscope.app`だけを先に準備し、Cronと`workers.dev`はありません。許可Originからのpreflightは、bodyを読んだりD1へ書いたりする前に`no-store`付きの`503 service_unavailable`で停止しました。これはendpoint準備であり、公開アカウントや販売開始ではありません。`4e267db3-efe6-4374-bbfa-dafd1a50c3a7`だけを確認済みの本番復帰先とし、`4c3ca08d-6d52-434e-8d93-779b09ccf0b0`、`b81b0833-7948-48bd-8b99-88b6eb5f4845`を含むそれ以前の本番Versionへtrafficを戻しません。未配信のVersion `7dc440a4-6fc5-4907-8590-9c2b3ef97b3f`は利用不能な仮鍵を含むため、特に配信禁止です。2026年8月20日、固定の合成値だけを使う閉じた本番ページから実browser・Worker・production D1を通し、端末内Daily Snapshot PNG、1回の成功消費、直後の2回目拒否、購入記録のないaccount削除、同じメールでの再登録、無料体験が復活しないこと、再登録accountの削除まで確認しました。最終的にaccount・session・challenge・accountに結び付く体験状態と処理は0件、元に戻せない90日再利用防止記録は1件、24時間上限用の匿名送信予約は2件でした。Webhook専用Version `16b489ba-1b15-407d-a6f2-dee82c5244e1`を100%へ戻し、ShareとCheckoutは`503`、受入ページは削除済みです。既存の不透明sessionとランダムrequest ID以外に、血糖値、接続URL、合言葉、画像はPlus Workerへ送っていません。期限切れ記録の削除処理は、後述の本番cleanup受入で確認済みです。
 
-購入記録は、復旧・問い合わせに使うアカウントとの結び付きと、会計・返金・異議申立てに必要な
-最小記録を分ける候補としました。結び付きは、有効なPlus、未完了支払い、返金、異議申立て、
-本人確認中の問い合わせがなくなった後、最後の支払いまたは最終解決の遅い方から180日以内に外します。
-その後は商品、金額、通貨、支払い・返金状態と日時、対象期間、Stripe照合番号だけを会計用途に限定して
-残します。最小会計記録は7年を保持候補としますが、運営形態と取引に適用される法定期間を断定したもの
-ではありません。個人情報を目的に必要な期間だけ保つ原則と、帳簿・電子取引の保存義務を税務・法務の
-専門家へ確認し、確定した期間、期限削除、アカウント切り離し、購入のあるアカウントの問い合わせ削除
-手順を受け入れるまで販売しません。この追加は文書上の候補であり、Worker、Stripe設定、秘密情報、
-公開flag、既存の削除処理は変更していません。
+購入記録は、復旧に使うアカウントとの結び付きと、会計・返金・異議申立てに必要な最小記録を分けます。
+アカウントを利用している間は、別端末で復旧できるようメール照合HMACを保持します。本人が削除した時は、
+処理中の支払い、返金、異議申立てがなければ、確定済み購入があってもメール照合HMACをランダムな無関係の
+印へ直ちに置き換え、本人・保護者確認、session、無料体験状態を削除します。これによりログインとPlus復旧は
+終了します。同じメールで新しいFreeアカウントを作ることはできます。処理中の取引がある時は何も変更せず、
+問い合わせへ案内します。商品、金額、通貨、支払い・返金状態と日時、対象期間、Stripe照合番号だけの
+最小会計記録は、免税事業者である個人事業の運用方針として取引または最終返金から7年保持します。
+これはすべての事業に同じ法定期間だという断定ではなく、事業形態や法令の変更時に再確認します。
+解決済みの通常サポートメールは解決後180日を目安に削除し、未解決の返金・異議申立て等だけ理由が続く間
+保持します。Worker候補は、未確定取引では完全に無変更で停止すること、確定済み購入では会計行を残して
+メールとの結び付きを外すこと、全session失効、同じメールでの再登録、90日体験再取得防止をSQLiteで確認します。
 
 同日、返金方針は、細かな時間条件や長い除外一覧を作らず、短く分かりやすくすることを
 運営者本人が決定しました。二重決済や、支払い済みなのにPlusを始められない状態は、
@@ -4165,7 +4168,7 @@ Plusの主要特典をほとんど利用できず、運営側でも解決でき�
 目安だけを案内し、反映日を保証しません。利用者都合を含むすべての申出を同じ返金対象とは
 案内せず、それ以外の相談も個別に受け付けます。2026年8月17日、公開問い合わせ先は
 `support@glucoscope.app`、平日受付、原則5営業日以内の返信とする方針を決めました。
-Cloudflare Email Routingによる非公開受信箱への転送と必要な受信DNSは有効化済みです。2026年8月17日、別の送信元から`support@glucoscope.app`へ送った健康情報を含まないテストメールが非公開受信箱へ届くことを、運営者本人が確認しました。送信元、転送先、件名、本文は記録しません。`docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md`に、購入メールとおおよその購入日による最小照合、訂正優先、Stripe Dashboardでの全額返金、openな異議申立てとの二重処理禁止、成功したWebhook後のPlus終了、状態別返信を定義しました。Stripe test modeの400円決済・重複Webhook・全額返金・Plus終了・二重操作・未完了Checkout再利用・期限切れ・再作成・カード拒否は合格しました。問い合わせ受付と返信を含む運営手順全体、追加で有効にする支払方法、保持期間・専門家確認は販売ブロッカーです。
+Cloudflare Email Routingによる非公開受信箱への転送と必要な受信DNSは有効化済みです。2026年8月17日、別の送信元から`support@glucoscope.app`へ送った健康情報を含まないテストメールが非公開受信箱へ届くことを、運営者本人が確認しました。送信元、転送先、件名、本文は記録しません。`docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md`に、購入メールとおおよその購入日による最小照合、訂正優先、Stripe Dashboardでの全額返金、openな異議申立てとの二重処理禁止、成功したWebhook後のPlus終了、状態別返信、問い合わせ180日・最小会計記録7年の運用を定義しました。Stripe test modeの400円決済・重複Webhook・全額返金・Plus終了・二重操作・未完了Checkout再利用・期限切れ・再作成・カード拒否と、本番400円決済・全額返金・自動メール受信は合格しました。
 公開ページ、決済、Worker、Stripe設定は、この方針だけでは有効にしません。
 
 同日、初期販売は日本国内に居住する人に限り、お支払い総額400円、購入とメールを管理する
@@ -4206,7 +4209,7 @@ copy does not call the price tax-inclusive and does not promise a qualified invo
 name, address, and telephone details stay out of Git and are to be supplied without delay on
 request, with enough time before purchase. The planned contact is `support@glucoscope.app`,
 weekdays, with a target reply within five business days. Cloudflare Email Routing and the
-required receiving DNS are enabled with a private destination. On August 17, 2026, the operator confirmed that a test message containing no health information, sent from a separate sender to `support@glucoscope.app`, reached the private destination. The sender, destination, subject, and body are not recorded. `docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md` defines minimum purchase matching, correction before refund, full refunds in Stripe Dashboard, no separate refund during an open dispute, entitlement termination only after a verified successful refund, and status-specific replies. The JPY 400 payment, duplicate-webhook, full-refund, entitlement-termination, concurrent-click, pending-reuse, expiry, recreation, and declined-card sandbox drills passed. The full support intake/reply exercise, any additionally enabled payment method, professional review, ordinary receipt wording, the no-Stripe-Tax initial configuration, and the product tax code remain sale blockers.
+required receiving DNS are enabled with a private destination. On August 17, 2026, the operator confirmed that a test message containing no health information, sent from a separate sender to `support@glucoscope.app`, reached the private destination. The sender, destination, subject, and body are not recorded. `docs/Operations/PLUS_REFUND_SUPPORT_RUNBOOK.md` defines minimum purchase matching, correction before refund, full refunds in Stripe Dashboard, no separate refund during an open dispute, entitlement termination only after a verified successful refund, status-specific replies, 180-day resolved-support-mail deletion, and seven-year minimum accounting retention. The JPY 400 payment, duplicate-webhook, full-refund, entitlement-termination, concurrent-click, pending-reuse, expiry, recreation, and declined-card sandbox drills passed. Live JPY 400 payment, full refund, automatic receipt delivery, account recovery and deletion, and one-time Share Studio trial acceptance also passed. No additional payment method is enabled for the initial sale. The remaining blocker is the staged Worker-to-Pages release and supervised browser acceptance; legal, tax, dispute, refund-failure, and delivery-failure conditions remain ongoing monitoring duties.
 
 The checked-in pre-payment candidate now uses a visible final order review instead of a short
 browser prompt. It shows the product, quantity one, JPY 400 total, one payment, 30 days, no
@@ -4326,8 +4329,9 @@ D1で原子的に確保し、pending、sent、failedのすべてを消費とし�
 `reserved_at < cleanup時刻 - 24時間` を毎時cleanupの対象とします。毎時実行のため通常は基準から
 約24〜25時間で削除され、公開文では「おおむね1日」と説明します。Share Studio体験後の90日再利用防止記録も、
 期限を過ぎた行を同じcleanupで削除します。checked-inのcleanup flagは`false`で、本番cleanup受け入れ後も
-最終アカウント公開時だけ有効にします。確認済みアカウントのメール照合HMACと購入・会計記録の
-保持期間は、この一時記録とは別で未決です。
+最終アカウント公開時だけ有効にします。確認済みアカウントのメール照合HMACはアカウント利用中の復旧に
+使い、本人による削除時は未確定取引がなければ直ちにランダムな無関係の印へ置き換えます。最小会計記録は
+取引または最終返金から7年、解決済みの通常サポートメールは解決後180日を現在の運用方針とします。
 
 確認コード送信は同じ接続元ごとに5回/60秒、コード確認は30回/60秒のCloudflare Rate Limiting bindingを
 本文読取、Turnstile、D1、メール送信より前に使います。検証した `CF-Connecting-IP` はbindingの一時的なkey
@@ -4383,8 +4387,9 @@ session、Secret、site key、provider識別子は記録しません。
 1分間隔のCronでscheduled handlerを実行しました。次の完了runで3行すべてが削除されたため、直ちにCronを
 削除し、Webhook専用Version `16b489ba-1b15-407d-a6f2-dee82c5244e1`を100%へ戻しました。対象3表は0件、
 account・Checkout・Shareは`503`、署名なしWebhookは`400`へ復帰しています。利用者の記録、メール、コード、
-session、健康情報、Secretは使っていません。cleanupは最終アカウント公開時まで停止し、確認済みアカウント、
-購入、会計記録のより長い保持期間は別の未決事項として残します。
+session、健康情報、Secretは使っていません。cleanupは最終アカウント公開時まで停止します。この時点では
+確認済みアカウント、購入、会計記録の保持を未決としていましたが、現在は上記の即時アカウント切り離し、
+最小会計記録7年、解決済み通常問い合わせ180日の方針と実装候補へ更新しています。
 
 同日、再送安全性候補の受け入れは、`403 turnstile_failed`でD1やメールの前に停止しました。
 繰り返し操作してもaccount、challenge、送信予約、session、購入、利用権は作られず、メール到着の証拠も

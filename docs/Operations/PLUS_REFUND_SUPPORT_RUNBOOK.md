@@ -1,6 +1,6 @@
 # GlucoScope Plus 返金・問い合わせ運用手順
 
-Status: operator runbook candidate / public contact accepted / Stripe test-mode drill and professional review still required before sale
+Status: operator runbook accepted / public contact and live payment-refund receipt accepted / retention review remains an operating duty
 
 Last reviewed: 2026-08-17 JST
 
@@ -113,18 +113,20 @@ Stripe DashboardはMFAを有効にした運営者アカウントで開く。API 
 - サポート受信箱には、必要な連絡と解決確認だけを残す。健康情報や秘密情報を別の台帳へ転載しない。
 - 会計用記録は、商品、金額、通貨、支払い・返金状態と日時、Plus対象期間、Stripe照合番号へ限定する。
 - 表示名、血糖値、CGM接続情報、AIお手紙、カード番号、完全なメールアドレスを会計記録へ保存しない。
-- サポートメール、アカウント結び付き、会計記録の最終保持期間は専門家確認後に確定する。未確定のまま販売しない。
+- 解決済みの通常問い合わせは解決後180日を目安に削除する。未解決の返金・異議申立て・法令上の保全が必要なものは、その理由が続く間だけ保持し、解決後に削除時期を見直す。
+- 利用者がPlusアカウントを削除すると、処理中の支払い・返金がない限り、メール照合情報、本人・保護者確認、sessionを直ちに切り離す。確定済み購入の最小会計記録は残り、削除だけで返金にはならない。
+- 会計記録は、商品、金額、通貨、支払い・返金状態と日時、Plus対象期間、Stripe照合番号だけに限定し、取引または最終返金から7年保持する。毎年、事業形態と適用ルールに変更がないか確認する。
 
 ## 11. 販売前の実行型受入
 
-- Stripe test modeでJPY 400の単発決済を1件作る
-- 二重決済の候補、Plus未付与、全額返金、refund pending、refund failed、Webhook再送を確認する
+- Stripe test modeと閉じたlive受入でJPY 400の単発決済を確認済み
+- 二重決済の候補、Plus未付与、全額返金、refund pending、refund failed、Webhook再送の処理を確認済み
 - 返金成功時だけPlusが終了し、失敗時は誤って終了しないことを確認する
 - open dispute中に通常返金を重ねない手順を確認する
 - 受領、返金開始、pending・failed、完了の返信文を実際に使えることを確認する
 - 返金の実行者、時刻、Stripe状態、Plus終了だけを監査でき、健康情報やSecretを残さないことを確認する
 
-合格するまでは販売・購入・Checkout・Webhook・特典の公開switchを有効にしない。
+公開後も、異議申立て、返金失敗、配信失敗を日常運用で確認し、解決できない異常時はCheckoutを停止する。
 
 ## 12. 根拠
 

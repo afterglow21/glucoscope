@@ -74,7 +74,7 @@ test("Plus buyer policy stays complete internally while public pages remain simp
   assert.match(spec, /購入とメールを管理する18歳以上の本人/);
   assert.match(spec, /子どもの氏名、生年月日、血糖値、表示名、CGMの種類を保護者確認で集めない/);
   assert.match(spec, /体験を成功した日から90日間だけ/);
-  assert.match(spec, /販売前の保持候補は7年/);
+  assert.match(spec, /取引または最終返金から7年保持する/);
   assert.match(spec, /確認メールの送信候補はResend Free/);
   assert.match(spec, /通常の送信記録とメール本文は最長30日保持される/);
   assert.match(spec, /運営者が手動で削除するまで、30日を超えて残る場合がある/);
@@ -82,14 +82,13 @@ test("Plus buyer policy stays complete internally while public pages remain simp
   assert.match(spec, /request-codeは5回\/60秒、verifyは30回\/60秒/);
   assert.match(bible, /子どものPlusを18歳以上の保護者が管理できる方針/);
   assert.match(bible, /子どもの氏名、生年月日、血糖値、表示名、CGMの種類は集めず/);
-  assert.match(bible, /最後の支払いまたは最終解決の遅い方から180日以内/);
+  assert.match(bible, /取引または最終返金から7年保持します/);
+  assert.match(bible, /解決済みの通常サポートメールは解決後180日を目安に削除し/);
   assert.match(bible, /原因を確認・解決した後に運営者が手動で削除するまで、30日を超えて残る場合があります/);
 
-  for (const publicPage of [privacy, roadmap]) {
-    assert.doesNotMatch(publicPage, /最小会計記録は7年|会計記録の候補は7年/u);
-    assert.doesNotMatch(publicPage, /最後の支払いまたは解決から180日/u);
-    assert.doesNotMatch(publicPage, /体験した日から90日間だけ/u);
-  }
+  assert.match(privacy, /最小会計記録だけを、取引または最終返金から7年残します/);
+  assert.match(privacy, /解決済みの通常問い合わせは解決後180日を目安に削除します/);
+  assert.doesNotMatch(roadmap, /最小会計記録は7年|会計記録の候補は7年/u);
   assert.match(privacy, /Plus 30日パス（まだ販売していません）/);
   assert.match(privacy, /本人利用か保護者管理かを確認した日/);
   assert.match(privacy, /二重決済やPlusが始まらない問題/);

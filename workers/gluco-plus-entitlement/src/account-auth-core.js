@@ -10,6 +10,7 @@ import {
 } from "./account-auth-crypto.js";
 import { createD1AccountAuthStore } from "./account-auth-store.js";
 import {
+  createDetachedIdentityMarker,
   createSessionCredentials,
   hashSessionToken,
 } from "./credentials.js";
@@ -205,6 +206,8 @@ export function createAccountAuthService(env = {}, dependencies = {}) {
   const makeChallenge = dependencies.createVerificationChallengeCredentials
     || createVerificationChallengeCredentials;
   const makeSession = dependencies.createSessionCredentials || createSessionCredentials;
+  const makeDetachedIdentityMarker = dependencies.createDetachedIdentityMarker
+    || createDetachedIdentityMarker;
   const makeEmailHmac = dependencies.createEmailLookupHmac || createEmailLookupHmac;
   const verifyCodeHmac = dependencies.verifyVerificationCodeHmac
     || verifyVerificationCodeHmac;
@@ -486,8 +489,10 @@ export function createAccountAuthService(env = {}, dependencies = {}) {
       const token = requireSessionToken(sessionToken);
       if (!token) throw new AccountAuthError("authentication_required", 401);
       const tokenHash = await hashToken(token, cryptoImpl);
+      const detachedIdentityMarker = makeDetachedIdentityMarker(cryptoImpl);
       const result = await getStore().deleteAccountBySession({
         tokenHash,
+        detachedIdentityMarker,
         now: requireSafeEpoch(now()),
       });
       if (result?.status === "requires_support") {

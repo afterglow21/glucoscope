@@ -394,7 +394,7 @@ const translations = {
     plusAccountRefreshButton: "状態を更新する",
     plusAccountLogoutButton: "この端末からログアウト",
     plusAccountDeleteDetails: "詳しい管理",
-    plusAccountDeleteLead: "Plusアカウントを削除しても、血糖の接続や利用記録は別に残ります。Share Studioの無料体験を使っていた場合は、二重体験を防ぐため、元に戻せないメールの照合用の印と期限だけを体験成功日から90日間残します。購入記録がある場合は、この画面では削除できません。",
+    plusAccountDeleteLead: "Plusアカウントを削除しても、血糖の接続や利用記録は別に残ります。ログイン、Plusの利用と復旧はできなくなります。確定済みの購入がある場合は、メールとの結び付きをすぐ外し、会計・返金確認に必要な最小記録だけを残します。処理中の支払いや返金がある時だけ、安全のため問い合わせをご案内します。削除だけで返金にはなりません。Share Studioの無料体験を使っていた場合は、二重体験を防ぐ印と期限だけを体験成功日から90日間残します。",
     plusAccountDeleteButton: "Plusアカウントを削除する",
     plusAccountSafety: "カード番号はStripeの画面だけで入力します。Stripeへ血糖値や接続情報を送ることはありません。",
     dataSourceDialogTitle: "データ接続（先行体験）",
@@ -821,7 +821,7 @@ const translations = {
     plusAccountRefreshButton: "Refresh status",
     plusAccountLogoutButton: "Sign out on this device",
     plusAccountDeleteDetails: "More account options",
-    plusAccountDeleteLead: "Deleting the Plus account does not remove the glucose connection or the separate usage record. If the one-time Share Studio trial was completed, only an irreversible email lookup marker and its expiry remain for 90 days from completion to prevent a second trial. An account with a purchase record cannot be deleted here.",
+    plusAccountDeleteLead: "Deleting the Plus account does not remove the glucose connection or the separate usage record. Sign-in and Plus recovery will end. For a settled purchase, GlucoScope immediately detaches the email identity and keeps only the minimum transaction record needed for accounting and refund checks. Only a payment or refund still in progress requires support before deletion. Deletion does not itself issue a refund. If the one-time Share Studio trial was completed, its reuse-prevention marker and expiry remain for 90 days from completion.",
     plusAccountDeleteButton: "Delete Plus account",
     plusAccountSafety: "Card details are entered only on Stripe’s page. GlucoScope does not send glucose values or connection details to Stripe.",
     dataSourceDialogTitle: "Data connection (early access)",
@@ -4009,8 +4009,8 @@ function setupPlusAccountFoundation() {
       return;
     }
     const confirmed = window.confirm(currentLanguage === "en"
-      ? "Delete this Plus account? The glucose connection and the separate usage record will not be deleted. If the Share Studio trial was completed, its irreversible reuse-prevention marker remains until 90 days after completion."
-      : "Plusアカウントを削除しますか？ 血糖の接続と、別の利用記録は削除されません。Share Studioの無料体験を使っていた場合、元に戻せない再取得防止の印は体験成功日から90日後まで残ります。");
+      ? "Delete this Plus account? The glucose connection and separate usage record will not be deleted, but sign-in, Plus access, and recovery will end. A settled purchase is detached from the email identity; minimum accounting and refund records remain. Deletion does not issue a refund. If the Share Studio trial was completed, its reuse-prevention marker remains until 90 days after completion."
+      : "Plusアカウントを削除しますか？ 血糖の接続と別の利用記録は削除されませんが、ログイン、Plusの利用と復旧はできなくなります。確定済みの購入はメールとの結び付きを外し、会計・返金確認に必要な最小記録だけを残します。削除だけで返金にはなりません。Share Studioの無料体験を使っていた場合、再取得防止の印は体験成功日から90日後まで残ります。");
     if (!confirmed) return;
     setPlusAccountControlsDisabled(true);
     setPlusAccountStatus(currentLanguage === "en"
@@ -4022,8 +4022,8 @@ function setupPlusAccountFoundation() {
     if (!result?.ok) {
       setPlusAccountStatus(result?.error === "account_deletion_requires_support"
         ? (currentLanguage === "en"
-          ? "This account has a purchase record and cannot be deleted here. The support contact will be shown before sales begin."
-          : "このアカウントには購入記録があるため、ここでは削除できません。販売開始前に問い合わせ先を案内します。")
+          ? "A payment or refund is still being confirmed. Nothing was deleted. Please contact support so the transaction is not stranded."
+          : "支払いまたは返金の確認が終わっていないため、何も削除していません。処理を取り残さないよう、問い合わせからご連絡ください。")
         : (currentLanguage === "en"
           ? "The Plus account could not be deleted. Nothing else was changed."
           : "Plusアカウントを削除できませんでした。ほかの設定は変わっていません。"));
@@ -4038,8 +4038,8 @@ function setupPlusAccountFoundation() {
     configurePlusFeatureGating();
     renderPlusAccountTurnstile();
     setPlusAccountStatus(currentLanguage === "en"
-      ? "The Plus account was deleted. The glucose connection and usage record were not changed."
-      : "Plusアカウントを削除しました。血糖の接続と利用記録は変わっていません。");
+      ? "The Plus account was deleted. Sign-in and Plus recovery ended. The glucose connection and usage record were not changed."
+      : "Plusアカウントを削除しました。ログインとPlusの復旧は終了しました。血糖の接続と利用記録は変わっていません。");
     emailInput?.focus?.();
   });
 
