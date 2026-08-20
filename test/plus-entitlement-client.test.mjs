@@ -259,6 +259,26 @@ test("Share Studio trial operations send only an opaque session and request ID",
   assert.equal(calls[2].url, "https://plus.example/v1/session");
 });
 
+test("Share Studio exposes a rejected trial status as the client error", async () => {
+  const storage = createStorage();
+  storage.setItem("glucoscope.plusSession.v1", JSON.stringify({
+    schemaVersion: 1,
+    sessionToken: TOKEN
+  }));
+  const { api } = loadClient({
+    storage,
+    fetchImpl: async () => jsonResponse({
+      ok: false,
+      status: "trial_already_used"
+    }, 409)
+  });
+  await api.configure({ enabled: true, endpoint: "https://plus.example" });
+  const result = await api.reserveShareStudio();
+  assert.equal(result.ok, false);
+  assert.equal(result.status, 409);
+  assert.equal(result.error, "trial_already_used");
+});
+
 test("verification fails locally without a request-code grant", async () => {
   let calls = 0;
   const { api } = loadClient({

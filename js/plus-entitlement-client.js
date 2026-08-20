@@ -239,7 +239,7 @@
         return {
           ok: false,
           status: response.status,
-          error: String(payload?.error || "request_failed"),
+          error: String(payload?.error || payload?.status || "request_failed"),
           retryAfterSeconds
         };
       }

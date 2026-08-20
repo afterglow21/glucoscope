@@ -70,7 +70,7 @@
 
   <p id="status" role="status" aria-live="polite"></p>
 </main>
-<script src="js/plus-entitlement-client.js?v=20260818-share-studio-1"></script>
+<script src="js/plus-entitlement-client.js?v=20260820-share-studio-2"></script>
 <script src="js/share-studio.js?v=20260818-plus-trial-1"></script>
 <script>
 (() => {
@@ -79,6 +79,7 @@
   const SITE_KEY = "0x4AAAAAAEUvQ9ymAJlyrxyC";
   const client = window.GlucoScopePlusEntitlement;
   const elements = Object.freeze({
+    identityPanel: document.getElementById("identityPanel"),
     email: document.getElementById("email"), adult: document.getElementById("adult"),
     guardian: document.getElementById("guardian"), guardianRow: document.getElementById("guardianRow"),
     send: document.getElementById("sendButton"), codePanel: document.getElementById("codePanel"),
@@ -120,8 +121,20 @@
     turnstile_failed: "安全確認を完了できませんでした。操作を止めて知らせてください。",
     email_delivery_failed: "確認メールを送れませんでした。操作を止めて知らせてください。",
     invalid_code: "確認コードが違うか、期限が切れています。",
-    share_trial_unavailable: "無料体験はすでに使用済みです。"
+    share_trial_unavailable: "無料体験はすでに使用済みです。",
+    trial_already_used: "無料体験はすでに使用済みです。"
   }[String(error || "")] || `確認できませんでした（${String(error || "unknown")}）。操作を止めて知らせてください。`);
+  const trialWasRejected = (result) => !result?.ok
+    && ["share_trial_unavailable", "trial_unavailable", "trial_already_used"].includes(result?.error);
+  const showCompletedTrialDelete = (message) => {
+    elements.identityPanel.hidden = true;
+    elements.codePanel.hidden = true;
+    elements.sharePanel.hidden = true;
+    elements.deleteLead.textContent = "1回体験と2回目の拒否を確認できました。次にアカウントを削除します。";
+    elements.deletePanel.hidden = false;
+    setStatus(message);
+    if (window.turnstile && deleteWidgetId === null) renderDeleteWidget();
+  };
 
   document.querySelectorAll('input[name="role"]').forEach((input) => input.addEventListener("change", updateGuardian));
 
@@ -187,7 +200,7 @@
       const completion = await client.completeShareStudio(reservation.requestId);
       if (!completion?.ok || completion.status !== "completed") throw new Error(completion?.error || "completion_failed");
       const second = await client.reserveShareStudio();
-      if (second?.ok || !["share_trial_unavailable", "trial_unavailable"].includes(second?.error)) {
+      if (!trialWasRejected(second)) {
         throw new Error("second_trial_not_rejected");
       }
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -222,11 +235,14 @@
     if (phase === "trial") {
       phase = "reregister";
       elements.sharePanel.hidden = true;
-      elements.email.readOnly = true;
+      elements.identityPanel.hidden = false;
+      elements.email.readOnly = Boolean(elements.email.value);
       elements.send.textContent = "同じメールで再登録の確認メールを送る";
       resetRequestWidget();
-      setStatus("最初のアカウントを削除しました。同じメールのまま安全確認を完了し、再登録メールを1通送ってください。");
-      document.getElementById("identityPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+      setStatus(elements.email.value
+        ? "最初のアカウントを削除しました。同じメールのまま安全確認を完了し、再登録メールを1通送ってください。"
+        : "最初のアカウントを削除しました。先ほどと同じメールをもう一度入力し、安全確認後に再登録メールを1通送ってください。");
+      elements.identityPanel.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
     setStatus("すべて完了です。再登録したテストアカウントも削除しました。この画面を閉じて知らせてください。");
@@ -261,8 +277,25 @@
     document.head.append(script);
   };
 
-  void client.configure({ enabled: true, endpoint: ENDPOINT, timeoutMs: 15000 });
-  loadTurnstile();
+  const initialize = async () => {
+    await client.configure({ enabled: true, endpoint: ENDPOINT, timeoutMs: 15000 });
+    if (client.hasStoredSession()) {
+      const refreshed = await client.refresh();
+      const state = client.getState();
+      if (refreshed?.ok && state?.accountVerified && !state.plusActive
+        && state.shareStudioTrialAvailable === false) {
+        const second = await client.reserveShareStudio();
+        if (trialWasRejected(second)) {
+          showCompletedTrialDelete("1回体験はサーバーで使用済みになっており、2回目も拒否されました。メールを送り直さず、アカウント削除から再開できます。");
+        } else {
+          if (second?.ok && second?.requestId) await client.releaseShareStudio(second.requestId).catch(() => {});
+          setStatus("前回の状態を安全に確認できませんでした。操作を止めて知らせてください。");
+        }
+      }
+    }
+    loadTurnstile();
+  };
+  void initialize();
 })();
 </script>
 </body>
