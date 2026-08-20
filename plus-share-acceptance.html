@@ -271,7 +271,10 @@
     script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
     script.async = true;
     script.onload = () => {
-      try { renderRequestWidget(); } catch { setStatus("安全確認を読み込めませんでした。画面を再読み込みしてください。"); }
+      try {
+        renderRequestWidget();
+        if (!elements.deletePanel.hidden && deleteWidgetId === null) renderDeleteWidget();
+      } catch { setStatus("安全確認を読み込めませんでした。画面を再読み込みしてください。"); }
     };
     script.onerror = () => setStatus("安全確認を読み込めませんでした。画面を再読み込みしてください。");
     document.head.append(script);

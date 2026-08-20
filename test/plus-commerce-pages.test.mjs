@@ -63,6 +63,7 @@ test("temporary Share Studio acceptance stays unlinked, noindex, synthetic, and 
   assert.match(html, /trial_already_used/u);
   assert.match(html, /hasStoredSession/u);
   assert.match(html, /メールを送り直さず/u);
+  assert.match(html, /!elements\.deletePanel\.hidden && deleteWidgetId === null/u);
   assert.match(html, /plus-entitlement-client\.js\?v=20260820-share-studio-2/u);
   assert.doesNotMatch(html, /createCheckout|checkout\.stripe\.com|STRIPE_/u);
   assert.doesNotMatch(read("index.html"), /plus-share-acceptance\.html/u);
