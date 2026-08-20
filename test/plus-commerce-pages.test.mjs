@@ -52,24 +52,9 @@ test("Plus sale pages stay noindex and clearly unavailable before acceptance", (
   }
 });
 
-test("temporary Share Studio acceptance stays unlinked, noindex, synthetic, and purchase-free", () => {
-  const html = read("plus-share-acceptance.html");
-  assert.match(html, /name="robots" content="noindex,nofollow,noarchive"/u);
-  assert.match(html, /固定の合成値/u);
-  assert.match(html, /90日間残ります/u);
-  assert.match(html, /glucose: "123"/u);
-  assert.match(html, /reserveShareStudio/u);
-  assert.match(html, /completeShareStudio/u);
-  assert.match(html, /trial_already_used/u);
-  assert.match(html, /hasStoredSession/u);
-  assert.match(html, /メールを送り直さず/u);
-  assert.match(html, /!elements\.deletePanel\.hidden && deleteWidgetId === null/u);
-  assert.match(html, /plus-entitlement-client\.js\?v=20260820-share-studio-2/u);
-  assert.doesNotMatch(html, /createCheckout|checkout\.stripe\.com|STRIPE_/u);
+test("temporary Share Studio acceptance is removed after production acceptance", () => {
+  assert.equal(existsSync(path.join(ROOT, "plus-share-acceptance.html")), false);
   assert.doesNotMatch(read("index.html"), /plus-share-acceptance\.html/u);
-  for (const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gu)) {
-    if (match[1].trim()) assert.doesNotThrow(() => new Function(match[1]));
-  }
 });
 
 test("commercial disclosure contains every approved one-time sale boundary", () => {

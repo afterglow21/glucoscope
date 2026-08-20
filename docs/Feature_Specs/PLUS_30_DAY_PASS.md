@@ -170,7 +170,7 @@ Resend APIのHTTP `200`や`email.sent`は、Resendが要求を受け付けて配
 - 別のメールで体験を繰り返すことは利用条件で禁止するが、技術で「1人」を完全に見分けられるとは案内しない。
 - 購入または未解決の支払いがあるアカウントは、現在の自動削除routeで「削除できた」と見せず、問い合わせへ案内する。全sessionの失効、Plus停止、返金の扱い、残す最小の購入記録、アカウントとの結び付きを外す日を本人へ確認してから処理する。削除だけで自動返金になるとは案内しない。
 
-この90日ルールはローカル実装済みである。migration `0007_share_trial_reuse_retention.sql` は、元に戻せないメール照合HMACと鍵version、体験成功時刻、期限、作成・更新時刻だけを保持する。体験未使用の削除、体験使用後の削除、90日内の同一メール再登録、期限後の再利用、毎時cleanup、HMAC鍵rotation、旧新記録の衝突時の停止を実SQLiteテストで確認した。stagingとproductionには`0001`から`0007`を適用し、両方の13 tableが0件であることを確認した。staging停止版は`be6a1dbe-c9cf-4002-a997-13d93cf58c36`を100%、Share Studio候補`8d206190-da81-4fa3-8e69-ee1277e3c1f5`を0%とする。production停止版`b81b0833-7948-48bd-8b99-88b6eb5f4845`は、メール照合用と確認コード用に新規生成したHMAC Secret名2件、本番D1、2つのrate limit、決定済みの400円販売条件を保持し、全flag停止、route・Cron・workers.devなしで100%である。このVersionだけを確認済みのproduction復帰先とし、それ以前のVersionへtrafficを戻さない。Daily Snapshotは端末内CanvasでPNG化し、既存の不透明sessionとランダムrequest IDだけを、別flagで停止できる予約・完了・解除HTTPへ送る。血糖値、接続URL、合言葉、作成画像はPlus Workerへ送らない。画像生成成功後だけ体験を完了し、生成前の失敗は予約を解除する。通信結果が曖昧な完了処理は同じrequest IDで再確認し、画像を公開せず安全側に止める。合成データと合成アカウント応答を使った実browserでは、画像生成、注意表示、1回消費、2回目拒否、console error 0を確認した。ただしWindows `workerd`の起動停止によりremote service-binding bridgeを通した実D1 E2Eは未完であり、残る販売前ゲートである。
+この90日ルールは実装済みである。migration `0007_share_trial_reuse_retention.sql` は、元に戻せないメール照合HMACと鍵version、体験成功時刻、期限、作成・更新時刻だけを保持する。体験未使用の削除、体験使用後の削除、90日内の同一メール再登録、期限後の再利用、毎時cleanup、HMAC鍵rotation、旧新記録の衝突時の停止を実SQLiteテストで確認した。2026年8月20日の閉じた本番受入では、固定の合成値だけを使う非公開ページから実browser・Worker・production D1を通し、端末内PNG作成、1回の成功消費、直後の2回目拒否、購入記録のないaccount削除、同じメールでの再登録、無料体験が復活しないこと、再登録accountの削除まで確認した。最終的にaccount、session、challenge、accountに結び付く体験状態・処理は0件となり、元に戻せない90日再利用防止記録1件と、24時間上限用の匿名送信予約2件だけが設計どおり残った。Webhook専用Versionへ戻し、ShareとCheckoutは`503`、受入ページは削除済みである。完全なメール、コード、session token、HMAC値、血糖値、画像、Secretは記録しない。
 
 ## 9. Stripe実装方針
 
@@ -266,7 +266,7 @@ Plusは優先医療相談や緊急サポートを含まない。問い合わせ�
 8. 会計記録7年・アカウント結び付き最大180日の候補を、運営形態に適用される法務・税務要件へ確定し、期限削除・切り離し・訂正を自動確認する方法
 9. 公開Usage Dashboardの10件基準を、実利用が増えた後も定期的に見直す手順
 10. 利用状況記録を停止した人へ、AI上限のための必要最小限の成功回数を別記録する説明と確認
-11. staging migrationまで完了したShare Studio無料体験90日再取得防止を、Share Studio実画面の成功消費、account削除、同じメールでの再登録、期限削除まで閉じたE2Eで確認する
+11. Share Studio無料体験90日再取得防止は、実画面の成功消費、直後の2回目拒否、account削除、同じメールでの再登録、再取得拒否、再登録account削除まで閉じた本番E2Eで確認済み。期限切れ記録の削除も匿名合成行を使う本番scheduled cleanupで確認済み
 12. メールHMAC旧鍵の安全な廃止、認証routeの全体rate limit、challenge保持データの定期削除手順
 
 ## 14. GO条件

@@ -81,6 +81,20 @@ email, code, session, health data, or Secret was used. Cleanup remains disabled 
 final account release; this acceptance does not settle broader account, purchase, or
 accounting retention.
 
+On 2026-08-20, the closed production Share Studio flow was accepted through the real
+browser, Worker, and production D1 using fixed synthetic glucose values only. The PNG was
+created locally; one trial completed; an immediate second reservation was rejected; the
+purchase-free account was deleted; the same email re-registered with the trial still
+unavailable; and the re-created account was deleted. The first UI run revealed that the
+browser client discarded the Worker's `trial_already_used` status even though D1 had
+correctly completed the trial. The Worker was closed before the client mapping and reload
+recovery were fixed and retested. Final D1 counts were zero for account, session,
+challenge, account-bound trial-state, and trial-operation rows, with exactly one
+irreversible 90-day reuse marker and two anonymous rolling send reservations retained by
+design. Webhook-only Version `16b489ba-1b15-407d-a6f2-dee82c5244e1` was restored to 100%,
+Share and Checkout returned `503`, and the temporary unlinked page was removed. No raw
+email, code, session token, HMAC value, health data, image, or Secret is recorded.
+
 Stripe has one enabled live, non-Connect webhook destination at
 `https://plus.glucoscope.app/v1/stripe/webhook`. It uses API Version
 `2026-06-24.dahlia` and subscribes only to `checkout.session.completed`,
