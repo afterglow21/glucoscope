@@ -7,7 +7,7 @@ It is not a medical device and does not provide diagnosis, treatment decisions, 
 
 ## Current publishing target
 
-The public site is served by GitHub Pages at `https://glucoscope.app/`. The custom domain is verified and HTTPS is enforced. Commit `7836b2f0ec3574890e25e4edc1dd9d128ba670d8` is the accepted source checkpoint for the atomic usage-counter release and produced a successful Pages build before this documentation sync. Commit `64a92932a592dda1b6eb9d6dd7700279b1c7a47a` records the base long-lived-session release; accepted frontend and iPhone Home Screen evidence is recorded through commit `746116043b8d7ad0ad60c8af5eb27ad4d661d94d`.
+The public site is served by GitHub Pages at `https://glucoscope.app/`. The custom domain is verified and HTTPS is enforced. Commit `96da92df9a47c994cbb3c031d65cba9fbf5daea8` is the accepted checkpoint for the small public Plus release and approved hourly cleanup schedule. Commit `7836b2f0ec3574890e25e4edc1dd9d128ba670d8` remains the accepted atomic usage-counter source checkpoint, while commit `64a92932a592dda1b6eb9d6dd7700279b1c7a47a` records the base long-lived-session release and accepted frontend and iPhone Home Screen evidence is recorded through commit `746116043b8d7ad0ad60c8af5eb27ad4d661d94d`.
 Cloudflare Pages may be considered later, but GitHub Pages remains the current static-site platform.
 
 The AI letter API continues to run through Cloudflare Worker.
@@ -15,17 +15,18 @@ Provider API keys must stay server-side in the Worker environment and must never
 
 The reviewed personal-quota AI Worker target is Version `86fd6a35-4db2-46f4-a745-0cfc036a5dc7`. Its direct behavior rollback is Phase A Version `7af1189b-aaa5-4f18-8a1f-5e447d6d7d8e`, which keeps the atomic counter active while restoring the shared count ceilings and disabling personal quota. Atomic stopped Version `46f44888-002b-4847-8553-5cd12e3d7ac5` remains the emergency AI-off target. Historical Version 29 (`235cdf03-31d7-40fd-ab58-5c1c6aa2d923`) records the earlier personal-user AI boundary release. Personal-user AI remains enabled for the small early-access group under the boundary below.
 
-## Canonical current-state snapshot — 2026-08-17 JST
+## Canonical current-state snapshot — 2026-08-20 JST
 
 This is the current operational summary. Dated rollout records below are historical checkpoints unless they explicitly say that they remain current.
 
-- GitHub Pages publishes from `main`. Commit `7836b2f0ec3574890e25e4edc1dd9d128ba670d8` is the accepted atomic-counter source checkpoint; accepted frontend and iPhone Home Screen evidence remains recorded through commit `746116043b8d7ad0ad60c8af5eb27ad4d661d94d`.
+- GitHub Pages publishes from `main`. Commit `96da92df9a47c994cbb3c031d65cba9fbf5daea8` is the accepted small-public-release checkpoint before this documentation sync; later reviewed UI refinements remain traceable in `main`. Atomic-counter and iPhone Home Screen acceptance remain recorded by the earlier checkpoints above.
 - AI Worker personal-quota Version `86fd6a35-4db2-46f4-a745-0cfc036a5dc7` is the reviewed live target. Phase A Version `7af1189b-aaa5-4f18-8a1f-5e447d6d7d8e` is its direct behavior rollback; emergency AI-off recovery uses atomic stopped Version `46f44888-002b-4847-8553-5cd12e3d7ac5`. Version 29, the old `7ea0cfef-5322-4370-b72d-e2885f129f38`, and pre-atomic Versions must not receive rollback traffic.
-- Usage Worker quota Version `0fcb9a63-8fbf-47d3-952c-75178881a0d9` receives 100% of Usage traffic for the approved small early-access group. Phase A Version `3ee6fd4a-1f2a-4e49-9fed-b1caa81081da` is the direct quota-off rollback. D1 migration `0002_ai_quota.sql` is applied; it created empty quota tables before enforcement was enabled. The checked-in configuration remains fail-closed.
+- Usage Worker Version `ab21208a-b0e5-4075-be36-a9ace1483abb` receives 100% of Usage traffic with the reviewed Plus-entitlement service binding and existing personal quota enforcement. Version `0fcb9a63-8fbf-47d3-952c-75178881a0d9` is the direct rollback without that Plus binding. D1 migration `0002_ai_quota.sql` is applied, and the checked-in configuration remains fail-closed.
 - The Usage-to-AI service-binding aggregate is live. Because fewer than 10 consenting device profiles contributed in the completed 30-day window, the current response is `suppressed` and contains no exact totals. Backend `GET` and supervised real-browser Dashboard visual acceptance passed. One supervised `letter` / `night` generation moved the daily count from `0` to `1`, the monthly count from `15` to `16`, and the daily verified-Turnstile count from `0` to `1` exactly once; token and estimated-cost totals increased once, with no duplicate, cache hit, rate limit, or budget block.
 - Demo-feed new-origin Version `97b14023-f9dd-440a-8b79-e2bb2b471697` receives 100% of continuous public-demo traffic. The earlier Version `4069bca4-e8cf-474a-9e9d-d7ffa42b7567` records the first continuous three-source acceptance.
 - Relay live Version 22 (`b4b2064d-6dd4-4de6-8a68-3d0d39aea2ec`) receives 100% of the approved small-group relay traffic. Unserved stopped Version 23 (`10d0a825-c098-462e-89fd-a69937c47a9b`) is the reviewed direct rollback.
-- The Access-protected administrator dashboard is live and accepted for one administrator. Plus remains a stopped, non-public staging foundation with every public account, purchase, quota, and feature switch off.
+- Access-protected administrator dashboard Version `b2748c12-4edd-4a99-84c2-3e779f3c84b8` receives 100% of traffic with the narrow reviewed Plus aggregate binding; Version `b7c8c8d8-5fdf-4c94-9b9a-817c99f65c9a` is its direct rollback. It remains accepted for one administrator and has no public-site link.
+- Plus Version `3414c567-6328-4361-8105-e9d6e83c5018` receives 100% of production traffic for the JPY 400 one-time 30-day pass. Unserved stopped Version `6faa0065-8fdd-4563-985e-9e775999717b` is the only direct rollback. The reviewed account, Checkout, signed webhook, entitlement, Share trial, and sale-readiness gates are enabled; the approved hourly cleanup runs at `0 * * * *`.
 
 ## Personal-user AI — production early access
 
@@ -139,7 +140,7 @@ Historical ticket acceptance record: on 2026-08-06, the Guardian route completed
 
 Historical ticket checkpoint: Phase 3A connected the user onboarding flow to the paused relay client. Phase 3B created the paused Worker shell and SQLite Durable Object in Cloudflare, registered the required Worker Secrets, and passed stopped-response/CORS smoke tests. Ticket deployment `5f8d00d9-9d68-4b2a-99cd-c58c26123684` later routed accepted ticket Version `a398d59e-54c1-4b8d-a9a4-b779af360a54` for the 1–3 person early-access group; stopped ticket Version `635b8ad5-0c0e-49ff-a8c3-5dc3e8704a0a` was its rollback artifact. Those Versions and the old `workers.dev` target are historical evidence only.
 
-Current device-session checkpoint: the frontend uses only `relay.glucoscope.app`, the separate consent checkbox has been replaced by a plain processing explanation, and the live Worker has no ticket compatibility path. The checked-in fail-closed baseline remains `RELAY_ENABLED=false`, `RELAY_DEVICE_SESSIONS_ENABLED=false`, `workers_dev=false`, Preview URLs off, and observability off; the accepted live Version used reviewed runtime overrides. Usage Version `e7b2a895-c418-4cb2-b565-d2a37bef8e1b` receives 100% of Usage traffic. Direct Nightscout and the separately consented public demo remain independent.
+Current device-session checkpoint: the frontend uses only `relay.glucoscope.app`, the separate consent checkbox has been replaced by a plain processing explanation, and the live Worker has no ticket compatibility path. The checked-in fail-closed baseline remains `RELAY_ENABLED=false`, `RELAY_DEVICE_SESSIONS_ENABLED=false`, `workers_dev=false`, Preview URLs off, and observability off; the accepted live Version used reviewed runtime overrides. Usage Version `ab21208a-b0e5-4075-be36-a9ace1483abb` receives 100% of Usage traffic. Direct Nightscout and the separately consented public demo remain independent.
 
 ## 3CGM Comparison Lab
 

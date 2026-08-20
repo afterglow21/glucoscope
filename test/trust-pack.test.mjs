@@ -8,6 +8,7 @@ const usageDashboardUrl = new URL("../pages/about/usage-dashboard.html", import.
 const trustDirUrl = new URL("../pages/trust/", import.meta.url);
 const plusSpecUrl = new URL("../docs/Feature_Specs/PLUS_30_DAY_PASS.md", import.meta.url);
 const projectBibleUrl = new URL("../docs/Project_Bible/PROJECT_BIBLE_v1.0_DRAFT.md", import.meta.url);
+const rootReadmeUrl = new URL("../README.md", import.meta.url);
 const relaySpecUrl = new URL("../docs/Feature_Specs/LIMITED_DATA_RELAY.md", import.meta.url);
 const dataSourceSpecUrl = new URL("../docs/Feature_Specs/USER_DATA_SOURCE_FOUNDATION.md", import.meta.url);
 const relayReadmeUrl = new URL("../workers/gluco-data-relay/README.md", import.meta.url);
@@ -64,6 +65,20 @@ test("Plus 30-day pass records the approved one-time boundary and live release",
   assert.match(spec, /Plusは医療サービスではない/);
   assert.doesNotMatch(spec, /自動更新あり/);
   assert.match(spec, /Subscriptionや自動更新を使わない/);
+});
+
+test("canonical current-state records stay aligned with the live small public release", async () => {
+  const [readme, bible] = await Promise.all([read(rootReadmeUrl), read(projectBibleUrl)]);
+  for (const source of [readme, bible]) {
+    assert.match(source, /96da92df9a47c994cbb3c031d65cba9fbf5daea8/);
+    assert.match(source, /86fd6a35-4db2-46f4-a745-0cfc036a5dc7/);
+    assert.match(source, /ab21208a-b0e5-4075-be36-a9ace1483abb/);
+    assert.match(source, /b2748c12-4edd-4a99-84c2-3e779f3c84b8/);
+    assert.match(source, /3414c567-6328-4361-8105-e9d6e83c5018/);
+  }
+  assert.doesNotMatch(readme, /Plus remains a stopped, non-public staging foundation/);
+  assert.doesNotMatch(bible, /Plus remains a stopped, non-public staging foundation/);
+  assert.doesNotMatch(bible, /Plusは公開URLのない停止中staging/);
 });
 
 test("Plus buyer policy stays complete internally while public pages remain simple", async () => {
