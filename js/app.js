@@ -304,12 +304,12 @@ const translations = {
     dataSourceButtonUser: "データ接続（先行体験）",
     mobileMoreDataSource: "データ接続（先行体験）",
     mobileMoreDataSourceNote: "先行体験 · Gluroo / Nightscout",
-    localProfileButton: "あなたの設定",
-    localProfileButtonNote: "表示名と利用記録の管理",
-    localProfileButtonSavedNote: "この端末に保存済み",
-    localProfileEyebrow: "この端末だけの設定",
-    localProfileDialogTitle: "あなたの設定",
-    localProfileDialogLead: "表示名の変更と、この端末の利用記録を管理できます。",
+    localProfileButton: "Plus・あなたの設定",
+    localProfileButtonNote: "Plus購入・表示名・利用記録",
+    localProfileButtonSavedNote: "Plus購入・設定・保存済み情報",
+    localProfileEyebrow: "Plus購入と端末設定",
+    localProfileDialogTitle: "Plus・あなたの設定",
+    localProfileDialogLead: "Plusのメール確認・購入と、表示名・利用記録を管理できます。",
     localProfileDisplayNameLabel: "表示名",
     localProfileDisplayNameHelp: "本名でなくて大丈夫です。GlucoScopeで呼ばれたい名前を入力してね（最大30文字）。",
     localProfileSaveButton: "表示名を変更する",
@@ -545,7 +545,7 @@ const translations = {
     aiLetterButtonNoData: "この期間はデータなし",
     aiLetterButtonUnavailable: "データを読み込めませんでした",
     aiLetterButtonReady: "AI分析を試す（2回目からPlus）",
-    aiLetterButtonCached: "保存済みの分析を表示",
+    aiLetterButtonCached: "保存済みの分析を見る（回数に含みません）",
     aiLetterButtonRefresh: "もう一度AI分析（Plus）",
     aiLetterButtonLoading: "グルコがお手紙を書いてるよ...",
     aiLetterStatusGeneratingDeep: "しっかり分析を最後まで丁寧にまとめているよ。少しだけ待ってね🍀",
@@ -563,7 +563,7 @@ const translations = {
     aiLetterStatusApprovedDemoSample: "公開デモ用に内容を確認したサンプルを表示しています。新しいAI生成は行っていません🍀",
     aiLetterStatusSharedCacheFallback: "新しいお手紙を作れなかったため、前に共有保存されたお手紙を表示しています🍀",
     aiLetterStatusLocalCache: "保存済みのグルコAIお手紙を表示しています🍀",
-    aiLetterStatusFreshCache: "1時間以内に保存されたグルコAIお手紙を表示しました。新しいAI生成は行っていません🍀",
+    aiLetterStatusFreshCache: "1時間以内に保存された分析を表示しました。新しいAI生成は行わず、今日の利用回数にも含みません🍀",
     aiLetterStatusLocalCacheAfterLimit: "今日の新しいお手紙は上限に達しました。保存済みのお手紙を表示しています🍀",
     aiLetterStatusRateLimited: "今日の新しいAIお手紙は上限に達しました。表示中または保存済みのお手紙があれば、そのまま読めます。ChatGPTコピー機能も使えます🍀",
     aiLetterStatusBudgetStopped: "今月のAI分析は利用上限に近づいたため、新しいお手紙を少しお休みしています。",
@@ -638,11 +638,13 @@ const translations = {
     customFromLabel: "開始",
     customToLabel: "終了",
     customApplyLabel: "表示",
-    plusExtendedRangeRequired: "7日・30日・カスタム期間はPlusの機能です。Plus 30日パスを購入すると利用できます。「その他」のPlusアカウントから確認・購入できます。今日と昨日はFreeで使えます。",
-    plusDeepAnalysisRequired: "しっかり分析のグルコのお話し・AIお手紙・ChatGPTに相談はPlusの機能です。Plus 30日パスを購入すると利用できます。「その他」のPlusアカウントから確認・購入できます。Freeでは、やさしい分析を1日1回試せます。",
+    plusExtendedRangeRequired: "7日・30日・カスタム期間はPlusの機能です。Plus 30日パスを購入すると利用できます。「その他」の「Plus・あなたの設定」から確認・購入できます。今日と昨日はFreeで使えます。",
+    plusDeepAnalysisRequired: "しっかり分析のグルコのお話し・AIお手紙・ChatGPTに相談はPlusの機能です。Plus 30日パスを購入すると利用できます。「その他」の「Plus・あなたの設定」から確認・購入できます。Freeでは、やさしい分析を1日1回試せます。",
     plusAccessUnavailable: "Plusの利用状況を確認できませんでした。少し待って、もう一度お試しください。",
-    plusVerifiedAccountRequired: "Share StudioはPlusの機能で、メール確認済みのアカウントなら購入前に1回だけ体験できます。「その他」のPlusアカウントでメールを確認してください。",
-    plusShareStudioRequired: "Share Studioの1回体験は使用済みです。Plus 30日パスを購入すると続けて利用できます。「その他」のPlusアカウントから確認・購入できます。",
+    plusVerifiedAccountRequired: "Share StudioはPlusの機能で、メール確認済みのアカウントなら購入前に1回だけ体験できます。ここからメール確認へ進めます。",
+    plusShareStudioRequired: "Share Studioの1回体験は使用済みです。Plus 30日パスを購入すると続けて利用できます。ここから購入へ進めます。",
+    plusShareStudioVerifyGuide: "メール確認が終わると、Share Studioを購入前に1回だけ体験できます。確認コードを受け取るメールを入力してください。",
+    plusShareStudioPurchaseGuide: "Share Studioの1回体験は使用済みです。Plus 30日パスを購入すると、続けて利用できます。",
     selectedRangeLabel: "表示中の期間",
     periodPreviousDay: "前日",
     periodPreviousRange: "前期間",
@@ -731,12 +733,12 @@ const translations = {
     dataSourceButtonUser: "Data connection (early access)",
     mobileMoreDataSource: "Data connection (early access)",
     mobileMoreDataSourceNote: "Early access · Gluroo / Nightscout",
-    localProfileButton: "Your settings",
-    localProfileButtonNote: "Display name and usage records",
-    localProfileButtonSavedNote: "Saved on this device",
-    localProfileEyebrow: "Settings on this device",
-    localProfileDialogTitle: "Your settings",
-    localProfileDialogLead: "Change your display name and manage this device's usage record.",
+    localProfileButton: "Plus & your settings",
+    localProfileButtonNote: "Plus purchase, display name, and usage",
+    localProfileButtonSavedNote: "Plus purchase, settings, and saved info",
+    localProfileEyebrow: "Plus purchase and device settings",
+    localProfileDialogTitle: "Plus & your settings",
+    localProfileDialogLead: "Manage Plus email verification and purchase, your display name, and usage records.",
     localProfileDisplayNameLabel: "Display name",
     localProfileDisplayNameHelp: "It does not need to be your real name. Enter the name you want GlucoScope to use (up to 30 characters).",
     localProfileSaveButton: "Change display name",
@@ -972,7 +974,7 @@ const translations = {
     aiLetterButtonNoData: "No data for this range",
     aiLetterButtonUnavailable: "Could not load data",
     aiLetterButtonReady: "Try AI analysis (Plus after the first)",
-    aiLetterButtonCached: "Show saved analysis",
+    aiLetterButtonCached: "Show saved analysis (does not count again)",
     aiLetterButtonRefresh: "Run AI analysis again (Plus)",
     aiLetterButtonLoading: "Gluco is writing...",
     aiLetterStatusGeneratingDeep: "Gluco is carefully completing the detailed analysis. This may take a little longer 🍀",
@@ -990,7 +992,7 @@ const translations = {
     aiLetterStatusApprovedDemoSample: "A reviewed sample for the public demo is displayed. No new AI generation was used 🍀",
     aiLetterStatusSharedCacheFallback: "A previously shared reflection is displayed because a new one could not be generated 🍀",
     aiLetterStatusLocalCache: "Saved Gluco AI reflection displayed 🍀",
-    aiLetterStatusFreshCache: "A Gluco AI reflection saved within the last hour was displayed. No new AI generation was used 🍀",
+    aiLetterStatusFreshCache: "An analysis saved within the last hour was displayed. No new AI generation was used, so it does not count toward today's allowance 🍀",
     aiLetterStatusLocalCacheAfterLimit: "Today’s new reflection has reached its limit. A saved reflection is displayed 🍀",
     aiLetterStatusRateLimited: "Today’s new AI reflections have reached the limit. The previous reflection and ChatGPT copy handoff are still available 🍀",
     aiLetterStatusBudgetStopped: "New AI letters are paused because the monthly AI limit is near.",
@@ -1065,11 +1067,13 @@ const translations = {
     customFromLabel: "From",
     customToLabel: "To",
     customApplyLabel: "Show",
-    plusExtendedRangeRequired: "The 7-day, 30-day, and custom ranges are Plus features. Purchase the Plus 30-day pass to use them. Review or purchase it under Plus Account in More. Today and yesterday remain available with Free.",
-    plusDeepAnalysisRequired: "Detailed Gluco stories, AI letters, and ChatGPT handoff are Plus features. Purchase the Plus 30-day pass to use them. Review or purchase it under Plus Account in More. Free includes one gentle analysis per day.",
+    plusExtendedRangeRequired: "The 7-day, 30-day, and custom ranges are Plus features. Purchase the Plus 30-day pass to use them under Plus & your settings in More. Today and yesterday remain available with Free.",
+    plusDeepAnalysisRequired: "Detailed Gluco stories, AI letters, and ChatGPT handoff are Plus features. Purchase the Plus 30-day pass under Plus & your settings in More. Free includes one gentle analysis per day.",
     plusAccessUnavailable: "We could not confirm your Plus access. Please wait a moment and try again.",
-    plusVerifiedAccountRequired: "Share Studio is a Plus feature, with one trial before purchase for a verified account. Verify your email under Plus Account in More.",
-    plusShareStudioRequired: "The one-time Share Studio trial has been used. Purchase the Plus 30-day pass to keep using it under Plus Account in More.",
+    plusVerifiedAccountRequired: "Share Studio is a Plus feature, with one trial before purchase for a verified account. Continue from here to verify your email.",
+    plusShareStudioRequired: "The one-time Share Studio trial has been used. Continue from here to purchase the Plus 30-day pass.",
+    plusShareStudioVerifyGuide: "After email verification, you can try Share Studio once before purchase. Enter the email where you want to receive the verification code.",
+    plusShareStudioPurchaseGuide: "The one-time Share Studio trial has been used. Purchase the Plus 30-day pass to keep using Share Studio.",
     selectedRangeLabel: "Selected range",
     periodPreviousDay: "Previous day",
     periodPreviousRange: "Previous range",
@@ -2655,7 +2659,7 @@ function getLocalProfileDialogFocusableElements() {
     ));
 }
 
-function openLocalProfileDialog(opener = null) {
+function openLocalProfileDialog(opener = null, { focusTargetId = "localProfileDisplayName" } = {}) {
   const dialog = document.getElementById("localProfileDialog");
   if (!dialog) return;
   localProfileDialogOpener = opener || document.activeElement;
@@ -2665,7 +2669,15 @@ function openLocalProfileDialog(opener = null) {
   document.body.classList.add("local-profile-dialog-open");
   updatePlusAccountUi();
   renderPlusAccountTurnstile();
-  window.requestAnimationFrame(() => document.getElementById("localProfileDisplayName")?.focus());
+  window.requestAnimationFrame(() => {
+    const focusTarget = document.getElementById(focusTargetId);
+    if (focusTarget && !focusTarget.hidden && focusTarget.closest("[hidden]") === null) {
+      focusTarget.focus?.();
+      focusTarget.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      return;
+    }
+    document.getElementById("localProfileDisplayName")?.focus();
+  });
 }
 
 function closeLocalProfileDialog() {
@@ -4271,6 +4283,18 @@ function setupShareStudio() {
         : "shareStudioAccessNotice";
       setPlusFeatureNotice(messageKey);
       setInlinePlusNotice(noticeId, messageKey, { focus: true });
+      if (
+        event?.currentTarget?.id === "mobileShareStudioButton"
+        && (access.reason === "verified_account_required" || access.reason === "plus_required")
+      ) {
+        const needsVerification = access.reason === "verified_account_required";
+        openLocalProfileDialog(event.currentTarget, {
+          focusTargetId: needsVerification ? "plusAccountEmail" : "plusAccountPurchaseButton"
+        });
+        setPlusAccountStatus(t(needsVerification
+          ? "plusShareStudioVerifyGuide"
+          : "plusShareStudioPurchaseGuide"));
+      }
       return;
     }
     setPlusFeatureNotice("");

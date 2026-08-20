@@ -94,6 +94,19 @@ test("Share Studio selects Plus or one verified-account trial without consuming 
   assert.equal(api.getAccess(api.FEATURE_SHARE_STUDIO).accessMode, "plus");
 });
 
+test("signed-out visitors receive normal Plus and verification guidance instead of an outage", () => {
+  const api = loadModule();
+  for (const reason of ["not_signed_in", "signed_out", "invalid_session"]) {
+    api.configure({
+      enforcementEnabled: true,
+      entitlementStateProvider: () => ({ status: "unavailable", reason })
+    });
+    assert.equal(api.getAccess(api.FEATURE_SEVEN_DAY_RANGE).reason, "plus_required");
+    assert.equal(api.getAccess(api.FEATURE_DEEP_ANALYSIS).reason, "plus_required");
+    assert.equal(api.getAccess(api.FEATURE_SHARE_STUDIO).reason, "verified_account_required");
+  }
+});
+
 test("missing, throwing, asynchronous, or malformed entitlement state fails closed", () => {
   const api = loadModule();
   const providers = [
@@ -157,4 +170,26 @@ test("the frontend loads the access module first and gates extended ranges and d
   assert.match(app, /setInlinePlusNotice\("aiModePlusNotice", "plusDeepAnalysisRequired"/u);
   assert.match(app, /AI分析を試す（2回目からPlus）/u);
   assert.match(app, /もう一度AI分析（Plus）/u);
+  assert.match(app, /保存済みの分析を見る（回数に含みません）/u);
+  assert.match(
+    app,
+    /event\?\.currentTarget\?\.id === "mobileShareStudioButton"[\s\S]*openLocalProfileDialog\(event\.currentTarget,[\s\S]*plusShareStudioVerifyGuide/u
+  );
+});
+
+test("a fresh saved gentle analysis is shown before any Turnstile or quota request", () => {
+  const handlerStart = app.indexOf("async function handleAiLetterRequest");
+  const handlerEnd = app.indexOf("function exposeLetterControlGlobals", handlerStart);
+  const handler = app.slice(handlerStart, handlerEnd);
+  const cacheRead = handler.indexOf("getFreshCachedAiLetter");
+  const turnstilePrep = handler.indexOf("prepareAiLetterTurnstile");
+  const quotaContext = handler.indexOf("createAiLetterQuotaRequestContext");
+
+  assert.ok(cacheRead >= 0);
+  assert.ok(cacheRead < turnstilePrep);
+  assert.ok(turnstilePrep < quotaContext);
+  assert.match(
+    handler,
+    /if \(cached\) \{[\s\S]*setAiLetterPanelStatus\("aiLetterStatusFreshCache", "success"\);[\s\S]*return;\s*\}/u
+  );
 });

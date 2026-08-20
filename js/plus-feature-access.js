@@ -13,6 +13,11 @@
     FEATURE_DEEP_ANALYSIS
   ]);
   const KNOWN_FEATURES = new Set([...PLUS_ONLY_FEATURES, FEATURE_SHARE_STUDIO]);
+  const SIGNED_OUT_REASONS = new Set([
+    "not_signed_in",
+    "signed_out",
+    "invalid_session"
+  ]);
 
   let configuration = Object.freeze({
     enforcementEnabled: false,
@@ -29,7 +34,12 @@
       });
     }
 
-    const status = input.status === "ready" ? "ready" : "unavailable";
+    const reason = String(input.reason || "");
+    const status = input.status === "ready"
+      ? "ready"
+      : input.status === "signed_out" || SIGNED_OUT_REASONS.has(reason)
+        ? "signed_out"
+        : "unavailable";
     return Object.freeze({
       status,
       accountVerified: status === "ready" && input.accountVerified === true,
@@ -94,6 +104,14 @@
     }
 
     const state = readEntitlementState();
+    if (state.status === "signed_out") {
+      return deny(
+        normalizedFeature,
+        normalizedFeature === FEATURE_SHARE_STUDIO
+          ? "verified_account_required"
+          : "plus_required"
+      );
+    }
     if (state.status !== "ready") return deny(normalizedFeature, "entitlement_unavailable");
 
     if (state.plusActive) return allow(normalizedFeature, "plus", "active_plus");

@@ -117,7 +117,7 @@ test("public data connection remains clickable and clearly marked as early acces
   assert.match(index, /データ接続（先行体験）/);
   assert.match(index, /Gluroo接続は少人数で確認しながら提供しています/);
   assert.match(index, /style\.css\?v=20260820-plus-labels-1/);
-  assert.match(index, /js\/app\.js\?v=20260820-plus-labels-1/);
+  assert.match(index, /js\/app\.js\?v=20260820-plus-guidance-1/);
   assert.match(app, /dataSourceButtonDemo: "データ接続（先行体験）"/);
   assert.match(app, /dataSourceDialogTitle: "Data connection \(early access\)"/);
   assert.doesNotMatch(index, /id="dataSourceButton"[^>]+disabled/);
@@ -146,7 +146,7 @@ test("local profile is a compact display-name and registered-record management s
   assert.match(index, /id="localProfileDialog"/);
   assert.match(index, /id="localProfileButton"/);
   assert.match(index, /id="mobileLocalProfileButton"/);
-  assert.match(index, /GlucoScopeで使う表示名を変更できます/);
+  assert.match(index, /Plusのメール確認・購入と、表示名・利用記録を管理できます/);
   assert.doesNotMatch(index, /表示名（任意）/);
   assert.match(index, /本名でなくて大丈夫です/);
 
@@ -170,9 +170,9 @@ test("local profile is a compact display-name and registered-record management s
   assert.match(app, /cancelVerification\?\.\(\)/);
   assert.match(app, /plusAccountVerificationPending = false;[\s\S]*codePanel\.hidden = true;[\s\S]*emailInput\?\.focus\?\.\(\)/);
 
-  const jaProfileCopyStart = app.indexOf('localProfileButton: "あなたの設定"');
+  const jaProfileCopyStart = app.indexOf('localProfileButton: "Plus・あなたの設定"');
   const jaProfileCopyEnd = app.indexOf("dataSourceDialogTitle:", jaProfileCopyStart);
-  const enProfileCopyStart = app.indexOf('localProfileButton: "Your settings"');
+  const enProfileCopyStart = app.indexOf('localProfileButton: "Plus & your settings"');
   const enProfileCopyEnd = app.indexOf("dataSourceDialogTitle:", enProfileCopyStart);
   const profileTranslations = `${app.slice(jaProfileCopyStart, jaProfileCopyEnd)}\n${app.slice(enProfileCopyStart, enProfileCopyEnd)}`;
   assert.doesNotMatch(profileTranslations, /localProfilePreference|UsageSharing|利用分析|協力して|同意|willing|unwilling|undecided|usage analytics|consent/i);
@@ -196,7 +196,8 @@ test("local profile controls stay local, fail closed, and preserve accessible di
   assert.match(saveHandler, /result\.stored \? "localProfileSaved" : "localProfileEmpty"/);
   assert.doesNotMatch(`${populateHandler}\n${saveHandler}`, /localProfileUsageSharingPreference|futureUsageSharingPreference|type="radio"/);
   assert.doesNotMatch(app, /handleLocalProfileDelete|localProfileDeleteButton|localProfileDeleteConfirm/);
-  assert.match(app, /requestAnimationFrame\(\(\) => document\.getElementById\("localProfileDisplayName"\)\?\.focus\(\)\)/);
+  assert.match(app, /focusTargetId = "localProfileDisplayName"/);
+  assert.match(app, /document\.getElementById\(focusTargetId\)/);
   assert.match(app, /if \(event\.key === "Escape"\)/);
   assert.match(app, /if \(event\.key !== "Tab"\) return/);
   assert.match(app, /opener\.focus\(\)/);
@@ -666,7 +667,7 @@ test("field feedback copy and red-frame navigation are reflected", () => {
 test("current cache and CSS markers are present", () => {
   assert.match(index, /js\/data-source\.js\?v=20260816-device-session-1/);
   assert.match(index, /js\/data-relay-client\.js\?v=20260816-device-session-1/);
-  assert.match(index, /js\/app\.js\?v=20260820-plus-labels-1/);
+  assert.match(index, /js\/app\.js\?v=20260820-plus-guidance-1/);
   assert.match(guideCss, /User Foundation 0\.3\.3/);
   assert.match(css, /Limited Data Relay Paused Acceptance/);
 });
