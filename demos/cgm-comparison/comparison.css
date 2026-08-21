@@ -272,7 +272,8 @@ h2 {
 
 .comparison-safety,
 .comparison-controls,
-.comparison-chart-card {
+.comparison-chart-card,
+.comparison-archive {
   margin-top: 22px;
   padding: clamp(22px, 4vw, 34px);
 }
@@ -364,6 +365,73 @@ h2 {
 .comparison-chart-wrap {
   position: relative;
   min-height: 430px;
+}
+
+.comparison-archive-figure {
+  margin: 0;
+}
+
+.comparison-archive-image-link {
+  display: block;
+  border-radius: 18px;
+}
+
+.comparison-archive-image-link:focus-visible {
+  outline: 4px solid rgba(53, 124, 100, 0.35);
+  outline-offset: 4px;
+}
+
+.comparison-archive-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid #dce6e1;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.comparison-archive-figure figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 14px;
+  color: #4e685f;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.comparison-archive-figure figcaption span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.comparison-archive-dot {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+}
+
+.comparison-archive-dot-guardian {
+  background: #3a7d68;
+}
+
+.comparison-archive-dot-libre {
+  background: #c58a35;
+}
+
+.comparison-archive-dot-g7 {
+  background: #6d70ad;
+}
+
+.comparison-archive-note {
+  margin: 16px 0 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  color: #536b63;
+  background: #f2f7f4;
+  font-size: 0.9rem;
 }
 
 .comparison-range-summary {

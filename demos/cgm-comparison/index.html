@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="Guardian 4、FreeStyle Libre 2、Dexcom G7の表示を、どれが「良い」と決めずに並べて見るGlucoScopeの公開デモです。">
   <title>3種類のCGMの比較デモ | GlucoScope</title>
-  <link rel="stylesheet" href="comparison.css?v=20260808-simple-demo-1">
+  <link rel="stylesheet" href="comparison.css?v=20260821-three-cgm-record-1">
 </head>
 <body>
   <main class="comparison-shell">
@@ -74,6 +74,44 @@
         <p id="chartTextSummary" class="comparison-visually-hidden">グラフの内容を読み込んでいます。</p>
         <canvas id="comparisonChart" aria-label="3種類のCGMの比較グラフ" aria-describedby="chartMessage chartTextSummary"></canvas>
       </div>
+    </section>
+
+    <section class="comparison-archive comparison-card" aria-labelledby="comparisonArchiveTitle">
+      <div class="comparison-section-heading">
+        <div>
+          <p class="comparison-kicker">当時の記録画像</p>
+          <h2 id="comparisonArchiveTitle">3種類がそろっていた時のグラフ</h2>
+        </div>
+        <p>2026年8月17日に保存した実測スクリーンショットです。</p>
+      </div>
+      <figure class="comparison-archive-figure">
+        <a
+          class="comparison-archive-image-link"
+          href="images/three-cgm-record-2026-08-17.png"
+          target="_blank"
+          rel="noopener"
+          aria-label="8月17日の3種類のCGM比較グラフを大きく見る"
+        >
+          <img
+            class="comparison-archive-image"
+            src="images/three-cgm-record-2026-08-17.png"
+            width="1203"
+            height="842"
+            loading="lazy"
+            decoding="async"
+            alt="Guardian 4、Libre 2、Dexcom G7の3本の線が同じ時間軸に表示された2026年8月17日の比較グラフ"
+          >
+        </a>
+        <figcaption>
+          <span><i class="comparison-archive-dot comparison-archive-dot-guardian" aria-hidden="true"></i>Guardian 4</span>
+          <span><i class="comparison-archive-dot comparison-archive-dot-libre" aria-hidden="true"></i>Libre 2</span>
+          <span><i class="comparison-archive-dot comparison-archive-dot-g7" aria-hidden="true"></i>Dexcom G7</span>
+        </figcaption>
+      </figure>
+      <p class="comparison-archive-note">
+        元データの点列は現在復旧できないため、画像から数値を読み直したり、上の8月16日のデータへ足したりしていません。
+        3本が同時に表示できていた当時の記録として、そのまま残しています。画像を押すと大きく見られます。
+      </p>
     </section>
 
     <section class="comparison-range-summary" aria-labelledby="comparisonRangeSummaryTitle">

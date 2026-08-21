@@ -2621,6 +2621,13 @@ its recovery KV keys were deleted, the five-minute trigger and Version
 `97b14023-f9dd-440a-8b79-e2bb2b471697` were restored, and the existing honest two-source archive
 remains the current static record.
 
+Later on August 21, Kazuma supplied a graph-only screenshot saved on August 17 while Guardian 4,
+Libre 2, and Dexcom G7 were visible together on the same time axis. The file contains no name,
+email address, URL, credential, account field, or text metadata chunk. The public page preserves
+it below the interactive August 16 archive as separate historical evidence. The screenshot is not
+a recovered point dataset: no glucose value is read back from its pixels, interpolated, or merged
+into the August 16 record.
+
 Guardian remains on Kazuma's existing Azure Nightscout.
 Its verified browser-direct route is the Guardian input for the live comparison.
 Libre 2 uses a separate, demo-only Cloudflare Worker.
@@ -2958,6 +2965,13 @@ Guardian 4を288件、Dexcom G7を288件回収しました。Libre 2の同日履
 ポンプ、症状、位置情報は保存していません。確認後に一時KV 2件を削除し、
 Version `97b14023-f9dd-440a-8b79-e2bb2b471697`へ100%戻しました。
 公開ページはこの匿名化済み保存データを読み、期間限定ライブ経路は使いません。
+
+その後8月21日、Kazumaから、Guardian 4・Libre 2・Dexcom G7の3本が同じ時間軸に
+表示されていた8月17日保存のグラフ画像が提供されました。画像には氏名、メール、URL、
+接続情報、アカウント項目、自由記述のメタデータは含まれていません。公開ページでは、
+8月16日の操作できる保存グラフとは分け、当時3本が同時表示されていた記録画像として
+残します。画像のピクセルから血糖値を読み戻したり、補間したり、8月16日の点列へ
+混ぜたりはしません。
 
 3CGM継続公開を始めるまでの履歴順は次のとおりです。
 

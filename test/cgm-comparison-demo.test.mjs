@@ -632,6 +632,7 @@ test("public comparison keeps the visitor-facing page simple and links to option
 test("public comparison explains the ended sensor period and archived August 16 record", async () => {
   const demo = await readFile(new URL("../demos/cgm-comparison/index.html", import.meta.url), "utf8");
   const comparisonModule = await readFile(new URL("../demos/cgm-comparison/comparison.mjs", import.meta.url), "utf8");
+  const archiveImage = await readFile(new URL("../demos/cgm-comparison/images/three-cgm-record-2026-08-17.png", import.meta.url));
   assert.match(demo, /2026年8月16日の匿名化記録です/);
   assert.match(demo, /センサーの装着期間は終了しました/);
   assert.match(demo, /Guardian 4とDexcom G7の同じ24時間/);
@@ -651,6 +652,16 @@ test("public comparison explains the ended sensor period and archived August 16 
   assert.match(comparisonModule, /範囲より下（TBR）/);
   assert.match(comparisonModule, /届いた値から計算した目安/);
   assert.match(comparisonModule, /chartTextSummary/);
+  assert.match(demo, /3種類がそろっていた時のグラフ/);
+  assert.match(demo, /2026年8月17日に保存した実測スクリーンショット/);
+  assert.match(demo, /画像から数値を読み直したり、上の8月16日のデータへ足したりしていません/);
+  assert.match(demo, /images\/three-cgm-record-2026-08-17\.png/);
+  assert.match(demo, /Guardian 4、Libre 2、Dexcom G7の3本の線/);
+  assert.match(demo, /8月17日の3種類のCGM比較グラフを大きく見る/);
+  assert.match(demo, /画像を押すと大きく見られます/);
+  assert.deepEqual([...archiveImage.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+  assert.equal(archiveImage.readUInt32BE(16), 1203);
+  assert.equal(archiveImage.readUInt32BE(20), 842);
 });
 
 test("comparison and capture helper local links and assets resolve", async () => {
