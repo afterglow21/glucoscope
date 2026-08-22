@@ -10,6 +10,10 @@ import {
   readAiQuotaRequest,
   runAiQuotaGeneration,
 } from "../src/ai-quota-client.js";
+import {
+  getGeneratedLetterQualityIssues,
+  partitionGeneratedLetterQualityIssues,
+} from "../src/letter-quality.js";
 
 const TOKEN = "A".repeat(43);
 const REQUEST_ID = "123e4567-e89b-42d3-a456-426614174111";
@@ -215,6 +219,52 @@ for (const [code, expectedReason] of [
     assert.equal("result" in result, false);
   });
 }
+
+test("two Share Studio renderer-fit failures release the AI reservation without completion", async () => {
+  const calls = [];
+  const oversizedAttempts = [
+    `グルコだよ🍀\n${"W".repeat(48)}`,
+    `グルコだよ🍀\n＋${"9".repeat(48)}`,
+  ];
+  const result = await runAiQuotaGeneration({
+    enabled: true,
+    reserveInput: reserveInput(),
+    service: {
+      async reserveAiGeneration() {
+        calls.push("reserve");
+        return { ok: true, status: "reserved", reservationId: RESERVATION_ID, quota: QUOTA };
+      },
+      async completeAiGeneration() {
+        calls.push("complete");
+        throw new Error("fit failure must not complete quota");
+      },
+      async releaseAiGeneration(input) {
+        calls.push(["release", input]);
+        return { ok: true, status: "released", quota: { ...QUOTA, successful: 0, remaining: 1 } };
+      },
+    },
+    generate: async () => {
+      const assessments = oversizedAttempts.map((text) => {
+        const issues = getGeneratedLetterQualityIssues(text, "ja", { shareStudio: true });
+        return { issues, assessment: partitionGeneratedLetterQualityIssues(issues) };
+      });
+      assert.ok(assessments.every(({ assessment }) => (
+        assessment.blockingIssues.includes("share_studio_unbreakable_token")
+      )));
+      const error = new Error("Share Studio output did not fit after its quality retry");
+      error.code = "openai_output_quality_failed";
+      error.qualityIssues = assessments[1].issues;
+      error.attempts = 2;
+      throw error;
+    },
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.error, "quality_failed");
+  assert.deepEqual(calls, [
+    "reserve",
+    ["release", { reservationId: RESERVATION_ID, reasonCode: "quality_failed" }],
+  ]);
+});
 
 test("an abort after reservation releases as request_aborted", async () => {
   const controller = new AbortController();

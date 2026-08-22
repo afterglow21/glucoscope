@@ -11,6 +11,11 @@ import {
   partitionGeneratedLetterQualityIssues
 } from "../src/letter-quality.js";
 import {
+  getShareStudioLetterFitIssues,
+  getShareStudioLetterFitReport,
+  SHARE_STUDIO_LETTER_FIT_LIMITS,
+} from "../src/share-studio-letter-fit.js";
+import {
   DEFAULT_TURNSTILE_EXPECTED_ACTION,
   DEFAULT_TURNSTILE_EXPECTED_HOSTNAME,
   isAiGenerationRequest,
@@ -82,6 +87,96 @@ test("both retry paths block only hard quality issues after one rewrite", () => 
     2
   );
   assert.doesNotMatch(workerSource, /if \(retryQualityIssues\.length\)/);
+});
+
+test("Share Studio fit quality is enabled only for exact user mode or verified admin page mode", () => {
+  assert.match(workerSource, /clientMode === "share-studio"/u);
+  assert.match(workerSource, /summary\.pageMode === ADMIN_SHARE_STUDIO_PAGE_MODE/u);
+  assert.match(workerSource, /shareStudio = analysisMode === "letter"/u);
+  assert.match(workerSource, /suppressGlucoScore: !scorePolicy\.mention,\s+shareStudio,/u);
+  assert.equal(
+    (workerSource.match(/shareStudio,\s+maxOutputTokens:/gu) || []).length,
+    4,
+  );
+  assert.match(workerSource, /clientMode: getClientMode\(payload\)/u);
+  assert.match(workerSource, /620文字以内・短い段落は9個以内/u);
+  assert.match(workerSource, /within 900 characters and at most 9 short paragraphs/u);
+});
+
+test("conservative Japanese and English Share Studio letters fit the common renderer boundary", () => {
+  const japanese = [
+    "グルコだよ🍀",
+    "来てくれてうれしいよ。",
+    "今日の数字は、あなたを採点するものではないよ。",
+    "表示中の流れには、落ち着いた時間も見えているよ。",
+    "急いで答えにしなくて大丈夫。",
+    "余裕があるときに、今日の流れをそっと眺めてみようね🍀",
+  ].join("\n");
+  const english = [
+    "Gluco is here 🍀",
+    "I am glad you came by today.",
+    "These numbers are clues, not a grade.",
+    "There are calm stretches in the displayed flow.",
+    "There is no need to rush toward an answer.",
+    "When it feels comfortable, you can look back gently with me.",
+  ].join("\n");
+  for (const [text, language] of [[japanese, "ja"], [english, "en"]]) {
+    const report = getShareStudioLetterFitReport(text, language);
+    assert.equal(report.fits, true, JSON.stringify(report));
+    assert.deepEqual(report.issues, []);
+    assert.ok(report.paragraphCount <= report.limits.maximumParagraphs);
+    assert.ok(report.estimatedLineCount <= report.limits.maximumEstimatedLines);
+  }
+});
+
+test("Share Studio fit rejects character, paragraph, wrapped-line, and renderer-token overflow", () => {
+  assert.ok(getShareStudioLetterFitIssues("あ".repeat(621), "ja")
+    .includes("share_studio_character_limit"));
+  assert.ok(getShareStudioLetterFitIssues(
+    Array.from({ length: 10 }, (_, index) => `短い文${index}。`).join("\n"),
+    "ja",
+  ).includes("share_studio_paragraph_limit"));
+  assert.ok(getShareStudioLetterFitIssues(
+    Array.from({ length: 9 }, () => "🍀".repeat(39)).join("\n"),
+    "ja",
+  ).includes("share_studio_line_limit"));
+
+  for (const value of [
+    "W".repeat(39),
+    `＋${"9".repeat(38)}`,
+    `-${"9".repeat(38)}`,
+    "W".repeat(48),
+  ]) {
+    assert.ok(
+      getShareStudioLetterFitIssues(`グルコだよ🍀\n${value}`, "ja")
+        .includes("share_studio_unbreakable_token"),
+      value,
+    );
+  }
+  for (const value of ["W".repeat(47), `-${"9".repeat(46)}`, "W".repeat(48)]) {
+    assert.ok(
+      getShareStudioLetterFitIssues(`Gluco is here 🍀\n${value}`, "en")
+        .includes("share_studio_unbreakable_token"),
+      value,
+    );
+  }
+  assert.equal(SHARE_STUDIO_LETTER_FIT_LIMITS.ja.maximumUnbreakableTokenCharacters, 38);
+  assert.equal(SHARE_STUDIO_LETTER_FIT_LIMITS.en.maximumUnbreakableTokenCharacters, 46);
+});
+
+test("Share Studio fit violations are blocking while ordinary AI letters keep their prior contract", () => {
+  const text = `グルコだよ🍀\n${"W".repeat(48)}`;
+  const ordinaryIssues = getGeneratedLetterQualityIssues(text, "ja");
+  const shareIssues = getGeneratedLetterQualityIssues(text, "ja", { shareStudio: true });
+  assert.equal(
+    ordinaryIssues.some((issue) => issue.startsWith("share_studio_")),
+    false,
+  );
+  assert.ok(shareIssues.includes("share_studio_unbreakable_token"));
+  assert.ok(
+    partitionGeneratedLetterQualityIssues(shareIssues).blockingIssues
+      .includes("share_studio_unbreakable_token"),
+  );
 });
 
 test("Japanese and English prompts preserve the exact opening and add welcome and everyday asides", () => {

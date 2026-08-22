@@ -23,12 +23,13 @@ This list is the canonical current-state record. Dated rollout passages elsewher
 document are historical evidence unless they explicitly say that they remain current.
 
 - GitHub Pages serves `https://glucoscope.app/` from `main`. Commit
-  `9eb6813d6686360dbe88c4f81d0ec3b477c55293` is the accepted checkpoint for the Share Studio
+  `ae0024f2802889ec089fad14a070459e3506364e` is the accepted pre-release checkpoint for the Share Studio
   gentle-reflection and independent-trial-quota release. Atomic usage-counter, long-lived-session,
   and iPhone Home Screen acceptance remain recorded by their earlier dated checkpoints.
-- AI Worker Version `6c2ff2e9-e2ba-41f3-a49c-fce620981c89` receives 100% of AI traffic with
-  atomic personal quota, the signed administrator bridge, and exact-reservation Share Studio
-  detailed analysis. Version `030d9525-9058-4ced-9ec0-43d9cdb27a0d` is the direct behavior
+- AI Worker Version `0e9e39a8-a1be-46c0-8336-f880a2ad147b` receives 100% of AI traffic with
+  atomic personal quota, the signed administrator bridge, no separate administrator daily cap,
+  and exact-reservation Share Studio gentle analysis. Version
+  `6c2ff2e9-e2ba-41f3-a49c-fce620981c89` is the direct behavior
   rollback. Atomic stopped Version
   `46f44888-002b-4847-8553-5cd12e3d7ac5` is the emergency AI-off target. Version 28, Version 29,
   the old new-origin Version, Phase A, and pre-atomic Versions must not receive rollback traffic.
@@ -66,12 +67,13 @@ document are historical evidence unless they explicitly say that they remain cur
 「現在も有効」と明記したものを除き、その時点の履歴証拠です。
 
 - GitHub Pagesは`main`から `https://glucoscope.app/` を公開しています。commit
-  `9eb6813d6686360dbe88c4f81d0ec3b477c55293`は、Share StudioのやさしいAIふりかえりと独立体験枠を
+  `ae0024f2802889ec089fad14a070459e3506364e`は、Share StudioのやさしいAIふりかえりと独立体験枠を
   受け入れたcheckpointです。atomic利用カウンター、長期端末session、iPhoneホーム画面の受入は、
   それぞれの過去checkpointへ履歴として残します。
-- AI WorkerはVersion `6c2ff2e9-e2ba-41f3-a49c-fce620981c89`へ通信の100%を向け、atomic個人上限、
-  署名付き管理者bridge、Share Studioの正確な予約単位のしっかり分析を使っています。直接rollbackはVersion
-  `030d9525-9058-4ced-9ec0-43d9cdb27a0d`です。緊急にAIを止める時だけatomic停止Version
+- AI WorkerはVersion `0e9e39a8-a1be-46c0-8336-f880a2ad147b`へ通信の100%を向け、atomic個人上限、
+  署名付き管理者bridge、管理者用の独立した1日上限を設けない運用、Share Studioの正確な予約単位の
+  やさしい分析を使っています。直接rollbackはVersion
+  `6c2ff2e9-e2ba-41f3-a49c-fce620981c89`です。緊急にAIを止める時だけatomic停止Version
   `46f44888-002b-4847-8553-5cd12e3d7ac5`を使います。Version 28、Version 29、旧new-origin、
   Phase A、pre-atomic Versionへは戻しません。
 - Usage WorkerはVersion `e745f53a-aea0-427e-8421-278d3549e30d`へ通信の100%を向け、確認済みの
@@ -3709,9 +3711,11 @@ On 2026-08-21, the public Share Studio boundary was aligned with the protected a
 Social Share Studio: it creates a set of four images for today instead of one Daily Snapshot.
 Image 1 uses the exact Gluco already encountered and stored by the same GlucoScope browser;
 the person does not choose a replacement. Slide 2 contains daily metrics and the glucose
-graph, slide 3 contains a short gentle AI reflection, and slide 4 is a stable GlucoScope closing card.
-The third image shows about three clues and one final gentle thought in fixed, phone-readable
-cards instead of shrinking a full analysis. It is authorized only by that account's exact active
+graph, slide 3 contains the complete gentle AI reflection returned for the daily summary, and
+slide 4 is a stable GlucoScope closing card. The third image uses one large auto-fitted panel,
+preserving natural section, emoji-heading, and list-marker breaks. The browser does not select
+sentences, invent headings, or reassemble the reflection into separate cards. The renderer never clips or silently shortens the reflection;
+an out-of-contract response stops before image creation and does not consume the free trial. It is authorized only by that account's exact active
 trial reservation or an active Plus entitlement; the trial does not unlock detailed analysis elsewhere.
 All four PNGs are generated locally and written to browser IndexedDB before a free-trial
 completion is sent. A storage or read-back failure releases the reservation and does not
@@ -4122,9 +4126,11 @@ Plus利用権はブラウザの利用記録プロフィールから分離し、�
 
 2026年8月21日、利用者向けShare Studioを、管理者用Social Share Studioと同じ4枚構成へ
 揃えました。1枚目は、同じGlucoScopeのブラウザがその日に実際に出逢いとして保存したグルコを
-使い、別の候補から選び直させません。2枚目は日次指標と血糖グラフ、3枚目は短い「やさしいAIふりかえり」、
-4枚目は固定のGlucoScope締めくくりカードです。3枚目は、全文を小さく詰め込まず、3つほどの手がかりと
-最後のやさしい一言を、スマートフォンで読める固定文字サイズの4枠に収めます。このふりかえりは、そのアカウントの
+使い、別の候補から選び直させません。2枚目は日次指標と血糖グラフ、3枚目は日次集計から返された
+「やさしいAIふりかえり」の全文、4枚目は固定のGlucoScope締めくくりカードです。3枚目は1つの大きなパネルへ
+文字量に応じて収め、AIが返した自然な段落、絵文字見出し、箇条書き記号の区切りを保ちます。ブラウザ側で
+文章を選別したり、見出しを作ったり、複数カードへ再構成したりしません。全文を切り取ったり黙って短くしたりせず、
+契約外の長さなら画像を作る前に停止して無料体験を消費しません。このふりかえりは、そのアカウントの
 有効な体験予約1件、または有効なPlus利用権にだけ結び付け、他のFree画面へは開放しません。4枚のPNGを
 すべて端末内で生成し、ブラウザの
 IndexedDBへ保存して読み戻せた後だけ無料体験の完了を送ります。保存または読み戻しに失敗した時は

@@ -18,6 +18,8 @@ const ACCOUNT_TOKEN = "account-session-token-000000000001";
 const TOKEN_HASH = "H".repeat(43);
 const PROFILE_ID = "10000000-0000-4000-8000-000000000001";
 const ACCOUNT_ID = "20000000-0000-4000-8000-000000000001";
+const SECOND_ACCOUNT_ID = "20000000-0000-4000-8000-000000000002";
+const SHARE_TRIAL_SUBJECT_ID = "Q".repeat(43);
 
 function uuid(number) {
   return `00000000-0000-4000-8000-${String(number).padStart(12, "0")}`;
@@ -40,12 +42,12 @@ class FakeQuotaStore {
     return `${subjectKey}:${requestId}`;
   }
 
-  activeReservations(subjectKey, day, now) {
+  activeReservations(subjectKey, day, now, quotaWindow = "day") {
     let count = 0;
     for (const attempt of this.attemptsByReservation.values()) {
       if (
         attempt.subjectKey === subjectKey
-        && attempt.day === day
+        && (quotaWindow === "retained" || attempt.day === day)
         && attempt.status === "reserved"
         && attempt.expiresAt > now
       ) count += 1;
@@ -53,13 +55,22 @@ class FakeQuotaStore {
     return count;
   }
 
+  successfulCount(subjectKey, day, quotaWindow = "day") {
+    return [...this.days.values()]
+      .filter((row) => row.subjectKey === subjectKey
+        && (quotaWindow === "retained" || row.day === day))
+      .reduce((total, row) => total + row.successCount, 0);
+  }
+
   snapshot(attempt, now, fallbackLimit = 0) {
     const dayRow = attempt
       ? this.days.get(this.dayKey(attempt.subjectKey, attempt.day))
       : null;
-    const successful = dayRow?.successCount || 0;
+    const successful = attempt
+      ? this.successfulCount(attempt.subjectKey, attempt.day, attempt.quotaWindow)
+      : dayRow?.successCount || 0;
     const activeReservations = attempt
-      ? this.activeReservations(attempt.subjectKey, attempt.day, now)
+      ? this.activeReservations(attempt.subjectKey, attempt.day, now, attempt.quotaWindow)
       : 0;
     const dailyLimit = attempt?.dailyLimit || fallbackLimit;
     return {
@@ -104,12 +115,18 @@ class FakeQuotaStore {
       return { status, ...this.snapshot(existing, input.now) };
     }
 
-    const active = this.activeReservations(input.subjectKey, input.day, input.now);
-    if (dayRow.successCount + active >= input.dailyLimit) {
+    const successful = this.successfulCount(input.subjectKey, input.day, input.quotaWindow);
+    const active = this.activeReservations(
+      input.subjectKey,
+      input.day,
+      input.now,
+      input.quotaWindow,
+    );
+    if (successful + active >= input.dailyLimit) {
       return {
         status: "limit_reached",
         attempt: null,
-        successful: dayRow.successCount,
+        successful,
         activeReservations: active,
         dailyLimit: input.dailyLimit,
         remaining: 0,
@@ -206,10 +223,17 @@ class FakeQuotaStore {
   }
 }
 
-function createHarness({ plusActive = true, shareTrialReserved = false, entitlementStatus = "ok", now = NOW } = {}) {
+function createHarness({
+  plusActive = true,
+  shareTrialReserved = false,
+  shareTrialSubjectId = SHARE_TRIAL_SUBJECT_ID,
+  entitlementStatus = "ok",
+  now = NOW,
+} = {}) {
   const store = new FakeQuotaStore();
   let reservationSequence = 900000;
   let currentNow = now;
+  let currentAccountId = ACCOUNT_ID;
   let entitlementCalls = 0;
   const services = {
     store,
@@ -222,9 +246,12 @@ function createHarness({ plusActive = true, shareTrialReserved = false, entitlem
       if (entitlementStatus !== "ok") return { status: entitlementStatus };
       return {
         status: "ok",
-        subjectId: ACCOUNT_ID,
+        subjectId: currentAccountId,
         plusActive,
         shareTrialReserved: Boolean(shareTrialRequestId) && shareTrialReserved,
+        ...(Boolean(shareTrialRequestId) && shareTrialReserved
+          ? { shareTrialSubjectId }
+          : {}),
       };
     },
   };
@@ -242,6 +269,9 @@ function createHarness({ plusActive = true, shareTrialReserved = false, entitlem
     entitlementCalls: () => entitlementCalls,
     setNow(value) {
       currentNow = value;
+    },
+    setAccountId(value) {
+      currentAccountId = value;
     },
   };
 }
@@ -367,12 +397,12 @@ test("Free can reserve gentle analysis only, while active Plus can reserve detai
   assert.equal(plusDeep.quota.tier, "plus");
 });
 
-test("an exact active Share Studio trial reservation allows one detailed account analysis only", async () => {
+test("an exact active Share Studio trial reservation allows one gentle account analysis only", async () => {
   const trialHarness = createHarness({ plusActive: false, shareTrialReserved: true });
   const allowed = await reserveAiGeneration({
     credential: { kind: "account", token: ACCOUNT_TOKEN },
     requestId: uuid(109),
-    analysisMode: "deep",
+    analysisMode: "letter",
     shareTrialRequestId: uuid(108),
   }, trialHarness.env, trialHarness.services);
   assert.equal(allowed.status, "reserved");
@@ -390,6 +420,51 @@ test("an exact active Share Studio trial reservation allows one detailed account
     error: "invalid_request",
     retryable: false,
   });
+});
+
+test("Share Studio trial never unlocks detailed analysis while active Plus still does", async () => {
+  const trialHarness = createHarness({ plusActive: false, shareTrialReserved: true });
+  const denied = await reserveAiGeneration({
+    credential: { kind: "account", token: ACCOUNT_TOKEN },
+    requestId: uuid(136),
+    analysisMode: "deep",
+    shareTrialRequestId: uuid(137),
+  }, trialHarness.env, trialHarness.services);
+  assert.deepEqual(denied, {
+    ok: false,
+    status: "error",
+    error: "plus_required",
+    retryable: false,
+  });
+  assert.equal(trialHarness.store.reserveCalls, 0);
+
+  const plusHarness = createHarness({ plusActive: true, shareTrialReserved: false });
+  assert.equal((await reserveAiGeneration({
+    credential: { kind: "account", token: ACCOUNT_TOKEN },
+    requestId: uuid(138),
+    analysisMode: "deep",
+  }, plusHarness.env, plusHarness.services)).status, "reserved");
+});
+
+test("Share Studio trial fails closed when Plus omits its stable opaque quota identity", async () => {
+  const harness = createHarness({
+    plusActive: false,
+    shareTrialReserved: true,
+    shareTrialSubjectId: "",
+  });
+  const result = await reserveAiGeneration({
+    credential: { kind: "account", token: ACCOUNT_TOKEN },
+    requestId: uuid(130),
+    analysisMode: "letter",
+    shareTrialRequestId: uuid(131),
+  }, harness.env, harness.services);
+  assert.deepEqual(result, {
+    ok: false,
+    status: "error",
+    error: "entitlement_unavailable",
+    retryable: true,
+  });
+  assert.equal(harness.store.reserveCalls, 0);
 });
 
 test("an exact Share Studio trial has its own one-use quota even after today's free account analysis", async () => {
@@ -414,14 +489,121 @@ test("an exact Share Studio trial has its own one-use quota even after today's f
   assert.equal(trial.quota.dailyLimit, 1);
   await completeAiGeneration({ reservationId: trial.reservationId }, harness.env, harness.services);
 
+  const releaseAfterSuccess = await releaseAiGeneration({
+    reservationId: trial.reservationId,
+    reasonCode: "internal_error",
+  }, harness.env, harness.services);
+  assert.equal(releaseAfterSuccess.status, "already_succeeded");
+
+  harness.setNow(NOW + (2 * 24 * 60 * 60 * 1000));
   const secondTrialGeneration = await reserveAiGeneration({
     credential: { kind: "account", token: ACCOUNT_TOKEN },
     requestId: uuid(114),
     analysisMode: "letter",
-    shareTrialRequestId: trialRequestId,
+    shareTrialRequestId: uuid(115),
   }, harness.env, harness.services);
   assert.equal(secondTrialGeneration.status, "limit_reached");
   assert.equal(secondTrialGeneration.error, "daily_limit_reached");
+});
+
+test("a failed Share Studio AI attempt can retry under a new trial reservation", async () => {
+  const harness = createHarness({ plusActive: false, shareTrialReserved: true });
+  const first = await reserveAiGeneration({
+    credential: { kind: "account", token: ACCOUNT_TOKEN },
+    requestId: uuid(116),
+    analysisMode: "letter",
+    shareTrialRequestId: uuid(117),
+  }, harness.env, harness.services);
+  assert.equal(first.status, "reserved");
+  assert.equal((await releaseAiGeneration({
+    reservationId: first.reservationId,
+    reasonCode: "quality_failed",
+  }, harness.env, harness.services)).status, "released");
+
+  harness.setNow(NOW + (2 * 24 * 60 * 60 * 1000));
+  const retry = await reserveAiGeneration({
+    credential: { kind: "account", token: ACCOUNT_TOKEN },
+    requestId: uuid(118),
+    analysisMode: "letter",
+    shareTrialRequestId: uuid(119),
+  }, harness.env, harness.services);
+  assert.equal(retry.status, "reserved");
+});
+
+test("concurrent Share Studio trial UUIDs share one retained account reservation", async () => {
+  const harness = createHarness({ plusActive: false, shareTrialReserved: true });
+  const results = await Promise.all([120, 122].map((number) => reserveAiGeneration({
+    credential: { kind: "account", token: ACCOUNT_TOKEN },
+    requestId: uuid(number),
+    analysisMode: "letter",
+    shareTrialRequestId: uuid(number + 1),
+  }, harness.env, harness.services)));
+  assert.deepEqual(
+    results.map((result) => result.status).sort(),
+    ["limit_reached", "reserved"],
+  );
+});
+
+test("a successful Share Studio AI trial stays blocked for the 90-day quota retention window", async () => {
+  const harness = createHarness({ plusActive: false, shareTrialReserved: true });
+  const first = await reserveAiGeneration({
+    credential: { kind: "account", token: ACCOUNT_TOKEN },
+    requestId: uuid(124),
+    analysisMode: "letter",
+    shareTrialRequestId: uuid(125),
+  }, harness.env, harness.services);
+  await completeAiGeneration({ reservationId: first.reservationId }, harness.env, harness.services);
+
+  harness.setNow(NOW + (89 * 24 * 60 * 60 * 1000));
+  const stillBlocked = await reserveAiGeneration({
+    credential: { kind: "account", token: ACCOUNT_TOKEN },
+    requestId: uuid(126),
+    analysisMode: "letter",
+    shareTrialRequestId: uuid(127),
+  }, harness.env, harness.services);
+  assert.equal(stillBlocked.status, "limit_reached");
+
+  const afterRetention = NOW + (91 * 24 * 60 * 60 * 1000);
+  await runAiQuotaCleanup(harness.store, harness.env, afterRetention);
+  harness.setNow(afterRetention);
+  const allowedAfterCleanup = await reserveAiGeneration({
+    credential: { kind: "account", token: ACCOUNT_TOKEN },
+    requestId: uuid(128),
+    analysisMode: "letter",
+    shareTrialRequestId: uuid(129),
+  }, harness.env, harness.services);
+  assert.equal(allowedAfterCleanup.status, "reserved");
+});
+
+test("same-email re-registration stays blocked when Plus returns the same opaque reuse identity", async () => {
+  const harness = createHarness({ plusActive: false, shareTrialReserved: true });
+  const first = await reserveAiGeneration({
+    credential: { kind: "account", token: ACCOUNT_TOKEN },
+    requestId: uuid(132),
+    analysisMode: "letter",
+    shareTrialRequestId: uuid(133),
+  }, harness.env, harness.services);
+  assert.equal(first.status, "reserved");
+  assert.equal((await completeAiGeneration({
+    reservationId: first.reservationId,
+  }, harness.env, harness.services)).status, "completed");
+
+  harness.setAccountId(SECOND_ACCOUNT_ID);
+  harness.setNow(NOW + (2 * 24 * 60 * 60 * 1000));
+  const recreated = await reserveAiGeneration({
+    credential: { kind: "account", token: ACCOUNT_TOKEN },
+    requestId: uuid(134),
+    analysisMode: "letter",
+    shareTrialRequestId: uuid(135),
+  }, harness.env, harness.services);
+  assert.equal(recreated.status, "limit_reached");
+  assert.equal(recreated.error, "daily_limit_reached");
+  const storedSubjectKeys = [...harness.store.days.values()].map((row) => row.subjectKey);
+  assert.equal(storedSubjectKeys.length, 2);
+  assert.equal(new Set(storedSubjectKeys).size, 1);
+  assert.notEqual(storedSubjectKeys[0], SHARE_TRIAL_SUBJECT_ID);
+  assert.notEqual(storedSubjectKeys[0], ACCOUNT_ID);
+  assert.notEqual(storedSubjectKeys[0], SECOND_ACCOUNT_ID);
 });
 
 test("provider and quality failures release a reservation without consuming quota", async () => {

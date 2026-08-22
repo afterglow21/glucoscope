@@ -129,6 +129,11 @@ test("Share Studio normalizes only bounded display metrics", () => {
     language: "ja"
   });
   assert.equal(api._testing.safeMetric("https://secret.example"), "--");
+  assert.equal(api._testing.normalizeLetter("1行目\r\n- 2行目"), "1行目\n- 2行目");
+  assert.throws(
+    () => api._testing.normalizeLetter("あ".repeat(1401)),
+    /share_studio_letter_too_long/u
+  );
 });
 
 test("Share Studio creates and stores four slides before completing a trial", () => {
@@ -191,12 +196,13 @@ test("Share Studio keeps a verified four-image set in device storage", async () 
   }, { store });
   assert.equal(record.blobs.length, 4);
   assert.equal(record.version, 2);
-  assert.equal(record.rendererRevision, 5);
+  assert.equal(record.rendererRevision, 6);
   assert.equal(api._testing.isCurrentCarouselRecord(record), true);
   assert.equal(record.dateKey, "2026-08-21");
   assert.equal(record.glucoId, 7);
   assert.equal(record.accessGrant, "trial");
   assert.equal((await api.loadCarousel({ store })).blobs.length, 4);
+  assert.equal(api._testing.isCurrentCarouselRecord({ ...record, rendererRevision: 5 }), false);
   await api.deleteCarousel({ store });
   assert.equal(await api.loadCarousel({ store }), null);
 });
@@ -257,10 +263,10 @@ test("the administrator-quality renderer keeps long Japanese and a score of 100 
     110,
     382,
     850,
-    240,
+    640,
     { language: "ja", maxSize: 34, minSize: 20, weight: 800 }
   );
-  assert.ok(layout.totalHeight <= 240);
+  assert.ok(layout.totalHeight <= 640);
   assert.ok(calls.every((call) => call.width <= 850));
 
   const scoreSize = api._testing.fittedText(context, "100", 210, 1170, 190, {
@@ -277,7 +283,73 @@ test("the administrator-quality renderer keeps long Japanese and a score of 100 
   assert.doesNotMatch(source, /assets\/gluco\/profile\/gluco\.png/u);
 });
 
-test("Share Studio turns varied AI markers into fixed short headings instead of repeated generic labels", async () => {
+test("Share Studio never truncates an overlong gentle letter", () => {
+  const api = loadModule();
+  const { context, calls } = createTextContext();
+  assert.throws(
+    () => api._testing.fittedParagraphText(
+      context,
+      "全文を省略せずに届けるためのやさしい文章です。".repeat(160),
+      110,
+      382,
+      850,
+      120,
+      { language: "ja", maxSize: 20, minSize: 18, weight: 800 }
+    ),
+    /share_studio_letter_too_long/u
+  );
+  assert.equal(calls.length, 0, "an overlong letter must fail before any body text is drawn");
+  assert.throws(
+    () => api._testing.fittedParagraphText(
+      context,
+      "A".repeat(200),
+      110,
+      382,
+      850,
+      640,
+      { language: "en", maxSize: 15, minSize: 15, weight: 800 }
+    ),
+    /share_studio_letter_too_long/u,
+    "an unbreakable token must never be drawn past the panel edge"
+  );
+  assert.doesNotMatch(source, /chosen\.truncated|maximumLines|ellipsized/u);
+  assert.match(app, /全文が安全に収まらなかったため、4枚は作らず、体験回数も使っていません/u);
+  assert.match(app, /SHARE_STUDIO_AI_CACHE_NAMESPACE = "share-studio-r6"/u);
+  assert.match(app, /getFreshCachedAiLetter\([\s\S]*SHARE_STUDIO_AI_CACHE_NAMESPACE/u);
+  assert.match(app, /saveAiLetterLocalCache\([\s\S]*SHARE_STUDIO_AI_CACHE_NAMESPACE/u);
+  assert.match(app, /return \(namespace \? \[namespace, \.\.\.parts\] : parts\)\.join\("\|"\)/u);
+  const requestStart = app.indexOf("async function requestShareStudioGentleReflection");
+  const cacheWrite = app.indexOf("saveAiLetterLocalCache(", requestStart);
+  const pendingWrite = app.indexOf("pendingShareStudioGentleReflection =", requestStart);
+  const responseReturn = app.indexOf("return Object.freeze({ text: letterText });", requestStart);
+  assert.ok(requestStart >= 0 && cacheWrite > requestStart && pendingWrite > cacheWrite && responseReturn > pendingWrite);
+  assert.match(app, /pendingShareStudioGentleReflection\?\.key === cacheKey[\s\S]*pendingShareStudioGentleReflection\.text/u);
+});
+
+test("Share Studio keeps signed decimals atomic and does not mistake them for list markers", () => {
+  const api = loadModule();
+  assert.deepEqual(
+    [...api._testing.tokenizeLine("-3.5mg/dL +2.0% 24.4％ －4.0mg/dL ＋1.0％")].filter((token) => !/^\s+$/u.test(token)),
+    ["-3.5mg/dL", "+2.0%", "24.4％", "－4.0mg/dL", "＋1.0％"]
+  );
+  const { context, calls } = createTextContext();
+  api._testing.fittedParagraphText(
+    context,
+    "-3.5mg/dLの変化だよ。\n- やさしく眺めようね。\n•急がなくて大丈夫。",
+    110,
+    382,
+    850,
+    300,
+    { language: "ja", maxSize: 28, minSize: 20, weight: 800 }
+  );
+  const rendered = calls.map((call) => call.value).join("\n");
+  assert.match(rendered, /-3\.5mg\/dL/u);
+  assert.doesNotMatch(rendered, /・ 3\.5mg\/dL/u);
+  assert.match(rendered, /・ やさしく眺めようね/u);
+  assert.match(rendered, /・ 急がなくて大丈夫/u);
+});
+
+test("Share Studio preserves the full gentle analysis in one fitted panel with readable section breaks", async () => {
   const api = loadModule();
   const dependencies = createRenderDependencies();
   await api.generateCarousel({
@@ -289,17 +361,19 @@ test("Share Studio turns varied AI markers into fixed short headings instead of 
     gluco: { id: 3, title: "ボールあそび", imagePath: "assets/gluco/live/gluco-live-03.png" },
     letter: "🌿 全体の流れ - 夜のお手紙の集計だね。TIRは96.7％で、表示中のほとんどの時間が目標範囲の中だよ。📊数字の手がかり - ちょっと見てみようね。平均は117mg/dLで、CVは21.8％だったよ。🔎 気になった動き：少しだけ気になったよ。GlucoScoreは98で、比較期間の78より20高く見えているよ。🌱明日の小さな見返し–ぼくはここにいるよ🍀。余裕があるときに、今日の数字をそっと振り返ってみようね。"
   }, dependencies);
-  const values = dependencies.textCalls.map((call) => call.value);
-  assert.ok(values.includes("📊 数字の手がかり"));
-  assert.ok(values.includes("🔎 気になった動き"));
-  assert.ok(values.includes("🌱 明日の小さな見返し"));
-  assert.ok(!values.some((value) => value.includes("4つの手がかり")));
-  assert.ok(!values.some((value) => value === "📊 やさしい手がかり"));
-  assert.ok(values.some((value) => value.includes("平均は117mg/dL")));
-  assert.ok(values.some((value) => value.includes("比較期間の78")));
-  assert.ok(values.some((value) => value.includes("余裕があるとき")));
-  assert.ok(!values.some((value) => value.includes("夜のお手紙の集計")));
-  assert.ok(!values.some((value) => value === "ぼくはここにいるよ🍀"));
+  const bodyCalls = dependencies.textCalls.filter((call) => call.x === 110 && call.y >= 382 && call.y < 1100);
+  const rendered = bodyCalls.map((call) => call.value).join("\n");
+  assert.match(rendered, /🌿 全体の流れ/u);
+  assert.match(rendered, /・ 夜のお手紙の集計だね/u);
+  assert.match(rendered, /TIRは96\.7％/u);
+  assert.match(rendered, /📊数字の手がかり/u);
+  assert.match(rendered, /平均は117mg\/dL/u);
+  assert.match(rendered, /CVは21\.8％/u);
+  assert.match(rendered, /比較期間の78/u);
+  assert.match(rendered, /余裕があるとき/u);
+  assert.match(rendered, /ぼくはここにいるよ🍀/u);
+  assert.doesNotMatch(source, /compactLetterSections|selectSubstantiveLetterSentence|drawLetterSections/u);
+  assert.ok(bodyCalls.every((call) => call.x === 110 && call.y <= 1022));
 });
 
 test("the renderer preserves English decimals and never joins a sensor gap", () => {
@@ -366,13 +440,14 @@ test("the four-image renderer loads the reviewed ending art and current public Q
   ]);
   assert.ok(dependencies.drawImageCalls.some((call) => call.source === "assets/share-studio/ending-sunrise.png"));
   assert.ok(dependencies.drawImageCalls.some((call) => call.source === "assets/share-studio/glucoscope-qr.png"));
-  assert.ok(dependencies.textCalls.some((call) => call.value.includes("やさしいふりかえり")));
+  assert.ok(dependencies.textCalls.some((call) => call.value.includes("グルコからのお手紙")));
+  assert.ok(dependencies.textCalls.some((call) => call.value.includes("やさしいAI分析")));
   for (const marker of ["🌿", "📊", "🔎", "🌱"]) {
-    assert.ok(dependencies.textCalls.some((call) => call.x === 132 && call.value.startsWith(marker)));
+    assert.ok(dependencies.textCalls.some((call) => call.x === 110 && call.value.startsWith(marker)));
   }
-  const gentleBodyLines = dependencies.textCalls.filter((call) => call.x === 132 && /800 25px/u.test(call.font));
-  assert.ok(gentleBodyLines.length >= 4 && gentleBodyLines.length <= 12);
-  assert.ok(gentleBodyLines.every((call) => call.y <= 1092));
+  const gentleBodyLines = dependencies.textCalls.filter((call) => call.x === 110 && call.y >= 382 && call.y < 1100);
+  assert.ok(gentleBodyLines.length >= 5);
+  assert.ok(gentleBodyLines.every((call) => call.y <= 1022));
   assert.deepEqual(readPngDimensions("../assets/share-studio/ending-sunrise.png"), { width: 1080, height: 1350 });
   assert.deepEqual(readPngDimensions("../assets/share-studio/glucoscope-qr.png"), { width: 256, height: 256 });
 });

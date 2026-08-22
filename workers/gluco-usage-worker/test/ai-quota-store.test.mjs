@@ -95,6 +95,23 @@ function reserveInput(number) {
   };
 }
 
+function retainedAccountInput(number, day = "2026-08-15", now = NOW) {
+  return {
+    subjectKey: "R".repeat(43),
+    subjectKind: "account",
+    deviceProfileId: null,
+    day,
+    requestId: uuid(number),
+    reservationId: uuid(2000 + number),
+    tier: "free",
+    dailyLimit: 1,
+    analysisMode: "letter",
+    quotaWindow: "retained",
+    now,
+    expiresAt: now + 600_000,
+  };
+}
+
 test("D1 reservation transaction admits only one concurrent free request", async (t) => {
   const { database, d1 } = await createDatabase();
   t.after(() => database.close());
@@ -127,6 +144,81 @@ test("D1 reservation transaction admits only one concurrent free request", async
     database.prepare("SELECT success_count AS count FROM ai_quota_days").get().count,
     1,
   );
+});
+
+test("D1 ordinary day window resets the next day while retained trial quota does not", async (t) => {
+  const { database, d1 } = await createDatabase();
+  t.after(() => database.close());
+  const store = createD1AiQuotaStore(d1);
+  const first = reserveInput(25);
+  assert.equal((await store.reserve(first)).status, "reserved");
+  assert.equal((await store.complete({
+    reservationId: first.reservationId,
+    now: NOW + 1_000,
+  })).status, "completed");
+
+  const nextDayNow = NOW + (24 * 60 * 60 * 1000);
+  const nextDay = {
+    ...reserveInput(26),
+    day: "2026-08-16",
+    now: nextDayNow,
+    expiresAt: nextDayNow + 600_000,
+  };
+  assert.equal((await store.reserve(nextDay)).status, "reserved");
+});
+
+test("D1 retained trial quota admits one account request across reservation UUIDs and days", async (t) => {
+  const { database, d1 } = await createDatabase();
+  t.after(() => database.close());
+  const store = createD1AiQuotaStore(d1);
+  const firstInput = retainedAccountInput(30, "2026-08-15", NOW);
+  const competingInput = retainedAccountInput(31, "2026-08-16", NOW);
+  const competing = await Promise.all([
+    store.reserve(firstInput),
+    store.reserve(competingInput),
+  ]);
+  assert.deepEqual(
+    competing.map((result) => result.status).sort(),
+    ["limit_reached", "reserved"],
+  );
+
+  const winnerIndex = competing.findIndex((result) => result.status === "reserved");
+  const winner = [firstInput, competingInput][winnerIndex];
+  assert.equal((await store.complete({
+    reservationId: winner.reservationId,
+    now: NOW + 1_000,
+  })).status, "completed");
+
+  const newTrialReservation = await store.reserve(
+    retainedAccountInput(32, "2026-08-17", NOW + (2 * 24 * 60 * 60 * 1000)),
+  );
+  assert.equal(newTrialReservation.status, "limit_reached");
+  assert.equal(newTrialReservation.successful, 1);
+
+  const idempotentRetry = await store.reserve({
+    ...winner,
+    day: "2026-08-17",
+    reservationId: uuid(2999),
+    now: NOW + (2 * 24 * 60 * 60 * 1000),
+    expiresAt: NOW + (2 * 24 * 60 * 60 * 1000) + 600_000,
+  });
+  assert.equal(idempotentRetry.status, "already_succeeded");
+});
+
+test("D1 retained trial quota releases a failed AI attempt for a later valid retry", async (t) => {
+  const { database, d1 } = await createDatabase();
+  t.after(() => database.close());
+  const store = createD1AiQuotaStore(d1);
+  const first = retainedAccountInput(40);
+  assert.equal((await store.reserve(first)).status, "reserved");
+  assert.equal((await store.release({
+    reservationId: first.reservationId,
+    reasonCode: "quality_failed",
+    now: NOW + 1_000,
+  })).status, "released");
+
+  const retry = retainedAccountInput(41, "2026-08-17", NOW + (2 * 24 * 60 * 60 * 1000));
+  assert.equal((await store.reserve(retry)).status, "reserved");
 });
 
 test("failure release preserves the count and device profile deletion cascades quota rows", async (t) => {

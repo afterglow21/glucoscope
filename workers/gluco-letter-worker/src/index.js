@@ -1683,13 +1683,32 @@ async function waitForOpenAiRetry(signal, milliseconds = 250) {
   throwIfRequestAborted(signal);
 }
 
-async function callOpenAiAttemptOnce({ summary, env, config, mode, maxOutputTokens, retryKind = "", signal }) {
+function buildShareStudioLetterFitInstruction(language) {
+  if (language === "en") {
+    return "Share Studio fit requirement: keep the complete letter within 900 characters and at most 9 short paragraphs. Do not use any unbroken word or number longer than 46 characters.";
+  }
+  return "Share Studioの画像に全文を安全に収めるため、620文字以内・短い段落は9個以内にし、38文字を超える区切りのない英単語や数字は使わない。";
+}
+
+async function callOpenAiAttemptOnce({
+  summary,
+  env,
+  config,
+  mode,
+  maxOutputTokens,
+  retryKind = "",
+  shareStudio = false,
+  signal,
+}) {
   throwIfRequestAborted(signal);
   const model = config.openAiModel;
   const language = summary.language === "en" ? "en" : "ja";
-  const input = retryKind
+  const baseInput = retryKind
     ? buildOpenAiRetryPrompt(summary, mode, retryKind)
     : buildOpenAiPrompt(summary, mode);
+  const input = shareStudio
+    ? `${baseInput}\n\n${buildShareStudioLetterFitInstruction(language)}`
+    : baseInput;
 
   let response;
   try {
@@ -1858,7 +1877,14 @@ function buildAcceptedOpenAiResult({
   };
 }
 
-async function callOpenAiLetter({ summary, env, config, mode = "letter", signal }) {
+async function callOpenAiLetter({
+  summary,
+  env,
+  config,
+  mode = "letter",
+  clientMode = "unknown",
+  signal,
+}) {
   throwIfRequestAborted(signal);
   if (!env.OPENAI_API_KEY) {
     const error = new Error("Missing OPENAI_API_KEY");
@@ -1874,12 +1900,17 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter", signal 
   const tir = Number(metrics.tir);
   const tbr = Number(metrics.tbr);
   const scorePolicy = getGlucoScoreMentionPolicy(summary);
+  const shareStudio = analysisMode === "letter" && (
+    clientMode === "share-studio"
+    || summary.pageMode === ADMIN_SHARE_STUDIO_PAGE_MODE
+  );
   const qualityOptions = {
     allowUnicorn: isUnicornEligibleSummary(summary),
     analysisMode,
     period: summary.period,
     compassionRequired: (Number.isFinite(tbr) && tbr >= 1) || (Number.isFinite(tir) && tir <= 70),
-    suppressGlucoScore: !scorePolicy.mention
+    suppressGlucoScore: !scorePolicy.mention,
+    shareStudio,
   };
   const firstAttempt = await callOpenAiAttempt({
     summary,
@@ -1887,6 +1918,7 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter", signal 
     config,
     signal,
     mode: analysisMode,
+    shareStudio,
     maxOutputTokens: limits.initial
   });
 
@@ -1909,6 +1941,7 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter", signal 
         config,
         signal,
         mode: analysisMode,
+        shareStudio,
         maxOutputTokens: limits.retry,
         retryKind: "incomplete"
       });
@@ -1965,6 +1998,7 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter", signal 
         config,
         signal,
         mode: analysisMode,
+        shareStudio,
         maxOutputTokens: limits.retry,
         retryKind: "incomplete"
       });
@@ -2038,6 +2072,7 @@ async function callOpenAiLetter({ summary, env, config, mode = "letter", signal 
       config,
       signal,
       mode: analysisMode,
+      shareStudio,
       maxOutputTokens: limits.retry,
       retryKind: "quality"
     });
@@ -2152,6 +2187,7 @@ async function generateLetter({ summary, payload, env, config, status, signal })
     env,
     config,
     mode: analysisMode,
+    clientMode: getClientMode(payload),
     signal
   });
 }

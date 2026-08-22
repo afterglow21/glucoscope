@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "node -e \"console.error('Bare production deploy is disabled. Use a reviewed live-compatible config and Wrangler Versions.'); process.exit(1)\"",
-    "check": "node --check src/index.js && node --check src/admin-share-studio-bridge.js && node --check src/ai-quota-client.js && node --check src/demo-letter.js && node --check src/letter-quality.js && node --check src/request-policy.js && node --check src/user-usage-summary.js && node --check src/usage-counter-core.js && node --check src/usage-counter-client.js",
+    "check": "node --check src/index.js && node --check src/admin-share-studio-bridge.js && node --check src/ai-quota-client.js && node --check src/demo-letter.js && node --check src/letter-quality.js && node --check src/share-studio-letter-fit.js && node --check src/request-policy.js && node --check src/user-usage-summary.js && node --check src/usage-counter-core.js && node --check src/usage-counter-client.js",
     "deploy:dry": "wrangler deploy --dry-run",
     "deploy:live:dry": "wrangler deploy --dry-run --config .wrangler/live-production.wrangler.toml --keep-vars",
     "test:quality": "node --test test/*.test.mjs"

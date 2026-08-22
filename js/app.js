@@ -77,6 +77,7 @@ const AI_LETTER_LEGACY_LOCAL_CACHE_STORAGE_KEYS = [
 const AI_LETTER_MODE_STORAGE_KEY = "glucoscope.aiLetterMode.v1";
 const AI_LETTER_LOCAL_CACHE_MAX_ITEMS = 30;
 const AI_LETTER_LOCAL_CACHE_FRESH_MS = 60 * 60 * 1000;
+const SHARE_STUDIO_AI_CACHE_NAMESPACE = "share-studio-r6";
 const AI_LETTER_MODES = ["letter", "deep"];
 const GLUCO_CELEBRATION_THRESHOLDS = Object.freeze({
   unicornGlucose: 100,
@@ -4374,6 +4375,7 @@ function canUseAiLetterMode(mode, { announce = false } = {}) {
 let shareStudioRecord = null;
 let shareStudioPreviewUrls = [];
 let shareStudioBusy = false;
+let pendingShareStudioGentleReflection = null;
 let shareStudioOpener = null;
 
 function closeShareStudioTrialDialog({ restoreFocus = true } = {}) {
@@ -4617,15 +4619,37 @@ async function requestShareStudioGentleReflection(reservation) {
     error.aiLetterData = data;
     throw error;
   }
-  saveAiLetterLocalCache(latestAiLetterSummary, data, letterText, "letter");
+  saveAiLetterLocalCache(
+    latestAiLetterSummary,
+    data,
+    letterText,
+    "letter",
+    SHARE_STUDIO_AI_CACHE_NAMESPACE
+  );
+  pendingShareStudioGentleReflection = Object.freeze({
+    key: getAiLetterLocalCacheKey(latestAiLetterSummary, "letter", SHARE_STUDIO_AI_CACHE_NAMESPACE),
+    text: letterText
+  });
   recordUsageProfileAiGenerationIfEligible(data);
   resetShareStudioTurnstile();
-  return letterText;
+  return Object.freeze({ text: letterText });
 }
 
 async function getShareStudioGentleReflection(reservation) {
-  const cached = getFreshCachedAiLetter(latestAiLetterSummary, "letter");
-  if (cached?.text) return cached.text;
+  const cacheKey = getAiLetterLocalCacheKey(
+    latestAiLetterSummary,
+    "letter",
+    SHARE_STUDIO_AI_CACHE_NAMESPACE
+  );
+  if (pendingShareStudioGentleReflection?.key === cacheKey) {
+    return Object.freeze({ text: pendingShareStudioGentleReflection.text });
+  }
+  const cached = getFreshCachedAiLetter(
+    latestAiLetterSummary,
+    "letter",
+    SHARE_STUDIO_AI_CACHE_NAMESPACE
+  );
+  if (cached?.text) return Object.freeze({ text: cached.text });
   return requestShareStudioGentleReflection(reservation);
 }
 
@@ -4743,7 +4767,8 @@ function setupShareStudio() {
 
   createButton?.addEventListener("click", async () => {
     if (shareStudioBusy) return;
-    if (!getFreshCachedAiLetter(latestAiLetterSummary, "letter") && !getShareStudioTurnstileToken()) {
+    if (!getFreshCachedAiLetter(latestAiLetterSummary, "letter", SHARE_STUDIO_AI_CACHE_NAMESPACE)
+      && !getShareStudioTurnstileToken()) {
       shareStudioCreateAfterTurnstile = true;
       setShareStudioStatus(t("shareStudioTurnstileWaiting"));
       renderShareStudioTurnstile();
@@ -4766,7 +4791,7 @@ function setupShareStudio() {
       const shareStudioModel = {
         ...latestShareStudioTodayModel,
         analysisMode: "letter",
-        letter: gentleReflection
+        letter: gentleReflection.text
       };
       const blobs = await window.GlucoScopeShareStudio?.generateCarousel?.(shareStudioModel);
       if (!Array.isArray(blobs) || blobs.length !== 4 || blobs.some((blob) => !(blob instanceof Blob))) {
@@ -4815,6 +4840,7 @@ function setupShareStudio() {
         "quota_identity_required"
       ].includes(error?.message);
       const localStorageFailed = ["storage_failed", "storage_unavailable", "storage_invalid"].includes(error?.message);
+      const letterTooLong = error?.message === "share_studio_letter_too_long";
       setShareStudioStatus(trialAlreadyUsed
         ? (savedAfterError
           ? (currentLanguage === "en" ? "The four images kept on this screen are still available here." : "この画面に保管した4枚は、引き続きここから利用できます。")
@@ -4831,6 +4857,10 @@ function setupShareStudio() {
             ? (currentLanguage === "en"
               ? "The gentle AI reflection could not start. The trial was not used. Please try again after refreshing the account status."
               : "やさしいAIふりかえりを開始できませんでした。体験回数は使っていません。アカウント状態を更新して、もう一度お試しください。")
+          : letterTooLong
+            ? (currentLanguage === "en"
+              ? "The complete gentle AI reflection did not fit safely, so no images were created and the trial was not used. Please try again."
+              : "やさしいAIふりかえりの全文が安全に収まらなかったため、4枚は作らず、体験回数も使っていません。もう一度お試しください。")
           : localStorageFailed
             ? (currentLanguage === "en"
               ? "The four images were created, but could not be kept on this screen. The trial was not used."
@@ -6303,15 +6333,16 @@ function hasVisibleAiLetterResult() {
   return Boolean(result && !result.hidden && result.textContent.trim());
 }
 
-function getAiLetterLocalCacheKey(summary = {}, mode = currentAiLetterMode) {
-  return [
+function getAiLetterLocalCacheKey(summary = {}, mode = currentAiLetterMode, namespace = "") {
+  const parts = [
     summary.pageMode || "page",
     summary.language || currentLanguage || "ja",
     summary.period || currentLivePeriod || "today",
     summary.slot || "unknown",
     normalizeAiLetterMode(mode),
     summary.cacheRangeKey || summary.rangeLabel || ""
-  ].join("|");
+  ];
+  return (namespace ? [namespace, ...parts] : parts).join("|");
 }
 
 function readAiLetterLocalCache() {
@@ -6344,11 +6375,11 @@ function trimAiLetterLocalCache(cache) {
   return Object.fromEntries(entries.slice(0, AI_LETTER_LOCAL_CACHE_MAX_ITEMS));
 }
 
-function getCachedAiLetter(summary = latestAiLetterSummary, mode = currentAiLetterMode) {
+function getCachedAiLetter(summary = latestAiLetterSummary, mode = currentAiLetterMode, namespace = "") {
   if (!summary) return null;
 
   const cache = readAiLetterLocalCache();
-  const item = cache[getAiLetterLocalCacheKey(summary, mode)];
+  const item = cache[getAiLetterLocalCacheKey(summary, mode, namespace)];
 
   if (!item || typeof item.text !== "string" || !item.text.trim()) return null;
   return item;
@@ -6371,8 +6402,8 @@ function isAiLetterCacheFresh(item, maxAgeMs = AI_LETTER_LOCAL_CACHE_FRESH_MS) {
   return getAiLetterCacheAgeMs(item) < maxAgeMs;
 }
 
-function getFreshCachedAiLetter(summary = latestAiLetterSummary, mode = currentAiLetterMode) {
-  const item = getCachedAiLetter(summary, mode);
+function getFreshCachedAiLetter(summary = latestAiLetterSummary, mode = currentAiLetterMode, namespace = "") {
+  const item = getCachedAiLetter(summary, mode, namespace);
   return isAiLetterCacheFresh(item) ? item : null;
 }
 
@@ -6405,12 +6436,12 @@ function scheduleAiLetterCacheButtonRefresh(summary = latestAiLetterSummary, mod
   }, remainingMs + 250);
 }
 
-function saveAiLetterLocalCache(summary, data, letterText, mode = currentAiLetterMode) {
+function saveAiLetterLocalCache(summary, data, letterText, mode = currentAiLetterMode, namespace = "") {
   if (!summary || !letterText) return;
 
   const cache = readAiLetterLocalCache();
   const analysisMode = normalizeAiLetterMode(mode);
-  const key = getAiLetterLocalCacheKey(summary, analysisMode);
+  const key = getAiLetterLocalCacheKey(summary, analysisMode, namespace);
 
   const generatedAt = data?.letter?.generatedAt || new Date().toISOString();
 

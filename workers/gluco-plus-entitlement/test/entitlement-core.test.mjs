@@ -9,6 +9,7 @@ import {
 } from "../src/constants.js";
 import {
   createSessionCredentials,
+  deriveShareTrialQuotaSubject,
   hashSessionToken,
 } from "../src/credentials.js";
 import { createD1PlusEntitlementStore } from "../src/d1-store.js";
@@ -130,6 +131,10 @@ function createDatabase() {
   return database;
 }
 
+function reuseIdentity(marker) {
+  return marker.padEnd(43, marker.slice(0, 1) || "x").slice(0, 43);
+}
+
 async function createAccountAndSession(store, {
   accountId = ACCOUNT_ID,
   sessionId = SESSION_ID,
@@ -139,7 +144,7 @@ async function createAccountAndSession(store, {
 } = {}) {
   await store.createAccount({
     id: accountId,
-    emailLookupHmac: marker.padEnd(43, marker.slice(0, 1) || "x").slice(0, 43),
+    emailLookupHmac: reuseIdentity(marker),
     emailCiphertext: `encrypted-email-${marker}`.padEnd(24, "x"),
     emailKeyVersion: 1,
     verifiedAt: now,
@@ -354,6 +359,45 @@ test("session credentials expose a random token once and store only its fixed-si
   assert.match(credentials.tokenHash, /^[A-Za-z0-9_-]{43}$/u);
   assert.equal(credentials.tokenHash, await hashSessionToken(credentials.sessionToken));
   assert.notEqual(credentials.sessionToken, credentials.tokenHash);
+});
+
+test("Share trial AI identity is domain-separated, opaque, and stable for one reuse identity", async () => {
+  const sourceIdentity = reuseIdentity("same-email");
+  const derived = await deriveShareTrialQuotaSubject(sourceIdentity);
+  assert.match(derived, /^[A-Za-z0-9_-]{43}$/u);
+  assert.notEqual(derived, sourceIdentity);
+  assert.equal(await deriveShareTrialQuotaSubject(sourceIdentity), derived);
+  assert.notEqual(
+    await deriveShareTrialQuotaSubject(reuseIdentity("other-email")),
+    derived,
+  );
+  await assert.rejects(
+    deriveShareTrialQuotaSubject("person@example.com"),
+    /quota identity is unavailable/u,
+  );
+});
+
+test("Plus trial subject resolution fails closed when its internal reuse seed is absent", async () => {
+  const service = createPlusEntitlementService(ENABLED_ENV, {
+    hashSessionToken: async () => SESSION_TOKEN_HASH,
+    store: {
+      async getSessionSnapshot() {
+        return {
+          accountId: ACCOUNT_ID,
+          activeEntitlement: null,
+          shareTrialQuotaSeed: null,
+        };
+      },
+      async isShareTrialReservationActive() {
+        return true;
+      },
+    },
+    now: () => NOW,
+  });
+  await assert.rejects(
+    service.resolveAiSubject(SESSION_TOKEN, REQUEST_ONE),
+    /quota identity is unavailable/u,
+  );
 });
 
 test("disabled RPC fails before touching tokens or D1", async () => {
@@ -752,11 +796,13 @@ test("AI subject and Plus summary return only opaque entitlement facts", async (
     status: "invalid_session",
   });
   assert.equal((await freeService.reserveShareTrial(SESSION_TOKEN, REQUEST_ONE)).status, "reserved");
+  const expectedTrialSubject = await deriveShareTrialQuotaSubject(reuseIdentity("one"));
   assert.deepEqual(await freeService.resolveAiSubject(SESSION_TOKEN, REQUEST_ONE), {
     status: "ok",
     subjectId: ACCOUNT_ID,
     plusActive: false,
     shareTrialReserved: true,
+    shareTrialSubjectId: expectedTrialSubject,
   });
   assert.deepEqual(await freeService.resolveAiSubject(SESSION_TOKEN, REQUEST_TWO), {
     status: "ok",
@@ -797,6 +843,46 @@ test("AI subject and Plus summary return only opaque entitlement facts", async (
     NOW + PLUS_DURATION_MS,
   ).getActivePlusSummary(SESSION_TOKEN);
   assert.equal(expiredSummary.active, false);
+});
+
+test("Share trial AI identity survives purchase-free deletion and same-email re-registration", async (t) => {
+  const database = createDatabase();
+  t.after(() => database.close());
+  const store = createD1PlusEntitlementStore(database);
+  const commonReuseIdentity = reuseIdentity("recreated-email");
+
+  await createAccountAndSession(store, { marker: "recreated-email" });
+  const firstService = createService(store, NOW);
+  assert.equal((await firstService.reserveShareTrial(SESSION_TOKEN, REQUEST_ONE)).status, "reserved");
+  const firstSubject = await firstService.resolveAiSubject(SESSION_TOKEN, REQUEST_ONE);
+  assert.equal(firstSubject.shareTrialReserved, true);
+  assert.match(firstSubject.shareTrialSubjectId, /^[A-Za-z0-9_-]{43}$/u);
+  assert.notEqual(firstSubject.shareTrialSubjectId, commonReuseIdentity);
+  assert.equal((await firstService.releaseShareTrial(SESSION_TOKEN, REQUEST_ONE)).status, "released");
+
+  database.raw.prepare("DELETE FROM accounts WHERE id = ?1").run(ACCOUNT_ID);
+  assert.equal(Number(database.raw.prepare(
+    "SELECT COUNT(*) AS count FROM accounts WHERE id = ?1",
+  ).get(ACCOUNT_ID).count), 0);
+
+  const secondTokenHash = "q".repeat(43);
+  await createAccountAndSession(store, {
+    accountId: SECOND_ACCOUNT_ID,
+    sessionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    tokenHash: secondTokenHash,
+    marker: "recreated-email",
+    now: NOW + 1_000,
+  });
+  const secondService = createPlusEntitlementService(ENABLED_ENV, {
+    store,
+    now: () => NOW + 1_000,
+    hashSessionToken: async () => secondTokenHash,
+  });
+  assert.equal((await secondService.reserveShareTrial(SESSION_TOKEN, REQUEST_TWO)).status, "reserved");
+  const secondSubject = await secondService.resolveAiSubject(SESSION_TOKEN, REQUEST_TWO);
+  assert.equal(secondSubject.subjectId, SECOND_ACCOUNT_ID);
+  assert.equal(secondSubject.shareTrialReserved, true);
+  assert.equal(secondSubject.shareTrialSubjectId, firstSubject.shareTrialSubjectId);
 });
 
 test("admin aggregate returns only the distinct active Plus account count", async (t) => {

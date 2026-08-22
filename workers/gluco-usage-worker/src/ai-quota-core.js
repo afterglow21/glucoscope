@@ -226,15 +226,21 @@ async function resolveSubject(credential, services, shareTrialRequestId = "") {
   if (result?.status !== "ok" || !SAFE_ACCOUNT_SUBJECT_PATTERN.test(String(result.subjectId || ""))) {
     throw new AiQuotaError("authentication_required", 401);
   }
+  const shareTrialReserved = result.shareTrialReserved === true;
+  const shareTrialSubjectId = String(result.shareTrialSubjectId || "");
+  if (shareTrialReserved && !TOKEN_PATTERN.test(shareTrialSubjectId)) {
+    throw new AiQuotaError("entitlement_unavailable", 503);
+  }
   return {
     kind: "account",
     id: String(result.subjectId),
     tier: result.plusActive === true ? "plus" : "free",
-    detailedAnalysisAllowed: result.plusActive === true || result.shareTrialReserved === true,
-    shareTrialReserved: result.shareTrialReserved === true,
-    quotaId: result.shareTrialReserved === true
-      ? `share-trial:${shareTrialRequestId}`
+    detailedAnalysisAllowed: result.plusActive === true,
+    shareTrialReserved,
+    quotaId: shareTrialReserved
+      ? `share-trial:${shareTrialSubjectId}`
       : String(result.subjectId),
+    quotaWindow: shareTrialReserved ? "retained" : "day",
   };
 }
 
@@ -298,6 +304,7 @@ export async function reserveAiGeneration(rawInput, env = {}, services = {}) {
       tier: quotaTier,
       dailyLimit,
       analysisMode: input.analysisMode,
+      quotaWindow: subject.quotaWindow || "day",
       now: nowMs,
       expiresAt: nowMs + config.reservationTtlSeconds * 1000,
     });

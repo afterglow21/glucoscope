@@ -490,7 +490,11 @@ Bind another Worker specifically to the named `PlusEntitlementRpc` entrypoint.
 
 - `resolveAiSubject(sessionToken, shareTrialRequestId?)` returns only a stable internal subject
   ID, whether Plus is active, and—only for an exact active reservation owned by that account—a
-  `shareTrialReserved` fact. It never grants a general Free detailed-analysis entitlement.
+  `shareTrialReserved` fact plus `shareTrialSubjectId`. The latter is a domain-separated SHA-256
+  digest of the existing 90-day email-HMAC reuse identity, not the account UUID, raw email, or
+  email HMAC. This lets Usage retain one trial AI success across account deletion/re-registration
+  without receiving a recoverable identity. It never grants a general Free detailed-analysis
+  entitlement or detailed-analysis permission.
 - `resolveCheckoutBuyer(sessionToken, confirmationVersion)` is private to Checkout. It
   returns an eligible opaque account only when the stored adult/self-or-guardian
   confirmation matches the required current version.
@@ -507,9 +511,10 @@ never sent. The checked-in production and staging values remain `false` until cl
 browser/Worker acceptance passes.
 - `reserveShareTrial`, `completeShareTrial`, and `releaseShareTrial` implement a short
   reservation. Only `complete` consumes the one successful trial.
-- The exact active reservation can authorize the detailed AI reflection used in image 3. The
-  AI Worker still counts that account-scoped success against the Free daily limit, and a device
-  profile or a different request ID cannot claim the reservation.
+- The exact active reservation can authorize only the gentle AI reflection used in image 3. The
+  AI Worker uses a separate one-success retained trial quota for that opaque reuse identity; it
+  does not consume the account's ordinary Free daily slot. A device profile, a different request
+  ID, or a trial RPC response missing the opaque trial subject fails closed.
 
 The separate `AdminPlusAggregateEntrypoint.getActivePlusSummary()` method takes no
 arguments and returns only `{ activePlusCount }`. Bind that named entrypoint only from

@@ -329,11 +329,20 @@ following match: checked-in-off enable flag, 32-byte-or-longer shared secret, ex
 signed UUID and fixed admin page mode, and the admin Turnstile hostname/action. Invalid bridge
 headers fail before the normal AI request handler.
 
-Admin generations always use the detailed-analysis prompt. They do not consume a personal user's
+Admin generations always use the gentle-letter prompt. They do not consume a personal user's
 Free/Plus quota and do not have a separate administrator daily count cap. They still pass through
 the ordinary atomic global cost budget and emergency AI stop, so provider-cost and incident safety
 remain fail-closed. Request IDs make signed replay attempts idempotently fail. Structured logs
 contain the request ID and decision, never the HMAC secret, Turnstile token, or glucose summary.
+An older live Version may still retain an inert `ADMIN_SHARE_STUDIO_DAILY_LIMIT` variable when
+`--keep-vars` is used. Current source does not read or enforce it; removing that legacy variable is
+a separate reviewed cleanup and must not be mixed into this release.
+
+User and authenticated-admin Share Studio letters also pass a common renderer-fit quality gate
+before quota completion. The first overflow triggers the existing one-time quality rewrite; a
+second overflow returns no text and releases the personal/trial reservation. The gate mirrors the
+850 x 640 letter panel, paragraph splitting, and unbreakable word/number tokens used by both
+renderers. Ordinary non-Share-Studio letters keep their existing quality contract.
 
 Checked-in production-safe defaults are:
 

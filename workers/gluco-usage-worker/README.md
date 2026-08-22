@@ -221,8 +221,12 @@ rows keep a foreign-key link to the existing profile solely so `DELETE /v1/me` a
 deletes those rows. The raw profile token is not stored in the quota tables.
 
 Account credentials require a separate trusted `PLUS_ENTITLEMENT` service binding. The
-stub calls `resolveAiSubject(sessionToken)` and accepts only `status`, an opaque
-`subjectId`, and `plusActive === true`; it ignores any client claim and any returned
+stub calls `resolveAiSubject(sessionToken, shareTrialRequestId?)` and accepts only `status`,
+an opaque `subjectId`, `plusActive === true`, and the exact-reservation trial facts. A trial
+response must include a 43-character opaque `shareTrialSubjectId` derived inside Plus from
+its 90-day reuse identity; missing or malformed values fail closed. Usage domain-separates
+and hashes that value again before D1. Neither raw email nor Plus's email HMAC crosses the
+binding, enters a log, or is stored here. The client cannot claim any of these facts or a
 daily-limit value. Until that binding is configured and enabled, account resolution
 fails closed as temporarily unavailable. Session tokens and raw account identifiers are
 not stored in quota tables; the subject key is a domain-separated SHA-256 digest.
@@ -271,12 +275,15 @@ analytics when optional collection is on; it changes only `usage_daily`, never q
 Stopping collection sends no analytics event but does not revoke the Free quota
 credential. Deleting the profile invalidates the credential and cascades its quota rows.
 
-The one-time Share Studio trial is a narrow exception to the normal Free detailed-analysis
-denial. An account credential may reserve `deep` only when the Plus service confirms that the
-same account owns the exact active trial request ID. The resulting success stays on the Free
-one-success-per-JST-day counter. Device-profile credentials, malformed IDs, reused IDs, and a
-trial belonging to another account fail closed; this exception does not unlock detailed analysis
-elsewhere in the app.
+The one-time Share Studio trial is not an exception to the normal Free detailed-analysis
+denial. An account credential with an exact active trial request may reserve only the gentle
+`letter` mode; `deep` continues to require active Plus. Its AI success uses a separate retained
+one-success quota across all kept days, rather than the ordinary Free daily counter. Different
+trial UUIDs, concurrent reservations, and deletion/re-registration with the same verified email
+reuse identity cannot create another success during the 90-day Usage retention window. Provider,
+quality, and incomplete-output failures release the reservation so a valid retry remains possible.
+Device-profile credentials, malformed IDs, a missing opaque trial subject, and a trial belonging
+to another account fail closed; this exception does not unlock detailed analysis elsewhere.
 
 ## Retention and cleanup
 

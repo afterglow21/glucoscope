@@ -13,7 +13,7 @@
   const LATEST_KEY = "latest";
   const RECORD_VERSION = 2;
   const LEGACY_RECORD_VERSION = 1;
-  const RENDERER_REVISION = 5;
+  const RENDERER_REVISION = 6;
   const FONT = '"Yu Gothic", "Hiragino Kaku Gothic ProN", "Segoe UI", "Segoe UI Emoji", sans-serif';
   const VALUE_PATTERN = /^(?:--|\d{1,3}(?:\.\d)?%?)$/u;
   const SAFE_ASSET_PATTERN = /^assets\/gluco\/(?:live|unicorn|ui|profile)\/[a-z0-9._-]+\.png$/u;
@@ -30,6 +30,15 @@
 
   function safeText(value, maximum = 120) {
     return String(value ?? "").replace(/[\u0000-\u001f\u007f]/gu, " ").trim().slice(0, maximum);
+  }
+
+  function normalizeLetter(value, maximum = 1400) {
+    const text = String(value ?? "")
+      .replace(/\r\n?/gu, "\n")
+      .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/gu, " ")
+      .trim();
+    if (text.length > maximum) throw new Error("share_studio_letter_too_long");
+    return text;
   }
 
   function safeAssetPath(value) {
@@ -106,7 +115,7 @@
         imagePath,
         isUnicorn: Boolean(gluco.isUnicorn)
       }),
-      letter: safeText(input.letter, 1400)
+      letter: normalizeLetter(input.letter)
     });
   }
 
@@ -147,7 +156,7 @@
 
   function tokenizeLine(value) {
     return String(value || "").match(
-      /\d+(?:\.\d+)?(?:\s?(?:%|mg\/dL|mg\/dl|U))?|[A-Za-z]+(?:[’'\-][A-Za-z]+)*|\s+|./gu
+      /[+＋\-−－]?\d+(?:\.\d+)?(?:\s?(?:%|％|mg\/dL|mg\/dl|U))?|[A-Za-z]+(?:[’'\-][A-Za-z]+)*|\s+|./gu
     ) || [];
   }
 
@@ -196,10 +205,21 @@
   function splitLetterParagraphs(value, language) {
     const raw = String(value || "").replace(/\r/gu, "").trim();
     if (!raw) return [];
-    const explicit = raw.split(/\n\s*\n+/u).map((part) => normalizeProse(part, language)).filter(Boolean);
+    const structuredRaw = raw
+      .replace(/\s*(?=[🌿📊🔎🌙🌱📈💌🫶])/gu, "\n")
+      .replace(/[ \t]+(?=(?:[-−–—－*]\s+|[•●・]\s*))/gu, "\n")
+      .replace(/([。！？!?🍀])(?=(?:[-−–—－*]\s+|[•●・]\s*))/gu, "$1\n")
+      .trim();
+    const explicit = structuredRaw
+      .split(/\n+/u)
+      .map((part) => part
+        .trim()
+        .replace(/^(?:[-−–—－*]\s+|[•●・]\s*)/u, language === "en" ? "• " : "・ "))
+      .map((part) => normalizeProse(part, language))
+      .filter(Boolean);
     if (explicit.length >= 2) return explicit;
 
-    let normalized = normalizeProse(raw, language);
+    let normalized = normalizeProse(structuredRaw, language);
     const paragraphs = [];
     const greetingPattern = language === "en"
       ? /^(Gluco(?: is here| here)?[.!]?\s*[🍀🌿]?)/iu
@@ -230,127 +250,6 @@
     return paragraphs;
   }
 
-  function compactLetterSections(value, language) {
-    const raw = String(value || "").replace(/\r/gu, "").trim();
-    if (!raw) return [];
-    const fixedTitles = language === "en"
-      ? { "🌿": "Overall flow", "📊": "Numbers to notice", "🔎": "A movement to notice", "🌙": "One more clue", "🌱": "A gentle look ahead", "📈": "The flow in numbers" }
-      : { "🌿": "全体の流れ", "📊": "数字の手がかり", "🔎": "気になった動き", "🌙": "もうひとつ", "🌱": "明日の小さな見返し", "📈": "数字の流れ" };
-    const marked = raw
-      .replace(/\s*(?=[🌿📊🔎🌙🌱📈])/gu, "\n")
-      .split(/\n+/u)
-      .map((part) => part.trim())
-      .filter((part) => /^[🌿📊🔎🌙🌱📈]/u.test(part))
-      .map((part) => {
-        const marker = [...part][0];
-        const remainder = part.slice(marker.length).trim();
-        const titledBody = remainder.match(/^.{1,26}?\s*[-−–—－・:：]\s*(.+)$/u);
-        const body = (titledBody?.[1] || remainder)
-          .replace(/\s+[\-－—]\s+/gu, language === "en" ? " " : "")
-          .trim();
-        const sentences = splitSentences(body, language);
-        const selected = selectSubstantiveLetterSentence(sentences, marker, language);
-        return {
-          title: `${marker} ${fixedTitles[marker] || (language === "en" ? "Gentle clue" : "やさしい手がかり")}`,
-          body: selected
-        };
-      })
-      .filter((section) => section.body);
-    if (marked.length) return marked.length <= 4 ? marked : [marked[0], marked[1], marked[2], marked.at(-1)];
-
-    const sentences = splitSentences(raw, language)
-      .map((sentence) => sentence
-        .replace(/^(?:グルコだよ🍀|Gluco(?: is here| here)?[.!]?\s*🍀?)\s*/iu, "")
-        .trim())
-      .filter(Boolean)
-      .filter((sentence) => !/^(?:来てくれて|Welcome|I am glad you are here)/iu.test(sentence));
-    const selected = sentences.length <= 4 ? sentences : [sentences[0], sentences[1], sentences[2], sentences.at(-1)];
-    const fallbackTitles = language === "en"
-      ? ["Overall flow", "Numbers to notice", "A movement to notice", "A gentle look ahead"]
-      : ["全体の流れ", "数字の手がかり", "気になった動き", "明日の小さな見返し"];
-    return selected.map((body, index) => ({
-      title: `🍀 ${fallbackTitles[index]}`,
-      body
-    }));
-  }
-
-  function selectSubstantiveLetterSentence(sentences, marker, language) {
-    const candidates = sentences.map((sentence, index) => {
-      const body = String(sentence || "").trim();
-      if (!body) return { body: "", score: Number.NEGATIVE_INFINITY };
-
-      const trivial = language === "en"
-        ? /^(?:Gluco(?: is here| here)?[.!]?\s*[🍀🌿]?|I(?:'m| am) (?:glad|happy) you(?:'re| are) here[.!]?|I(?:'m| am) right here with you[.!]?|This is (?:the )?(?:morning|afternoon|evening) (?:letter|summary)[.!]?)$/iu
-        : /^(?:グルコだよ[🍀🌿]?|来てくれて(?:うれしい|ありがとう)(?:よ|ね)?[。！!]?|ぼくはここにいるよ[🍀🌿]?|今日もあなたのそばにいるよ[🍀🌿]?|(?:朝|昼|夜)(?:のお手紙)?(?:の集計)?(?:だね|だよ|ですね)?[。！!]?)$/u;
-      const numeric = language === "en"
-        ? /\b(?:TIR|TAR|TBR|CV|GMI|GlucoScore|average|mg\/dL|target range|higher|lower|variability)\b|\d+(?:\.\d+)?%/iu
-        : /(?:TIR|TAR|TBR|CV|GMI|GlucoScore|平均|mg\/dL|目標範囲|高め|低め|ばらつき|\d+(?:\.\d+)?％)/u;
-      const observation = language === "en"
-        ? /\b(?:flow|pattern|range|time|period|clue|movement|compared|reflection|look back|notice)\b/iu
-        : /(?:流れ|動き|範囲|時間|手がかり|まとまり|比べ|比較|振り返|見返|眺め|気づ)/u;
-      const reflective = language === "en"
-        ? /\b(?:gently|without rushing|when you have room|optional|small pause)\b/iu
-        : /(?:やさしく|急がなく|余裕がある|無理なく|そっと|ひと息)/u;
-
-      let score = Math.min(body.length, 90) / 12;
-      if (numeric.test(body)) score += 18;
-      if (observation.test(body)) score += 9;
-      if (reflective.test(body)) score += 6;
-      if ((marker === "📊" || marker === "📈") && numeric.test(body)) score += 7;
-      if ((marker === "🔎" || marker === "🌙") && observation.test(body)) score += 5;
-      if (marker === "🌱" && (observation.test(body) || reflective.test(body))) score += 7;
-      if (body.length < (language === "en" ? 24 : 14)) score -= 7;
-      if (trivial.test(body)) score -= 40;
-      score -= index * 0.05;
-      return { body, score };
-    }).filter((candidate) => candidate.body);
-
-    candidates.sort((left, right) => right.score - left.score);
-    return candidates[0]?.score > 0 ? candidates[0].body : "";
-  }
-
-  function ellipsizedLines(context, value, maximumWidth, maximumLines) {
-    const lines = wrapLines(context, value, maximumWidth);
-    if (lines.length <= maximumLines) return lines;
-    const visible = lines.slice(0, maximumLines);
-    let last = `${visible.at(-1).replace(/[…。,\.\s]+$/u, "")}…`;
-    while (last.length > 1 && context.measureText(last).width > maximumWidth) {
-      last = `${last.slice(0, -2).trimEnd()}…`;
-    }
-    visible[visible.length - 1] = last;
-    return visible;
-  }
-
-  function drawLetterSections(context, value, language) {
-    const sections = compactLetterSections(value, language).slice(0, 4);
-    const cards = sections.length ? sections : [{
-      title: language === "en" ? "🍀 Gentle clue" : "🍀 やさしい手がかり",
-      body: defaultLetter({ language })
-    }];
-    const startY = 350;
-    const gap = 14;
-    const cardHeight = Math.floor((742 - (gap * (cards.length - 1))) / cards.length);
-    cards.forEach((section, index) => {
-      const y = startY + (index * (cardHeight + gap));
-      panel(context, 105, y, 870, cardHeight, 22, "rgba(9,28,46,.64)", "rgba(134,239,172,.14)");
-      drawText(context, section.title, 132, y + 38, {
-        size: language === "en" ? 21 : 23,
-        weight: 900,
-        color: "#9cf0be"
-      });
-      context.font = `800 ${language === "en" ? 23 : 25}px ${FONT}`;
-      context.fillStyle = "#f0f5fa";
-      context.textAlign = "left";
-      context.textBaseline = "alphabetic";
-      const lineHeight = language === "en" ? 31 : 35;
-      const maximumLines = Math.max(1, Math.min(3, Math.floor((cardHeight - 64) / lineHeight)));
-      ellipsizedLines(context, section.body, 816, maximumLines).forEach((line, lineIndex) => {
-        context.fillText(line, 132, y + 78 + (lineIndex * lineHeight));
-      });
-    });
-    return cards;
-  }
-
   function buildParagraphLayout(context, value, maximumWidth, language, size, weight) {
     context.font = `${weight} ${size}px ${FONT}`;
     const paragraphs = splitLetterParagraphs(value, language);
@@ -359,7 +258,8 @@
     const blocks = paragraphs.map((paragraph) => wrapLines(context, paragraph, maximumWidth));
     const lineCount = blocks.reduce((total, lines) => total + lines.length, 0);
     const totalHeight = (lineCount * lineHeight) + (Math.max(0, blocks.length - 1) * paragraphGap);
-    return { blocks, lineHeight, paragraphGap, totalHeight };
+    const overWidth = blocks.some((lines) => lines.some((line) => context.measureText(line).width > maximumWidth));
+    return { blocks, lineHeight, paragraphGap, totalHeight, overWidth };
   }
 
   function fittedParagraphText(context, value, x, y, maximumWidth, maximumHeight, options = {}) {
@@ -373,24 +273,11 @@
     for (let size = maxSize; size >= minSize; size -= 1) {
       const layout = buildParagraphLayout(context, value, maximumWidth, language, size, weight);
       chosen = { size, ...layout };
-      if (layout.totalHeight <= maximumHeight) break;
+      if (layout.totalHeight <= maximumHeight && !layout.overWidth) break;
     }
 
-    const maximumLines = Math.max(1, Math.floor(maximumHeight / chosen.lineHeight));
-    const flattened = chosen.blocks.flat();
-    if (flattened.length > maximumLines) {
-      const last = flattened[maximumLines - 1] || "";
-      flattened.length = maximumLines;
-      let ellipsized = `${last.replace(/[…。,.\s]+$/u, "")}…`;
-      context.font = `${weight} ${chosen.size}px ${FONT}`;
-      while (ellipsized.length > 1 && context.measureText(ellipsized).width > maximumWidth) {
-        ellipsized = `${ellipsized.slice(0, -2).trimEnd()}…`;
-      }
-      flattened[maximumLines - 1] = ellipsized;
-      chosen.blocks = [flattened];
-      chosen.paragraphGap = 0;
-      chosen.totalHeight = maximumLines * chosen.lineHeight;
-      chosen.truncated = true;
+    if (!chosen || chosen.totalHeight > maximumHeight || chosen.overWidth) {
+      throw new Error("share_studio_letter_too_long");
     }
 
     context.font = `${weight} ${chosen.size}px ${FONT}`;
@@ -719,10 +606,16 @@
 
   function drawLetter(context, model, peekImage) {
     background(context);
-    header(context, model.language === "en" ? "🍀 Gentle reflection" : "🍀 やさしいふりかえり", model, 3);
+    header(context, model.language === "en" ? "💌 A letter from Gluco" : "💌 グルコからのお手紙", model, 3);
     panel(context, 70, 225, 940, 1055, 42, "rgba(255,255,255,.052)", "rgba(134,239,172,.18)");
-    drawText(context, model.language === "en" ? "Gentle clues from Gluco" : "グルコからのやさしい手がかり", 110, 303, { size: 29, weight: 900, color: "#bff7d7" });
-    drawLetterSections(context, model.letter || defaultLetter(model), model.language);
+    drawText(context, model.language === "en" ? "🍀 Gentle AI reflection" : "🍀 やさしいAI分析", 110, 303, { size: 29, weight: 900, color: "#bff7d7" });
+    fittedParagraphText(context, model.letter || defaultLetter(model), 110, 382, 850, 640, {
+      language: model.language,
+      maxSize: model.language === "en" ? 29 : 31,
+      minSize: model.language === "en" ? 15 : 18,
+      weight: 800,
+      color: "#f0f5fa"
+    });
     drawImageContain(context, peekImage, 835, 1100, 145, 105);
     const note = model.language === "en"
       ? "This does not replace medical judgment."
@@ -881,6 +774,7 @@
     _testing: Object.freeze({
       normalizeSnapshot,
       normalizeCarouselModel,
+      normalizeLetter,
       safeMetric,
       safeAssetPath,
       validateCarouselRecord,

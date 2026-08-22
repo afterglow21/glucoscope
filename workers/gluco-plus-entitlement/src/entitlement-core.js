@@ -10,7 +10,10 @@ import {
   UUID_PATTERN,
   VERIFIED_PAYMENT_EVENT_TYPES,
 } from "./constants.js";
-import { hashSessionToken } from "./credentials.js";
+import {
+  deriveShareTrialQuotaSubject,
+  hashSessionToken,
+} from "./credentials.js";
 import { createD1PlusEntitlementStore } from "./d1-store.js";
 
 const MAX_PROVIDER_EVENT_ID_LENGTH = 255;
@@ -155,6 +158,8 @@ export function createPlusEntitlementService(env = {}, dependencies = {}) {
   const config = readPlusEntitlementConfig(env);
   const now = dependencies.now || Date.now;
   const hashToken = dependencies.hashSessionToken || hashSessionToken;
+  const deriveTrialQuotaSubject = dependencies.deriveShareTrialQuotaSubject
+    || deriveShareTrialQuotaSubject;
 
   function getStore() {
     return dependencies.store || createD1PlusEntitlementStore(env.PLUS_DB);
@@ -195,11 +200,16 @@ export function createPlusEntitlementService(env = {}, dependencies = {}) {
             now: requireSafeEpoch(now(), "time"),
           })
         : false;
+      const shareTrialSubjectId = shareTrialReserved
+        ? await deriveTrialQuotaSubject(snapshot.shareTrialQuotaSeed)
+        : "";
       return Object.freeze({
         status: "ok",
         subjectId: snapshot.accountId,
         plusActive,
-        ...(shareTrialReserved ? { shareTrialReserved: true } : {}),
+        ...(shareTrialReserved
+          ? { shareTrialReserved: true, shareTrialSubjectId }
+          : {}),
       });
     },
 

@@ -18,6 +18,11 @@ function numberValue(value) {
   return Number.isSafeInteger(parsed) ? parsed : 0;
 }
 
+function requireQuotaWindow(value) {
+  if (value === "day" || value === "retained") return value;
+  throw new TypeError("quota window is invalid");
+}
+
 function attemptFromRow(row) {
   if (!row) return null;
   return {
@@ -85,9 +90,15 @@ export function createD1AiQuotaStore(database) {
       tier,
       dailyLimit,
       analysisMode,
+      quotaWindow = "day",
       now,
       expiresAt,
     }) {
+      const retainedWindow = requireQuotaWindow(quotaWindow) === "retained";
+      const insertSuccessDayFilter = retainedWindow ? "" : "AND day = ?5";
+      const insertActiveDayFilter = retainedWindow ? "" : "AND day = ?5";
+      const snapshotSuccessDayFilter = retainedWindow ? "" : "AND day = ?2";
+      const snapshotActiveDayFilter = retainedWindow ? "" : "AND day = ?2";
       const results = await db.batch([
         db.prepare(`
           INSERT OR IGNORE INTO ai_quota_days (
@@ -106,13 +117,13 @@ export function createD1AiQuotaStore(database) {
             'reserved', ?6, ?7, ?8,
             ?9, ?10, NULL, NULL
           WHERE (
-            SELECT success_count
+            SELECT COALESCE(SUM(success_count), 0)
             FROM ai_quota_days
-            WHERE subject_key = ?1 AND day = ?5
+            WHERE subject_key = ?1 ${insertSuccessDayFilter}
           ) + (
             SELECT COUNT(*)
             FROM ai_quota_attempts
-            WHERE subject_key = ?1 AND day = ?5
+            WHERE subject_key = ?1 ${insertActiveDayFilter}
               AND status = 'reserved' AND expires_at > ?9
           ) < ?7
         `).bind(
@@ -134,15 +145,15 @@ export function createD1AiQuotaStore(database) {
           LIMIT 1
         `).bind(subjectKey, requestId),
         db.prepare(`
-          SELECT success_count AS successCount, ?3 AS dailyLimit
+          SELECT COALESCE(SUM(success_count), 0) AS successCount, ?3 AS dailyLimit
           FROM ai_quota_days
-          WHERE subject_key = ?1 AND day = ?2
+          WHERE subject_key = ?1 ${snapshotSuccessDayFilter}
           LIMIT 1
         `).bind(subjectKey, day, dailyLimit),
         db.prepare(`
           SELECT COUNT(*) AS activeReservations
           FROM ai_quota_attempts
-          WHERE subject_key = ?1 AND day = ?2
+          WHERE subject_key = ?1 ${snapshotActiveDayFilter}
             AND status = 'reserved' AND expires_at > ?3
         `).bind(subjectKey, day, now),
       ]);

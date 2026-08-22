@@ -22,7 +22,7 @@ function payload(overrides = {}) {
       metrics: { tir: 90 },
       ...overrides.summary,
     },
-    analysisMode: "deep",
+    analysisMode: "letter",
     turnstileToken: "turnstile-test-token",
     requestId: REQUEST_ID,
     client: { app: "GlucoScope", mode: "share-studio-admin-v2.2" },

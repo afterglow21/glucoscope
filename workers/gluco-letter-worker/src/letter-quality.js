@@ -1,3 +1,5 @@
+import { getShareStudioLetterFitIssues } from "./share-studio-letter-fit.js";
+
 const INTERNAL_IDENTIFIER_PATTERN = /\b(?:atLeast|celebrationClues|patternHints|latestGlucoseReading|sevenDayAverageScore|previousScore|modeLabel|slotLabel|rangeLabel|safeSummary|analysisMode|currentGlucose)\b/g;
 const INTERNAL_DOTTED_KEY_PATTERN = /\b(?:safeSummary|metrics|summary)\.[A-Za-z_$][A-Za-z0-9_$]*/g;
 const JSON_KEY_PATTERN = /["'](?:celebrationClues|patternHints|latestGlucoseReading|sevenDayAverageScore|previousScore|modeLabel|slotLabel|rangeLabel|atLeast|safeSummary|analysisMode|currentGlucose)["']\s*:/g;
@@ -380,6 +382,12 @@ export function getGeneratedLetterQualityIssues(
       && /\bGlucoScore\b/iu.test(normalizedText)
     ) {
       issues.add("minor_score_difference_overemphasized");
+    }
+  }
+
+  if (options?.shareStudio === true) {
+    for (const issue of getShareStudioLetterFitIssues(normalizedText, language)) {
+      issues.add(issue);
     }
   }
 

@@ -16,6 +16,7 @@ function toSessionSnapshot(row) {
   const hasEntitlement = Boolean(row.entitlement_id);
   return {
     accountId: row.account_id,
+    shareTrialQuotaSeed: row.share_trial_quota_seed,
     buyerRole: row.buyer_role ?? null,
     buyerConfirmationVersion: row.buyer_confirmation_version ?? null,
     adultConfirmedAt: row.adult_confirmed_at === null
@@ -616,6 +617,7 @@ export function createD1PlusEntitlementStore(database) {
       const row = await db.prepare(`
         SELECT
           a.id AS account_id,
+          a.email_lookup_hmac AS share_trial_quota_seed,
           a.buyer_role,
           a.buyer_confirmation_version,
           a.adult_confirmed_at,
