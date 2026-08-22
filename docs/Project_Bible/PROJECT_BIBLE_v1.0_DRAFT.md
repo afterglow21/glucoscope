@@ -3745,6 +3745,11 @@ earlier renderer remain readable and shareable, but they are not silently rebuil
 glucose data. The new layout is used only for newly created records. The existing reserve,
 local write/read-back, completion, and reopening boundary is unchanged.
 
+On 2026-08-23, new user-facing Share Studio sets began selecting one fourth image at random
+from the ten reviewed administrator ending artworks. Selection happens once during local
+four-image generation. Reopening an existing saved set keeps its already-rendered fourth
+image; neither old nor new saved sets are silently rerolled.
+
 The expanded implementation foundation remains disabled and unpublished. It includes an
 atomic AI-quota reservation ledger, a separate non-public Plus entitlement Worker, server-side
 Share Studio trial reservation, disabled 7-day/30-day/custom-range and detailed-analysis
@@ -4158,6 +4163,11 @@ Plus Workerへ送りません。
 使います。以前の描画で保存した4枚は、そのまま再表示・共有できますが、新しい血糖データで
 勝手に作り直しません。新しいレイアウトは新しく作る4枚だけに使います。予約、端末内保存と
 読み戻し、体験完了、再表示の順序は変えません。
+
+2026年8月23日、新しく作る利用者向けShare Studioの4枚目は、管理者版で確認済みの
+エンドカード10種類からランダムに1枚を選ぶようにしました。抽選は4枚を端末内で新しく
+作る時に1回だけ行います。保存済みセットを開き直す時は、すでに描画された同じ4枚目を保ち、
+以前のセットも新しいセットも勝手に選び直しません。
 
 同じ2026年8月21日、運営者がこの4枚版を本人のアカウントでもう一度確認するため、無料体験1回の
 解除を明示承認しました。匿名件数だけで、購入記録とPlus利用権のないアクティブなアカウント1件、

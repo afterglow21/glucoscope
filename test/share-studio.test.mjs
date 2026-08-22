@@ -196,13 +196,13 @@ test("Share Studio keeps a verified four-image set in device storage", async () 
   }, { store });
   assert.equal(record.blobs.length, 4);
   assert.equal(record.version, 2);
-  assert.equal(record.rendererRevision, 6);
+  assert.equal(record.rendererRevision, 7);
   assert.equal(api._testing.isCurrentCarouselRecord(record), true);
   assert.equal(record.dateKey, "2026-08-21");
   assert.equal(record.glucoId, 7);
   assert.equal(record.accessGrant, "trial");
   assert.equal((await api.loadCarousel({ store })).blobs.length, 4);
-  assert.equal(api._testing.isCurrentCarouselRecord({ ...record, rendererRevision: 5 }), false);
+  assert.equal(api._testing.isCurrentCarouselRecord({ ...record, rendererRevision: 6 }), false);
   await api.deleteCarousel({ store });
   assert.equal(await api.loadCarousel({ store }), null);
 });
@@ -407,6 +407,7 @@ test("the renderer preserves English decimals and never joins a sensor gap", () 
 test("the four-image renderer loads the reviewed ending art and current public QR", async () => {
   const api = loadModule();
   const dependencies = createRenderDependencies();
+  dependencies.endingCardIndex = 0;
   const blobs = await api.generateCarousel({
     dateKey: "2026-08-22",
     dateLabel: "2026年8月22日",
@@ -450,6 +451,33 @@ test("the four-image renderer loads the reviewed ending art and current public Q
   assert.ok(gentleBodyLines.every((call) => call.y <= 1022));
   assert.deepEqual(readPngDimensions("../assets/share-studio/ending-sunrise.png"), { width: 1080, height: 1350 });
   assert.deepEqual(readPngDimensions("../assets/share-studio/glucoscope-qr.png"), { width: 256, height: 256 });
+});
+
+test("each new user Share Studio set randomly selects only one of the ten reviewed ending cards", () => {
+  const api = loadModule();
+  const paths = Array.from(api._testing.endingCardPaths);
+  assert.deepEqual(paths, [
+    "assets/share-studio/ending-sunrise.png",
+    "assets/share-studio/ending-02-night.webp",
+    "assets/share-studio/ending-03-seaside.webp",
+    "assets/share-studio/ending-04-rainbow.webp",
+    "assets/share-studio/ending-05-clover-field.webp",
+    "assets/share-studio/ending-06-snow.webp",
+    "assets/share-studio/ending-07-sunset.webp",
+    "assets/share-studio/ending-08-cherry-blossom.webp",
+    "assets/share-studio/ending-09-flower-meadow.webp",
+    "assets/share-studio/ending-10-forest.webp"
+  ]);
+  paths.forEach((path, index) => {
+    assert.equal(api._testing.selectEndingCardPath({ endingCardIndex: index }), path);
+    assert.equal(fs.existsSync(new URL(`../${path}`, import.meta.url)), true, `${path} must be shipped`);
+  });
+  assert.equal(api._testing.selectEndingCardPath({
+    crypto: { getRandomValues(values) { values[0] = 9; return values; } }
+  }), paths[9]);
+  assert.equal(api._testing.selectEndingCardPath({ random: () => 0.4 }), paths[4]);
+  assert.match(about, /10種類の締めくくりカードからランダムに1枚/u);
+  assert.match(about, /selected at random from ten reviewed designs/u);
 });
 
 test("the free trial is separate from purchase and explains Share Studio before email verification", () => {

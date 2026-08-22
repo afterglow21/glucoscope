@@ -13,10 +13,22 @@
   const LATEST_KEY = "latest";
   const RECORD_VERSION = 2;
   const LEGACY_RECORD_VERSION = 1;
-  const RENDERER_REVISION = 6;
+  const RENDERER_REVISION = 7;
   const FONT = '"Yu Gothic", "Hiragino Kaku Gothic ProN", "Segoe UI", "Segoe UI Emoji", sans-serif';
   const VALUE_PATTERN = /^(?:--|\d{1,3}(?:\.\d)?%?)$/u;
   const SAFE_ASSET_PATTERN = /^assets\/gluco\/(?:live|unicorn|ui|profile)\/[a-z0-9._-]+\.png$/u;
+  const ENDING_CARD_PATHS = Object.freeze([
+    "assets/share-studio/ending-sunrise.png",
+    "assets/share-studio/ending-02-night.webp",
+    "assets/share-studio/ending-03-seaside.webp",
+    "assets/share-studio/ending-04-rainbow.webp",
+    "assets/share-studio/ending-05-clover-field.webp",
+    "assets/share-studio/ending-06-snow.webp",
+    "assets/share-studio/ending-07-sunset.webp",
+    "assets/share-studio/ending-08-cherry-blossom.webp",
+    "assets/share-studio/ending-09-flower-meadow.webp",
+    "assets/share-studio/ending-10-forest.webp"
+  ]);
 
   function safeMetric(value, fallback = "--") {
     const text = String(value ?? "").trim();
@@ -363,6 +375,24 @@
     });
   }
 
+  function selectEndingCardPath(dependencies = {}) {
+    if (Number.isInteger(dependencies.endingCardIndex)) {
+      const index = ((dependencies.endingCardIndex % ENDING_CARD_PATHS.length) + ENDING_CARD_PATHS.length)
+        % ENDING_CARD_PATHS.length;
+      return ENDING_CARD_PATHS[index];
+    }
+    const cryptoObject = dependencies.crypto || root.crypto;
+    if (typeof cryptoObject?.getRandomValues === "function") {
+      const value = new Uint32Array(1);
+      cryptoObject.getRandomValues(value);
+      return ENDING_CARD_PATHS[value[0] % ENDING_CARD_PATHS.length];
+    }
+    const random = typeof dependencies.random === "function" ? dependencies.random : Math.random;
+    const value = Number(random());
+    const normalized = Number.isFinite(value) ? Math.min(Math.max(value, 0), 0.9999999999999999) : 0;
+    return ENDING_CARD_PATHS[Math.floor(normalized * ENDING_CARD_PATHS.length)];
+  }
+
   function drawCover(context, model, glucoImage) {
     background(context);
     header(context, model.language === "en" ? "🍀 Today’s reflection" : "🍀 今日のふりかえり", model, 1);
@@ -650,10 +680,11 @@
   async function generateCarousel(input = {}, dependencies = {}) {
     const model = normalizeCarouselModel(input);
     const documentObject = dependencies.document || root.document;
+    const endingCardPath = selectEndingCardPath(dependencies);
     const [glucoImage, peekImage, endingImage, qrImage] = await Promise.all([
       loadImage(model.gluco.imagePath, dependencies),
       loadImage("assets/gluco/ui/gluco-peek-clover.png", dependencies).catch(() => null),
-      loadImage("assets/share-studio/ending-sunrise.png", dependencies),
+      loadImage(endingCardPath, dependencies),
       loadImage("assets/share-studio/glucoscope-qr.png", dependencies)
     ]);
     const canvases = Array.from({ length: 4 }, () => createCanvas(documentObject));
@@ -786,7 +817,9 @@
       fittedParagraphText,
       fittedText,
       scoreDifference,
-      splitGraphSegments
+      splitGraphSegments,
+      endingCardPaths: ENDING_CARD_PATHS,
+      selectEndingCardPath
     })
   });
 })(typeof window !== "undefined" ? window : globalThis);
