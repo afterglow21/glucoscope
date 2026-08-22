@@ -259,6 +259,29 @@ test("Share Studio trial operations send only an opaque session and request ID",
   assert.equal(calls[2].url, "https://plus.example/v1/session");
 });
 
+test("a verified account creates an opaque AI quota context for its exact Share Studio trial", async () => {
+  const storage = createStorage();
+  storage.setItem("glucoscope.plusSession.v1", JSON.stringify({
+    schemaVersion: 1,
+    sessionToken: TOKEN
+  }));
+  const { api } = loadClient({ storage });
+  await api.configure({ enabled: true, endpoint: "https://plus.example" });
+
+  const context = api.createAiQuotaRequestContext({
+    shareTrialRequestId: CHECKOUT_REQUEST_ID
+  });
+  assert.deepEqual({ ...context }, {
+    ok: true,
+    requestId: CHECKOUT_REQUEST_ID,
+    quotaCredentialKind: "account",
+    authorization: `Bearer ${TOKEN}`,
+    shareTrialRequestId: CHECKOUT_REQUEST_ID
+  });
+  assert.equal(JSON.stringify(api.getState()).includes(TOKEN), false);
+  assert.equal(api.createAiQuotaRequestContext({ shareTrialRequestId: "not-a-uuid" }).ok, false);
+});
+
 test("Share Studio exposes a rejected trial status as the client error", async () => {
   const storage = createStorage();
   storage.setItem("glucoscope.plusSession.v1", JSON.stringify({

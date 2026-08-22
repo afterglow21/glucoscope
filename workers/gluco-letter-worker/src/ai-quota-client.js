@@ -74,6 +74,9 @@ export function readAiQuotaRequest(request, payload, analysisMode) {
   const bearerMatch = /^Bearer ([A-Za-z0-9_-]{43})$/iu.exec(authorization);
   const token = bearerMatch?.[1] || "";
   const requestId = typeof payload?.requestId === "string" ? payload.requestId : "";
+  const shareTrialRequestId = typeof payload?.shareTrialRequestId === "string"
+    ? payload.shareTrialRequestId
+    : "";
   const credentialKind = typeof payload?.quotaCredentialKind === "string"
     ? payload.quotaCredentialKind
     : "device_profile";
@@ -84,8 +87,10 @@ export function readAiQuotaRequest(request, payload, analysisMode) {
   }
   if (
     !UUID_PATTERN.test(requestId)
+    || (shareTrialRequestId && !UUID_PATTERN.test(shareTrialRequestId))
     || !ANALYSIS_MODES.has(normalizedMode)
     || !CREDENTIAL_KINDS.has(credentialKind)
+    || (shareTrialRequestId && credentialKind !== "account")
   ) {
     return { ok: false, error: "invalid_quota_request", status: 400 };
   }
@@ -96,6 +101,7 @@ export function readAiQuotaRequest(request, payload, analysisMode) {
       credential: Object.freeze({ kind: credentialKind, token }),
       requestId,
       analysisMode: normalizedMode,
+      ...(shareTrialRequestId ? { shareTrialRequestId } : {}),
     }),
   };
 }

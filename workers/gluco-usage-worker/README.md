@@ -271,6 +271,13 @@ analytics when optional collection is on; it changes only `usage_daily`, never q
 Stopping collection sends no analytics event but does not revoke the Free quota
 credential. Deleting the profile invalidates the credential and cascades its quota rows.
 
+The one-time Share Studio trial is a narrow exception to the normal Free detailed-analysis
+denial. An account credential may reserve `deep` only when the Plus service confirms that the
+same account owns the exact active trial request ID. The resulting success stays on the Free
+one-success-per-JST-day counter. Device-profile credentials, malformed IDs, reused IDs, and a
+trial belonging to another account fail closed; this exception does not unlock detailed analysis
+elsewhere in the app.
+
 ## Retention and cleanup
 
 The scheduled handler runs daily and applies these maximum application-level periods:

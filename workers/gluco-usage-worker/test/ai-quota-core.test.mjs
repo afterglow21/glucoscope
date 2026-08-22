@@ -206,7 +206,7 @@ class FakeQuotaStore {
   }
 }
 
-function createHarness({ plusActive = true, entitlementStatus = "ok", now = NOW } = {}) {
+function createHarness({ plusActive = true, shareTrialReserved = false, entitlementStatus = "ok", now = NOW } = {}) {
   const store = new FakeQuotaStore();
   let reservationSequence = 900000;
   let currentNow = now;
@@ -220,7 +220,7 @@ function createHarness({ plusActive = true, entitlementStatus = "ok", now = NOW 
     resolveAccountEntitlement: async () => {
       entitlementCalls += 1;
       if (entitlementStatus !== "ok") return { status: entitlementStatus };
-      return { status: "ok", subjectId: ACCOUNT_ID, plusActive };
+      return { status: "ok", subjectId: ACCOUNT_ID, plusActive, shareTrialReserved };
     },
   };
   return {
@@ -360,6 +360,31 @@ test("Free can reserve gentle analysis only, while active Plus can reserve detai
   const plusDeep = await reserveAiGeneration(accountRequest(uuid(9)), plusHarness.env, plusHarness.services);
   assert.equal(plusDeep.status, "reserved");
   assert.equal(plusDeep.quota.tier, "plus");
+});
+
+test("an exact active Share Studio trial reservation allows one detailed account analysis only", async () => {
+  const trialHarness = createHarness({ plusActive: false, shareTrialReserved: true });
+  const allowed = await reserveAiGeneration({
+    credential: { kind: "account", token: ACCOUNT_TOKEN },
+    requestId: uuid(109),
+    analysisMode: "deep",
+    shareTrialRequestId: uuid(108),
+  }, trialHarness.env, trialHarness.services);
+  assert.equal(allowed.status, "reserved");
+  assert.equal(allowed.quota.tier, "free");
+  assert.equal(allowed.quota.dailyLimit, 1);
+
+  const deviceCannotClaimTrial = await reserveAiGeneration({
+    ...deviceRequest(uuid(110)),
+    analysisMode: "deep",
+    shareTrialRequestId: uuid(108),
+  }, trialHarness.env, trialHarness.services);
+  assert.deepEqual(deviceCannotClaimTrial, {
+    ok: false,
+    status: "error",
+    error: "invalid_request",
+    retryable: false,
+  });
 });
 
 test("provider and quality failures release a reservation without consuming quota", async () => {

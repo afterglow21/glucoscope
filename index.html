@@ -41,7 +41,7 @@
   <meta name="glucoscope-plus-purchases-enabled" content="true">
   <meta name="glucoscope-plus-entitlement-endpoint" content="https://plus.glucoscope.app">
   <meta name="glucoscope-plus-turnstile-sitekey" content="0x4AAAAAAEUvQ9ymAJlyrxyC">
-  <link rel="stylesheet" href="style.css?v=20260822-share-quality-1">
+  <link rel="stylesheet" href="style.css?v=20260822-share-detailed-1">
 </head>
 <body>
 
@@ -80,19 +80,21 @@
     <button id="shareStudioCloseButton" class="share-studio-close" type="button" aria-label="閉じる">×</button>
     <p class="share-studio-eyebrow">🍀 Share Studio</p>
     <h2 id="shareStudioTitle" data-i18n-key="shareStudioTitle">今日のふりかえりを4枚に</h2>
-    <p data-i18n-key="shareStudioLead">今日出逢ったグルコ、血糖グラフ、やさしいふりかえりを、端末の中だけで4枚の画像にまとめます。</p>
+    <p data-i18n-key="shareStudioLead">今日出逢ったグルコ、血糖グラフ、しっかりAI分析を、端末の中だけで4枚の画像にまとめます。</p>
     <div class="share-studio-privacy">
       <strong data-i18n-key="shareStudioPrivacyTitle">共有する前に</strong>
-      <p data-i18n-key="shareStudioPrivacyBody">画像には健康情報が含まれます。共有相手と公開範囲を確認してください。接続URLや合言葉は画像にもサーバーにも送りません。</p>
+      <p data-i18n-key="shareStudioPrivacyBody">画像には健康情報が含まれます。共有相手と公開範囲を確認してください。3枚目のAI分析には集計値だけを送り、接続URL・合言葉・血糖一覧は送りません。</p>
     </div>
     <div id="shareStudioPreview" class="share-studio-preview" hidden>
       <div id="shareStudioPreviewGrid" class="share-studio-preview-grid" aria-label="4枚の画像プレビュー"></div>
     </div>
+    <p id="shareStudioTrialConsumedNotice" class="share-studio-trial-consumed" data-i18n-key="shareStudioTrialConsumed" hidden>無料体験1回分を使用しました。4枚はこの端末に保存済みです。続けて新しく作るにはPlus 30日パスが必要です。</p>
     <label id="shareStudioHealthConfirmRow" class="share-studio-health-confirm" hidden>
       <input id="shareStudioHealthConfirm" type="checkbox">
       <span data-i18n-key="shareStudioHealthConfirm">4枚には血糖などの健康情報が含まれます。共有先と公開範囲を自分で確認します。</span>
     </label>
     <p id="shareStudioStatus" class="share-studio-status" role="status" aria-live="polite"></p>
+    <div id="shareStudioTurnstile" class="share-studio-turnstile" hidden></div>
     <div class="share-studio-actions">
       <button id="shareStudioCreateButton" type="button" class="primary-button" data-i18n-key="shareStudioCreate">4枚を作る</button>
       <button id="shareStudioShareButton" type="button" class="secondary-button" data-i18n-key="shareStudioShare" hidden disabled>4枚を共有・保存する</button>
@@ -1079,13 +1081,13 @@
 <script src="js/data-relay-client.js?v=20260816-device-session-1"></script>
 <script src="js/local-profile.js?v=20260811-usage-profile-stage-1"></script>
 <script src="js/usage-client.js?v=20260815-guardian-confirmation-1"></script>
-<script src="js/plus-entitlement-client.js?v=20260820-share-access-panel-1"></script>
+<script src="js/plus-entitlement-client.js?v=20260822-share-detailed-1"></script>
 <script src="js/plus-feature-access.js?v=20260820-plus-guidance-1"></script>
-<script src="js/share-studio.js?v=20260822-share-quality-1"></script>
+<script src="js/share-studio.js?v=20260822-share-detailed-1"></script>
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js?v=20260721-user-foundation-3"></script>
-<script src="js/app.js?v=20260822-share-quality-1"></script>
+<script src="js/app.js?v=20260822-share-detailed-1"></script>
 <!-- Cloudflare Web Analytics: aggregate page-view and performance metrics only -->
 <script src="js/analytics-loader.js?v=20260811-usage-profile-stage-1"></script>
 <!-- End Cloudflare Web Analytics -->

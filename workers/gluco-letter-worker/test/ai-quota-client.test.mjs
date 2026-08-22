@@ -14,6 +14,7 @@ import {
 const TOKEN = "A".repeat(43);
 const REQUEST_ID = "123e4567-e89b-42d3-a456-426614174111";
 const RESERVATION_ID = "123e4567-e89b-42d3-a456-426614174222";
+const SHARE_TRIAL_REQUEST_ID = "123e4567-e89b-42d3-a456-426614174333";
 const QUOTA = Object.freeze({
   tier: "free",
   dailyLimit: 1,
@@ -69,6 +70,26 @@ test("quota enforcement defaults off and accepts only a strict device credential
     requestId: REQUEST_ID,
     analysisMode: "deep",
   });
+  assert.deepEqual(readAiQuotaRequest(request(), {
+    requestId: REQUEST_ID,
+    quotaCredentialKind: "account",
+    shareTrialRequestId: SHARE_TRIAL_REQUEST_ID,
+  }, "deep").reserveInput, {
+    credential: { kind: "account", token: TOKEN },
+    requestId: REQUEST_ID,
+    analysisMode: "deep",
+    shareTrialRequestId: SHARE_TRIAL_REQUEST_ID,
+  });
+  assert.equal(readAiQuotaRequest(request(), {
+    requestId: REQUEST_ID,
+    quotaCredentialKind: "device_profile",
+    shareTrialRequestId: SHARE_TRIAL_REQUEST_ID,
+  }, "deep").error, "invalid_quota_request");
+  assert.equal(readAiQuotaRequest(request(), {
+    requestId: REQUEST_ID,
+    quotaCredentialKind: "account",
+    shareTrialRequestId: "not-a-uuid",
+  }, "deep").error, "invalid_quota_request");
 });
 
 test("Authorization is added to CORS only when quota enforcement is enabled", () => {

@@ -23,14 +23,14 @@ function createServices(env) {
   });
 }
 
-async function resolveAccountEntitlement(env, { token }) {
+async function resolveAccountEntitlement(env, { token, shareTrialRequestId = "" }) {
   const service = env.PLUS_ENTITLEMENT;
   if (!service || typeof service.resolveAiSubject !== "function") {
     return { status: "unavailable" };
   }
 
   try {
-    return await service.resolveAiSubject(token);
+    return await service.resolveAiSubject(token, shareTrialRequestId);
   } catch {
     return { status: "unavailable" };
   }

@@ -13,7 +13,7 @@
   const LATEST_KEY = "latest";
   const RECORD_VERSION = 2;
   const LEGACY_RECORD_VERSION = 1;
-  const RENDERER_REVISION = 2;
+  const RENDERER_REVISION = 3;
   const FONT = '"Yu Gothic", "Hiragino Kaku Gothic ProN", "Segoe UI", "Segoe UI Emoji", sans-serif';
   const VALUE_PATTERN = /^(?:--|\d{1,3}(?:\.\d)?%?)$/u;
   const SAFE_ASSET_PATTERN = /^assets\/gluco\/(?:live|unicorn|ui|profile)\/[a-z0-9._-]+\.png$/u;
@@ -598,9 +598,9 @@
 
   function drawLetter(context, model, peekImage) {
     background(context);
-    header(context, model.language === "en" ? "💌 A letter from Gluco" : "💌 グルコからのお手紙", model, 3);
+    header(context, model.language === "en" ? "📊 Detailed AI reflection" : "📊 しっかりAI分析", model, 3);
     panel(context, 70, 225, 940, 1055, 42, "rgba(255,255,255,.052)", "rgba(134,239,172,.18)");
-    drawText(context, model.language === "en" ? "🍀 Gentle reflection" : "🍀 やさしいふりかえり", 110, 303, { size: 29, weight: 900, color: "#bff7d7" });
+    drawText(context, model.language === "en" ? "🍀 A careful look with Gluco" : "🍀 グルコと丁寧にふりかえる", 110, 303, { size: 29, weight: 900, color: "#bff7d7" });
     fittedParagraphText(context, model.letter || defaultLetter(model), 110, 382, 850, 640, {
       language: model.language,
       maxSize: model.language === "en" ? 31 : 34,
@@ -712,6 +712,7 @@
       createdAt: new Date().toISOString(),
       dateKey: safeText(metadata.dateKey, 10),
       glucoId: finiteMetric(metadata.glucoId),
+      accessGrant: metadata.accessGrant === "trial" ? "trial" : "plus",
       blobs: Array.isArray(blobs) ? blobs : []
     };
     if (!validateCarouselRecord(record)) throw new Error("storage_invalid");

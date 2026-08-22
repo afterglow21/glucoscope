@@ -751,6 +751,18 @@ test("AI subject and Plus summary return only opaque entitlement facts", async (
   assert.deepEqual(await freeService.resolveAiSubject("malformed"), {
     status: "invalid_session",
   });
+  assert.equal((await freeService.reserveShareTrial(SESSION_TOKEN, REQUEST_ONE)).status, "reserved");
+  assert.deepEqual(await freeService.resolveAiSubject(SESSION_TOKEN, REQUEST_ONE), {
+    status: "ok",
+    subjectId: ACCOUNT_ID,
+    plusActive: false,
+    shareTrialReserved: true,
+  });
+  assert.deepEqual(await freeService.resolveAiSubject(SESSION_TOKEN, REQUEST_TWO), {
+    status: "ok",
+    subjectId: ACCOUNT_ID,
+    plusActive: false,
+  });
 
   await applyEnabledPayment({
     eventId: "evt_summary",

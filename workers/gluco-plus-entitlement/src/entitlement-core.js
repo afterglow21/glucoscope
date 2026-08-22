@@ -181,14 +181,25 @@ export function createPlusEntitlementService(env = {}, dependencies = {}) {
       return publicAdminAggregate(activePlusCount);
     },
 
-    async resolveAiSubject(sessionToken) {
+    async resolveAiSubject(sessionToken, shareTrialRequestIdValue = "") {
       const snapshot = await resolveSnapshot(sessionToken);
       if (!snapshot) return Object.freeze({ status: "invalid_session" });
       const plusActive = Boolean(snapshot.activeEntitlement);
+      const shareTrialRequestId = shareTrialRequestIdValue
+        ? validateRequestId(shareTrialRequestIdValue)
+        : "";
+      const shareTrialReserved = !plusActive && shareTrialRequestId
+        ? await getStore().isShareTrialReservationActive({
+            accountId: snapshot.accountId,
+            requestId: shareTrialRequestId,
+            now: requireSafeEpoch(now(), "time"),
+          })
+        : false;
       return Object.freeze({
         status: "ok",
         subjectId: snapshot.accountId,
         plusActive,
+        ...(shareTrialReserved ? { shareTrialReserved: true } : {}),
       });
     },
 

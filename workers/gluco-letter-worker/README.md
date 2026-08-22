@@ -319,8 +319,9 @@ aligned rollout values instead.
 
 The private Admin Share Studio does not receive a general browser CORS exception and does not reuse a
 personal user's Free/Plus credential. Its Pages Function is protected by Cloudflare Access and also
-cryptographically verifies the Access JWT against the team's remote JWKS, exact issuer, application
-AUD, expiry, and the allowed email claim. It rebuilds a bounded summary allowlist, drops browser
+cryptographically verifies the Access JWT from the assertion header or the Access authorization
+cookie against the team's remote JWKS, exact issuer, application AUD, expiry, and the configured
+single administrator email claim. A separately forwarded email header is never trusted. It rebuilds a bounded summary allowlist, drops browser
 hints, unknown fields, and all current/latest glucose aliases, creates a UUIDv4 request ID, and signs
 the complete upstream body with HMAC-SHA256. The AI Worker accepts that path only when all of the
 following match: checked-in-off enable flag, 32-byte-or-longer shared secret, exact
@@ -328,7 +329,7 @@ following match: checked-in-off enable flag, 32-byte-or-longer shared secret, ex
 signed UUID and fixed admin page mode, and the admin Turnstile hostname/action. Invalid bridge
 headers fail before the normal AI request handler.
 
-Admin generations retain the ordinary atomic global budget reservation and use a second named
+Admin generations always use the detailed-analysis prompt. They retain the ordinary atomic global budget reservation and use a second named
 `GlucoUsageCounter` Durable Object for a strongly consistent five-successes-per-day admin cap.
 The separate object prevents admin work from consuming or bypassing a personal user's quota;
 request IDs also make signed replay attempts idempotently fail. Reservations are completed only

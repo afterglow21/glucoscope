@@ -30,8 +30,8 @@ export class PlusEntitlementRpc extends WorkerEntrypoint {
     return createPlusEntitlementService(this.env);
   }
 
-  async resolveAiSubject(sessionToken) {
-    return this.#service().resolveAiSubject(sessionToken);
+  async resolveAiSubject(sessionToken, shareTrialRequestId = "") {
+    return this.#service().resolveAiSubject(sessionToken, shareTrialRequestId);
   }
 
   async resolveCheckoutBuyer(sessionToken, confirmationVersion) {

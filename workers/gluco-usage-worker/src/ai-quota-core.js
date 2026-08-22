@@ -112,16 +112,26 @@ function validateCredential(rawCredential) {
 
 function validateReserveInput(rawInput) {
   const input = requirePlainObject(rawInput);
-  requireAllowedKeys(input, new Set(["credential", "requestId", "analysisMode"]));
+  requireAllowedKeys(input, new Set(["credential", "requestId", "analysisMode", "shareTrialRequestId"]));
   const requestId = String(input.requestId || "");
+  const shareTrialRequestId = String(input.shareTrialRequestId || "");
   const analysisMode = String(input.analysisMode || "");
-  if (!UUID_PATTERN.test(requestId) || !ANALYSIS_MODES.has(analysisMode)) {
+  if (
+    !UUID_PATTERN.test(requestId)
+    || (shareTrialRequestId && !UUID_PATTERN.test(shareTrialRequestId))
+    || !ANALYSIS_MODES.has(analysisMode)
+  ) {
+    throw new AiQuotaError("invalid_request");
+  }
+  const credential = validateCredential(input.credential);
+  if (shareTrialRequestId && credential.kind !== "account") {
     throw new AiQuotaError("invalid_request");
   }
   return Object.freeze({
-    credential: validateCredential(input.credential),
+    credential,
     requestId,
     analysisMode,
+    ...(shareTrialRequestId ? { shareTrialRequestId } : {}),
   });
 }
 
@@ -195,7 +205,7 @@ function requireServices(services) {
   }
 }
 
-async function resolveSubject(credential, services) {
+async function resolveSubject(credential, services, shareTrialRequestId = "") {
   if (credential.kind === "device_profile") {
     const tokenHash = await services.hashBearerToken(credential.token);
     const profile = await services.store.findDeviceProfileByTokenHash({ tokenHash });
@@ -206,7 +216,10 @@ async function resolveSubject(credential, services) {
   if (typeof services.resolveAccountEntitlement !== "function") {
     throw new AiQuotaError("entitlement_unavailable", 503);
   }
-  const result = await services.resolveAccountEntitlement({ token: credential.token });
+  const result = await services.resolveAccountEntitlement({
+    token: credential.token,
+    ...(shareTrialRequestId ? { shareTrialRequestId } : {}),
+  });
   if (result?.status === "unavailable") {
     throw new AiQuotaError("entitlement_unavailable", 503);
   }
@@ -217,6 +230,7 @@ async function resolveSubject(credential, services) {
     kind: "account",
     id: String(result.subjectId),
     tier: result.plusActive === true ? "plus" : "free",
+    detailedAnalysisAllowed: result.plusActive === true || result.shareTrialReserved === true,
   };
 }
 
@@ -255,8 +269,8 @@ export async function reserveAiGeneration(rawInput, env = {}, services = {}) {
     requireServices(services);
     const input = validateReserveInput(rawInput);
     const nowMs = Number(services.now?.() ?? Date.now());
-    const subject = await resolveSubject(input.credential, services);
-    if (subject.tier !== "plus" && input.analysisMode === "deep") {
+    const subject = await resolveSubject(input.credential, services, input.shareTrialRequestId);
+    if (subject.tier !== "plus" && subject.detailedAnalysisAllowed !== true && input.analysisMode === "deep") {
       throw new AiQuotaError("plus_required", 403);
     }
     const subjectKey = await hashQuotaSubject(subject.kind, subject.id, services.crypto || crypto);

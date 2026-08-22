@@ -488,8 +488,9 @@ false in checked-in configuration.
 
 Bind another Worker specifically to the named `PlusEntitlementRpc` entrypoint.
 
-- `resolveAiSubject(sessionToken)` returns only a stable internal subject ID and whether
-  Plus is active.
+- `resolveAiSubject(sessionToken, shareTrialRequestId?)` returns only a stable internal subject
+  ID, whether Plus is active, and—only for an exact active reservation owned by that account—a
+  `shareTrialReserved` fact. It never grants a general Free detailed-analysis entitlement.
 - `resolveCheckoutBuyer(sessionToken, confirmationVersion)` is private to Checkout. It
   returns an eligible opaque account only when the stored adult/self-or-guardian
   confirmation matches the required current version.
@@ -506,6 +507,9 @@ never sent. The checked-in production and staging values remain `false` until cl
 browser/Worker acceptance passes.
 - `reserveShareTrial`, `completeShareTrial`, and `releaseShareTrial` implement a short
   reservation. Only `complete` consumes the one successful trial.
+- The exact active reservation can authorize the detailed AI reflection used in image 3. The
+  AI Worker still counts that account-scoped success against the Free daily limit, and a device
+  profile or a different request ID cannot claim the reservation.
 
 The separate `AdminPlusAggregateEntrypoint.getActivePlusSummary()` method takes no
 arguments and returns only `{ activePlusCount }`. Bind that named entrypoint only from

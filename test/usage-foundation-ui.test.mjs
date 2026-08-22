@@ -150,14 +150,16 @@ test("quota request context is inert while off, leaves the reviewed demo credent
   const helperSource = app.slice(start, end);
   assert.ok(start >= 0 && end > start);
 
-  function runHelper({ enabled, userMode, manager }) {
-    const context = { manager };
+  function runHelper({ enabled, userMode, manager, plusManager = null, plusActive = false, shareTrialRequestId = "" }) {
+    const context = { manager, plusManager };
     vm.runInNewContext(`
       const AI_PER_USER_QUOTA_ENABLED = ${enabled};
       const usageProfileManager = this.manager;
+      const plusEntitlementClient = this.plusManager;
+      const readPlusEntitlementStateSnapshot = () => ({ plusActive: ${plusActive} });
       const isUserDataSourceMode = () => ${userMode};
       ${helperSource}
-      this.result = createAiLetterQuotaRequestContext();
+      this.result = createAiLetterQuotaRequestContext({ shareTrialRequestId: ${JSON.stringify(shareTrialRequestId)} });
     `, context);
     return context.result;
   }
@@ -193,6 +195,28 @@ test("quota request context is inert while off, leaves the reviewed demo credent
   assert.equal(enabled.enabled, true);
   assert.equal(enabled.quotaCredentialKind, "account");
   assert.equal(enabled.authorization, `Bearer ${"B".repeat(43)}`);
+
+  const trialId = "123e4567-e89b-42d3-a456-426614174222";
+  const trial = runHelper({
+    enabled: true,
+    userMode: true,
+    manager: forbiddenManager,
+    plusManager: {
+      createAiQuotaRequestContext({ shareTrialRequestId }) {
+        assert.equal(shareTrialRequestId, trialId);
+        return {
+          ok: true,
+          requestId: "123e4567-e89b-42d3-a456-426614174333",
+          quotaCredentialKind: "account",
+          authorization: `Bearer ${"C".repeat(43)}`,
+          shareTrialRequestId
+        };
+      }
+    },
+    shareTrialRequestId: trialId
+  });
+  assert.equal(trial.quotaCredentialKind, "account");
+  assert.equal(trial.shareTrialRequestId, trialId);
   assert.match(index, /name="glucoscope-ai-per-user-quota-enabled" content="true"/u);
   assert.match(app, /data\.cache\?\.status === "approved-demo-sample"[\s\S]*aiLetterStatusApprovedDemoSample/u);
 });
@@ -1042,8 +1066,8 @@ test("local display-name storage remains network-free and server sync is separat
   assert.match(index, /js\/local-profile\.js\?v=20260811-usage-profile-stage-1/);
   assert.match(index, /js\/usage-client\.js\?v=20260815-guardian-confirmation-1/);
   assert.match(index, /js\/plus-feature-access\.js\?v=20260820-plus-guidance-1/);
-  assert.match(index, /style\.css\?v=20260822-share-quality-1/);
-  assert.match(index, /js\/app\.js\?v=20260822-share-quality-1/);
+  assert.match(index, /style\.css\?v=20260822-share-detailed-1/);
+  assert.match(index, /js\/app\.js\?v=20260822-share-detailed-1/);
   assert.match(app, /updateUsageProfileDisplayName\(result\.profile\.displayName\)/);
   assert.doesNotMatch(app, /handleLocalProfileDelete|localProfileDeleteButton/);
   assert.match(app, /if \(!state\.enabled \|\| !state\.registered\) return;/);

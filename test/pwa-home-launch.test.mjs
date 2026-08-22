@@ -94,7 +94,7 @@ test("main page advertises the manifest and iPhone standalone metadata", () => {
   assert.doesNotMatch(index, /<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">/u);
   assert.match(index, /<meta name="apple-mobile-web-app-title" content="GlucoScope">/u);
   assert.match(index, /<link rel="apple-touch-icon" href="assets\/gluco\/about\/gluco-small-notice\.png">/u);
-  assert.match(index, /<link rel="stylesheet" href="style\.css\?v=20260822-share-quality-1">/u);
+  assert.match(index, /<link rel="stylesheet" href="style\.css\?v=20260822-share-detailed-1">/u);
 });
 
 test("early launch detection marks only an installed Home Screen app", () => {

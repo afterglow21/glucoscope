@@ -47,6 +47,7 @@ function createTextContext() {
 function createRenderDependencies() {
   const imageSources = [];
   const drawImageCalls = [];
+  const textCalls = [];
   const gradient = { addColorStop() {} };
   const context = {
     font: '700 16px "Yu Gothic"',
@@ -79,7 +80,7 @@ function createRenderDependencies() {
       const size = Number.parseFloat(this.font.match(/(\d+(?:\.\d+)?)px/u)?.[1] || "16");
       return { width: Array.from(String(value ?? "")).length * size * .56 };
     },
-    fillText() {},
+    fillText(value) { textCalls.push({ value: String(value) }); },
     drawImage(image, ...coordinates) {
       drawImageCalls.push({ source: image.source, coordinates });
     }
@@ -104,7 +105,7 @@ function createRenderDependencies() {
       };
     }
   };
-  return { document, Image: FakeImage, imageSources, drawImageCalls };
+  return { document, Image: FakeImage, imageSources, drawImageCalls, textCalls };
 }
 
 test("Share Studio normalizes only bounded display metrics", () => {
@@ -137,10 +138,16 @@ test("Share Studio creates and stores four slides before completing a trial", ()
   assert.match(index, /id="shareStudioAccessNotice"[^>]*role="status"[^>]*hidden/u);
   assert.match(index, /id="plusAccountShareStudioNotice"[^>]*role="status"[^>]*hidden/u);
   assert.match(index, /js\/share-studio\.js/u);
-  assert.match(index, /今日出逢ったグルコ、血糖グラフ、やさしいふりかえり/u);
+  assert.match(index, /今日出逢ったグルコ、血糖グラフ、しっかりAI分析/u);
   assert.match(index, /id="shareStudioPreviewGrid"/u);
   assert.match(index, /id="shareStudioHealthConfirm"/u);
-  assert.match(index, /接続URLや合言葉は画像にもサーバーにも送りません/u);
+  assert.match(index, /id="shareStudioTrialConsumedNotice"[^>]*hidden/u);
+  assert.match(index, /無料体験1回分を使用しました/u);
+  assert.match(index, /id="shareStudioTurnstile"[^>]*hidden/u);
+  assert.match(index, /3枚目のAI分析には集計値だけを送り、接続URL・合言葉・血糖一覧は送りません/u);
+  assert.match(app, /requestShareStudioDetailedAnalysis/u);
+  assert.match(app, /action:\s*"glucoscope-ai-letter"/u);
+  assert.match(app, /shareTrialRequestId/u);
   assert.match(app, /reserveShareStudio[\s\S]*generateCarousel[\s\S]*saveCarousel[\s\S]*completeShareStudio/u);
   assert.match(app, /!completionStarted[\s\S]*releaseShareStudio/u);
   assert.match(app, /completionStarted[\s\S]*4枚はこの端末に保存済みです/u);
@@ -173,13 +180,18 @@ test("Share Studio keeps a verified four-image set in device storage", async () 
     }
   };
   const blobs = Array.from({ length: 4 }, () => new Blob(["png"], { type: "image/png" }));
-  const record = await api.saveCarousel(blobs, { dateKey: "2026-08-21", glucoId: 7 }, { store });
+  const record = await api.saveCarousel(blobs, {
+    dateKey: "2026-08-21",
+    glucoId: 7,
+    accessGrant: "trial"
+  }, { store });
   assert.equal(record.blobs.length, 4);
   assert.equal(record.version, 2);
-  assert.equal(record.rendererRevision, 2);
+  assert.equal(record.rendererRevision, 3);
   assert.equal(api._testing.isCurrentCarouselRecord(record), true);
   assert.equal(record.dateKey, "2026-08-21");
   assert.equal(record.glucoId, 7);
+  assert.equal(record.accessGrant, "trial");
   assert.equal((await api.loadCarousel({ store })).blobs.length, 4);
   await api.deleteCarousel({ store });
   assert.equal(await api.loadCarousel({ store }), null);
@@ -325,6 +337,7 @@ test("the four-image renderer loads the reviewed ending art and current public Q
   ]);
   assert.ok(dependencies.drawImageCalls.some((call) => call.source === "assets/share-studio/ending-sunrise.png"));
   assert.ok(dependencies.drawImageCalls.some((call) => call.source === "assets/share-studio/glucoscope-qr.png"));
+  assert.ok(dependencies.textCalls.some((call) => call.value.includes("しっかりAI分析")));
   assert.deepEqual(readPngDimensions("../assets/share-studio/ending-sunrise.png"), { width: 1080, height: 1350 });
   assert.deepEqual(readPngDimensions("../assets/share-studio/glucoscope-qr.png"), { width: 256, height: 256 });
 });

@@ -39,6 +39,8 @@ let usageProfileTurnstileTimeoutId = null;
 let usageProfileTurnstileTimeoutGeneration = 0;
 let plusAccountTurnstileWidgetId = null;
 let plusAccountDeleteTurnstileWidgetId = null;
+let shareStudioTurnstileWidgetId = null;
+let shareStudioCreateAfterTurnstile = false;
 let plusAccountActionInFlight = false;
 let plusAccountVerificationPending = false;
 let plusAccountResendAvailableAt = 0;
@@ -292,12 +294,15 @@ const translations = {
     mobileMoreShareStudioLearnMoreTitle: "Share Studioとは？",
     mobileMoreShareStudioLearnMoreAction: "できることを見る",
     shareStudioTitle: "今日のふりかえりを4枚に",
-    shareStudioLead: "今日出逢ったグルコ、血糖グラフ、やさしいふりかえりを、端末の中だけで4枚の画像にまとめます。",
+    shareStudioLead: "今日出逢ったグルコ、血糖グラフ、しっかりAI分析を、端末の中だけで4枚の画像にまとめます。",
     shareStudioPrivacyTitle: "共有する前に",
-    shareStudioPrivacyBody: "画像には健康情報が含まれます。共有相手と公開範囲を確認してください。接続URLや合言葉は画像にもサーバーにも送りません。",
+    shareStudioPrivacyBody: "画像には健康情報が含まれます。共有相手と公開範囲を確認してください。3枚目のAI分析には集計値だけを送り、接続URL・合言葉・血糖一覧は送りません。",
     shareStudioCreate: "4枚を作る",
     shareStudioShare: "4枚を共有・保存する",
     shareStudioDelete: "保存した4枚を削除する",
+    shareStudioTrialConsumed: "無料体験1回分を使用しました。4枚はこの端末に保存済みです。続けて新しく作るにはPlus 30日パスが必要です。",
+    shareStudioDetailedPreparing: "3枚目のしっかりAI分析を準備しています…",
+    shareStudioTurnstileWaiting: "3枚目のしっかりAI分析のため、安全確認を完了してください。終わると自動で4枚を作ります。",
     shareStudioHealthConfirm: "4枚には血糖などの健康情報が含まれます。共有先と公開範囲を自分で確認します。",
     mobileMoreCollection: "想い出",
     mobileMoreCollectionNote: "グルコとの記録",
@@ -756,12 +761,15 @@ const translations = {
     mobileMoreShareStudioLearnMoreTitle: "What is Share Studio?",
     mobileMoreShareStudioLearnMoreAction: "See what it can do",
     shareStudioTitle: "Turn today's reflection into four images",
-    shareStudioLead: "Create a set of four images with today's Gluco, glucose graph, and gentle reflection, entirely on this device.",
+    shareStudioLead: "Create a set of four images with today's Gluco, glucose graph, and detailed AI analysis, entirely on this device.",
     shareStudioPrivacyTitle: "Before sharing",
-    shareStudioPrivacyBody: "This image contains health information. Check the recipient and audience. Connection URLs and passphrases are never included or sent to the server.",
+    shareStudioPrivacyBody: "These images contain health information. Check the recipient and audience. Only summary metrics are sent for image three's AI analysis; connection URLs, passphrases, and the glucose list are not sent.",
     shareStudioCreate: "Create four images",
     shareStudioShare: "Share or save four images",
     shareStudioDelete: "Delete the saved images",
+    shareStudioTrialConsumed: "Your one free trial has been used. These four images are saved on this device. A Plus 30-day pass is required to create a new set.",
+    shareStudioDetailedPreparing: "Preparing the detailed AI analysis for image three…",
+    shareStudioTurnstileWaiting: "Complete the safety check for the detailed AI analysis. The four images will be created automatically when it finishes.",
     shareStudioHealthConfirm: "The four images contain health information such as glucose data. I will check the destination and audience before sharing.",
     mobileMoreCollection: "Memories",
     mobileMoreCollectionNote: "Your moments with Gluco",
@@ -4474,15 +4482,17 @@ function clearShareStudioPreviewUrls() {
   shareStudioPreviewUrls = [];
 }
 
-function renderShareStudioRecord(record) {
+function renderShareStudioRecord(record, { trialConsumed = false } = {}) {
   const preview = document.getElementById("shareStudioPreview");
   const previewGrid = document.getElementById("shareStudioPreviewGrid");
   const shareButton = document.getElementById("shareStudioShareButton");
   const deleteButton = document.getElementById("shareStudioDeleteButton");
   const healthRow = document.getElementById("shareStudioHealthConfirmRow");
   const healthConfirm = document.getElementById("shareStudioHealthConfirm");
+  const trialConsumedNotice = document.getElementById("shareStudioTrialConsumedNotice");
   clearShareStudioPreviewUrls();
   shareStudioRecord = record || null;
+  if (trialConsumedNotice) trialConsumedNotice.hidden = !record || !trialConsumed;
   if (previewGrid) previewGrid.replaceChildren();
   if (!record?.blobs?.length) {
     if (preview) preview.hidden = true;
@@ -4511,6 +4521,112 @@ function renderShareStudioRecord(record) {
   }
   if (deleteButton) deleteButton.hidden = false;
   if (healthRow) healthRow.hidden = false;
+}
+
+function getShareStudioTurnstileToken() {
+  return String(
+    document.querySelector("#shareStudioTurnstile [name='cf-turnstile-response']")?.value || ""
+  );
+}
+
+function resetShareStudioTurnstile() {
+  shareStudioCreateAfterTurnstile = false;
+  const container = document.getElementById("shareStudioTurnstile");
+  if (shareStudioTurnstileWidgetId !== null) {
+    try {
+      window.turnstile?.reset?.(shareStudioTurnstileWidgetId);
+    } catch (error) {
+      console.warn("Failed to reset Share Studio Turnstile", error);
+    }
+  }
+  if (container) container.hidden = true;
+}
+
+function renderShareStudioTurnstile(attempt = 0) {
+  const container = document.getElementById("shareStudioTurnstile");
+  if (!container || !TURNSTILE_SITE_KEY) return;
+  container.hidden = false;
+  ensureTurnstileScript();
+  if (!window.turnstile || typeof window.turnstile.render !== "function") {
+    if (attempt < 20) window.setTimeout(() => renderShareStudioTurnstile(attempt + 1), 250);
+    return;
+  }
+  if (shareStudioTurnstileWidgetId !== null) {
+    try {
+      window.turnstile.reset(shareStudioTurnstileWidgetId);
+    } catch (error) {
+      console.warn("Failed to refresh Share Studio Turnstile", error);
+    }
+    return;
+  }
+  try {
+    shareStudioTurnstileWidgetId = window.turnstile.render(container, {
+      sitekey: TURNSTILE_SITE_KEY,
+      action: "glucoscope-ai-letter",
+      theme: "auto",
+      callback: () => {
+        if (!shareStudioCreateAfterTurnstile) return;
+        shareStudioCreateAfterTurnstile = false;
+        document.getElementById("shareStudioCreateButton")?.click?.();
+      },
+      "expired-callback": () => {
+        setShareStudioStatus(t("shareStudioTurnstileWaiting"));
+      },
+      "error-callback": () => {
+        shareStudioCreateAfterTurnstile = false;
+        setShareStudioStatus(t("aiLetterStatusTurnstileFailed"));
+      }
+    });
+  } catch (error) {
+    shareStudioTurnstileWidgetId = null;
+    setShareStudioStatus(t("aiLetterStatusTurnstileFailed"));
+  }
+}
+
+async function requestShareStudioDetailedAnalysis(reservation) {
+  const turnstileToken = getShareStudioTurnstileToken();
+  if (!turnstileToken || !latestAiLetterSummary) throw new Error("turnstile_failed");
+  const shareTrialRequestId = reservation?.grant === "trial" ? reservation.requestId : "";
+  const quotaRequestContext = createAiLetterQuotaRequestContext({ shareTrialRequestId });
+  if (!quotaRequestContext.ok || quotaRequestContext.enabled !== true) {
+    throw new Error(quotaRequestContext.error || "quota_identity_required");
+  }
+  setShareStudioStatus(t("shareStudioDetailedPreparing"));
+  const response = await fetch(getAiLetterWorkerEndpoint(), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": quotaRequestContext.authorization
+    },
+    body: JSON.stringify({
+      summary: latestAiLetterSummary,
+      analysisMode: "deep",
+      turnstileToken,
+      requestId: quotaRequestContext.requestId,
+      quotaCredentialKind: quotaRequestContext.quotaCredentialKind,
+      ...(quotaRequestContext.shareTrialRequestId
+        ? { shareTrialRequestId: quotaRequestContext.shareTrialRequestId }
+        : {}),
+      client: { app: "GlucoScope", mode: "share-studio" }
+    })
+  });
+  const data = await response.json().catch(() => ({}));
+  const letterText = getAiLetterTextFromResponse(data);
+  if (!response.ok || data.ok === false || !letterText) {
+    const error = new Error(data?.code || data?.error || "detailed_analysis_failed");
+    error.aiLetterData = data;
+    throw error;
+  }
+  saveAiLetterLocalCache(latestAiLetterSummary, data, letterText, "deep");
+  recordUsageProfileAiGenerationIfEligible(data);
+  resetShareStudioTurnstile();
+  return letterText;
+}
+
+async function getShareStudioDetailedAnalysis(reservation) {
+  const cached = getFreshCachedAiLetter(latestAiLetterSummary, "deep");
+  if (cached?.text) return cached.text;
+  return requestShareStudioDetailedAnalysis(reservation);
 }
 
 function updateShareStudioAvailability() {
@@ -4543,7 +4659,10 @@ function setupShareStudio() {
         setInlinePlusNotice("plusAccountShareStudioNotice");
         shareStudioOpener = opener;
         dialog.hidden = false;
-        renderShareStudioRecord(saved);
+        renderShareStudioRecord(saved, {
+          trialConsumed: saved.accessGrant === "trial"
+            || (saved.accessGrant !== "plus" && access.reason === "plus_required")
+        });
         if (createButton) createButton.hidden = !access.allowed;
         setShareStudioStatus(currentLayout
           ? (currentLanguage === "en"
@@ -4624,6 +4743,12 @@ function setupShareStudio() {
 
   createButton?.addEventListener("click", async () => {
     if (shareStudioBusy) return;
+    if (!getFreshCachedAiLetter(latestAiLetterSummary, "deep") && !getShareStudioTurnstileToken()) {
+      shareStudioCreateAfterTurnstile = true;
+      setShareStudioStatus(t("shareStudioTurnstileWaiting"));
+      renderShareStudioTurnstile();
+      return;
+    }
     shareStudioBusy = true;
     dialog?.setAttribute("aria-busy", "true");
     createButton.disabled = true;
@@ -4637,13 +4762,20 @@ function setupShareStudio() {
       if (!latestShareStudioTodayModel) throw new Error("today_data_unavailable");
       reservation = await plusEntitlementClient?.reserveShareStudio?.();
       if (!reservation?.ok) throw new Error(reservation?.error || "reservation_failed");
-      const blobs = await window.GlucoScopeShareStudio?.generateCarousel?.(latestShareStudioTodayModel);
+      const detailedAnalysis = await getShareStudioDetailedAnalysis(reservation);
+      const shareStudioModel = {
+        ...latestShareStudioTodayModel,
+        analysisMode: "deep",
+        letter: detailedAnalysis
+      };
+      const blobs = await window.GlucoScopeShareStudio?.generateCarousel?.(shareStudioModel);
       if (!Array.isArray(blobs) || blobs.length !== 4 || blobs.some((blob) => !(blob instanceof Blob))) {
         throw new Error("image_failed");
       }
       const savedRecord = await window.GlucoScopeShareStudio?.saveCarousel?.(blobs, {
         dateKey: latestShareStudioTodayModel.dateKey,
-        glucoId: latestShareStudioTodayModel.gluco?.id
+        glucoId: latestShareStudioTodayModel.gluco?.id,
+        accessGrant: reservation.grant
       });
       if (!savedRecord?.blobs?.length) throw new Error("storage_failed");
 
@@ -4657,7 +4789,7 @@ function setupShareStudio() {
         configurePlusFeatureGating();
       }
 
-      renderShareStudioRecord(savedRecord);
+      renderShareStudioRecord(savedRecord, { trialConsumed: reservation.grant === "trial" });
       setShareStudioStatus(currentLanguage === "en"
         ? "The four images are saved on this device. Closing this screen will not remove them."
         : "4枚をこの端末に保存しました。この画面を閉じても、あとから再表示できます。");
@@ -4666,6 +4798,7 @@ function setupShareStudio() {
       if (reservation?.grant === "trial" && reservation?.requestId && !completionStarted) {
         await plusEntitlementClient?.releaseShareStudio?.(reservation.requestId).catch(() => {});
       }
+      resetShareStudioTurnstile();
       if (completionStarted || trialAlreadyUsed) {
         await plusEntitlementClient?.refresh?.().catch(() => {});
         updatePlusAccountUi();
@@ -6354,7 +6487,7 @@ function recordUsageProfileAiGenerationIfEligible(data) {
   void Promise.resolve(usageProfileManager?.recordAiGeneration?.({})).catch(() => {});
 }
 
-function createAiLetterQuotaRequestContext() {
+function createAiLetterQuotaRequestContext({ shareTrialRequestId = "" } = {}) {
   if (!AI_PER_USER_QUOTA_ENABLED) {
     return Object.freeze({ ok: true, enabled: false });
   }
@@ -6362,7 +6495,11 @@ function createAiLetterQuotaRequestContext() {
     return Object.freeze({ ok: true, enabled: false, publicDemo: true });
   }
 
-  const context = usageProfileManager?.createAiQuotaRequestContext?.();
+  const plusState = readPlusEntitlementStateSnapshot();
+  const accountContextRequired = plusState?.plusActive === true || Boolean(shareTrialRequestId);
+  const context = accountContextRequired
+    ? plusEntitlementClient?.createAiQuotaRequestContext?.({ shareTrialRequestId })
+    : usageProfileManager?.createAiQuotaRequestContext?.();
   if (
     context?.ok !== true
     || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(String(context.requestId || ""))
@@ -6377,7 +6514,8 @@ function createAiLetterQuotaRequestContext() {
     enabled: true,
     requestId: context.requestId,
     quotaCredentialKind: context.quotaCredentialKind,
-    authorization: context.authorization
+    authorization: context.authorization,
+    ...(context.shareTrialRequestId ? { shareTrialRequestId: context.shareTrialRequestId } : {})
   });
 }
 
@@ -8829,7 +8967,7 @@ async function loadDailyStats() {
           imagePath: encounteredGluco.imagePath,
           isUnicorn: Boolean(encounteredGluco.isUnicorn)
         },
-        letter: getFreshCachedAiLetter(aiLetterSummary, "letter")?.text || ""
+        letter: getFreshCachedAiLetter(aiLetterSummary, "deep")?.text || ""
       } : null;
     }
 

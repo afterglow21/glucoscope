@@ -3705,10 +3705,13 @@ On 2026-08-21, the public Share Studio boundary was aligned with the protected a
 Social Share Studio: it creates a set of four images for today instead of one Daily Snapshot.
 Image 1 uses the exact Gluco already encountered and stored by the same GlucoScope browser;
 the person does not choose a replacement. Slide 2 contains daily metrics and the glucose
-graph, slide 3 contains a gentle reflection, and slide 4 is a stable GlucoScope closing card.
+graph, slide 3 contains a detailed AI reflection, and slide 4 is a stable GlucoScope closing card.
+The detailed reflection is authorized only by that account's exact active trial reservation or
+an active Plus entitlement; the trial does not unlock detailed analysis elsewhere.
 All four PNGs are generated locally and written to browser IndexedDB before a free-trial
 completion is sent. A storage or read-back failure releases the reservation and does not
-consume the trial. The saved image set can be reopened and saved again until the person
+consume the trial. After successful completion, the UI explicitly states that the one free trial
+has been used. The saved image set can be reopened and saved again until the person
 deletes it in Share Studio or clears browser data. It does not sync across devices. The
 images, glucose values, source URL, and passphrase are never sent to the Plus Worker.
 
@@ -4114,10 +4117,13 @@ Plus利用権はブラウザの利用記録プロフィールから分離し、�
 
 2026年8月21日、利用者向けShare Studioを、管理者用Social Share Studioと同じ4枚構成へ
 揃えました。1枚目は、同じGlucoScopeのブラウザがその日に実際に出逢いとして保存したグルコを
-使い、別の候補から選び直させません。2枚目は日次指標と血糖グラフ、3枚目はやさしいふりかえり、
-4枚目は固定のGlucoScope締めくくりカードです。4枚のPNGをすべて端末内で生成し、ブラウザの
+使い、別の候補から選び直させません。2枚目は日次指標と血糖グラフ、3枚目はしっかりAI分析、
+4枚目は固定のGlucoScope締めくくりカードです。無料体験中のしっかりAI分析は、そのアカウントの
+有効な体験予約1件、または有効なPlus利用権にだけ結び付け、他のFree画面へは開放しません。4枚のPNGを
+すべて端末内で生成し、ブラウザの
 IndexedDBへ保存して読み戻せた後だけ無料体験の完了を送ります。保存または読み戻しに失敗した時は
-予約を解除し、体験を消費しません。保存済みの4枚は、Share Studio内で削除するかブラウザデータを
+予約を解除し、体験を消費しません。成功後は、その画面で無料体験1回分を使用したことを明示します。
+保存済みの4枚は、Share Studio内で削除するかブラウザデータを
 削除するまで再表示・再保存できます。別端末へは同期しません。画像、血糖値、接続先URL、合言葉を
 Plus Workerへ送りません。
 

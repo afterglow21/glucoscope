@@ -229,7 +229,7 @@ export async function verifyAdminShareStudioBridgeRequest(request, env = {}, now
   if (
     payload?.requestId !== requestId
     || payload?.summary?.pageMode !== ADMIN_SHARE_STUDIO_PAGE_MODE
-    || payload?.analysisMode !== "letter"
+    || payload?.analysisMode !== "deep"
     || payload?.client?.mode !== "share-studio-admin-v2.2"
   ) {
     return bridgeFailure("invalid_payload_identity", 403);

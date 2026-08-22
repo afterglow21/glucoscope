@@ -186,6 +186,28 @@
     return stored.ok && Boolean(stored.token);
   }
 
+  function createAiQuotaRequestContext({ shareTrialRequestId = "" } = {}) {
+    const stored = readStoredToken();
+    const requestId = root?.crypto?.randomUUID?.() || "";
+    const trialRequestId = String(shareTrialRequestId || "");
+    if (
+      !configuration.enabled
+      || !stored.ok
+      || !TOKEN_PATTERN.test(stored.token)
+      || !UUID_PATTERN.test(requestId)
+      || (trialRequestId && !UUID_PATTERN.test(trialRequestId))
+    ) {
+      return Object.freeze({ ok: false, error: stored.error || "account_session_required" });
+    }
+    return Object.freeze({
+      ok: true,
+      requestId,
+      quotaCredentialKind: "account",
+      authorization: `Bearer ${stored.token}`,
+      ...(trialRequestId ? { shareTrialRequestId: trialRequestId } : {})
+    });
+  }
+
   function configurationError() {
     if (!configuration.enabled) return "plus_disabled";
     if (!configuration.endpoint) return "plus_endpoint_unavailable";
@@ -510,6 +532,7 @@
     releaseShareStudio,
     getState: publicState,
     hasStoredSession,
+    createAiQuotaRequestContext,
     clear: removeStoredToken,
     _testing: Object.freeze({
       STORAGE_KEY,

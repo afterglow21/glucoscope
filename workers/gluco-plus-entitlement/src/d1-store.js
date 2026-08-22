@@ -659,6 +659,21 @@ export function createD1PlusEntitlementStore(database) {
       return toSessionSnapshot(row);
     },
 
+    async isShareTrialReservationActive({ accountId, requestId, now }) {
+      const row = await db.prepare(`
+        SELECT 1 AS active
+        FROM share_trial_operations AS operation
+        JOIN share_trial_state AS trial ON trial.account_id = operation.account_id
+        WHERE operation.request_id = ?1
+          AND operation.account_id = ?2
+          AND operation.state = 'reserved'
+          AND operation.expires_at > ?3
+          AND trial.used_at IS NULL
+        LIMIT 1
+      `).bind(requestId, accountId, now).first();
+      return Boolean(row?.active);
+    },
+
     async applyVerifiedPayment(input) {
       const results = await db.batch([
         db.prepare(`
