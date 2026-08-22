@@ -231,6 +231,10 @@ async function resolveSubject(credential, services, shareTrialRequestId = "") {
     id: String(result.subjectId),
     tier: result.plusActive === true ? "plus" : "free",
     detailedAnalysisAllowed: result.plusActive === true || result.shareTrialReserved === true,
+    shareTrialReserved: result.shareTrialReserved === true,
+    quotaId: result.shareTrialReserved === true
+      ? `share-trial:${shareTrialRequestId}`
+      : String(result.subjectId),
   };
 }
 
@@ -273,10 +277,15 @@ export async function reserveAiGeneration(rawInput, env = {}, services = {}) {
     if (subject.tier !== "plus" && subject.detailedAnalysisAllowed !== true && input.analysisMode === "deep") {
       throw new AiQuotaError("plus_required", 403);
     }
-    const subjectKey = await hashQuotaSubject(subject.kind, subject.id, services.crypto || crypto);
+    const quotaTier = subject.shareTrialReserved === true ? "free" : subject.tier;
+    const subjectKey = await hashQuotaSubject(
+      subject.kind,
+      subject.quotaId || subject.id,
+      services.crypto || crypto,
+    );
     const reservationId = String(services.createReservationId());
     if (!UUID_PATTERN.test(reservationId)) throw new AiQuotaError("service_unavailable", 503);
-    const dailyLimit = subject.tier === "plus"
+    const dailyLimit = quotaTier === "plus"
       ? config.plusDailyLimit
       : config.freeDailyLimit;
     const result = await services.store.reserve({
@@ -286,14 +295,14 @@ export async function reserveAiGeneration(rawInput, env = {}, services = {}) {
       day: getDayKey(nowMs, config.timezoneOffsetHours),
       requestId: input.requestId,
       reservationId,
-      tier: subject.tier,
+      tier: quotaTier,
       dailyLimit,
       analysisMode: input.analysisMode,
       now: nowMs,
       expiresAt: nowMs + config.reservationTtlSeconds * 1000,
     });
     const resetAt = getResetAt(nowMs, config.timezoneOffsetHours);
-    const quota = publicQuota({ ...result, tier: subject.tier, dailyLimit }, resetAt);
+    const quota = publicQuota({ ...result, tier: quotaTier, dailyLimit }, resetAt);
 
     if (result.status === "reserved") {
       return {

@@ -13,7 +13,7 @@
   const LATEST_KEY = "latest";
   const RECORD_VERSION = 2;
   const LEGACY_RECORD_VERSION = 1;
-  const RENDERER_REVISION = 4;
+  const RENDERER_REVISION = 5;
   const FONT = '"Yu Gothic", "Hiragino Kaku Gothic ProN", "Segoe UI", "Segoe UI Emoji", sans-serif';
   const VALUE_PATTERN = /^(?:--|\d{1,3}(?:\.\d)?%?)$/u;
   const SAFE_ASSET_PATTERN = /^assets\/gluco\/(?:live|unicorn|ui|profile)\/[a-z0-9._-]+\.png$/u;
@@ -233,6 +233,9 @@
   function compactLetterSections(value, language) {
     const raw = String(value || "").replace(/\r/gu, "").trim();
     if (!raw) return [];
+    const fixedTitles = language === "en"
+      ? { "🌿": "Overall flow", "📊": "Numbers to notice", "🔎": "A movement to notice", "🌙": "One more clue", "🌱": "A gentle look ahead", "📈": "The flow in numbers" }
+      : { "🌿": "全体の流れ", "📊": "数字の手がかり", "🔎": "気になった動き", "🌙": "もうひとつ", "🌱": "明日の小さな見返し", "📈": "数字の流れ" };
     const marked = raw
       .replace(/\s*(?=[🌿📊🔎🌙🌱📈])/gu, "\n")
       .split(/\n+/u)
@@ -241,19 +244,14 @@
       .map((part) => {
         const marker = [...part][0];
         const remainder = part.slice(marker.length).trim();
-        const separator = remainder.search(/[・:：]|\s[-－—]\s*/u);
-        const title = separator > 0 && separator <= 26
-          ? remainder.slice(0, separator).trim()
-          : (language === "en" ? "A gentle clue" : "やさしい手がかり");
-        const body = (separator > 0 && separator <= 26
-          ? remainder.slice(separator).replace(/^\s*[・:：\-－—]\s*/u, "")
-          : remainder)
+        const titledBody = remainder.match(/^.{1,26}?\s*[-−–—－・:：]\s*(.+)$/u);
+        const body = (titledBody?.[1] || remainder)
           .replace(/\s+[\-－—]\s+/gu, language === "en" ? " " : "")
           .trim();
         const sentences = splitSentences(body, language);
         return {
-          title: `${marker} ${title}`,
-          body: sentences.slice(0, 2).join(language === "en" ? " " : "") || body
+          title: `${marker} ${fixedTitles[marker] || (language === "en" ? "Gentle clue" : "やさしい手がかり")}`,
+          body: sentences[0] || body
         };
       })
       .filter((section) => section.body);
@@ -266,8 +264,11 @@
       .filter(Boolean)
       .filter((sentence) => !/^(?:来てくれて|Welcome|I am glad you are here)/iu.test(sentence));
     const selected = sentences.length <= 4 ? sentences : [sentences[0], sentences[1], sentences[2], sentences.at(-1)];
+    const fallbackTitles = language === "en"
+      ? ["Overall flow", "Numbers to notice", "A movement to notice", "A gentle look ahead"]
+      : ["全体の流れ", "数字の手がかり", "気になった動き", "明日の小さな見返し"];
     return selected.map((body, index) => ({
-      title: language === "en" ? `🍀 Clue ${index + 1}` : `🍀 手がかり ${index + 1}`,
+      title: `🍀 ${fallbackTitles[index]}`,
       body
     }));
   }
@@ -684,7 +685,7 @@
     background(context);
     header(context, model.language === "en" ? "🍀 Gentle reflection" : "🍀 やさしいふりかえり", model, 3);
     panel(context, 70, 225, 940, 1055, 42, "rgba(255,255,255,.052)", "rgba(134,239,172,.18)");
-    drawText(context, model.language === "en" ? "Four gentle clues from Gluco" : "グルコからの4つの手がかり", 110, 303, { size: 29, weight: 900, color: "#bff7d7" });
+    drawText(context, model.language === "en" ? "Gentle clues from Gluco" : "グルコからのやさしい手がかり", 110, 303, { size: 29, weight: 900, color: "#bff7d7" });
     drawLetterSections(context, model.letter || defaultLetter(model), model.language);
     drawImageContain(context, peekImage, 835, 1100, 145, 105);
     const note = model.language === "en"

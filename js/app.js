@@ -4807,6 +4807,14 @@ function setupShareStudio() {
       const savedAfterError = await window.GlucoScopeShareStudio?.loadCarousel?.().catch(() => null);
       if (savedAfterError) renderShareStudioRecord(savedAfterError);
       const unavailableToday = error?.message === "today_data_unavailable" || error?.message === "daily_gluco_unavailable";
+      const quotaUnavailable = [
+        "daily_limit_reached",
+        "quota_reservation_failed",
+        "quota_service_unavailable",
+        "entitlement_unavailable",
+        "quota_identity_required"
+      ].includes(error?.message);
+      const localStorageFailed = ["storage_failed", "storage_unavailable", "storage_invalid"].includes(error?.message);
       setShareStudioStatus(trialAlreadyUsed
         ? (savedAfterError
           ? (currentLanguage === "en" ? "The four images kept on this screen are still available here." : "この画面に保管した4枚は、引き続きここから利用できます。")
@@ -4819,9 +4827,17 @@ function setupShareStudio() {
           ? (currentLanguage === "en"
             ? "Open today’s glucose screen once, then try again. No trial was used."
             : "今日の血糖画面を一度表示してから、もう一度お試しください。体験回数は使っていません。")
+          : quotaUnavailable
+            ? (currentLanguage === "en"
+              ? "The gentle AI reflection could not start. The trial was not used. Please try again after refreshing the account status."
+              : "やさしいAIふりかえりを開始できませんでした。体験回数は使っていません。アカウント状態を更新して、もう一度お試しください。")
+          : localStorageFailed
+            ? (currentLanguage === "en"
+              ? "The four images were created, but could not be kept on this screen. The trial was not used."
+              : "4枚は作成できましたが、この画面に保管できませんでした。体験回数は使っていません。")
           : (currentLanguage === "en"
-            ? "The four images could not be kept on this screen. The trial was not used. Please try again."
-            : "4枚をこの画面に保管できませんでした。体験回数は使っていません。もう一度お試しください。"));
+            ? "The four images could not be created. The trial was not used. Please try again."
+            : "4枚を作成できませんでした。体験回数は使っていません。もう一度お試しください。"));
       if (trialAlreadyUsed) {
         setInlinePlusNotice("shareStudioAccessNotice");
         setInlinePlusNotice("plusAccountShareStudioNotice");

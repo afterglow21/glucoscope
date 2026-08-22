@@ -191,7 +191,7 @@ test("Share Studio keeps a verified four-image set in device storage", async () 
   }, { store });
   assert.equal(record.blobs.length, 4);
   assert.equal(record.version, 2);
-  assert.equal(record.rendererRevision, 4);
+  assert.equal(record.rendererRevision, 5);
   assert.equal(api._testing.isCurrentCarouselRecord(record), true);
   assert.equal(record.dateKey, "2026-08-21");
   assert.equal(record.glucoId, 7);
@@ -275,6 +275,27 @@ test("the administrator-quality renderer keeps long Japanese and a score of 100 
   assert.match(source, /assets\/share-studio\/glucoscope-qr\.png/u);
   assert.doesNotMatch(source, /assets\/gluco\/about\/gluco-small-notice\.png/u);
   assert.doesNotMatch(source, /assets\/gluco\/profile\/gluco\.png/u);
+});
+
+test("Share Studio turns varied AI markers into fixed short headings instead of repeated generic labels", async () => {
+  const api = loadModule();
+  const dependencies = createRenderDependencies();
+  await api.generateCarousel({
+    dateKey: "2026-08-22",
+    dateLabel: "2026年8月22日(土)",
+    language: "ja",
+    metrics: { tir: 96.7, tar: 3.3, tbr: 0, average: 117, cv: 21.8, gmi: 6.1, glucoScore: 98 },
+    entries: [{ date: Date.UTC(2026, 7, 22, 0), sgv: 117 }],
+    gluco: { id: 3, title: "ボールあそび", imagePath: "assets/gluco/live/gluco-live-03.png" },
+    letter: "📊数字の手がかり - TIRは96.7%だよ。平均は117mg/dLだよ。🔎 気になった動き：GlucoScoreは98だよ。比べる数字は78だよ。🌱明日の小さな見返し–今日の数字をそっと見守っていこうね。急がなくて大丈夫だよ。"
+  }, dependencies);
+  const values = dependencies.textCalls.map((call) => call.value);
+  assert.ok(values.includes("📊 数字の手がかり"));
+  assert.ok(values.includes("🔎 気になった動き"));
+  assert.ok(values.includes("🌱 明日の小さな見返し"));
+  assert.ok(!values.some((value) => value.includes("4つの手がかり")));
+  assert.ok(!values.some((value) => value === "📊 やさしい手がかり"));
+  assert.ok(!values.some((value) => value.includes("平均は117mg/dL")));
 });
 
 test("the renderer preserves English decimals and never joins a sensor gap", () => {

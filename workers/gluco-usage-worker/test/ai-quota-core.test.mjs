@@ -217,10 +217,15 @@ function createHarness({ plusActive = true, shareTrialReserved = false, entitlem
     now: () => currentNow,
     hashBearerToken: async () => TOKEN_HASH,
     createReservationId: () => uuid(reservationSequence++),
-    resolveAccountEntitlement: async () => {
+    resolveAccountEntitlement: async ({ shareTrialRequestId } = {}) => {
       entitlementCalls += 1;
       if (entitlementStatus !== "ok") return { status: entitlementStatus };
-      return { status: "ok", subjectId: ACCOUNT_ID, plusActive, shareTrialReserved };
+      return {
+        status: "ok",
+        subjectId: ACCOUNT_ID,
+        plusActive,
+        shareTrialReserved: Boolean(shareTrialRequestId) && shareTrialReserved,
+      };
     },
   };
   return {
@@ -385,6 +390,38 @@ test("an exact active Share Studio trial reservation allows one detailed account
     error: "invalid_request",
     retryable: false,
   });
+});
+
+test("an exact Share Studio trial has its own one-use quota even after today's free account analysis", async () => {
+  const harness = createHarness({ plusActive: false, shareTrialReserved: true });
+  const ordinary = await reserveAiGeneration({
+    credential: { kind: "account", token: ACCOUNT_TOKEN },
+    requestId: uuid(111),
+    analysisMode: "letter",
+  }, harness.env, harness.services);
+  assert.equal(ordinary.status, "reserved");
+  await completeAiGeneration({ reservationId: ordinary.reservationId }, harness.env, harness.services);
+
+  const trialRequestId = uuid(112);
+  const trial = await reserveAiGeneration({
+    credential: { kind: "account", token: ACCOUNT_TOKEN },
+    requestId: uuid(113),
+    analysisMode: "letter",
+    shareTrialRequestId: trialRequestId,
+  }, harness.env, harness.services);
+  assert.equal(trial.status, "reserved");
+  assert.equal(trial.quota.tier, "free");
+  assert.equal(trial.quota.dailyLimit, 1);
+  await completeAiGeneration({ reservationId: trial.reservationId }, harness.env, harness.services);
+
+  const secondTrialGeneration = await reserveAiGeneration({
+    credential: { kind: "account", token: ACCOUNT_TOKEN },
+    requestId: uuid(114),
+    analysisMode: "letter",
+    shareTrialRequestId: trialRequestId,
+  }, harness.env, harness.services);
+  assert.equal(secondTrialGeneration.status, "limit_reached");
+  assert.equal(secondTrialGeneration.error, "daily_limit_reached");
 });
 
 test("provider and quality failures release a reservation without consuming quota", async () => {
