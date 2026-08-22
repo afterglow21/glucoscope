@@ -70,11 +70,11 @@ test("Plus 30-day pass records the approved one-time boundary and live release",
 test("canonical current-state records stay aligned with the live small public release", async () => {
   const [readme, bible] = await Promise.all([read(rootReadmeUrl), read(projectBibleUrl)]);
   for (const source of [readme, bible]) {
-    assert.match(source, /96da92df9a47c994cbb3c031d65cba9fbf5daea8/);
-    assert.match(source, /86fd6a35-4db2-46f4-a745-0cfc036a5dc7/);
-    assert.match(source, /ab21208a-b0e5-4075-be36-a9ace1483abb/);
+    assert.match(source, /712e57644f45fa50b625b8a8d6347c03c24b9e78/);
+    assert.match(source, /6c2ff2e9-e2ba-41f3-a49c-fce620981c89/);
+    assert.match(source, /61839f8d-450a-4017-a6cc-d64f23cb570f/);
     assert.match(source, /b2748c12-4edd-4a99-84c2-3e779f3c84b8/);
-    assert.match(source, /3414c567-6328-4361-8105-e9d6e83c5018/);
+    assert.match(source, /b584808c-0f63-4d18-8970-964dfec62212/);
   }
   assert.doesNotMatch(readme, /Plus remains a stopped, non-public staging foundation/);
   assert.doesNotMatch(bible, /Plus remains a stopped, non-public staging foundation/);

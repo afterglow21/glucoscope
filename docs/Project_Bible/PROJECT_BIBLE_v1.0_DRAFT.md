@@ -16,25 +16,26 @@ GlucoScopeとともに成長し、更新され続けます。
 
 ---
 
-## Current operational snapshot — 2026-08-20 JST
-## 現在の運用スナップショット — 2026-08-20 JST
+## Current operational snapshot — 2026-08-22 JST
+## 現在の運用スナップショット — 2026-08-22 JST
 
 This list is the canonical current-state record. Dated rollout passages elsewhere in this
 document are historical evidence unless they explicitly say that they remain current.
 
 - GitHub Pages serves `https://glucoscope.app/` from `main`. Commit
-  `96da92df9a47c994cbb3c031d65cba9fbf5daea8` is the accepted checkpoint for the small public
-  Plus release and approved hourly cleanup schedule before this documentation sync. Later reviewed
-  UI refinements remain traceable in `main`. Atomic usage-counter, long-lived-session,
+  `712e57644f45fa50b625b8a8d6347c03c24b9e78` is the accepted checkpoint for the Share Studio
+  detailed-analysis release. Atomic usage-counter, long-lived-session,
   and iPhone Home Screen acceptance remain recorded by their earlier dated checkpoints.
-- AI Worker personal-quota Version `86fd6a35-4db2-46f4-a745-0cfc036a5dc7` receives 100% of
-  AI traffic. Version `7af1189b-aaa5-4f18-8a1f-5e447d6d7d8e` is the direct behavior rollback,
-  keeping the atomic counter active while disabling personal quota. Atomic stopped Version
+- AI Worker Version `6c2ff2e9-e2ba-41f3-a49c-fce620981c89` receives 100% of AI traffic with
+  atomic personal quota, the signed administrator bridge, and exact-reservation Share Studio
+  detailed analysis. Version `030d9525-9058-4ced-9ec0-43d9cdb27a0d` is the direct behavior
+  rollback. Atomic stopped Version
   `46f44888-002b-4847-8553-5cd12e3d7ac5` is the emergency AI-off target. Version 28, Version 29,
-  the old new-origin Version, and pre-atomic Versions must not receive rollback traffic.
-- Usage Worker Version `ab21208a-b0e5-4075-be36-a9ace1483abb` receives 100% of Usage traffic
-  with the reviewed Plus-entitlement service binding and existing personal quota enforcement.
-  Version `0fcb9a63-8fbf-47d3-952c-75178881a0d9` is the direct rollback without that Plus binding.
+  the old new-origin Version, Phase A, and pre-atomic Versions must not receive rollback traffic.
+- Usage Worker Version `61839f8d-450a-4017-a6cc-d64f23cb570f` receives 100% of Usage traffic
+  with the reviewed Plus-entitlement service binding, exact Share Studio trial reservation context,
+  and existing personal quota enforcement. Version `ab21208a-b0e5-4075-be36-a9ace1483abb`
+  is the direct behavior rollback.
   The checked-in configuration remains fail-closed.
 - The privacy-protected Usage-to-AI aggregate is live. The current completed 30-day window
   has fewer than 10 consenting device-profile contributors, so the response is `suppressed`
@@ -54,26 +55,27 @@ document are historical evidence unless they explicitly say that they remain cur
   receives 100% of traffic with the narrow reviewed Plus aggregate binding. Version
   `b7c8c8d8-5fdf-4c94-9b9a-817c99f65c9a` is its direct rollback. It remains accepted for one
   administrator and has no public-site link.
-- Plus Version `3414c567-6328-4361-8105-e9d6e83c5018` receives 100% of production traffic for
-  the JPY 400 one-time 30-day pass. Unserved stopped Version
-  `6faa0065-8fdd-4563-985e-9e775999717b` is the only direct rollback. The approved hourly cleanup
+- Plus Version `b584808c-0f63-4d18-8970-964dfec62212` receives 100% of production traffic for
+  the JPY 400 one-time 30-day pass and exact active Share Studio trial authorization. Version
+  `3414c567-6328-4361-8105-e9d6e83c5018` is the direct behavior rollback. Unserved stopped Version
+  `6faa0065-8fdd-4563-985e-9e775999717b` remains the emergency Plus-off target. The approved hourly cleanup
   runs at `0 * * * *` and is limited to the documented expired temporary records.
 
 この一覧を、現在状態の正本とします。この文書内に残す日付付きの公開・受入記録は、
 「現在も有効」と明記したものを除き、その時点の履歴証拠です。
 
 - GitHub Pagesは`main`から `https://glucoscope.app/` を公開しています。commit
-  `96da92df9a47c994cbb3c031d65cba9fbf5daea8`は、この文書同期前にPlusの小規模公開と承認済み毎時cleanupを
-  受け入れたcheckpointです。以後の確認済みUI改善は`main`の履歴で追跡します。atomic利用カウンター、長期端末session、iPhoneホーム画面の受入は、
+  `712e57644f45fa50b625b8a8d6347c03c24b9e78`は、Share StudioのしっかりAI分析公開を
+  受け入れたcheckpointです。atomic利用カウンター、長期端末session、iPhoneホーム画面の受入は、
   それぞれの過去checkpointへ履歴として残します。
-- AI Workerは個人上限Version `86fd6a35-4db2-46f4-a745-0cfc036a5dc7`へ通信の100%を向けています。
-  個人上限だけを戻す直接rollbackは、atomicカウンターを維持するVersion
-  `7af1189b-aaa5-4f18-8a1f-5e447d6d7d8e`です。緊急にAIを止める時だけatomic停止Version
+- AI WorkerはVersion `6c2ff2e9-e2ba-41f3-a49c-fce620981c89`へ通信の100%を向け、atomic個人上限、
+  署名付き管理者bridge、Share Studioの正確な予約単位のしっかり分析を使っています。直接rollbackはVersion
+  `030d9525-9058-4ced-9ec0-43d9cdb27a0d`です。緊急にAIを止める時だけatomic停止Version
   `46f44888-002b-4847-8553-5cd12e3d7ac5`を使います。Version 28、Version 29、旧new-origin、
-  pre-atomic Versionへは戻しません。
-- Usage WorkerはVersion `ab21208a-b0e5-4075-be36-a9ace1483abb`へ通信の100%を向け、確認済みの
-  Plus利用権service bindingと個人別AI上限を使っています。Plus bindingを外す直接rollbackはVersion
-  `0fcb9a63-8fbf-47d3-952c-75178881a0d9`です。Gitへ保存した設定は停止側を初期値にします。
+  Phase A、pre-atomic Versionへは戻しません。
+- Usage WorkerはVersion `61839f8d-450a-4017-a6cc-d64f23cb570f`へ通信の100%を向け、確認済みの
+  Plus利用権service binding、Share Studio体験の正確な予約情報、個人別AI上限を使っています。直接rollbackはVersion
+  `ab21208a-b0e5-4075-be36-a9ace1483abb`です。Gitへ保存した設定は停止側を初期値にします。
 - privacy保護したUsage-to-AI集計は本番接続済みです。前日までの完了した30日間は、利用記録に
   同意した端末プロフィールが10件未満のため、応答を`suppressed`とし実数を含めません。
   backendの`GET`と、公開Dashboardの監督下実ブラウザ表示確認は合格しました。実際の
@@ -89,9 +91,10 @@ document are historical evidence unless they explicitly say that they remain cur
 - Accessで保護した管理者画面はVersion `b2748c12-4edd-4a99-84c2-3e779f3c84b8`へ通信の100%を向け、
   必要最小限のPlus集計service bindingを使っています。直接rollbackはVersion
   `b7c8c8d8-5fdf-4c94-9b9a-817c99f65c9a`です。管理者1名で本番受入済みで、公開サイトにはリンクしません。
-- PlusはVersion `3414c567-6328-4361-8105-e9d6e83c5018`へ本番通信の100%を向け、400円の1回払いで
-  30日間使える小規模な一般提供を開始しています。未配信の停止Version
-  `6faa0065-8fdd-4563-985e-9e775999717b`だけを直接rollbackに使います。承認済みの毎時cleanupは
+- PlusはVersion `b584808c-0f63-4d18-8970-964dfec62212`へ本番通信の100%を向け、400円の1回払いで
+  30日間使える小規模な一般提供と、正確な予約に限るShare Studio体験を提供しています。直接rollbackはVersion
+  `3414c567-6328-4361-8105-e9d6e83c5018`、緊急停止は未配信の停止Version
+  `6faa0065-8fdd-4563-985e-9e775999717b`を使います。承認済みの毎時cleanupは
   `0 * * * *`で動き、正本に定めた期限切れ一時記録だけを対象にします。
 
 ---
