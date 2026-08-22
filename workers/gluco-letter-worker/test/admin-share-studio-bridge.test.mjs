@@ -5,12 +5,10 @@ import {
   ADMIN_SHARE_STUDIO_PAGE_MODE,
   DEFAULT_ADMIN_SHARE_STUDIO_ORIGIN,
   adminShareStudioBridgeTesting,
-  buildAdminShareStudioCounterConfig,
   isAdminShareStudioTurnstileReady,
   readAdminShareStudioBridgeConfig,
   verifyAdminShareStudioBridgeRequest,
 } from "../src/admin-share-studio-bridge.js";
-import { invokeAtomicUsageCounter } from "../src/usage-counter-client.js";
 
 const SECRET = "admin-bridge-test-secret-with-at-least-32-bytes";
 const REQUEST_ID = "123e4567-e89b-42d3-a456-426614174000";
@@ -70,11 +68,11 @@ test("admin bridge is checked in disabled and requires a 32-byte secret", async 
   assert.equal(defaults.enabled, false);
   assert.equal(defaults.secretReady, false);
   assert.equal(defaults.origin, DEFAULT_ADMIN_SHARE_STUDIO_ORIGIN);
-  assert.equal(defaults.dailyLimit, 5);
+  assert.equal(Object.hasOwn(defaults, "dailyLimit"), false);
 
   const wrangler = await readFile(new URL("../wrangler.toml", import.meta.url), "utf8");
   assert.match(wrangler, /ADMIN_SHARE_STUDIO_BRIDGE_ENABLED = "false"/u);
-  assert.match(wrangler, /ADMIN_SHARE_STUDIO_DAILY_LIMIT = "5"/u);
+  assert.doesNotMatch(wrangler, /ADMIN_SHARE_STUDIO_DAILY_LIMIT/u);
   assert.doesNotMatch(wrangler, /ADMIN_SHARE_STUDIO_BRIDGE_SECRET\s*=/u);
 
   const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
@@ -131,32 +129,13 @@ test("tampering, stale signatures, wrong origins, and unsigned requests fail clo
   assert.equal((await verifyAdminShareStudioBridgeRequest(disabled, {}, NOW_SECONDS * 1000)).error, "bridge_disabled");
 });
 
-test("the separate admin counter clamps its cap and never changes the personal counter name", async () => {
-  const config = buildAdminShareStudioCounterConfig({ aiEnabled: false, stopBudgetJpy: 0 }, 500);
-  assert.equal(config.aiEnabled, true);
-  assert.equal(config.sharedCountLimitsEnabled, true);
-  assert.equal(config.dailyGenerationLimit, 30);
-  assert.equal(config.slotGenerationLimit, 30);
-
-  let selectedName = "";
-  const namespace = {
-    getByName(name) {
-      selectedName = name;
-      return {
-        async reserveGeneration() {
-          return { ok: true, status: "reserved", state: {} };
-        },
-      };
-    },
-  };
-  const result = await invokeAtomicUsageCounter({
-    enabled: true,
-    namespace,
-    name: "glucoscope-admin-share-studio",
-    method: "reserveGeneration",
-  });
-  assert.equal(result.ok, true);
-  assert.equal(selectedName, "glucoscope-admin-share-studio");
+test("admin generations have no separate daily cap and retain the global atomic safety ledger", async () => {
+  const indexSource = await readFile(new URL("../src/index.js", import.meta.url), "utf8");
+  const bridgeSource = await readFile(new URL("../src/admin-share-studio-bridge.js", import.meta.url), "utf8");
+  assert.doesNotMatch(indexSource, /admin_bridge_daily_limit_reached|glucoscope-admin-share-studio/u);
+  assert.doesNotMatch(bridgeSource, /DAILY_LIMIT|dailyLimit|glucoscope-admin-share-studio/u);
+  assert.match(indexSource, /config = Object\.freeze\(\{ \.\.\.config, sharedCountLimitsEnabled: false \}\)/u);
+  assert.match(indexSource, /handleAtomicGenerationRequest\(/u);
 });
 
 test("admin generation requires Turnstile plus its secret and omits the Pages Worker IP", async () => {

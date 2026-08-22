@@ -287,7 +287,7 @@ test("Share Studio turns varied AI markers into fixed short headings instead of 
     metrics: { tir: 96.7, tar: 3.3, tbr: 0, average: 117, cv: 21.8, gmi: 6.1, glucoScore: 98 },
     entries: [{ date: Date.UTC(2026, 7, 22, 0), sgv: 117 }],
     gluco: { id: 3, title: "ボールあそび", imagePath: "assets/gluco/live/gluco-live-03.png" },
-    letter: "📊数字の手がかり - TIRは96.7%だよ。平均は117mg/dLだよ。🔎 気になった動き：GlucoScoreは98だよ。比べる数字は78だよ。🌱明日の小さな見返し–今日の数字をそっと見守っていこうね。急がなくて大丈夫だよ。"
+    letter: "🌿 全体の流れ - 夜のお手紙の集計だね。TIRは96.7％で、表示中のほとんどの時間が目標範囲の中だよ。📊数字の手がかり - ちょっと見てみようね。平均は117mg/dLで、CVは21.8％だったよ。🔎 気になった動き：少しだけ気になったよ。GlucoScoreは98で、比較期間の78より20高く見えているよ。🌱明日の小さな見返し–ぼくはここにいるよ🍀。余裕があるときに、今日の数字をそっと振り返ってみようね。"
   }, dependencies);
   const values = dependencies.textCalls.map((call) => call.value);
   assert.ok(values.includes("📊 数字の手がかり"));
@@ -295,7 +295,11 @@ test("Share Studio turns varied AI markers into fixed short headings instead of 
   assert.ok(values.includes("🌱 明日の小さな見返し"));
   assert.ok(!values.some((value) => value.includes("4つの手がかり")));
   assert.ok(!values.some((value) => value === "📊 やさしい手がかり"));
-  assert.ok(!values.some((value) => value.includes("平均は117mg/dL")));
+  assert.ok(values.some((value) => value.includes("平均は117mg/dL")));
+  assert.ok(values.some((value) => value.includes("比較期間の78")));
+  assert.ok(values.some((value) => value.includes("余裕があるとき")));
+  assert.ok(!values.some((value) => value.includes("夜のお手紙の集計")));
+  assert.ok(!values.some((value) => value === "ぼくはここにいるよ🍀"));
 });
 
 test("the renderer preserves English decimals and never joins a sensor gap", () => {

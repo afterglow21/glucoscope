@@ -2,9 +2,6 @@ const ADMIN_BRIDGE_VERSION = "v1";
 const ADMIN_BRIDGE_HEADER_PREFIX = "X-Gluco-Admin-Bridge";
 const ADMIN_BRIDGE_MAX_BODY_BYTES = 64_000;
 const ADMIN_BRIDGE_DEFAULT_MAX_AGE_SECONDS = 90;
-const ADMIN_BRIDGE_DEFAULT_DAILY_LIMIT = 5;
-const ADMIN_BRIDGE_MAX_DAILY_LIMIT = 30;
-const ADMIN_BRIDGE_COUNTER_NAME = "glucoscope-admin-share-studio";
 const UUID_V4_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const HEX_SHA256_PATTERN = /^[0-9a-f]{64}$/iu;
 
@@ -151,12 +148,6 @@ export function readAdminShareStudioBridgeConfig(env = {}) {
       30,
       300
     ),
-    dailyLimit: readBoundedInteger(
-      env.ADMIN_SHARE_STUDIO_DAILY_LIMIT,
-      ADMIN_BRIDGE_DEFAULT_DAILY_LIMIT,
-      1,
-      ADMIN_BRIDGE_MAX_DAILY_LIMIT
-    ),
     turnstileIdentity: Object.freeze({
       hostname: String(
         env.ADMIN_SHARE_STUDIO_TURNSTILE_HOSTNAME
@@ -255,21 +246,7 @@ export async function verifyAdminShareStudioBridgeRequest(request, env = {}, now
     status: 200,
     origin,
     requestId: requestId.toLowerCase(),
-    dailyLimit: config.dailyLimit,
-    counterName: ADMIN_BRIDGE_COUNTER_NAME,
     turnstileIdentity: config.turnstileIdentity,
-  });
-}
-
-export function buildAdminShareStudioCounterConfig(baseConfig = {}, dailyLimit = ADMIN_BRIDGE_DEFAULT_DAILY_LIMIT) {
-  const limit = readBoundedInteger(dailyLimit, ADMIN_BRIDGE_DEFAULT_DAILY_LIMIT, 1, ADMIN_BRIDGE_MAX_DAILY_LIMIT);
-  return Object.freeze({
-    ...baseConfig,
-    aiEnabled: true,
-    sharedCountLimitsEnabled: true,
-    dailyGenerationLimit: limit,
-    slotGenerationLimit: limit,
-    stopBudgetJpy: Number.MAX_SAFE_INTEGER,
   });
 }
 
@@ -284,7 +261,6 @@ export function isAdminShareStudioTurnstileReady(env = {}, baseConfig = {}) {
 export const adminShareStudioBridgeTesting = Object.freeze({
   ADMIN_BRIDGE_VERSION,
   ADMIN_BRIDGE_HEADER_PREFIX,
-  ADMIN_BRIDGE_COUNTER_NAME,
   ADMIN_BRIDGE_MAX_BODY_BYTES,
   UUID_V4_PATTERN,
   buildSigningMessage,

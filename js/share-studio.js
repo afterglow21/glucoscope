@@ -249,9 +249,10 @@
           .replace(/\s+[\-－—]\s+/gu, language === "en" ? " " : "")
           .trim();
         const sentences = splitSentences(body, language);
+        const selected = selectSubstantiveLetterSentence(sentences, marker, language);
         return {
           title: `${marker} ${fixedTitles[marker] || (language === "en" ? "Gentle clue" : "やさしい手がかり")}`,
-          body: sentences[0] || body
+          body: selected
         };
       })
       .filter((section) => section.body);
@@ -271,6 +272,41 @@
       title: `🍀 ${fallbackTitles[index]}`,
       body
     }));
+  }
+
+  function selectSubstantiveLetterSentence(sentences, marker, language) {
+    const candidates = sentences.map((sentence, index) => {
+      const body = String(sentence || "").trim();
+      if (!body) return { body: "", score: Number.NEGATIVE_INFINITY };
+
+      const trivial = language === "en"
+        ? /^(?:Gluco(?: is here| here)?[.!]?\s*[🍀🌿]?|I(?:'m| am) (?:glad|happy) you(?:'re| are) here[.!]?|I(?:'m| am) right here with you[.!]?|This is (?:the )?(?:morning|afternoon|evening) (?:letter|summary)[.!]?)$/iu
+        : /^(?:グルコだよ[🍀🌿]?|来てくれて(?:うれしい|ありがとう)(?:よ|ね)?[。！!]?|ぼくはここにいるよ[🍀🌿]?|今日もあなたのそばにいるよ[🍀🌿]?|(?:朝|昼|夜)(?:のお手紙)?(?:の集計)?(?:だね|だよ|ですね)?[。！!]?)$/u;
+      const numeric = language === "en"
+        ? /\b(?:TIR|TAR|TBR|CV|GMI|GlucoScore|average|mg\/dL|target range|higher|lower|variability)\b|\d+(?:\.\d+)?%/iu
+        : /(?:TIR|TAR|TBR|CV|GMI|GlucoScore|平均|mg\/dL|目標範囲|高め|低め|ばらつき|\d+(?:\.\d+)?％)/u;
+      const observation = language === "en"
+        ? /\b(?:flow|pattern|range|time|period|clue|movement|compared|reflection|look back|notice)\b/iu
+        : /(?:流れ|動き|範囲|時間|手がかり|まとまり|比べ|比較|振り返|見返|眺め|気づ)/u;
+      const reflective = language === "en"
+        ? /\b(?:gently|without rushing|when you have room|optional|small pause)\b/iu
+        : /(?:やさしく|急がなく|余裕がある|無理なく|そっと|ひと息)/u;
+
+      let score = Math.min(body.length, 90) / 12;
+      if (numeric.test(body)) score += 18;
+      if (observation.test(body)) score += 9;
+      if (reflective.test(body)) score += 6;
+      if ((marker === "📊" || marker === "📈") && numeric.test(body)) score += 7;
+      if ((marker === "🔎" || marker === "🌙") && observation.test(body)) score += 5;
+      if (marker === "🌱" && (observation.test(body) || reflective.test(body))) score += 7;
+      if (body.length < (language === "en" ? 24 : 14)) score -= 7;
+      if (trivial.test(body)) score -= 40;
+      score -= index * 0.05;
+      return { body, score };
+    }).filter((candidate) => candidate.body);
+
+    candidates.sort((left, right) => right.score - left.score);
+    return candidates[0]?.score > 0 ? candidates[0].body : "";
   }
 
   function ellipsizedLines(context, value, maximumWidth, maximumLines) {

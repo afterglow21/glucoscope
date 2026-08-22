@@ -329,12 +329,11 @@ following match: checked-in-off enable flag, 32-byte-or-longer shared secret, ex
 signed UUID and fixed admin page mode, and the admin Turnstile hostname/action. Invalid bridge
 headers fail before the normal AI request handler.
 
-Admin generations always use the detailed-analysis prompt. They retain the ordinary atomic global budget reservation and use a second named
-`GlucoUsageCounter` Durable Object for a strongly consistent five-successes-per-day admin cap.
-The separate object prevents admin work from consuming or bypassing a personal user's quota;
-request IDs also make signed replay attempts idempotently fail. Reservations are completed only
-for a successful response and released for an error. Structured logs contain the request ID and
-decision, never the HMAC secret, Turnstile token, or glucose summary.
+Admin generations always use the detailed-analysis prompt. They do not consume a personal user's
+Free/Plus quota and do not have a separate administrator daily count cap. They still pass through
+the ordinary atomic global cost budget and emergency AI stop, so provider-cost and incident safety
+remain fail-closed. Request IDs make signed replay attempts idempotently fail. Structured logs
+contain the request ID and decision, never the HMAC secret, Turnstile token, or glucose summary.
 
 Checked-in production-safe defaults are:
 
@@ -343,7 +342,6 @@ ADMIN_SHARE_STUDIO_BRIDGE_ENABLED=false
 ADMIN_SHARE_STUDIO_ORIGIN=https://glucoscope-share-studio.pages.dev
 ADMIN_SHARE_STUDIO_TURNSTILE_HOSTNAME=glucoscope-share-studio.pages.dev
 ADMIN_SHARE_STUDIO_TURNSTILE_ACTION=glucoscope-ai-letter
-ADMIN_SHARE_STUDIO_DAILY_LIMIT=5
 ```
 
 Set `ADMIN_SHARE_STUDIO_BRIDGE_SECRET` as an encrypted Worker secret and as an encrypted Pages
