@@ -292,7 +292,7 @@ const translations = {
     mobileMoreShareStudioLearnMoreTitle: "Share Studioとは？",
     mobileMoreShareStudioLearnMoreAction: "できることを見る",
     shareStudioTitle: "今日のふりかえりを4枚に",
-    shareStudioLead: "今日出逢ったグルコ、血糖グラフ、やさしいふりかえりを、端末の中だけで4枚のカルーセル画像にします。",
+    shareStudioLead: "今日出逢ったグルコ、血糖グラフ、やさしいふりかえりを、端末の中だけで4枚の画像にまとめます。",
     shareStudioPrivacyTitle: "共有する前に",
     shareStudioPrivacyBody: "画像には健康情報が含まれます。共有相手と公開範囲を確認してください。接続URLや合言葉は画像にもサーバーにも送りません。",
     shareStudioCreate: "4枚を作る",
@@ -370,7 +370,7 @@ const translations = {
     plusAccountSendCodeButton: "確認コードを送る",
     shareStudioTrialEyebrow: "🍀 購入前の無料体験",
     shareStudioTrialTitle: "Share Studioを1回無料で試せます",
-    shareStudioTrialLead: "メールを確認するだけで、ふりかえり画像を1回作れます。",
+    shareStudioTrialLead: "メールを確認するだけで、4枚セットを1回作れます。",
     shareStudioTrialFreeTitle: "この確認では料金はかかりません",
     shareStudioTrialFreeEmail: "メール確認だけで使えます",
     shareStudioTrialFreeCard: "クレジットカード情報は入力しません",
@@ -755,14 +755,14 @@ const translations = {
     mobileMoreShareStudioNote: "Plus · one trial included",
     mobileMoreShareStudioLearnMoreTitle: "What is Share Studio?",
     mobileMoreShareStudioLearnMoreAction: "See what it can do",
-    shareStudioTitle: "Turn today's reflection into four slides",
-    shareStudioLead: "Create a four-image carousel with today's Gluco, glucose graph, and gentle reflection, entirely on this device.",
+    shareStudioTitle: "Turn today's reflection into four images",
+    shareStudioLead: "Create a set of four images with today's Gluco, glucose graph, and gentle reflection, entirely on this device.",
     shareStudioPrivacyTitle: "Before sharing",
     shareStudioPrivacyBody: "This image contains health information. Check the recipient and audience. Connection URLs and passphrases are never included or sent to the server.",
-    shareStudioCreate: "Create four slides",
-    shareStudioShare: "Share or save four slides",
-    shareStudioDelete: "Delete the saved slides",
-    shareStudioHealthConfirm: "The four slides contain health information such as glucose data. I will check the destination and audience before sharing.",
+    shareStudioCreate: "Create four images",
+    shareStudioShare: "Share or save four images",
+    shareStudioDelete: "Delete the saved images",
+    shareStudioHealthConfirm: "The four images contain health information such as glucose data. I will check the destination and audience before sharing.",
     mobileMoreCollection: "Memories",
     mobileMoreCollectionNote: "Your moments with Gluco",
     mobileMoreAbout: "About",
@@ -834,7 +834,7 @@ const translations = {
     plusAccountSendCodeButton: "Send verification code",
     shareStudioTrialEyebrow: "🍀 Free trial before purchase",
     shareStudioTrialTitle: "Try Share Studio once for free",
-    shareStudioTrialLead: "Verify an email to create one reflection image.",
+    shareStudioTrialLead: "Verify an email to create one set of four reflection images.",
     shareStudioTrialFreeTitle: "This verification does not charge you",
     shareStudioTrialFreeEmail: "Only email verification is needed",
     shareStudioTrialFreeCard: "No credit card information is entered",
@@ -3660,8 +3660,8 @@ function updatePlusAccountUi() {
     } else if (accountState.status === "ready" && shareTrialEntry) {
       summary.textContent = accountState.shareStudioTrialAvailable
         ? (currentLanguage === "en"
-          ? "Email verification is complete. You can create one Share Studio image for free. No payment was made."
-          : "メール確認ができました。Share Studioの画像を1回無料で作れます。支払いは行われていません。")
+          ? "Email verification is complete. You can create one free set of four Share Studio images. No payment was made."
+          : "メール確認ができました。Share Studioの4枚セットを1回無料で作れます。支払いは行われていません。")
         : (currentLanguage === "en"
           ? "This email has already used the one free Share Studio trial. No payment was made."
           : "このメールではShare Studioの1回無料体験を使用済みです。支払いは行われていません。");
@@ -4499,7 +4499,7 @@ function renderShareStudioRecord(record) {
     const image = document.createElement("img");
     const caption = document.createElement("figcaption");
     image.src = url;
-    image.alt = currentLanguage === "en" ? `Share Studio slide ${index + 1}` : `Share Studio ${index + 1}枚目`;
+    image.alt = currentLanguage === "en" ? `Share Studio image ${index + 1} of 4` : `Share Studio ${index + 1}枚目`;
     caption.textContent = `${index + 1} / 4`;
     figure.append(image, caption);
     previewGrid?.append(figure);
@@ -4538,15 +4538,20 @@ function setupShareStudio() {
     try {
       const saved = await window.GlucoScopeShareStudio?.loadCarousel?.();
       if (saved) {
+        const currentLayout = window.GlucoScopeShareStudio?._testing?.isCurrentCarouselRecord?.(saved) === true;
         setInlinePlusNotice("shareStudioAccessNotice");
         setInlinePlusNotice("plusAccountShareStudioNotice");
         shareStudioOpener = opener;
         dialog.hidden = false;
         renderShareStudioRecord(saved);
         if (createButton) createButton.hidden = !access.allowed;
-        setShareStudioStatus(currentLanguage === "en"
-          ? "Your saved four slides are still here. You can share or save them again."
-          : "保存済みの4枚を再表示しました。いつでも共有・保存できます。");
+        setShareStudioStatus(currentLayout
+          ? (currentLanguage === "en"
+            ? "Your saved four images are still here. You can share or save them again."
+            : "保存済みの4枚を再表示しました。いつでも共有・保存できます。")
+          : (currentLanguage === "en"
+            ? "These four images were saved with the earlier layout. They are shown unchanged and remain available to share or save."
+            : "以前のレイアウトで保存した4枚を、内容を変えずに表示しています。いつでも共有・保存できます。"));
         createButton?.focus?.();
         return;
       }
@@ -4624,7 +4629,7 @@ function setupShareStudio() {
     createButton.disabled = true;
     shareButton.hidden = true;
     if (preview) preview.hidden = true;
-    setShareStudioStatus(currentLanguage === "en" ? "Creating four slides on this device…" : "この端末の中で4枚を作っています…");
+    setShareStudioStatus(currentLanguage === "en" ? "Creating four images on this device…" : "この端末の中で4枚を作っています…");
 
     let reservation = null;
     let completionStarted = false;
@@ -4654,7 +4659,7 @@ function setupShareStudio() {
 
       renderShareStudioRecord(savedRecord);
       setShareStudioStatus(currentLanguage === "en"
-        ? "Four slides are saved on this device. Closing this screen will not remove them."
+        ? "The four images are saved on this device. Closing this screen will not remove them."
         : "4枚をこの端末に保存しました。この画面を閉じても、あとから再表示できます。");
     } catch (error) {
       const trialAlreadyUsed = error?.message === "trial_already_used";
@@ -4671,18 +4676,18 @@ function setupShareStudio() {
       const unavailableToday = error?.message === "today_data_unavailable" || error?.message === "daily_gluco_unavailable";
       setShareStudioStatus(trialAlreadyUsed
         ? (savedAfterError
-          ? (currentLanguage === "en" ? "Your saved slides are still available here." : "保存済みの4枚は、この画面から引き続き利用できます。")
+          ? (currentLanguage === "en" ? "Your saved images are still available here." : "保存済みの4枚は、この画面から引き続き利用できます。")
           : "")
         : completionStarted
         ? (currentLanguage === "en"
-          ? "The four slides were saved on this device. Account status could not be confirmed, so refresh the status before creating new slides."
+          ? "The four images were saved on this device. Account status could not be confirmed, so refresh the status before creating new images."
           : "4枚はこの端末に保存済みです。体験状態を確認できなかったため、新しく作る前にアカウント状態を更新してください。")
         : unavailableToday
           ? (currentLanguage === "en"
             ? "Open today’s glucose screen once, then try again. No trial was used."
             : "今日の血糖画面を一度表示してから、もう一度お試しください。体験回数は使っていません。")
           : (currentLanguage === "en"
-            ? "The four slides could not be saved on this device. The trial was not used. Please try again."
+            ? "The four images could not be saved on this device. The trial was not used. Please try again."
             : "4枚をこの端末に保存できませんでした。体験回数は使っていません。もう一度お試しください。"));
       if (trialAlreadyUsed) {
         setInlinePlusNotice("shareStudioAccessNotice");
@@ -4708,7 +4713,7 @@ function setupShareStudio() {
     try {
       await window.GlucoScopeShareStudio?.shareCarousel?.(shareStudioRecord, currentLanguage);
       setShareStudioStatus(currentLanguage === "en"
-        ? "The share or save screen opened for the four slides."
+        ? "The share or save screen opened for the four images."
         : "4枚の共有・保存画面を開きました。");
     } catch (error) {
       if (error?.name !== "AbortError") {
@@ -4722,7 +4727,7 @@ function setupShareStudio() {
   deleteButton?.addEventListener("click", async () => {
     if (shareStudioBusy || !shareStudioRecord) return;
     const confirmed = window.confirm(currentLanguage === "en"
-      ? "Delete the four saved slides from this device? This does not restore a used free trial."
+      ? "Delete the four saved images from this device? This does not restore a used free trial."
       : "この端末に保存した4枚を削除しますか？ 使用済みの無料体験回数は戻りません。");
     if (!confirmed) return;
     shareStudioBusy = true;
@@ -4731,11 +4736,11 @@ function setupShareStudio() {
       await window.GlucoScopeShareStudio?.deleteCarousel?.();
       renderShareStudioRecord(null);
       setShareStudioStatus(currentLanguage === "en"
-        ? "The saved slides were deleted from this device."
+        ? "The saved images were deleted from this device."
         : "この端末から保存済みの4枚を削除しました。");
     } catch (error) {
       setShareStudioStatus(currentLanguage === "en"
-        ? "The saved slides could not be deleted. Please try again."
+        ? "The saved images could not be deleted. Please try again."
         : "保存済みの4枚を削除できませんでした。もう一度お試しください。");
     } finally {
       shareStudioBusy = false;
@@ -8805,6 +8810,17 @@ async function loadDailyStats() {
           date: getEntryTime(entry),
           sgv: Number(entry?.sgv)
         })).filter((entry) => Number.isFinite(entry.date) && Number.isFinite(entry.sgv)),
+        treatments: normalizeTreatmentEvents(
+          treatments,
+          normalizeEntriesForChart(entries, rangeStart),
+          rangeStart,
+          rangeEnd
+        ).map((treatment) => ({
+          date: treatment.rawTime,
+          kind: treatment.eventCategory === "correctionBolus" ? "correction" : "meal"
+        })),
+        rangeStart,
+        rangeEnd,
         gluco: {
           id: Number(encounteredGluco.item?.id),
           title: encounteredGluco.item?.title?.[currentLanguage]

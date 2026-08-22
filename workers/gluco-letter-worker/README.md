@@ -247,11 +247,8 @@ The script:
 3. adds the `AI_LETTER_CACHE` binding to `wrangler.toml`, and
 4. runs syntax and dry-deploy checks.
 
-Review the generated `wrangler.toml` diff, then deploy:
-
-```powershell
-npx wrangler deploy
-```
+The historical setup once used a bare `wrangler deploy` here. Do not run that command now; current
+production releases must use the live-compatible Version procedure described above.
 
 The binding created by Wrangler has this shape:
 
@@ -318,6 +315,72 @@ monthly cost stop remain. Checked-in defaults deliberately remain fail-closed: p
 and the demo sample are off, and shared count limits are on. Production uses the reviewed
 aligned rollout values instead.
 
+## Server-authenticated Admin Share Studio bridge
+
+The private Admin Share Studio does not receive a general browser CORS exception and does not reuse a
+personal user's Free/Plus credential. Its Pages Function is protected by Cloudflare Access and also
+cryptographically verifies the Access JWT against the team's remote JWKS, exact issuer, application
+AUD, expiry, and the allowed email claim. It rebuilds a bounded summary allowlist, drops browser
+hints, unknown fields, and all current/latest glucose aliases, creates a UUIDv4 request ID, and signs
+the complete upstream body with HMAC-SHA256. The AI Worker accepts that path only when all of the
+following match: checked-in-off enable flag, 32-byte-or-longer shared secret, exact
+`https://glucoscope-share-studio.pages.dev` Origin, a signature no older than 90 seconds, the
+signed UUID and fixed admin page mode, and the admin Turnstile hostname/action. Invalid bridge
+headers fail before the normal AI request handler.
+
+Admin generations retain the ordinary atomic global budget reservation and use a second named
+`GlucoUsageCounter` Durable Object for a strongly consistent five-successes-per-day admin cap.
+The separate object prevents admin work from consuming or bypassing a personal user's quota;
+request IDs also make signed replay attempts idempotently fail. Reservations are completed only
+for a successful response and released for an error. Structured logs contain the request ID and
+decision, never the HMAC secret, Turnstile token, or glucose summary.
+
+Checked-in production-safe defaults are:
+
+```text
+ADMIN_SHARE_STUDIO_BRIDGE_ENABLED=false
+ADMIN_SHARE_STUDIO_ORIGIN=https://glucoscope-share-studio.pages.dev
+ADMIN_SHARE_STUDIO_TURNSTILE_HOSTNAME=glucoscope-share-studio.pages.dev
+ADMIN_SHARE_STUDIO_TURNSTILE_ACTION=glucoscope-ai-letter
+ADMIN_SHARE_STUDIO_DAILY_LIMIT=5
+```
+
+Set `ADMIN_SHARE_STUDIO_BRIDGE_SECRET` as an encrypted Worker secret and as an encrypted Pages
+secret; never add it to Wrangler configuration or Git. Keep `CORS_ALLOWED_ORIGINS` restricted to
+`https://glucoscope.app` and never add `*`. Roll out the Worker code and secret with the bridge
+flag off, then the Pages code and secret with its flag off, verify Access and the Turnstile host,
+enable the Worker flag, and enable Pages last. The bridge also refuses to run unless the atomic
+usage counter is enabled and bound, `TURNSTILE_REQUIRED=true`, and `TURNSTILE_SECRET_KEY` is set.
+For this server-to-server Pages request, the Worker does not send the Pages Function's
+`CF-Connecting-IP` to Turnstile as though it were the visitor's IP.
+
+The checked-in `wrangler.toml` is a fail-safe development baseline, not the live production
+configuration. It intentionally differs from the reviewed production values for the atomic
+counter, personal quota, shared count ceilings, and fixed public-demo sample. Never run bare
+`wrangler deploy`, `npx wrangler deploy`, or `npm run deploy` against it. The `deploy` package
+script intentionally exits with an error. Before any production upload, read the currently served
+Version, copy every live variable and binding into a gitignored release configuration, change only
+the reviewed bridge variables, upload it through Wrangler Versions, and verify the complete binding
+set before assigning traffic. Prepare a same-code bridge-disabled Version as the rollback target;
+do not roll back to a pre-atomic Version.
+
+The gitignored `workers/gluco-letter-worker/.wrangler/live-production.wrangler.toml` is a
+deployment-time artifact, not a checked-in source file. Create it only after the final commit is
+fixed and the active production Version has been read again. It must copy every active plain
+variable and binding, preserve `atomic=true`, `per-user=true`, `shared-count-limits=false`, and
+`approved-demo=true`, and start the new admin bridge at `false`. Do not create an automatic
+`.wrangler/deploy/config.json` redirect. Always name the reviewed file explicitly:
+
+```powershell
+npm run deploy:live:dry
+npx wrangler versions upload --config .wrangler/live-production.wrangler.toml --keep-vars --message "Stage signed Admin Share Studio bridge disabled"
+```
+
+Uploading a Version assigns no traffic. Compare the candidate binding snapshot with the active
+production Version before deployment. Apart from the reviewed admin bridge variables and encrypted
+bridge secret, the live variables, Durable Object namespace, KV namespace, service bindings,
+migration tag, and compatibility date must be unchanged.
+
 ## Local development
 
 ```bash
@@ -363,11 +426,8 @@ tag = "v1"
 new_sqlite_classes = [ "GlucoUsageCounter" ]
 ```
 
-The first deployment after adding this configuration creates the SQLite-backed Durable Object namespace:
-
-```bash
-npx wrangler deploy
-```
+The first historical deployment after adding this configuration created the SQLite-backed Durable
+Object namespace. That migration is complete; do not repeat it with a bare deploy.
 
 After deployment, confirm:
 

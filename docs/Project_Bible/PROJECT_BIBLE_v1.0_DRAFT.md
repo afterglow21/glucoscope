@@ -3702,15 +3702,25 @@ the administrator dashboard may show only an aggregate active-Plus count, never 
 payment or account details.
 
 On 2026-08-21, the public Share Studio boundary was aligned with the protected administrator
-Social Share Studio: it creates a four-image carousel for today instead of one Daily Snapshot.
-Slide 1 uses the exact Gluco already encountered and stored by the same GlucoScope browser;
+Social Share Studio: it creates a set of four images for today instead of one Daily Snapshot.
+Image 1 uses the exact Gluco already encountered and stored by the same GlucoScope browser;
 the person does not choose a replacement. Slide 2 contains daily metrics and the glucose
 graph, slide 3 contains a gentle reflection, and slide 4 is a stable GlucoScope closing card.
 All four PNGs are generated locally and written to browser IndexedDB before a free-trial
 completion is sent. A storage or read-back failure releases the reservation and does not
-consume the trial. The saved carousel can be reopened and saved again until the person
+consume the trial. The saved image set can be reopened and saved again until the person
 deletes it in Share Studio or clears browser data. It does not sync across devices. The
 images, glucose values, source URL, and passphrase are never sent to the Plus Worker.
+
+On 2026-08-22, only the administrator Studio's reviewed pure Canvas composition was adapted
+into the user-facing renderer. Its administrator data loaders, authentication, Pages routes,
+and Gluco selector were not imported. The user renderer now uses character-aware Japanese
+wrapping, bounded paragraph fitting, aspect-ratio-preserving Gluco artwork, a fixed score
+column that fits `100`, gap-aware glucose lines, treatment markers, the reviewed public closing
+art with the current public QR, and explicit iPhone safe-area handling. Records created by the
+earlier renderer remain readable and shareable, but they are not silently rebuilt from newer
+glucose data. The new layout is used only for newly created records. The existing reserve,
+local write/read-back, completion, and reopening boundary is unchanged.
 
 The expanded implementation foundation remains disabled and unpublished. It includes an
 atomic AI-quota reservation ledger, a separate non-public Plus entitlement Worker, server-side
@@ -4110,6 +4120,15 @@ IndexedDBへ保存して読み戻せた後だけ無料体験の完了を送り�
 予約を解除し、体験を消費しません。保存済みの4枚は、Share Studio内で削除するかブラウザデータを
 削除するまで再表示・再保存できます。別端末へは同期しません。画像、血糖値、接続先URL、合言葉を
 Plus Workerへ送りません。
+
+2026年8月22日、管理者用Studioから、確認済みの純粋なCanvas描画部分だけを利用者向けへ
+移しました。管理者用のデータ取得、認証、Pages route、グルコ選択画面は移していません。
+利用者向け描画は、日本語を1文字ずつ安全に折り返し、文章量に合わせて表示を収め、グルコの
+縦横比を保ち、GlucoScore `100`も固定欄内へ収めます。センサー欠測を線で結ばず、治療点も
+表示します。確認済みの公開用締めくくり画像には現在の公開URLのQRを重ね、iPhoneのsafe areaも
+使います。以前の描画で保存した4枚は、そのまま再表示・共有できますが、新しい血糖データで
+勝手に作り直しません。新しいレイアウトは新しく作る4枚だけに使います。予約、端末内保存と
+読み戻し、体験完了、再表示の順序は変えません。
 
 同じ2026年8月21日、運営者がこの4枚版を本人のアカウントでもう一度確認するため、無料体験1回の
 解除を明示承認しました。匿名件数だけで、購入記録とPlus利用権のないアクティブなアカウント1件、

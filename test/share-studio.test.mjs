@@ -9,12 +9,102 @@ const index = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8")
 const about = fs.readFileSync(new URL("../pages/about/share-studio.html", import.meta.url), "utf8");
 const style = fs.readFileSync(new URL("../style.css", import.meta.url), "utf8");
 
+function readPngDimensions(relativeUrl) {
+  const bytes = fs.readFileSync(new URL(relativeUrl, import.meta.url));
+  assert.equal(bytes.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+  return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
+}
+
 function loadModule() {
   const context = { Object, String, URL, Blob, File: class {}, setTimeout };
   context.window = context;
   context.globalThis = context;
   vm.runInNewContext(source, context, { filename: "share-studio.js" });
   return context.GlucoScopeShareStudio;
+}
+
+function createTextContext() {
+  const calls = [];
+  const context = {
+    font: '700 16px "Yu Gothic"',
+    fillStyle: "",
+    textAlign: "left",
+    textBaseline: "alphabetic",
+    measureText(value) {
+      const size = Number.parseFloat(this.font.match(/(\d+(?:\.\d+)?)px/u)?.[1] || "16");
+      const width = Array.from(String(value ?? "")).reduce((total, character) => (
+        total + (/^[\u0000-\u00ff]$/u.test(character) ? size * .56 : size)
+      ), 0);
+      return { width };
+    },
+    fillText(value, x, y) {
+      calls.push({ value: String(value), x, y, font: this.font, width: this.measureText(value).width });
+    }
+  };
+  return { context, calls };
+}
+
+function createRenderDependencies() {
+  const imageSources = [];
+  const drawImageCalls = [];
+  const gradient = { addColorStop() {} };
+  const context = {
+    font: '700 16px "Yu Gothic"',
+    fillStyle: "",
+    strokeStyle: "",
+    textAlign: "left",
+    textBaseline: "alphabetic",
+    lineWidth: 1,
+    lineJoin: "miter",
+    lineCap: "butt",
+    imageSmoothingEnabled: true,
+    clearRect() {},
+    fillRect() {},
+    beginPath() {},
+    moveTo() {},
+    lineTo() {},
+    arcTo() {},
+    arc() {},
+    rect() {},
+    closePath() {},
+    fill() {},
+    stroke() {},
+    clip() {},
+    save() {},
+    restore() {},
+    setLineDash() {},
+    createLinearGradient() { return gradient; },
+    createRadialGradient() { return gradient; },
+    measureText(value) {
+      const size = Number.parseFloat(this.font.match(/(\d+(?:\.\d+)?)px/u)?.[1] || "16");
+      return { width: Array.from(String(value ?? "")).length * size * .56 };
+    },
+    fillText() {},
+    drawImage(image, ...coordinates) {
+      drawImageCalls.push({ source: image.source, coordinates });
+    }
+  };
+  class FakeImage {
+    width = 1080;
+    height = 1350;
+    set src(value) {
+      this.source = value;
+      imageSources.push(value);
+      queueMicrotask(() => this.onload?.());
+    }
+  }
+  const document = {
+    createElement(tagName) {
+      assert.equal(tagName, "canvas");
+      return {
+        width: 0,
+        height: 0,
+        getContext() { return context; },
+        toBlob(callback) { callback(new Blob(["png"], { type: "image/png" })); }
+      };
+    }
+  };
+  return { document, Image: FakeImage, imageSources, drawImageCalls };
 }
 
 test("Share Studio normalizes only bounded display metrics", () => {
@@ -66,7 +156,7 @@ test("Share Studio creates and stores four slides before completing a trial", ()
   assert.doesNotMatch(source, /localStorage|sessionStorage|fetch\(/u);
 });
 
-test("Share Studio keeps a verified four-slide carousel in device storage", async () => {
+test("Share Studio keeps a verified four-image set in device storage", async () => {
   const api = loadModule();
   let saved = null;
   const store = {
@@ -85,11 +175,32 @@ test("Share Studio keeps a verified four-slide carousel in device storage", asyn
   const blobs = Array.from({ length: 4 }, () => new Blob(["png"], { type: "image/png" }));
   const record = await api.saveCarousel(blobs, { dateKey: "2026-08-21", glucoId: 7 }, { store });
   assert.equal(record.blobs.length, 4);
+  assert.equal(record.version, 2);
+  assert.equal(record.rendererRevision, 2);
+  assert.equal(api._testing.isCurrentCarouselRecord(record), true);
   assert.equal(record.dateKey, "2026-08-21");
   assert.equal(record.glucoId, 7);
   assert.equal((await api.loadCarousel({ store })).blobs.length, 4);
   await api.deleteCarousel({ store });
   assert.equal(await api.loadCarousel({ store }), null);
+});
+
+test("Share Studio keeps legacy local images readable without silently replacing their data", () => {
+  const api = loadModule();
+  const legacy = {
+    key: "latest",
+    version: 1,
+    dateKey: "2026-08-21",
+    blobs: Array.from({ length: 4 }, () => new Blob(["png"], { type: "image/png" }))
+  };
+  assert.equal(api._testing.validateCarouselRecord(legacy), true);
+  assert.equal(api._testing.isCurrentCarouselRecord(legacy), false);
+  const loadStart = app.indexOf("const saved = await window.GlucoScopeShareStudio?.loadCarousel?.();");
+  const savedStart = app.indexOf("if (saved) {", loadStart);
+  assert.ok(loadStart >= 0 && savedStart > loadStart);
+  assert.doesNotMatch(app.slice(loadStart, savedStart), /generateCarousel|saveCarousel|reserveShareStudio|completeShareStudio/u);
+  assert.match(app, /isCurrentCarouselRecord\?\.\(saved\) === true/u);
+  assert.match(app, /以前のレイアウトで保存した4枚を、内容を変えずに表示しています/u);
 });
 
 test("Share Studio accepts only an exact local Gluco asset and bounded glucose entries", () => {
@@ -112,8 +223,116 @@ test("Share Studio accepts only an exact local Gluco asset and bounded glucose e
   }), /daily_gluco_unavailable/u);
 });
 
+test("the administrator-quality renderer keeps long Japanese and a score of 100 inside their columns", () => {
+  const api = loadModule();
+  const { context, calls } = createTextContext();
+  context.font = '800 34px "Yu Gothic"';
+  const lines = api._testing.wrapLines(
+    context,
+    "最新の測定では122mg/dLでした。TIRは100.0%で表示中のデータが目標範囲にあります。",
+    360
+  );
+  assert.ok(lines.length > 2);
+  assert.ok(lines.every((line) => context.measureText(line).width <= 360));
+
+  const layout = api._testing.fittedParagraphText(
+    context,
+    "グルコだよ🍀 ".repeat(12) + "今日の数字を、責めずにいっしょに眺めてみようね。".repeat(12),
+    110,
+    382,
+    850,
+    240,
+    { language: "ja", maxSize: 34, minSize: 20, weight: 800 }
+  );
+  assert.ok(layout.totalHeight <= 240);
+  assert.ok(calls.every((call) => call.width <= 850));
+
+  const scoreSize = api._testing.fittedText(context, "100", 210, 1170, 190, {
+    maxSize: 118,
+    minSize: 72,
+    weight: 900,
+    align: "center"
+  });
+  assert.ok(scoreSize < 118);
+  assert.ok(calls.at(-1).width <= 190);
+  assert.match(source, /assets\/share-studio\/ending-sunrise\.png/u);
+  assert.match(source, /assets\/share-studio\/glucoscope-qr\.png/u);
+  assert.doesNotMatch(source, /assets\/gluco\/about\/gluco-small-notice\.png/u);
+  assert.doesNotMatch(source, /assets\/gluco\/profile\/gluco\.png/u);
+});
+
+test("the renderer preserves English decimals and never joins a sensor gap", () => {
+  const api = loadModule();
+  const { context, calls } = createTextContext();
+  api._testing.fittedParagraphText(
+    context,
+    "CV is 24.4%. TIR is 100.0%. These are gentle clues, not grades.",
+    10,
+    30,
+    620,
+    180,
+    { language: "en", maxSize: 31, minSize: 19, weight: 800 }
+  );
+  const rendered = calls.map((call) => call.value).join(" ");
+  assert.match(rendered, /24\.4%/u);
+  assert.match(rendered, /100\.0%/u);
+  assert.doesNotMatch(rendered, /24\.\s+4%|100\.\s+0%/u);
+
+  const minute = 60 * 1000;
+  const segments = api._testing.splitGraphSegments([
+    { date: 0, sgv: 100 },
+    { date: 5 * minute, sgv: 110 },
+    { date: 65 * minute, sgv: 120 },
+    { date: 70 * minute, sgv: 125 }
+  ]);
+  assert.equal(segments.length, 2);
+  assert.deepEqual(Array.from(segments, (segment) => segment.length), [2, 2]);
+});
+
+test("the four-image renderer loads the reviewed ending art and current public QR", async () => {
+  const api = loadModule();
+  const dependencies = createRenderDependencies();
+  const blobs = await api.generateCarousel({
+    dateKey: "2026-08-22",
+    dateLabel: "2026年8月22日",
+    language: "ja",
+    metrics: {
+      glucose: 112,
+      tir: 100,
+      tar: 0,
+      tbr: 0,
+      averageGlucose: 112,
+      cv: 17.4,
+      gmi: 6,
+      glucoScore: 100,
+      previousScore: 92,
+      sevenDayAverageScore: 94
+    },
+    entries: [
+      { date: Date.UTC(2026, 7, 22, 0, 0), sgv: 108 },
+      { date: Date.UTC(2026, 7, 22, 0, 5), sgv: 112 }
+    ],
+    treatments: [],
+    gluco: { id: 3, title: "ボールあそび", imagePath: "assets/gluco/live/gluco-live-03.png" },
+    letter: "グルコだよ🍀 今日の数字を、やさしく一緒に眺めようね。"
+  }, dependencies);
+  assert.equal(blobs.length, 4);
+  assert.deepEqual(dependencies.imageSources, [
+    "assets/gluco/live/gluco-live-03.png",
+    "assets/gluco/ui/gluco-peek-clover.png",
+    "assets/share-studio/ending-sunrise.png",
+    "assets/share-studio/glucoscope-qr.png"
+  ]);
+  assert.ok(dependencies.drawImageCalls.some((call) => call.source === "assets/share-studio/ending-sunrise.png"));
+  assert.ok(dependencies.drawImageCalls.some((call) => call.source === "assets/share-studio/glucoscope-qr.png"));
+  assert.deepEqual(readPngDimensions("../assets/share-studio/ending-sunrise.png"), { width: 1080, height: 1350 });
+  assert.deepEqual(readPngDimensions("../assets/share-studio/glucoscope-qr.png"), { width: 256, height: 256 });
+});
+
 test("the free trial is separate from purchase and explains Share Studio before email verification", () => {
   assert.match(index, /id="shareStudioTrialDialog"[^>]*aria-modal="true"[^>]*hidden/u);
+  assert.match(index, /メールを確認するだけで、4枚セットを1回作れます/u);
+  assert.match(app, /shareStudioTrialLead: "Verify an email to create one set of four reflection images\."/u);
   assert.match(index, /この確認では料金はかかりません/u);
   assert.match(index, /クレジットカード情報は入力しません/u);
   assert.match(index, /Stripeで400円の支払いを完了した時だけ料金が発生します/u);
@@ -140,7 +359,11 @@ test("the free trial is separate from purchase and explains Share Studio before 
   const openHandler = app.slice(openStart, openEnd);
   assert.doesNotMatch(openHandler, /setPlusFeatureNotice\(/u);
 
-  assert.match(about, /4枚のカルーセル/u);
+  assert.match(about, /4枚の画像/u);
+  assert.doesNotMatch(`${index}\n${app}\n${about}`, /カルーセル/u);
+  assert.match(app, /Share Studioの4枚セットを1回無料で作れます/u);
+  assert.match(app, /one free set of four Share Studio images/u);
+  assert.doesNotMatch(app, /one Share Studio image|Share Studioの画像を1回|Four slides are saved/u);
   assert.match(about, /その日にGlucoScopeで実際に出逢ったグルコ/u);
   assert.match(about, /画面を閉じても、保存済みの4枚/u);
   assert.match(about, /メール確認だけでは料金はかかりません/u);
@@ -152,5 +375,7 @@ test("the free trial is separate from purchase and explains Share Studio before 
   assert.match(about, /健康情報が含まれます/u);
   assert.match(about, /window\.navigator\.standalone === true[\s\S]*ios-home-screen-app/u);
   assert.match(style, /html\.ios-home-screen-app:not\(\.force-desktop-view\) \.about-detail-wrap/u);
+  assert.match(style, /html\.ios-home-screen-app:not\(\.force-desktop-view\) \.share-studio-dialog/u);
+  assert.match(style, /\.share-studio-dialog\{[^}]*height:100dvh[^}]*safe-area-inset-top/u);
   assert.match(about, /analytics-loader\.js/u);
 });

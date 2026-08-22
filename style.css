@@ -8952,22 +8952,24 @@ body.local-profile-dialog-open {
    fallback while avoiding ordinary in-browser and landscape layouts. */
 @media (orientation:portrait) and (hover:none) and (pointer:coarse) and (min-aspect-ratio:27/50) and (max-aspect-ratio:57/100){
   html.ios-home-screen-app:not(.force-desktop-view) .dashboard,
-  html.ios-home-screen-app:not(.force-desktop-view) .about-detail-wrap{
+  html.ios-home-screen-app:not(.force-desktop-view) .about-detail-wrap,
+  html.ios-home-screen-app:not(.force-desktop-view) .share-studio-dialog{
     padding-top:max(20px,env(safe-area-inset-top,0px));
   }
 }
 
 @media (orientation:portrait) and (hover:none) and (pointer:coarse) and (max-aspect-ratio:10/21){
   html.ios-home-screen-app:not(.force-desktop-view) .dashboard,
-  html.ios-home-screen-app:not(.force-desktop-view) .about-detail-wrap{
+  html.ios-home-screen-app:not(.force-desktop-view) .about-detail-wrap,
+  html.ios-home-screen-app:not(.force-desktop-view) .share-studio-dialog{
     padding-top:max(59px,env(safe-area-inset-top,0px));
   }
 }
 
 /* Share Studio keeps health-image creation on the device. */
-.share-studio-dialog{position:fixed;inset:0;z-index:10050;display:grid;place-items:center;padding:20px;background:rgba(2,6,23,.82);backdrop-filter:blur(10px)}
+.share-studio-dialog{position:fixed;inset:0;z-index:10050;display:grid;place-items:center;width:100%;height:100dvh;padding:max(20px,env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) max(20px,env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px));background:rgba(2,6,23,.82);backdrop-filter:blur(10px)}
 .share-studio-dialog[hidden]{display:none}
-.share-studio-card{position:relative;width:min(560px,100%);max-height:min(900px,calc(100vh - 40px));overflow:auto;padding:28px;border:1px solid rgba(74,222,128,.28);border-radius:28px;background:linear-gradient(180deg,#17263b,#0c1728);box-shadow:0 24px 80px rgba(0,0,0,.48);color:#e8f0fa}
+.share-studio-card{position:relative;width:min(560px,100%);max-height:min(900px,100%);overflow:auto;padding:28px;border:1px solid rgba(74,222,128,.28);border-radius:28px;background:linear-gradient(180deg,#17263b,#0c1728);box-shadow:0 24px 80px rgba(0,0,0,.48);color:#e8f0fa}
 .share-studio-close{position:absolute;top:14px;right:14px;width:44px;height:44px;border:1px solid rgba(255,255,255,.14);border-radius:50%;background:rgba(15,23,42,.7);color:#fff;font-size:28px;cursor:pointer}
 .share-studio-eyebrow{margin:0 52px 8px 0;color:#6ee7a7;font-weight:850;letter-spacing:.04em}
 .share-studio-card h2{margin:0 48px 10px 0;font-size:26px}
@@ -9008,4 +9010,4 @@ body.local-profile-dialog-open {
 .share-studio-actions{display:flex;flex-wrap:wrap;gap:10px}
 .share-studio-actions button{min-height:48px;flex:1 1 190px}
 .share-studio-actions .share-studio-delete{border-color:rgba(248,113,113,.30);color:#fecaca}
-@media(max-width:640px){.share-studio-dialog{padding:12px}.share-studio-card{max-height:calc(100vh - 24px);padding:22px 18px;border-radius:22px}.share-studio-card h2{font-size:23px}}
+@media(max-width:640px){.share-studio-dialog{padding:max(12px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(12px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}.share-studio-card{max-height:100%;padding:22px 18px;border-radius:22px}.share-studio-card h2{font-size:23px}}

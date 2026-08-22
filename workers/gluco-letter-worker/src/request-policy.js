@@ -33,8 +33,13 @@ export function getExpectedTurnstileIdentity(env = {}) {
   };
 }
 
-export function isExpectedTurnstileResult(result = {}, env = {}) {
-  const expected = getExpectedTurnstileIdentity(env);
+export function isExpectedTurnstileResult(result = {}, env = {}, expectedOverride = null) {
+  const expected = expectedOverride && typeof expectedOverride === "object"
+    ? {
+        hostname: String(expectedOverride.hostname || "").trim().toLowerCase(),
+        action: String(expectedOverride.action || "").trim()
+      }
+    : getExpectedTurnstileIdentity(env);
   const hostname = String(result?.hostname || "").trim().toLowerCase();
   const action = String(result?.action || "").trim();
 

@@ -63,7 +63,13 @@ test("Turnstile success is bound to the expected production hostname and AI acti
   assert.equal(isExpectedTurnstileResult({ ...expectedResult, hostname: "example.com" }), false);
   assert.equal(isExpectedTurnstileResult({ ...expectedResult, action: "glucoscope-usage-profile" }), false);
   assert.equal(isExpectedTurnstileResult({ ...expectedResult, success: false }), false);
-  assert.match(workerSource, /!isExpectedTurnstileResult\(result, env\)/);
+  const adminExpected = {
+    hostname: "glucoscope-share-studio.pages.dev",
+    action: "glucoscope-ai-letter"
+  };
+  assert.equal(isExpectedTurnstileResult({ success: true, ...adminExpected }, {}, adminExpected), true);
+  assert.equal(isExpectedTurnstileResult(expectedResult, {}, adminExpected), false);
+  assert.match(workerSource, /!isExpectedTurnstileResult\(result, env, expectedIdentity\)/);
 });
 
 test("both retry paths block only hard quality issues after one rewrite", () => {

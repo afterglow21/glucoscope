@@ -122,6 +122,7 @@ export async function runWithAtomicUsageReservation({
 export async function invokeAtomicUsageCounter({
   enabled = false,
   namespace,
+  name = "glucoscope-global-usage",
   method,
   input = {},
   config = {}
@@ -139,7 +140,7 @@ export async function invokeAtomicUsageCounter({
   }
 
   try {
-    const stub = getUsageCounterStub(namespace);
+    const stub = getUsageCounterStub(namespace, name);
     if (!stub) return unavailable("binding_missing");
     const rpc = stub?.[method];
     if (typeof rpc !== "function") return unavailable("rpc_missing");

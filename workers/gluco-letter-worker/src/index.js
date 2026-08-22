@@ -7,6 +7,12 @@ import {
   runAiQuotaGeneration
 } from "./ai-quota-client.js";
 import {
+  ADMIN_SHARE_STUDIO_PAGE_MODE,
+  buildAdminShareStudioCounterConfig,
+  isAdminShareStudioTurnstileReady,
+  verifyAdminShareStudioBridgeRequest
+} from "./admin-share-studio-bridge.js";
+import {
   filterGeneratedLetterPatternHints,
   getGlucoScoreMentionPolicy,
   getGeneratedLetterQualityIssues,
@@ -1743,6 +1749,151 @@ async function callOpenAiAttemptOnce({ summary, env, config, mode, maxOutputToke
   };
 }
 
+function buildAdminBridgeVerificationError(verification = {}) {
+  const unavailable = Number(verification.status) >= 500;
+  return errorResponse({
+    code: unavailable ? "admin_bridge_unavailable" : "admin_bridge_authentication_failed",
+    message: unavailable
+      ? "The Admin Share Studio bridge is unavailable."
+      : "The Admin Share Studio bridge request could not be authenticated.",
+    userMessage: unavailable
+      ? "管理者用AI分析の安全な接続を確認できませんでした。少し時間をおいて、もう一度お試しください🍀"
+      : "この管理者用AI分析のリクエストは確認できませんでした。",
+    retryable: unavailable,
+  }, unavailable ? 503 : Number(verification.status) || 403);
+}
+
+function buildAdminBridgeCounterError(result = {}) {
+  const status = String(result?.status || result?.error || "counter_unavailable");
+  if (status === "rate_limited") {
+    return errorResponse({
+      code: "admin_bridge_daily_limit_reached",
+      message: "The Admin Share Studio daily generation limit has been reached.",
+      userMessage: "管理者用Share Studioで今日使えるAI分析の回数に達しました。また明日お試しください🍀",
+      retryable: false,
+    }, 429);
+  }
+  if (status === "request_in_progress" || status === "request_already_completed") {
+    return errorResponse({
+      code: "admin_bridge_duplicate_request",
+      message: "The Admin Share Studio request identifier was already used.",
+      userMessage: "同じAI分析リクエストがすでに処理されています。画面を更新してから、もう一度お試しください🍀",
+      retryable: true,
+    }, 409);
+  }
+  return errorResponse({
+    code: "admin_bridge_counter_unavailable",
+    message: "The Admin Share Studio audit counter is unavailable.",
+    userMessage: "管理者用AI分析の利用回数を安全に確認できませんでした。少し時間をおいて、もう一度お試しください🍀",
+    retryable: true,
+  }, 503);
+}
+
+async function finalizeAdminBridgeReservation({ env, bridge, config, method, reason = "" }) {
+  const input = method === "completeGeneration"
+    ? {
+        requestId: bridge.requestId,
+        actualUsage: { inputTokens: 0, outputTokens: 0, estimatedCostJpy: 0 },
+      }
+    : {
+        requestId: bridge.requestId,
+        reason: String(reason || "request_failed").slice(0, 80),
+        actualUsage: { inputTokens: 0, outputTokens: 0, estimatedCostJpy: 0 },
+      };
+  const options = {
+    enabled: true,
+    namespace: env.USAGE_COUNTER,
+    name: bridge.counterName,
+    method,
+    input,
+    config,
+  };
+  const first = await invokeAtomicUsageCounter(options);
+  if (first.ok && first.result?.ok === true) return first;
+  return invokeAtomicUsageCounter(options);
+}
+
+async function runVerifiedAdminBridgeRequest({ env, bridge, run }) {
+  const baseConfig = readGuardConfig(env);
+  if (
+    !baseConfig.atomicUsageCounterEnabled
+    || !env.USAGE_COUNTER
+    || !isAdminShareStudioTurnstileReady(env, baseConfig)
+  ) {
+    console.error("Admin Share Studio bridge rejected: atomic counter unavailable", {
+      event: "admin_bridge_configuration_failed",
+      requestId: bridge.requestId,
+    });
+    return buildAdminBridgeCounterError({ error: "atomic_counter_required" });
+  }
+
+  const adminCounterConfig = buildAdminShareStudioCounterConfig(baseConfig, bridge.dailyLimit);
+  const reservation = await invokeAtomicUsageCounter({
+    enabled: true,
+    namespace: env.USAGE_COUNTER,
+    name: bridge.counterName,
+    method: "reserveGeneration",
+    input: {
+      requestId: bridge.requestId,
+      slot: "unknown",
+      analysisMode: "letter",
+      reservedCostJpy: 0,
+    },
+    config: adminCounterConfig,
+  });
+  if (!reservation.ok || reservation.result?.ok !== true || reservation.result?.status !== "reserved") {
+    console.warn("Admin Share Studio bridge reservation rejected", {
+      event: "admin_bridge_reservation_rejected",
+      requestId: bridge.requestId,
+      status: reservation.result?.status || reservation.error || "unknown",
+    });
+    return buildAdminBridgeCounterError(reservation.result || reservation);
+  }
+
+  console.info("Admin Share Studio bridge generation reserved", {
+    event: "admin_bridge_reserved",
+    requestId: bridge.requestId,
+    dailyLimit: bridge.dailyLimit,
+  });
+
+  let response;
+  try {
+    response = await run();
+  } catch (error) {
+    await finalizeAdminBridgeReservation({
+      env,
+      bridge,
+      config: adminCounterConfig,
+      method: "releaseGeneration",
+      reason: "handler_exception",
+    });
+    throw error;
+  }
+
+  const finalization = await finalizeAdminBridgeReservation({
+    env,
+    bridge,
+    config: adminCounterConfig,
+    method: response.ok ? "completeGeneration" : "releaseGeneration",
+    reason: `response_${response.status}`,
+  });
+  if (!finalization.ok || finalization.result?.ok !== true) {
+    console.error("Admin Share Studio bridge finalization failed", {
+      event: "admin_bridge_finalization_failed",
+      requestId: bridge.requestId,
+      status: finalization.result?.status || finalization.error || "unknown",
+    });
+    return buildAdminBridgeCounterError(finalization.result || finalization);
+  }
+
+  console.info("Admin Share Studio bridge generation finalized", {
+    event: response.ok ? "admin_bridge_completed" : "admin_bridge_released",
+    requestId: bridge.requestId,
+    responseStatus: response.status,
+  });
+  return response;
+}
+
 async function callOpenAiAttempt(input) {
   const attemptUsage = [];
 
@@ -2164,7 +2315,7 @@ function getTurnstileToken(payload = {}) {
   return payload.turnstileToken || payload?.turnstile?.token || "";
 }
 
-async function verifyTurnstileToken({ payload, request, env, config }) {
+async function verifyTurnstileToken({ payload, request, env, config, expectedIdentity = null }) {
   if (!config.turnstileRequired) {
     return {
       required: false,
@@ -2198,7 +2349,9 @@ async function verifyTurnstileToken({ payload, request, env, config }) {
   formData.append("secret", env.TURNSTILE_SECRET_KEY);
   formData.append("response", token);
 
-  const remoteIp = request.headers.get("CF-Connecting-IP");
+  // A signed admin request originates at the Pages Function, so its
+  // CF-Connecting-IP is not the visitor who completed the challenge.
+  const remoteIp = expectedIdentity ? "" : request.headers.get("CF-Connecting-IP");
   if (remoteIp) formData.append("remoteip", remoteIp);
 
   try {
@@ -2208,7 +2361,7 @@ async function verifyTurnstileToken({ payload, request, env, config }) {
     });
 
     const result = await response.json().catch(() => ({}));
-    if (!response.ok || !isExpectedTurnstileResult(result, env)) {
+    if (!response.ok || !isExpectedTurnstileResult(result, env, expectedIdentity)) {
       return {
         required: true,
         verified: false,
@@ -3118,14 +3271,16 @@ async function handleAtomicGenerationRequest({
   usageState,
   payload,
   summary,
-  quotaRequest
+  quotaRequest,
+  turnstileIdentity = null
 }) {
   let currentUsageState = usageState;
   const turnstileVerification = await verifyTurnstileToken({
     payload,
     request,
     env,
-    config
+    config,
+    expectedIdentity: turnstileIdentity
   });
   const turnstileEvent = await invokeRequiredAtomicUsageCounter({
     env,
@@ -3396,9 +3551,9 @@ async function handleAtomicGenerationRequest({
   }));
 }
 
-async function handleApiRequest(request, env = {}) {
+async function handleApiRequest(request, env = {}, adminBridge = null) {
     let config = readGuardConfig(env);
-    const quotaConfig = readAiQuotaClientConfig(env);
+    let quotaConfig = readAiQuotaClientConfig(env);
     let usageState;
     try {
       usageState = await loadUsageState(env, config);
@@ -3469,7 +3624,10 @@ async function handleApiRequest(request, env = {}) {
       analysisMode: getAnalysisMode(payload, summary)
     };
 
-    const requestAudience = classifyAiRequestAudience(summary);
+    const adminBridgeVerified = adminBridge?.verified === true;
+    const requestAudience = summary.pageMode === ADMIN_SHARE_STUDIO_PAGE_MODE
+      ? "admin_share_studio"
+      : classifyAiRequestAudience(summary);
     if (quotaConfig.enabled && requestAudience === "public_demo") {
       if (!config.publicDemoApprovedSampleEnabled) {
         return errorResponse({
@@ -3489,6 +3647,23 @@ async function handleApiRequest(request, env = {}) {
         payload,
         summary
       });
+    }
+    if (requestAudience === "admin_share_studio") {
+      if (!adminBridgeVerified) {
+        return buildAiQuotaErrorResponse({
+          error: "authentication_required",
+          retryable: false
+        }, summary);
+      }
+      if (config.provider !== "openai") {
+        return buildAiQuotaErrorResponse({
+          error: "quota_requires_openai_provider",
+          retryable: true
+        }, summary);
+      }
+      // The server-authenticated admin route uses its own strongly consistent
+      // daily cap. It must never consume or bypass a personal user's quota.
+      quotaConfig = Object.freeze({ ...quotaConfig, enabled: false });
     }
     if (quotaConfig.enabled && requestAudience !== "personal_user") {
       return buildAiQuotaErrorResponse({
@@ -3520,7 +3695,8 @@ async function handleApiRequest(request, env = {}) {
         usageState,
         payload,
         summary,
-        quotaRequest
+        quotaRequest,
+        turnstileIdentity: adminBridgeVerified ? adminBridge.turnstileIdentity : null
       });
     }
 
@@ -3528,7 +3704,8 @@ async function handleApiRequest(request, env = {}) {
       payload,
       request,
       env,
-      config
+      config,
+      expectedIdentity: adminBridgeVerified ? adminBridge.turnstileIdentity : null
     });
 
     if (config.turnstileRequired && !turnstileVerification.verified) {
@@ -3784,7 +3961,24 @@ async function handleApiRequest(request, env = {}) {
 
 export default {
   async fetch(request, env = {}) {
-    const corsDecision = evaluateCorsRequest(request, env);
+    const adminBridge = isAiGenerationRequest(request)
+      ? await verifyAdminShareStudioBridgeRequest(request, env)
+      : { ok: false, attempted: false };
+    if (adminBridge.attempted && !adminBridge.ok) {
+      console.warn("Admin Share Studio bridge authentication rejected", {
+        event: "admin_bridge_authentication_rejected",
+        reason: adminBridge.error,
+      });
+      return buildAdminBridgeVerificationError(adminBridge);
+    }
+
+    const corsDecision = adminBridge.ok
+      ? {
+          allowed: true,
+          origin: adminBridge.origin,
+          reason: "server_authenticated_admin_bridge",
+        }
+      : evaluateCorsRequest(request, env);
 
     if (request.method === "OPTIONS") {
       return handleCorsPreflight(request, corsDecision, env);
@@ -3802,7 +3996,13 @@ export default {
       return buildCorsErrorResponse(corsDecision, 403);
     }
 
-    const response = await handleApiRequest(request, env);
+    const response = adminBridge.ok
+      ? await runVerifiedAdminBridgeRequest({
+          env,
+          bridge: adminBridge,
+          run: () => handleApiRequest(request, env, adminBridge),
+        })
+      : await handleApiRequest(request, env);
     return applyCorsHeaders(response, corsDecision);
   }
 };
