@@ -2,6 +2,14 @@
 
 Cloudflare Worker for GlucoScope AI Letter.
 
+## Current production target — 2026-08-22 JST
+
+- Version `ef238ad4-7dc7-4b79-bb92-b9c93605c6c3` receives 100% of AI traffic.
+- Direct behavior rollback is Version 44 (`0e9e39a8-a1be-46c0-8336-f880a2ad147b`). Emergency AI-off recovery remains atomic stopped Version `46f44888-002b-4847-8553-5cd12e3d7ac5`.
+- Share Studio places the complete gentle result in one auto-fitted panel. The signed administrator bridge has no separate administrator daily AI cap.
+- The one-time Share Studio trial permits only gentle `letter` analysis. The same verified email address can complete it once within the 90-day protection window; `deep` analysis remains Plus-only.
+- Older Version, traffic, and rollback statements below are dated historical evidence, not current routing instructions.
+
 Production flow:
 
 ```text
@@ -12,12 +20,12 @@ GitHub Pages
   → gentle AI letter response
 ```
 
-## Current production behavior
+## Historical production checkpoints
 
-Reviewed personal-quota target — 2026-08-17 JST:
+Historical personal-quota target — 2026-08-17 JST:
 
-- The reviewed personal-quota target is Version `86fd6a35-4db2-46f4-a745-0cfc036a5dc7`.
-- Direct behavior rollback uses Version `7af1189b-aaa5-4f18-8a1f-5e447d6d7d8e`, which keeps `AI_USAGE_ATOMIC_COUNTER_ENABLED=true` and AI available while restoring shared count ceilings. Emergency AI-off recovery uses atomic stopped Version `46f44888-002b-4847-8553-5cd12e3d7ac5`. Old new-origin Version `7ea0cfef-5322-4370-b72d-e2885f129f38` and pre-atomic Versions must not receive rollback traffic.
+- At that checkpoint, the reviewed personal-quota target was Version `86fd6a35-4db2-46f4-a745-0cfc036a5dc7`.
+- At that checkpoint, direct behavior rollback used Version `7af1189b-aaa5-4f18-8a1f-5e447d6d7d8e`, which kept `AI_USAGE_ATOMIC_COUNTER_ENABLED=true` and AI available while restoring shared count ceilings. Emergency AI-off recovery used atomic stopped Version `46f44888-002b-4847-8553-5cd12e3d7ac5`. Old new-origin Version `7ea0cfef-5322-4370-b72d-e2885f129f38` and pre-atomic Versions must not receive rollback traffic.
 - Phase A returned the privacy-protected personal aggregate as `suppressed` with no exact totals. A quiet window longer than 130 seconds completed before activation. The zero-percent activation probe used a synthetic non-health summary and an invalid Turnstile token; it returned `403`, wrote the private atomic marker, increased only the failed-Turnstile count by one, and left generation, token, cost, and pending-reservation totals unchanged.
 - The atomic live Version's Usage `GET` and the public Dashboard's supervised real-browser visual check passed. One supervised `letter` / `night` generation moved the daily count from `0` to `1`, the monthly count from `15` to `16`, and the daily verified-Turnstile count from `0` to `1` exactly once. Token and estimated-cost totals increased once, with no duplicate, cache hit, rate limit, or budget block.
 - It retains the personal-user AI, all-mode browser-local cache, CORS, Turnstile, and no-store boundaries first accepted below.
@@ -31,9 +39,9 @@ Historical boundary acceptance — 2026-08-14:
 - approved-origin preflight returned `204`; originless Usage `GET` returned `200`; wrong-origin Usage `GET`, originless generation `POST`, and allowed-origin generation with an invalid Turnstile token returned `403`
 - AI JSON responses retain `Cache-Control: no-store`, `Pragma: no-cache`, and `X-Content-Type-Options: nosniff`
 
-現在の通信先 — 2026-08-16 JST：
+過去の通信先 — 2026-08-16 JST：
 
-- AI Workerの通信100%はatomic-counter Version `c0a31ac7-257c-4225-a8f1-3bf7669f6937`へ向けています。
+- この履歴時点では、AI Workerの通信100%をatomic-counter Version `c0a31ac7-257c-4225-a8f1-3bf7669f6937`へ向けていました。
 - atomic有効化後に確認済みの直接rollbackは、未配信のatomic停止Version `46f44888-002b-4847-8553-5cd12e3d7ac5`（`AI_USAGE_ATOMIC_COUNTER_ENABLED=true`、`AI_ENABLED=false`）だけです。schema markerを書いた後は、旧new-origin Version `7ea0cfef-5322-4370-b72d-e2885f129f38`、Phase A、事前quiesce Versionへ戻しません。
 - Phase Aでは個人利用集計が `suppressed` となり、実数を返さないことを確認しました。130秒を超える静止時間の後、通信0%の有効化確認で健康情報ではない合成summaryと不正Turnstile tokenを使いました。応答は`403`で、非公開atomic markerを書き、Turnstile失敗数だけを1増やし、生成回数、token、費用、pending予約は変えませんでした。
 - atomic live VersionのUsage `GET`と、公開Dashboardの監督下実ブラウザ表示確認は合格しました。実際の`letter` / `night`生成1件で、1日生成回数は`0`から`1`、月間生成回数は`15`から`16`、1日のTurnstile確認成功数は`0`から`1`へ正確に1回だけ増えました。tokenと推定費用も1回分だけ増え、重複、cache hit、回数制限、予算停止はありませんでした。
@@ -64,7 +72,7 @@ This section describes the personal-user boundary first accepted in Version 29 a
 - AI failure affects only the AI panel. It must not stop, clear, or replace an already verified CGM connection or the normal glucose display.
 - AI generation `POST /api/gluco-letter` requires an `Origin` header that passes the existing allowlist. Originless `GET /api/gluco-letter/usage` remains available for existing operational checks.
 - A successful Turnstile Siteverify response must match both `hostname=glucoscope.app` and `action=glucoscope-ai-letter`. The production variables are `TURNSTILE_EXPECTED_HOSTNAME` and `TURNSTILE_EXPECTED_ACTION`.
-- The Worker-first, Pages-second release is complete. After atomic activation, the only direct rollback is the atomic-capable stopped Version named above. Version 28, Version 29, the old new-origin Version, Phase A, and the pre-activation quiesce Version are historical evidence and must not receive rollback traffic. CGM display remains independent.
+- At the 2026-08-16 atomic-activation checkpoint, the only direct rollback was the atomic-capable stopped Version named in the historical section above. Use the 2026-08-22 target block for current routing. Version 28, Version 29, the old new-origin Version, Phase A, and the pre-activation quiesce Version are historical evidence and must not receive rollback traffic. CGM display remains independent.
 
 - `mode=user`では、現在の案内Versionで初めてAI分析を使う前に、TurnstileやAIへの `POST` より先に、短く明示的な確認を求めます。画面で集計した血糖情報をOpenAIへ送ることを伝えます。表示名、接続先URL、接続用の合言葉、元の血糖データ一覧は送りません。
 - 確認はVersion付きで `glucoscope.aiLetterUserConsent.v1` としてブラウザ内だけに保存します。「今はしない」を選んだ場合は何も送らず、ブラウザ内のいつものグルコのお話とCGM表示はそのまま使えます。
@@ -76,7 +84,7 @@ This section describes the personal-user boundary first accepted in Version 29 a
 - AI分析の失敗はAI欄だけで完結させます。確認済みCGM接続や通常の血糖表示を停止、削除、デモデータへ置換しません。
 - AI生成の `POST /api/gluco-letter` は、既存allowlistを通る `Origin` headerを必須にします。既存運用確認用のOriginなし `GET /api/gluco-letter/usage` は維持します。
 - Turnstile Siteverifyの成功時は、`hostname=glucoscope.app` と `action=glucoscope-ai-letter` の両方の一致を必須にします。本番の変数名は `TURNSTILE_EXPECTED_HOSTNAME` と `TURNSTILE_EXPECTED_ACTION` です。
-- 個人別上限の動作rollbackは、上に記録したatomic対応のPhase A Versionを使います。緊急にAIを止める場合だけatomic停止Versionを使います。Version 28、Version 29、旧new-origin Version、事前quiesce Versionは履歴であり、rollback trafficを向けません。CGM表示は継続します。
+- 2026-08-16のatomic有効化時点では、個人別上限の動作rollbackに上記のatomic対応Versionを使い、緊急停止にはatomic停止Versionを使う記録でした。現在のroutingは冒頭の2026-08-22 targetを使います。Version 28、Version 29、旧new-origin Version、事前quiesce Versionは履歴であり、rollback trafficを向けません。CGM表示は継続します。
 
 ## Historical Version 28 v14 behavior / 旧Version 28のv14動作
 
@@ -511,7 +519,7 @@ npm run deploy:dry
 
 The estimated AI cost shown by the Worker is an operational estimate paid by the developer. It is not a charge to visitors.
 
-Current production generation still allows up to 10 new generations in each time slot (morning, afternoon, and night), with a daily maximum of 30. It is one singleton infrastructure-wide guard shared by the public demo and all callers, not a per-person allowance. The disabled personal-quota candidate replaces these count ceilings with Free 1/day and Plus 5/day while retaining the singleton's cost safety stop. Cached displays and the reviewed public-demo sample do not consume an individual new-generation use.
+Before the personal-quota rollout, production allowed up to 10 new generations in each time slot and 30 per day through one shared singleton guard. That is historical behavior. Current production uses Free 1/day and Plus 5/day while retaining the singleton's cost safety stop. A Share Studio trial allows one successful gentle `letter` within 90 days for the same verified email address; it does not unlock `deep`, which remains Plus-only. Cached displays and the reviewed public-demo sample do not consume an individual new-generation use.
 
 The first OpenAI attempt uses the normal limit for the selected mode. Within the incomplete-output path, only an API response explicitly marked incomplete due to `max_output_tokens` triggers one retry with the larger limit. A successful retry still counts as one user-requested generation, while usage and developer-cost estimates include both OpenAI attempts. If the retry is also incomplete, the partial text is discarded and is not cached.
 

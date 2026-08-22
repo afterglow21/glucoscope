@@ -1,7 +1,14 @@
 # GlucoScope Plus entitlement Worker
 
-Non-public foundation for the proposed Plus 30-day pass, with stopped production and
-staging checkpoints and no public account or sales path.
+This runbook covers the Plus 30-day pass. Historical stopped-production and staging
+checkpoints are retained below; use the dated target block immediately below for current routing.
+
+## Current production target — 2026-08-22 JST
+
+- Version `1f01ed79-f2ac-46c0-aa1f-a45fa2bfe489` receives 100% of Plus production traffic.
+- Direct behavior rollback is Version `b584808c-0f63-4d18-8970-964dfec62212`. Emergency stopped recovery remains Version `6faa0065-8fdd-4563-985e-9e775999717b`.
+- The one-time Share Studio trial permits only gentle `letter` analysis. The same verified email address can complete it once within the 90-day protection window; `deep` analysis remains Plus-only.
+- Older Version, traffic, and rollback statements below are dated historical evidence, not current routing instructions. Checked-in release switches remain fail-closed.
 
 ## Fixed product boundary
 
@@ -21,7 +28,7 @@ staging checkpoints and no public account or sales path.
 - Email HMAC identifiers, provider event identifiers, and Checkout Session identifiers
   remain internal and are never returned by RPC methods. Recoverable email is not stored.
 
-## Current safety state
+## Historical safety and release checkpoints
 
 The checked-in configuration deliberately keeps RPC, purchases, Checkout HTTP, Stripe
 webhooks, account HTTP, account cleanup, sales readiness, and tax readiness disabled.
@@ -36,7 +43,7 @@ false: `PLUS_ENTITLEMENT_RPC_ENABLED`, `PLUS_PURCHASES_ENABLED`,
 
 The fresh stopped `glucoscope-plus-entitlement-staging` Worker is Version
 `be6a1dbe-c9cf-4002-a997-13d93cf58c36` at 100% traffic. It keeps the four encrypted
-account-HMAC, Resend, and Turnstile Secret binding names. The corrected current Resend key
+account-HMAC, Resend, and Turnstile Secret binding names. The corrected Resend key used at that checkpoint
 passed the one-message provider-acceptance check below without disclosure. It has
 `workers_dev=false`, preview URLs are disabled, no routes or Cron triggers exist,
 observability is disabled, and the `workers.dev` URL returns `404`. Secret values are not
@@ -52,8 +59,8 @@ binding points to `glucoscope-plus-production` in APAC. Both have migrations `00
 through `0008`, including the JPY 400 constraint, minimal 90-day Share trial reuse
 marker, and fail-closed support for both test and live Stripe Checkout IDs. Migration
 `0008` required all four Checkout/refund state tables to be empty before rebuilding them.
-All 13 application tables in both databases were verified at zero rows. Production
-Version `16b489ba-1b15-407d-a6f2-dee82c5244e1` is at 100% with entitlement RPC,
+All 13 application tables in both databases were verified at zero rows. At that checkpoint, production
+Version `16b489ba-1b15-407d-a6f2-dee82c5244e1` was at 100% with entitlement RPC,
 purchase-state processing, and the signature-verified webhook enabled. Checkout HTTP,
 account HTTP, Share trial HTTP, cleanup, sales, tax, and receipt readiness remain false.
 It keeps the production D1 and account rate-limit bindings, the approved
@@ -64,7 +71,7 @@ and the generated `ACCOUNT_EMAIL_LOOKUP_HMAC_KEY` and `ACCOUNT_CODE_HMAC_KEY` Se
 bindings. The production-only Custom Domain `plus.glucoscope.app` has no Cron or
 `workers.dev` target. Public Checkout, account, and Share requests return
 `503 service_unavailable` with `no-store`; unsigned webhook requests return `400`.
-Unserved stopped Version `6d9de56d-0d74-44a1-b3a2-398669bb035e` is the only reviewed
+At that checkpoint, unserved stopped Version `6d9de56d-0d74-44a1-b3a2-398669bb035e` was the only reviewed
 production rollback. Temporary account-acceptance Versions, earlier webhook-only or
 stopped Versions, and every Version carrying the retired Turnstile Secret must not be
 restored.

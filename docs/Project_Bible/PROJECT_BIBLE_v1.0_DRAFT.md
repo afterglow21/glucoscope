@@ -23,20 +23,21 @@ This list is the canonical current-state record. Dated rollout passages elsewher
 document are historical evidence unless they explicitly say that they remain current.
 
 - GitHub Pages serves `https://glucoscope.app/` from `main`. Commit
-  `ae0024f2802889ec089fad14a070459e3506364e` is the accepted pre-release checkpoint for the Share Studio
-  gentle-reflection and independent-trial-quota release. Atomic usage-counter, long-lived-session,
+  `7badb3ad0110ca45750bb3d04786d40a5f015285` is the accepted checkpoint for the full gentle-letter
+  Share Studio and retained one-trial-AI release. Atomic usage-counter, long-lived-session,
   and iPhone Home Screen acceptance remain recorded by their earlier dated checkpoints.
-- AI Worker Version `0e9e39a8-a1be-46c0-8336-f880a2ad147b` receives 100% of AI traffic with
+- AI Worker Version `ef238ad4-7dc7-4b79-bb92-b9c93605c6c3` receives 100% of AI traffic with
   atomic personal quota, the signed administrator bridge, no separate administrator daily cap,
   and exact-reservation Share Studio gentle analysis. Version
-  `6c2ff2e9-e2ba-41f3-a49c-fce620981c89` is the direct behavior
+  `0e9e39a8-a1be-46c0-8336-f880a2ad147b` is the direct behavior
   rollback. Atomic stopped Version
   `46f44888-002b-4847-8553-5cd12e3d7ac5` is the emergency AI-off target. Version 28, Version 29,
   the old new-origin Version, Phase A, and pre-atomic Versions must not receive rollback traffic.
-- Usage Worker Version `e745f53a-aea0-427e-8421-278d3549e30d` receives 100% of Usage traffic
-  with the reviewed Plus-entitlement service binding, exact Share Studio trial reservation context,
+- Usage Worker Version `93b5a9ce-b9cc-47ca-9aed-d8d2dc772ab7` receives 100% of Usage traffic
+  with the reviewed Plus-entitlement service binding, retained verified-email trial identity,
+  exact Share Studio trial reservation context,
   and an independent one-use trial AI allowance. It neither consumes nor depends on the ordinary
-  Free daily allowance. Version `61839f8d-450a-4017-a6cc-d64f23cb570f`
+  Free daily allowance. Version `e745f53a-aea0-427e-8421-278d3549e30d`
   is the direct behavior rollback.
   The checked-in configuration remains fail-closed.
 - The privacy-protected Usage-to-AI aggregate is live. The current completed 30-day window
@@ -57,9 +58,14 @@ document are historical evidence unless they explicitly say that they remain cur
   receives 100% of traffic with the narrow reviewed Plus aggregate binding. Version
   `b7c8c8d8-5fdf-4c94-9b9a-817c99f65c9a` is its direct rollback. It remains accepted for one
   administrator and has no public-site link.
-- Plus Version `b584808c-0f63-4d18-8970-964dfec62212` receives 100% of production traffic for
+- The protected administrator Share Studio publishes commit
+  `d9374329d1fc0a9c0e592e2a10634e0360cffade` through Cloudflare Pages deployment
+  `0a20a862-dad3-482e-b913-d18ae64b3268`. Anonymous access still redirects to Cloudflare Access.
+  Its third image uses the complete gentle AI reflection in one auto-fitted panel and has no
+  separate administrator daily AI cap.
+- Plus Version `1f01ed79-f2ac-46c0-aa1f-a45fa2bfe489` receives 100% of production traffic for
   the JPY 400 one-time 30-day pass and exact active Share Studio trial authorization. Version
-  `3414c567-6328-4361-8105-e9d6e83c5018` is the direct behavior rollback. Unserved stopped Version
+  `b584808c-0f63-4d18-8970-964dfec62212` is the direct behavior rollback. Unserved stopped Version
   `6faa0065-8fdd-4563-985e-9e775999717b` remains the emergency Plus-off target. The approved hourly cleanup
   runs at `0 * * * *` and is limited to the documented expired temporary records.
 
@@ -67,18 +73,19 @@ document are historical evidence unless they explicitly say that they remain cur
 「現在も有効」と明記したものを除き、その時点の履歴証拠です。
 
 - GitHub Pagesは`main`から `https://glucoscope.app/` を公開しています。commit
-  `ae0024f2802889ec089fad14a070459e3506364e`は、Share StudioのやさしいAIふりかえりと独立体験枠を
-  受け入れたcheckpointです。atomic利用カウンター、長期端末session、iPhoneホーム画面の受入は、
+  `7badb3ad0110ca45750bb3d04786d40a5f015285`は、Share StudioのやさしいAI全文表示と、
+  確認済みメールに結び付く体験専用1回枠を受け入れたcheckpointです。atomic利用カウンター、長期端末session、iPhoneホーム画面の受入は、
   それぞれの過去checkpointへ履歴として残します。
-- AI WorkerはVersion `0e9e39a8-a1be-46c0-8336-f880a2ad147b`へ通信の100%を向け、atomic個人上限、
+- AI WorkerはVersion `ef238ad4-7dc7-4b79-bb92-b9c93605c6c3`へ通信の100%を向け、atomic個人上限、
   署名付き管理者bridge、管理者用の独立した1日上限を設けない運用、Share Studioの正確な予約単位の
   やさしい分析を使っています。直接rollbackはVersion
-  `6c2ff2e9-e2ba-41f3-a49c-fce620981c89`です。緊急にAIを止める時だけatomic停止Version
+  `0e9e39a8-a1be-46c0-8336-f880a2ad147b`です。緊急にAIを止める時だけatomic停止Version
   `46f44888-002b-4847-8553-5cd12e3d7ac5`を使います。Version 28、Version 29、旧new-origin、
   Phase A、pre-atomic Versionへは戻しません。
-- Usage WorkerはVersion `e745f53a-aea0-427e-8421-278d3549e30d`へ通信の100%を向け、確認済みの
-  Plus利用権service binding、Share Studio体験の正確な予約情報、通常Freeの1日上限とは独立した体験専用1回枠を
-  使っています。直接rollbackはVersion `61839f8d-450a-4017-a6cc-d64f23cb570f`です。Gitへ保存した設定は停止側を初期値にします。
+- Usage WorkerはVersion `93b5a9ce-b9cc-47ca-9aed-d8d2dc772ab7`へ通信の100%を向け、確認済みの
+  Plus利用権service binding、確認済みメールに結び付く非復元の体験識別子、Share Studio体験の正確な予約情報、
+  通常Freeの1日上限とは独立した体験専用1回枠を使っています。直接rollbackはVersion
+  `e745f53a-aea0-427e-8421-278d3549e30d`です。Gitへ保存した設定は停止側を初期値にします。
 - privacy保護したUsage-to-AI集計は本番接続済みです。前日までの完了した30日間は、利用記録に
   同意した端末プロフィールが10件未満のため、応答を`suppressed`とし実数を含めません。
   backendの`GET`と、公開Dashboardの監督下実ブラウザ表示確認は合格しました。実際の
@@ -94,9 +101,13 @@ document are historical evidence unless they explicitly say that they remain cur
 - Accessで保護した管理者画面はVersion `b2748c12-4edd-4a99-84c2-3e779f3c84b8`へ通信の100%を向け、
   必要最小限のPlus集計service bindingを使っています。直接rollbackはVersion
   `b7c8c8d8-5fdf-4c94-9b9a-817c99f65c9a`です。管理者1名で本番受入済みで、公開サイトにはリンクしません。
-- PlusはVersion `b584808c-0f63-4d18-8970-964dfec62212`へ本番通信の100%を向け、400円の1回払いで
+- Accessで保護した管理者用Share Studioはcommit `d9374329d1fc0a9c0e592e2a10634e0360cffade`を
+  Cloudflare Pages deployment `0a20a862-dad3-482e-b913-d18ae64b3268`で公開しています。匿名アクセスは
+  引き続きCloudflare Accessへ転送されます。3枚目はやさしいAI分析の全文を1つの自動調整パネルへ表示し、
+  管理者専用の別枠1日上限は設けません。
+- PlusはVersion `1f01ed79-f2ac-46c0-aa1f-a45fa2bfe489`へ本番通信の100%を向け、400円の1回払いで
   30日間使える小規模な一般提供と、正確な予約に限るShare Studio体験を提供しています。直接rollbackはVersion
-  `3414c567-6328-4361-8105-e9d6e83c5018`、緊急停止は未配信の停止Version
+  `b584808c-0f63-4d18-8970-964dfec62212`、緊急停止は未配信の停止Version
   `6faa0065-8fdd-4563-985e-9e775999717b`を使います。承認済みの毎時cleanupは
   `0 * * * *`で動き、正本に定めた期限切れ一時記録だけを対象にします。
 
