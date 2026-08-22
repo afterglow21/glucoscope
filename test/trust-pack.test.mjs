@@ -70,8 +70,9 @@ test("Plus 30-day pass records the approved one-time boundary and live release",
 test("canonical current-state records stay aligned with the live small public release", async () => {
   const [readme, bible] = await Promise.all([read(rootReadmeUrl), read(projectBibleUrl)]);
   for (const source of [readme, bible]) {
-    assert.match(source, /712e57644f45fa50b625b8a8d6347c03c24b9e78/);
+    assert.match(source, /9eb6813d6686360dbe88c4f81d0ec3b477c55293/);
     assert.match(source, /6c2ff2e9-e2ba-41f3-a49c-fce620981c89/);
+    assert.match(source, /e745f53a-aea0-427e-8421-278d3549e30d/);
     assert.match(source, /61839f8d-450a-4017-a6cc-d64f23cb570f/);
     assert.match(source, /b2748c12-4edd-4a99-84c2-3e779f3c84b8/);
     assert.match(source, /b584808c-0f63-4d18-8970-964dfec62212/);

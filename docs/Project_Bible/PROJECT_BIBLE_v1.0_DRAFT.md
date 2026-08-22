@@ -23,8 +23,8 @@ This list is the canonical current-state record. Dated rollout passages elsewher
 document are historical evidence unless they explicitly say that they remain current.
 
 - GitHub Pages serves `https://glucoscope.app/` from `main`. Commit
-  `712e57644f45fa50b625b8a8d6347c03c24b9e78` is the accepted checkpoint for the Share Studio
-  detailed-analysis release. Atomic usage-counter, long-lived-session,
+  `9eb6813d6686360dbe88c4f81d0ec3b477c55293` is the accepted checkpoint for the Share Studio
+  gentle-reflection and independent-trial-quota release. Atomic usage-counter, long-lived-session,
   and iPhone Home Screen acceptance remain recorded by their earlier dated checkpoints.
 - AI Worker Version `6c2ff2e9-e2ba-41f3-a49c-fce620981c89` receives 100% of AI traffic with
   atomic personal quota, the signed administrator bridge, and exact-reservation Share Studio
@@ -32,9 +32,10 @@ document are historical evidence unless they explicitly say that they remain cur
   rollback. Atomic stopped Version
   `46f44888-002b-4847-8553-5cd12e3d7ac5` is the emergency AI-off target. Version 28, Version 29,
   the old new-origin Version, Phase A, and pre-atomic Versions must not receive rollback traffic.
-- Usage Worker Version `61839f8d-450a-4017-a6cc-d64f23cb570f` receives 100% of Usage traffic
+- Usage Worker Version `e745f53a-aea0-427e-8421-278d3549e30d` receives 100% of Usage traffic
   with the reviewed Plus-entitlement service binding, exact Share Studio trial reservation context,
-  and existing personal quota enforcement. Version `ab21208a-b0e5-4075-be36-a9ace1483abb`
+  and an independent one-use trial AI allowance. It neither consumes nor depends on the ordinary
+  Free daily allowance. Version `61839f8d-450a-4017-a6cc-d64f23cb570f`
   is the direct behavior rollback.
   The checked-in configuration remains fail-closed.
 - The privacy-protected Usage-to-AI aggregate is live. The current completed 30-day window
@@ -65,7 +66,7 @@ document are historical evidence unless they explicitly say that they remain cur
 「現在も有効」と明記したものを除き、その時点の履歴証拠です。
 
 - GitHub Pagesは`main`から `https://glucoscope.app/` を公開しています。commit
-  `712e57644f45fa50b625b8a8d6347c03c24b9e78`は、Share StudioのしっかりAI分析公開を
+  `9eb6813d6686360dbe88c4f81d0ec3b477c55293`は、Share StudioのやさしいAIふりかえりと独立体験枠を
   受け入れたcheckpointです。atomic利用カウンター、長期端末session、iPhoneホーム画面の受入は、
   それぞれの過去checkpointへ履歴として残します。
 - AI WorkerはVersion `6c2ff2e9-e2ba-41f3-a49c-fce620981c89`へ通信の100%を向け、atomic個人上限、
@@ -73,9 +74,9 @@ document are historical evidence unless they explicitly say that they remain cur
   `030d9525-9058-4ced-9ec0-43d9cdb27a0d`です。緊急にAIを止める時だけatomic停止Version
   `46f44888-002b-4847-8553-5cd12e3d7ac5`を使います。Version 28、Version 29、旧new-origin、
   Phase A、pre-atomic Versionへは戻しません。
-- Usage WorkerはVersion `61839f8d-450a-4017-a6cc-d64f23cb570f`へ通信の100%を向け、確認済みの
-  Plus利用権service binding、Share Studio体験の正確な予約情報、個人別AI上限を使っています。直接rollbackはVersion
-  `ab21208a-b0e5-4075-be36-a9ace1483abb`です。Gitへ保存した設定は停止側を初期値にします。
+- Usage WorkerはVersion `e745f53a-aea0-427e-8421-278d3549e30d`へ通信の100%を向け、確認済みの
+  Plus利用権service binding、Share Studio体験の正確な予約情報、通常Freeの1日上限とは独立した体験専用1回枠を
+  使っています。直接rollbackはVersion `61839f8d-450a-4017-a6cc-d64f23cb570f`です。Gitへ保存した設定は停止側を初期値にします。
 - privacy保護したUsage-to-AI集計は本番接続済みです。前日までの完了した30日間は、利用記録に
   同意した端末プロフィールが10件未満のため、応答を`suppressed`とし実数を含めません。
   backendの`GET`と、公開Dashboardの監督下実ブラウザ表示確認は合格しました。実際の
