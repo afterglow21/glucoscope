@@ -117,7 +117,7 @@ test("public data connection remains clickable and clearly marked as early acces
   assert.match(index, /データ接続（先行体験）/);
   assert.match(index, /Gluroo接続は少人数で確認しながら提供しています/);
   assert.match(index, /style\.css\?v=20260822-share-detailed-1/);
-  assert.match(index, /js\/app\.js\?v=20260822-share-detailed-1/);
+  assert.match(index, /js\/app\.js\?v=20260822-share-gentle-1/);
   assert.match(app, /dataSourceButtonDemo: "データ接続（先行体験）"/);
   assert.match(app, /dataSourceDialogTitle: "Data connection \(early access\)"/);
   assert.doesNotMatch(index, /id="dataSourceButton"[^>]+disabled/);
@@ -667,7 +667,7 @@ test("field feedback copy and red-frame navigation are reflected", () => {
 test("current cache and CSS markers are present", () => {
   assert.match(index, /js\/data-source\.js\?v=20260816-device-session-1/);
   assert.match(index, /js\/data-relay-client\.js\?v=20260816-device-session-1/);
-  assert.match(index, /js\/app\.js\?v=20260822-share-detailed-1/);
+  assert.match(index, /js\/app\.js\?v=20260822-share-gentle-1/);
   assert.match(guideCss, /User Foundation 0\.3\.3/);
   assert.match(css, /Limited Data Relay Paused Acceptance/);
 });

@@ -294,15 +294,15 @@ const translations = {
     mobileMoreShareStudioLearnMoreTitle: "Share Studioとは？",
     mobileMoreShareStudioLearnMoreAction: "できることを見る",
     shareStudioTitle: "今日のふりかえりを4枚に",
-    shareStudioLead: "今日出逢ったグルコ、血糖グラフ、しっかりAI分析を、端末の中だけで4枚の画像にまとめます。",
+    shareStudioLead: "今日出逢ったグルコ、血糖グラフ、やさしいAIふりかえりを、端末の中だけで4枚の画像にまとめます。",
     shareStudioPrivacyTitle: "共有する前に",
-    shareStudioPrivacyBody: "画像には健康情報が含まれます。共有相手と公開範囲を確認してください。3枚目のAI分析には集計値だけを送り、接続URL・合言葉・血糖一覧は送りません。",
+    shareStudioPrivacyBody: "画像には健康情報が含まれます。共有相手と公開範囲を確認してください。3枚目のやさしいふりかえりには集計値だけを送り、接続URL・合言葉・血糖一覧は送りません。",
     shareStudioCreate: "4枚を作る",
     shareStudioShare: "4枚を共有・保存する",
     shareStudioDelete: "この画面に保管した4枚を削除する",
     shareStudioTrialConsumed: "無料体験1回分を使用しました。4枚はこの画面から再表示できます。写真アプリにはまだ保存されていません。「4枚を共有・保存する」から保存できます。新しい4枚を作るにはPlus 30日パスが必要です。",
-    shareStudioDetailedPreparing: "3枚目のしっかりAI分析を準備しています…",
-    shareStudioTurnstileWaiting: "3枚目のしっかりAI分析のため、安全確認を完了してください。終わると自動で4枚を作ります。",
+    shareStudioGentlePreparing: "3枚目のやさしいふりかえりを準備しています…",
+    shareStudioTurnstileWaiting: "3枚目のやさしいふりかえりのため、安全確認を完了してください。終わると自動で4枚を作ります。",
     shareStudioHealthConfirm: "4枚には血糖などの健康情報が含まれます。共有先と公開範囲を自分で確認します。",
     mobileMoreCollection: "想い出",
     mobileMoreCollectionNote: "グルコとの記録",
@@ -761,15 +761,15 @@ const translations = {
     mobileMoreShareStudioLearnMoreTitle: "What is Share Studio?",
     mobileMoreShareStudioLearnMoreAction: "See what it can do",
     shareStudioTitle: "Turn today's reflection into four images",
-    shareStudioLead: "Create a set of four images with today's Gluco, glucose graph, and detailed AI analysis, entirely on this device.",
+    shareStudioLead: "Create a set of four images with today's Gluco, glucose graph, and a gentle AI reflection, entirely on this device.",
     shareStudioPrivacyTitle: "Before sharing",
-    shareStudioPrivacyBody: "These images contain health information. Check the recipient and audience. Only summary metrics are sent for image three's AI analysis; connection URLs, passphrases, and the glucose list are not sent.",
+    shareStudioPrivacyBody: "These images contain health information. Check the recipient and audience. Only summary metrics are sent for image three's gentle reflection; connection URLs, passphrases, and the glucose list are not sent.",
     shareStudioCreate: "Create four images",
     shareStudioShare: "Share or save four images",
     shareStudioDelete: "Delete the four images kept on this screen",
     shareStudioTrialConsumed: "Your one free trial has been used. You can reopen these four images here, but they have not been saved to Photos yet. Use ‘Share or save four images’ to save them. A Plus 30-day pass is required to create a new set.",
-    shareStudioDetailedPreparing: "Preparing the detailed AI analysis for image three…",
-    shareStudioTurnstileWaiting: "Complete the safety check for the detailed AI analysis. The four images will be created automatically when it finishes.",
+    shareStudioGentlePreparing: "Preparing the gentle reflection for image three…",
+    shareStudioTurnstileWaiting: "Complete the safety check for the gentle reflection. The four images will be created automatically when it finishes.",
     shareStudioHealthConfirm: "The four images contain health information such as glucose data. I will check the destination and audience before sharing.",
     mobileMoreCollection: "Memories",
     mobileMoreCollectionNote: "Your moments with Gluco",
@@ -4583,7 +4583,7 @@ function renderShareStudioTurnstile(attempt = 0) {
   }
 }
 
-async function requestShareStudioDetailedAnalysis(reservation) {
+async function requestShareStudioGentleReflection(reservation) {
   const turnstileToken = getShareStudioTurnstileToken();
   if (!turnstileToken || !latestAiLetterSummary) throw new Error("turnstile_failed");
   const shareTrialRequestId = reservation?.grant === "trial" ? reservation.requestId : "";
@@ -4591,7 +4591,7 @@ async function requestShareStudioDetailedAnalysis(reservation) {
   if (!quotaRequestContext.ok || quotaRequestContext.enabled !== true) {
     throw new Error(quotaRequestContext.error || "quota_identity_required");
   }
-  setShareStudioStatus(t("shareStudioDetailedPreparing"));
+  setShareStudioStatus(t("shareStudioGentlePreparing"));
   const response = await fetch(getAiLetterWorkerEndpoint(), {
     method: "POST",
     headers: {
@@ -4600,7 +4600,7 @@ async function requestShareStudioDetailedAnalysis(reservation) {
     },
     body: JSON.stringify({
       summary: latestAiLetterSummary,
-      analysisMode: "deep",
+      analysisMode: "letter",
       turnstileToken,
       requestId: quotaRequestContext.requestId,
       quotaCredentialKind: quotaRequestContext.quotaCredentialKind,
@@ -4613,20 +4613,20 @@ async function requestShareStudioDetailedAnalysis(reservation) {
   const data = await response.json().catch(() => ({}));
   const letterText = getAiLetterTextFromResponse(data);
   if (!response.ok || data.ok === false || !letterText) {
-    const error = new Error(data?.code || data?.error || "detailed_analysis_failed");
+    const error = new Error(data?.code || data?.error || "gentle_reflection_failed");
     error.aiLetterData = data;
     throw error;
   }
-  saveAiLetterLocalCache(latestAiLetterSummary, data, letterText, "deep");
+  saveAiLetterLocalCache(latestAiLetterSummary, data, letterText, "letter");
   recordUsageProfileAiGenerationIfEligible(data);
   resetShareStudioTurnstile();
   return letterText;
 }
 
-async function getShareStudioDetailedAnalysis(reservation) {
-  const cached = getFreshCachedAiLetter(latestAiLetterSummary, "deep");
+async function getShareStudioGentleReflection(reservation) {
+  const cached = getFreshCachedAiLetter(latestAiLetterSummary, "letter");
   if (cached?.text) return cached.text;
-  return requestShareStudioDetailedAnalysis(reservation);
+  return requestShareStudioGentleReflection(reservation);
 }
 
 function updateShareStudioAvailability() {
@@ -4743,7 +4743,7 @@ function setupShareStudio() {
 
   createButton?.addEventListener("click", async () => {
     if (shareStudioBusy) return;
-    if (!getFreshCachedAiLetter(latestAiLetterSummary, "deep") && !getShareStudioTurnstileToken()) {
+    if (!getFreshCachedAiLetter(latestAiLetterSummary, "letter") && !getShareStudioTurnstileToken()) {
       shareStudioCreateAfterTurnstile = true;
       setShareStudioStatus(t("shareStudioTurnstileWaiting"));
       renderShareStudioTurnstile();
@@ -4762,11 +4762,11 @@ function setupShareStudio() {
       if (!latestShareStudioTodayModel) throw new Error("today_data_unavailable");
       reservation = await plusEntitlementClient?.reserveShareStudio?.();
       if (!reservation?.ok) throw new Error(reservation?.error || "reservation_failed");
-      const detailedAnalysis = await getShareStudioDetailedAnalysis(reservation);
+      const gentleReflection = await getShareStudioGentleReflection(reservation);
       const shareStudioModel = {
         ...latestShareStudioTodayModel,
-        analysisMode: "deep",
-        letter: detailedAnalysis
+        analysisMode: "letter",
+        letter: gentleReflection
       };
       const blobs = await window.GlucoScopeShareStudio?.generateCarousel?.(shareStudioModel);
       if (!Array.isArray(blobs) || blobs.length !== 4 || blobs.some((blob) => !(blob instanceof Blob))) {

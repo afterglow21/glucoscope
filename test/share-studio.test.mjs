@@ -80,7 +80,7 @@ function createRenderDependencies() {
       const size = Number.parseFloat(this.font.match(/(\d+(?:\.\d+)?)px/u)?.[1] || "16");
       return { width: Array.from(String(value ?? "")).length * size * .56 };
     },
-    fillText(value) { textCalls.push({ value: String(value) }); },
+    fillText(value, x, y) { textCalls.push({ value: String(value), x, y, font: this.font }); },
     drawImage(image, ...coordinates) {
       drawImageCalls.push({ source: image.source, coordinates });
     }
@@ -138,7 +138,7 @@ test("Share Studio creates and stores four slides before completing a trial", ()
   assert.match(index, /id="shareStudioAccessNotice"[^>]*role="status"[^>]*hidden/u);
   assert.match(index, /id="plusAccountShareStudioNotice"[^>]*role="status"[^>]*hidden/u);
   assert.match(index, /js\/share-studio\.js/u);
-  assert.match(index, /今日出逢ったグルコ、血糖グラフ、しっかりAI分析/u);
+  assert.match(index, /今日出逢ったグルコ、血糖グラフ、やさしいAIふりかえり/u);
   assert.match(index, /id="shareStudioPreviewGrid"/u);
   assert.match(index, /id="shareStudioHealthConfirm"/u);
   assert.match(index, /id="shareStudioTrialConsumedNotice"[^>]*hidden/u);
@@ -146,8 +146,9 @@ test("Share Studio creates and stores four slides before completing a trial", ()
   assert.match(index, /写真アプリにはまだ保存されていません/u);
   assert.match(index, /この画面に保管した4枚を削除する/u);
   assert.match(index, /id="shareStudioTurnstile"[^>]*hidden/u);
-  assert.match(index, /3枚目のAI分析には集計値だけを送り、接続URL・合言葉・血糖一覧は送りません/u);
-  assert.match(app, /requestShareStudioDetailedAnalysis/u);
+  assert.match(index, /3枚目のやさしいふりかえりには集計値だけを送り、接続URL・合言葉・血糖一覧は送りません/u);
+  assert.match(app, /requestShareStudioGentleReflection/u);
+  assert.match(app, /analysisMode: "letter"/u);
   assert.match(app, /action:\s*"glucoscope-ai-letter"/u);
   assert.match(app, /shareTrialRequestId/u);
   assert.match(app, /reserveShareStudio[\s\S]*generateCarousel[\s\S]*saveCarousel[\s\S]*completeShareStudio/u);
@@ -190,7 +191,7 @@ test("Share Studio keeps a verified four-image set in device storage", async () 
   }, { store });
   assert.equal(record.blobs.length, 4);
   assert.equal(record.version, 2);
-  assert.equal(record.rendererRevision, 3);
+  assert.equal(record.rendererRevision, 4);
   assert.equal(api._testing.isCurrentCarouselRecord(record), true);
   assert.equal(record.dateKey, "2026-08-21");
   assert.equal(record.glucoId, 7);
@@ -329,7 +330,7 @@ test("the four-image renderer loads the reviewed ending art and current public Q
     ],
     treatments: [],
     gluco: { id: 3, title: "ボールあそび", imagePath: "assets/gluco/live/gluco-live-03.png" },
-    letter: "グルコだよ🍀 今日の数字を、やさしく一緒に眺めようね。"
+    letter: "グルコだよ🍀 来てくれてうれしいよ。🌿 全体の流れ・TIRは95.4%だよ。TARは4.6%だよ。📊 数字の手がかり・平均血糖は120mg/dLだよ。CVは22.1%だよ。🔎 気になった動き・数字は答えではなく手がかりだよ。🌙 もうひとつ・GlucoScoreは98だよ。🌱 今日の見返し・急いで答えにしなくて大丈夫だよ。"
   }, dependencies);
   assert.equal(blobs.length, 4);
   assert.deepEqual(dependencies.imageSources, [
@@ -340,7 +341,13 @@ test("the four-image renderer loads the reviewed ending art and current public Q
   ]);
   assert.ok(dependencies.drawImageCalls.some((call) => call.source === "assets/share-studio/ending-sunrise.png"));
   assert.ok(dependencies.drawImageCalls.some((call) => call.source === "assets/share-studio/glucoscope-qr.png"));
-  assert.ok(dependencies.textCalls.some((call) => call.value.includes("しっかりAI分析")));
+  assert.ok(dependencies.textCalls.some((call) => call.value.includes("やさしいふりかえり")));
+  for (const marker of ["🌿", "📊", "🔎", "🌱"]) {
+    assert.ok(dependencies.textCalls.some((call) => call.x === 132 && call.value.startsWith(marker)));
+  }
+  const gentleBodyLines = dependencies.textCalls.filter((call) => call.x === 132 && /800 25px/u.test(call.font));
+  assert.ok(gentleBodyLines.length >= 4 && gentleBodyLines.length <= 12);
+  assert.ok(gentleBodyLines.every((call) => call.y <= 1092));
   assert.deepEqual(readPngDimensions("../assets/share-studio/ending-sunrise.png"), { width: 1080, height: 1350 });
   assert.deepEqual(readPngDimensions("../assets/share-studio/glucoscope-qr.png"), { width: 256, height: 256 });
 });

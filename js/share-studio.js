@@ -13,7 +13,7 @@
   const LATEST_KEY = "latest";
   const RECORD_VERSION = 2;
   const LEGACY_RECORD_VERSION = 1;
-  const RENDERER_REVISION = 3;
+  const RENDERER_REVISION = 4;
   const FONT = '"Yu Gothic", "Hiragino Kaku Gothic ProN", "Segoe UI", "Segoe UI Emoji", sans-serif';
   const VALUE_PATTERN = /^(?:--|\d{1,3}(?:\.\d)?%?)$/u;
   const SAFE_ASSET_PATTERN = /^assets\/gluco\/(?:live|unicorn|ui|profile)\/[a-z0-9._-]+\.png$/u;
@@ -228,6 +228,90 @@
     }
     if (buffer) paragraphs.push(buffer);
     return paragraphs;
+  }
+
+  function compactLetterSections(value, language) {
+    const raw = String(value || "").replace(/\r/gu, "").trim();
+    if (!raw) return [];
+    const marked = raw
+      .replace(/\s*(?=[🌿📊🔎🌙🌱📈])/gu, "\n")
+      .split(/\n+/u)
+      .map((part) => part.trim())
+      .filter((part) => /^[🌿📊🔎🌙🌱📈]/u.test(part))
+      .map((part) => {
+        const marker = [...part][0];
+        const remainder = part.slice(marker.length).trim();
+        const separator = remainder.search(/[・:：]|\s[-－—]\s*/u);
+        const title = separator > 0 && separator <= 26
+          ? remainder.slice(0, separator).trim()
+          : (language === "en" ? "A gentle clue" : "やさしい手がかり");
+        const body = (separator > 0 && separator <= 26
+          ? remainder.slice(separator).replace(/^\s*[・:：\-－—]\s*/u, "")
+          : remainder)
+          .replace(/\s+[\-－—]\s+/gu, language === "en" ? " " : "")
+          .trim();
+        const sentences = splitSentences(body, language);
+        return {
+          title: `${marker} ${title}`,
+          body: sentences.slice(0, 2).join(language === "en" ? " " : "") || body
+        };
+      })
+      .filter((section) => section.body);
+    if (marked.length) return marked.length <= 4 ? marked : [marked[0], marked[1], marked[2], marked.at(-1)];
+
+    const sentences = splitSentences(raw, language)
+      .map((sentence) => sentence
+        .replace(/^(?:グルコだよ🍀|Gluco(?: is here| here)?[.!]?\s*🍀?)\s*/iu, "")
+        .trim())
+      .filter(Boolean)
+      .filter((sentence) => !/^(?:来てくれて|Welcome|I am glad you are here)/iu.test(sentence));
+    const selected = sentences.length <= 4 ? sentences : [sentences[0], sentences[1], sentences[2], sentences.at(-1)];
+    return selected.map((body, index) => ({
+      title: language === "en" ? `🍀 Clue ${index + 1}` : `🍀 手がかり ${index + 1}`,
+      body
+    }));
+  }
+
+  function ellipsizedLines(context, value, maximumWidth, maximumLines) {
+    const lines = wrapLines(context, value, maximumWidth);
+    if (lines.length <= maximumLines) return lines;
+    const visible = lines.slice(0, maximumLines);
+    let last = `${visible.at(-1).replace(/[…。,\.\s]+$/u, "")}…`;
+    while (last.length > 1 && context.measureText(last).width > maximumWidth) {
+      last = `${last.slice(0, -2).trimEnd()}…`;
+    }
+    visible[visible.length - 1] = last;
+    return visible;
+  }
+
+  function drawLetterSections(context, value, language) {
+    const sections = compactLetterSections(value, language).slice(0, 4);
+    const cards = sections.length ? sections : [{
+      title: language === "en" ? "🍀 Gentle clue" : "🍀 やさしい手がかり",
+      body: defaultLetter({ language })
+    }];
+    const startY = 350;
+    const gap = 14;
+    const cardHeight = Math.floor((742 - (gap * (cards.length - 1))) / cards.length);
+    cards.forEach((section, index) => {
+      const y = startY + (index * (cardHeight + gap));
+      panel(context, 105, y, 870, cardHeight, 22, "rgba(9,28,46,.64)", "rgba(134,239,172,.14)");
+      drawText(context, section.title, 132, y + 38, {
+        size: language === "en" ? 21 : 23,
+        weight: 900,
+        color: "#9cf0be"
+      });
+      context.font = `800 ${language === "en" ? 23 : 25}px ${FONT}`;
+      context.fillStyle = "#f0f5fa";
+      context.textAlign = "left";
+      context.textBaseline = "alphabetic";
+      const lineHeight = language === "en" ? 31 : 35;
+      const maximumLines = Math.max(1, Math.min(3, Math.floor((cardHeight - 64) / lineHeight)));
+      ellipsizedLines(context, section.body, 816, maximumLines).forEach((line, lineIndex) => {
+        context.fillText(line, 132, y + 78 + (lineIndex * lineHeight));
+      });
+    });
+    return cards;
   }
 
   function buildParagraphLayout(context, value, maximumWidth, language, size, weight) {
@@ -598,17 +682,11 @@
 
   function drawLetter(context, model, peekImage) {
     background(context);
-    header(context, model.language === "en" ? "📊 Detailed AI reflection" : "📊 しっかりAI分析", model, 3);
+    header(context, model.language === "en" ? "🍀 Gentle reflection" : "🍀 やさしいふりかえり", model, 3);
     panel(context, 70, 225, 940, 1055, 42, "rgba(255,255,255,.052)", "rgba(134,239,172,.18)");
-    drawText(context, model.language === "en" ? "🍀 A careful look with Gluco" : "🍀 グルコと丁寧にふりかえる", 110, 303, { size: 29, weight: 900, color: "#bff7d7" });
-    fittedParagraphText(context, model.letter || defaultLetter(model), 110, 382, 850, 640, {
-      language: model.language,
-      maxSize: model.language === "en" ? 31 : 34,
-      minSize: model.language === "en" ? 19 : 20,
-      weight: 800,
-      color: "#eef6ff",
-    });
-    drawImageContain(context, peekImage, 805, 1034, 185, 154);
+    drawText(context, model.language === "en" ? "Four gentle clues from Gluco" : "グルコからの4つの手がかり", 110, 303, { size: 29, weight: 900, color: "#bff7d7" });
+    drawLetterSections(context, model.letter || defaultLetter(model), model.language);
+    drawImageContain(context, peekImage, 835, 1100, 145, 105);
     const note = model.language === "en"
       ? "This does not replace medical judgment."
       : "医療判断を置き換えるものではありません";

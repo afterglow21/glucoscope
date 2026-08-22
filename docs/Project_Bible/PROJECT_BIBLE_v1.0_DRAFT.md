@@ -3708,9 +3708,10 @@ On 2026-08-21, the public Share Studio boundary was aligned with the protected a
 Social Share Studio: it creates a set of four images for today instead of one Daily Snapshot.
 Image 1 uses the exact Gluco already encountered and stored by the same GlucoScope browser;
 the person does not choose a replacement. Slide 2 contains daily metrics and the glucose
-graph, slide 3 contains a detailed AI reflection, and slide 4 is a stable GlucoScope closing card.
-The detailed reflection is authorized only by that account's exact active trial reservation or
-an active Plus entitlement; the trial does not unlock detailed analysis elsewhere.
+graph, slide 3 contains a short gentle AI reflection, and slide 4 is a stable GlucoScope closing card.
+The third image shows about three clues and one final gentle thought in fixed, phone-readable
+cards instead of shrinking a full analysis. It is authorized only by that account's exact active
+trial reservation or an active Plus entitlement; the trial does not unlock detailed analysis elsewhere.
 All four PNGs are generated locally and written to browser IndexedDB before a free-trial
 completion is sent. A storage or read-back failure releases the reservation and does not
 consume the trial. After successful completion, the UI explicitly states that the one free trial
@@ -4120,8 +4121,9 @@ Plus利用権はブラウザの利用記録プロフィールから分離し、�
 
 2026年8月21日、利用者向けShare Studioを、管理者用Social Share Studioと同じ4枚構成へ
 揃えました。1枚目は、同じGlucoScopeのブラウザがその日に実際に出逢いとして保存したグルコを
-使い、別の候補から選び直させません。2枚目は日次指標と血糖グラフ、3枚目はしっかりAI分析、
-4枚目は固定のGlucoScope締めくくりカードです。無料体験中のしっかりAI分析は、そのアカウントの
+使い、別の候補から選び直させません。2枚目は日次指標と血糖グラフ、3枚目は短い「やさしいAIふりかえり」、
+4枚目は固定のGlucoScope締めくくりカードです。3枚目は、全文を小さく詰め込まず、3つほどの手がかりと
+最後のやさしい一言を、スマートフォンで読める固定文字サイズの4枠に収めます。このふりかえりは、そのアカウントの
 有効な体験予約1件、または有効なPlus利用権にだけ結び付け、他のFree画面へは開放しません。4枚のPNGを
 すべて端末内で生成し、ブラウザの
 IndexedDBへ保存して読み戻せた後だけ無料体験の完了を送ります。保存または読み戻しに失敗した時は
