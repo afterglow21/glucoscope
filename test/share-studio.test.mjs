@@ -143,6 +143,8 @@ test("Share Studio creates and stores four slides before completing a trial", ()
   assert.match(index, /id="shareStudioHealthConfirm"/u);
   assert.match(index, /id="shareStudioTrialConsumedNotice"[^>]*hidden/u);
   assert.match(index, /無料体験1回分を使用しました/u);
+  assert.match(index, /写真アプリにはまだ保存されていません/u);
+  assert.match(index, /この画面に保管した4枚を削除する/u);
   assert.match(index, /id="shareStudioTurnstile"[^>]*hidden/u);
   assert.match(index, /3枚目のAI分析には集計値だけを送り、接続URL・合言葉・血糖一覧は送りません/u);
   assert.match(app, /requestShareStudioDetailedAnalysis/u);
@@ -150,8 +152,9 @@ test("Share Studio creates and stores four slides before completing a trial", ()
   assert.match(app, /shareTrialRequestId/u);
   assert.match(app, /reserveShareStudio[\s\S]*generateCarousel[\s\S]*saveCarousel[\s\S]*completeShareStudio/u);
   assert.match(app, /!completionStarted[\s\S]*releaseShareStudio/u);
-  assert.match(app, /completionStarted[\s\S]*4枚はこの端末に保存済みです/u);
-  assert.match(app, /loadCarousel[\s\S]*保存済みの4枚を再表示しました/u);
+  assert.match(app, /completionStarted[\s\S]*4枚はこの画面に保管されています/u);
+  assert.match(app, /loadCarousel[\s\S]*この画面に保管した4枚を再表示しました/u);
+  assert.match(app, /写真アプリへ保存した画像は削除されていません/u);
   assert.match(app, /deleteCarousel/u);
   assert.match(app, /getStoredTodayUnicornDecision[\s\S]*getStoredDailyGlucoDecision/u);
   assert.match(app, /event\.key === "Escape"[\s\S]*closeShareStudio/u);

@@ -299,8 +299,8 @@ const translations = {
     shareStudioPrivacyBody: "画像には健康情報が含まれます。共有相手と公開範囲を確認してください。3枚目のAI分析には集計値だけを送り、接続URL・合言葉・血糖一覧は送りません。",
     shareStudioCreate: "4枚を作る",
     shareStudioShare: "4枚を共有・保存する",
-    shareStudioDelete: "保存した4枚を削除する",
-    shareStudioTrialConsumed: "無料体験1回分を使用しました。4枚はこの端末に保存済みです。続けて新しく作るにはPlus 30日パスが必要です。",
+    shareStudioDelete: "この画面に保管した4枚を削除する",
+    shareStudioTrialConsumed: "無料体験1回分を使用しました。4枚はこの画面から再表示できます。写真アプリにはまだ保存されていません。「4枚を共有・保存する」から保存できます。新しい4枚を作るにはPlus 30日パスが必要です。",
     shareStudioDetailedPreparing: "3枚目のしっかりAI分析を準備しています…",
     shareStudioTurnstileWaiting: "3枚目のしっかりAI分析のため、安全確認を完了してください。終わると自動で4枚を作ります。",
     shareStudioHealthConfirm: "4枚には血糖などの健康情報が含まれます。共有先と公開範囲を自分で確認します。",
@@ -766,8 +766,8 @@ const translations = {
     shareStudioPrivacyBody: "These images contain health information. Check the recipient and audience. Only summary metrics are sent for image three's AI analysis; connection URLs, passphrases, and the glucose list are not sent.",
     shareStudioCreate: "Create four images",
     shareStudioShare: "Share or save four images",
-    shareStudioDelete: "Delete the saved images",
-    shareStudioTrialConsumed: "Your one free trial has been used. These four images are saved on this device. A Plus 30-day pass is required to create a new set.",
+    shareStudioDelete: "Delete the four images kept on this screen",
+    shareStudioTrialConsumed: "Your one free trial has been used. You can reopen these four images here, but they have not been saved to Photos yet. Use ‘Share or save four images’ to save them. A Plus 30-day pass is required to create a new set.",
     shareStudioDetailedPreparing: "Preparing the detailed AI analysis for image three…",
     shareStudioTurnstileWaiting: "Complete the safety check for the detailed AI analysis. The four images will be created automatically when it finishes.",
     shareStudioHealthConfirm: "The four images contain health information such as glucose data. I will check the destination and audience before sharing.",
@@ -4666,8 +4666,8 @@ function setupShareStudio() {
         if (createButton) createButton.hidden = !access.allowed;
         setShareStudioStatus(currentLayout
           ? (currentLanguage === "en"
-            ? "Your saved four images are still here. You can share or save them again."
-            : "保存済みの4枚を再表示しました。いつでも共有・保存できます。")
+            ? "The four images kept on this screen are ready to view again. They are saved to Photos only when you choose that action from the share screen."
+            : "この画面に保管した4枚を再表示しました。写真アプリへ保存するには「4枚を共有・保存する」から保存操作を選んでください。")
           : (currentLanguage === "en"
             ? "These four images were saved with the earlier layout. They are shown unchanged and remain available to share or save."
             : "以前のレイアウトで保存した4枚を、内容を変えずに表示しています。いつでも共有・保存できます。"));
@@ -4791,8 +4791,8 @@ function setupShareStudio() {
 
       renderShareStudioRecord(savedRecord, { trialConsumed: reservation.grant === "trial" });
       setShareStudioStatus(currentLanguage === "en"
-        ? "The four images are saved on this device. Closing this screen will not remove them."
-        : "4枚をこの端末に保存しました。この画面を閉じても、あとから再表示できます。");
+        ? "The four images are kept on this screen and can be reopened later. They are not in Photos yet."
+        : "4枚はこの画面に保管しました。あとから再表示できますが、写真アプリにはまだ保存されていません。");
     } catch (error) {
       const trialAlreadyUsed = error?.message === "trial_already_used";
       if (reservation?.grant === "trial" && reservation?.requestId && !completionStarted) {
@@ -4809,19 +4809,19 @@ function setupShareStudio() {
       const unavailableToday = error?.message === "today_data_unavailable" || error?.message === "daily_gluco_unavailable";
       setShareStudioStatus(trialAlreadyUsed
         ? (savedAfterError
-          ? (currentLanguage === "en" ? "Your saved images are still available here." : "保存済みの4枚は、この画面から引き続き利用できます。")
+          ? (currentLanguage === "en" ? "The four images kept on this screen are still available here." : "この画面に保管した4枚は、引き続きここから利用できます。")
           : "")
         : completionStarted
         ? (currentLanguage === "en"
-          ? "The four images were saved on this device. Account status could not be confirmed, so refresh the status before creating new images."
-          : "4枚はこの端末に保存済みです。体験状態を確認できなかったため、新しく作る前にアカウント状態を更新してください。")
+          ? "The four images are still kept on this screen. Account status could not be confirmed, so refresh the status before creating new images."
+          : "4枚はこの画面に保管されています。体験状態を確認できなかったため、新しく作る前にアカウント状態を更新してください。")
         : unavailableToday
           ? (currentLanguage === "en"
             ? "Open today’s glucose screen once, then try again. No trial was used."
             : "今日の血糖画面を一度表示してから、もう一度お試しください。体験回数は使っていません。")
           : (currentLanguage === "en"
-            ? "The four images could not be saved on this device. The trial was not used. Please try again."
-            : "4枚をこの端末に保存できませんでした。体験回数は使っていません。もう一度お試しください。"));
+            ? "The four images could not be kept on this screen. The trial was not used. Please try again."
+            : "4枚をこの画面に保管できませんでした。体験回数は使っていません。もう一度お試しください。"));
       if (trialAlreadyUsed) {
         setInlinePlusNotice("shareStudioAccessNotice");
         setInlinePlusNotice("plusAccountShareStudioNotice");
@@ -4860,8 +4860,8 @@ function setupShareStudio() {
   deleteButton?.addEventListener("click", async () => {
     if (shareStudioBusy || !shareStudioRecord) return;
     const confirmed = window.confirm(currentLanguage === "en"
-      ? "Delete the four saved images from this device? This does not restore a used free trial."
-      : "この端末に保存した4枚を削除しますか？ 使用済みの無料体験回数は戻りません。");
+      ? "Delete the four images kept on this screen? Images already saved to Photos will not be deleted, and this does not restore a used free trial."
+      : "この画面に保管した4枚を削除しますか？ 写真アプリへ保存した画像は削除されず、使用済みの無料体験回数も戻りません。");
     if (!confirmed) return;
     shareStudioBusy = true;
     deleteButton.disabled = true;
@@ -4869,12 +4869,12 @@ function setupShareStudio() {
       await window.GlucoScopeShareStudio?.deleteCarousel?.();
       renderShareStudioRecord(null);
       setShareStudioStatus(currentLanguage === "en"
-        ? "The saved images were deleted from this device."
-        : "この端末から保存済みの4枚を削除しました。");
+        ? "The four images kept on this screen were deleted. Images already saved to Photos were not deleted."
+        : "この画面に保管した4枚を削除しました。写真アプリへ保存した画像は削除されていません。");
     } catch (error) {
       setShareStudioStatus(currentLanguage === "en"
         ? "The saved images could not be deleted. Please try again."
-        : "保存済みの4枚を削除できませんでした。もう一度お試しください。");
+        : "この画面に保管した4枚を削除できませんでした。もう一度お試しください。");
     } finally {
       shareStudioBusy = false;
       deleteButton.disabled = false;
