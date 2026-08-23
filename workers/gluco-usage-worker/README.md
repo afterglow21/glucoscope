@@ -2,10 +2,10 @@
 
 This directory contains a dedicated, dependency-light Cloudflare Worker and D1 schema for minimal device-profile usage counts.
 
-## Current production target — 2026-08-22 JST
+## Current production target — 2026-08-23 JST
 
-- Version `93b5a9ce-b9cc-47ca-9aed-d8d2dc772ab7` receives 100% of Usage traffic.
-- Direct behavior rollback is Version `e745f53a-aea0-427e-8421-278d3549e30d`. Reviewed stopped recovery remains Version `e1496203-ab4b-429f-acd3-4e862cff0c2f`.
+- Version `d8c67ed3-806d-40c5-97d2-fcec58b18749` receives 100% of Usage traffic.
+- Direct behavior rollback is Version `93b5a9ce-b9cc-47ca-9aed-d8d2dc772ab7`. Reviewed stopped recovery remains Version `e1496203-ab4b-429f-acd3-4e862cff0c2f`.
 - The one-time Share Studio trial permits only gentle `letter` analysis. The same verified email address can complete it once within the 90-day protection window; `deep` analysis remains Plus-only.
 - Older Version, traffic, and rollback statements below are dated historical evidence, not current routing instructions. The checked-in `USAGE_COLLECTION_ENABLED=false` remains the fail-closed baseline.
 
@@ -198,7 +198,7 @@ must not turn enforcement on.
 The fixed policy is:
 
 - a free subject may complete 1 newly generated AI analysis per JST day;
-- an account with an active Plus entitlement may complete 5 per JST day;
+- an account with an active Plus entitlement may complete 5 normal AI analyses per JST day and 5 separate Share Studio gentle analyses per JST day;
 - cached results do not reserve or consume quota;
 - provider errors, document/quality-check failures, incomplete output, aborted requests,
   and internal failures release the reservation and do not consume quota;

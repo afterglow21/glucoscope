@@ -198,15 +198,18 @@ test("a fresh saved gentle analysis is shown before any Turnstile or quota reque
   );
 });
 
-test("Plus shows a prominent expiry and one authoritative shared AI count", () => {
+test("Plus shows a prominent expiry and separate authoritative regular-AI and Share Studio counts", () => {
   assert.match(index, /id="plusAccountExpiry"[^>]*plus-account-expiry[^>]*hidden/u);
   assert.match(index, /id="plusAccountExpiryValue"/u);
   assert.match(index, /id="plusAccountAiQuotaStatus"[^>]*hidden/u);
   assert.match(index, /id="shareStudioQuotaStatus"[^>]*hidden/u);
+  assert.match(app, /const plusActive = plusEntitlementClient\?\.getState\?\.\(\)\?\.plusActive === true;/u);
+  assert.match(app, /formatQuota\(shareQuota, plusActive \? "share_studio" : "trial"\)/u);
   assert.match(index, /id="aiLetterQuotaStatus"[^>]*hidden/u);
   assert.match(style, /\.plus-account-expiry-value\s*\{[^}]*font-size:clamp\(22px,5\.8vw,28px\)/su);
-  assert.match(app, /本日のAI分析：\$\{quota\.successful\}\/\$\{quota\.dailyLimit\}回/u);
-  assert.match(app, /Share Studioと共通・失敗・保存済み表示は回数外/u);
+  assert.match(app, /本日の通常AI分析：\$\{quota\.successful\}\/\$\{quota\.dailyLimit\}回/u);
+  assert.match(app, /本日のShare Studio：\$\{quota\.successful\}\/\$\{quota\.dailyLimit\}回/u);
+  assert.match(app, /通常AIとは別枠・失敗・保存済み表示は回数外/u);
   assert.match(app, /今回の失敗は、Plusの本日のAI分析回数に含まれていません/u);
   assert.match(app, /data\?\.quota\?\.authoritative/u);
   assert.match(app, /data\?\.details\?\.quota\?\.authoritative/u);

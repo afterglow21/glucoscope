@@ -661,6 +661,65 @@ test("only the trusted entitlement resolver can grant the five-success Plus limi
   assert.equal(harness.entitlementCalls(), 6);
 });
 
+test("Plus regular AI and Share Studio each receive an independent five-success day allowance", async () => {
+  const harness = createHarness({ plusActive: true });
+  const runFive = async (quotaScope, base) => {
+    for (let index = 0; index < 5; index += 1) {
+      const reserved = await reserveAiGeneration(
+        {
+          ...accountRequest(uuid(base + index)),
+          analysisMode: "letter",
+          quotaScope,
+        },
+        harness.env,
+        harness.services,
+      );
+      assert.equal(reserved.status, "reserved");
+      assert.equal(reserved.quota.dailyLimit, 5);
+      const completed = await completeAiGeneration(
+        { reservationId: reserved.reservationId },
+        harness.env,
+        harness.services,
+      );
+      assert.equal(completed.status, "completed");
+      assert.equal(completed.quota.successful, index + 1);
+    }
+  };
+
+  await runFive("normal", 500);
+  await runFive("share_studio", 510);
+
+  const normalSixth = await reserveAiGeneration(
+    { ...accountRequest(uuid(520)), analysisMode: "letter", quotaScope: "normal" },
+    harness.env,
+    harness.services,
+  );
+  const shareSixth = await reserveAiGeneration(
+    { ...accountRequest(uuid(521)), analysisMode: "letter", quotaScope: "share_studio" },
+    harness.env,
+    harness.services,
+  );
+  assert.equal(normalSixth.error, "daily_limit_reached");
+  assert.equal(shareSixth.error, "daily_limit_reached");
+  assert.equal(normalSixth.quota.successful, 5);
+  assert.equal(shareSixth.quota.successful, 5);
+});
+
+test("Share Studio scope cannot create an extra Free daily allowance without a reserved trial", async () => {
+  const harness = createHarness({ plusActive: false });
+  const result = await reserveAiGeneration(
+    {
+      ...accountRequest(uuid(530)),
+      analysisMode: "letter",
+      quotaScope: "share_studio",
+    },
+    harness.env,
+    harness.services,
+  );
+  assert.equal(result.error, "plus_required");
+  assert.equal(harness.store.reserveCalls, 0);
+});
+
 test("an inactive Plus account gets the free limit and resolver failure fails closed", async () => {
   const freeHarness = createHarness({ plusActive: false });
   const free = await reserveAiGeneration(

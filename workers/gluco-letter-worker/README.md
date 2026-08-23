@@ -4,8 +4,8 @@ Cloudflare Worker for GlucoScope AI Letter.
 
 ## Current production target — 2026-08-23 JST
 
-- Version `5b0a2593-ec64-4c7e-9129-60e0deb51762` receives 100% of AI traffic.
-- Direct behavior rollback is Version 45 (`ef238ad4-7dc7-4b79-bb92-b9c93605c6c3`). Emergency AI-off recovery remains atomic stopped Version `46f44888-002b-4847-8553-5cd12e3d7ac5`.
+- Version `d24ac75d-7399-4b2c-a308-35c797f2c998` receives 100% of AI traffic.
+- Direct behavior rollback is Version 46 (`5b0a2593-ec64-4c7e-9129-60e0deb51762`). Emergency AI-off recovery remains atomic stopped Version `46f44888-002b-4847-8553-5cd12e3d7ac5`.
 - Share Studio places the complete gentle result in one auto-fitted panel and has one additional bounded content rewrite before a failed request is released without consuming the successful-use count. The signed administrator bridge has no separate administrator daily AI cap.
 - The one-time Share Studio trial permits only gentle `letter` analysis. The same verified email address can complete it once within the 90-day protection window; `deep` analysis remains Plus-only.
 - Older Version, traffic, and rollback statements below are dated historical evidence, not current routing instructions.
@@ -80,7 +80,7 @@ This section describes the personal-user boundary first accepted in Version 29 a
 - ブラウザから届く `pageMode` は、認証や公開デモ由来であることの証明として信頼しません。KV bindingは下記の段階的な復旧手順のため残しますが、ユーザーAIがONのままVersion 28へ戻す許可ではありません。既存entryは読み込まず、新規entryも書きません。残っているentryは既存の最長24時間以内に自然失効します。
 - 保存済みデータ接続の削除時は、現在の端末内AIキャッシュ、退役済みの端末内キャッシュ、保存したAI確認も削除します。OpenAIの不正利用監視ログまで削除できる、とは案内しません。
 - WorkerはOpenAI Responses APIへ `store: false` で送信します。OpenAIは、利用者側が明示的にopt-inしない限りAPIデータをmodel学習へ使わないと説明しています。一方、標準の不正利用監視ではpromptやresponseを含み得るログが通常最長30日保持され、法令またはサービス・第三者保護のため、それより長い保持が必要となる例外があります。根拠は [OpenAI API data controls](https://developers.openai.com/api/docs/guides/your-data) です。
-- Freeの個人利用は、端末プロフィールごとにJST 1日1回、成功した新しいAI分析を使えます。Plusは販売開始後、確認済みの有効アカウントごとに1日5回の設計です。公開デモは人が内容を確認した固定サンプルを表示し、OpenAIを呼びません。旧来の朝昼夜各10回・1日30回の共有回数上限は無効にし、全体のatomic counterは運用集計、実token・費用、全体費用安全弁のため残します。端末内の保存済み表示は個人の新しい生成回数を使いません。
+- Freeの個人利用は、端末プロフィールごとにJST 1日1回、成功した新しいAI分析を使えます。Plusは販売開始後、確認済みの有効アカウントごとに通常AI分析を1日5回、Share Studio用のやさしい分析を別枠で1日5回使える設計です。公開デモは人が内容を確認した固定サンプルを表示し、OpenAIを呼びません。旧来の朝昼夜各10回・1日30回の共有回数上限は無効にし、全体のatomic counterは運用集計、実token・費用、全体費用安全弁のため残します。端末内の保存済み表示は個人の新しい生成回数を使いません。
 - AI分析の失敗はAI欄だけで完結させます。確認済みCGM接続や通常の血糖表示を停止、削除、デモデータへ置換しません。
 - AI生成の `POST /api/gluco-letter` は、既存allowlistを通る `Origin` headerを必須にします。既存運用確認用のOriginなし `GET /api/gluco-letter/usage` は維持します。
 - Turnstile Siteverifyの成功時は、`hostname=glucoscope.app` と `action=glucoscope-ai-letter` の両方の一致を必須にします。本番の変数名は `TURNSTILE_EXPECTED_HOSTNAME` と `TURNSTILE_EXPECTED_ACTION` です。
@@ -301,7 +301,7 @@ generated text. A fresh cache display bypasses reservation. Client `debug` and
 
 The body may add only a UUID `requestId` and allowlisted `quotaCredentialKind`
 (`device_profile` or `account`). The kind is only a routing hint: Usage verifies the
-Bearer token against the matching trusted source and decides Free/Plus and the 1/5 limit
+Bearer token against the matching trusted source and decides Free/Plus, the normal 1/5 limit, and the separate Plus Share Studio 5/day limit
 server-side. The client cannot submit tier, entitlement dates, limits, or counters.
 
 Release in this order: Usage migration and disabled internal services, this Worker with
@@ -519,7 +519,7 @@ npm run deploy:dry
 
 The estimated AI cost shown by the Worker is an operational estimate paid by the developer. It is not a charge to visitors.
 
-Before the personal-quota rollout, production allowed up to 10 new generations in each time slot and 30 per day through one shared singleton guard. That is historical behavior. Current production uses Free 1/day and Plus 5/day while retaining the singleton's cost safety stop. A Share Studio trial allows one successful gentle `letter` within 90 days for the same verified email address; it does not unlock `deep`, which remains Plus-only. Cached displays and the reviewed public-demo sample do not consume an individual new-generation use.
+Before the personal-quota rollout, production allowed up to 10 new generations in each time slot and 30 per day through one shared singleton guard. That is historical behavior. Current production uses Free 1/day and Plus 5/day for normal AI analysis, while Plus Share Studio has a separate 5/day gentle-analysis allowance; the singleton remains only as the cost safety stop and operational counter. A Share Studio trial allows one successful gentle `letter` within 90 days for the same verified email address; it does not unlock `deep`, which remains Plus-only. Cached displays and the reviewed public-demo sample do not consume an individual new-generation use.
 
 The first OpenAI attempt uses the normal limit for the selected mode. Within the incomplete-output path, only an API response explicitly marked incomplete due to `max_output_tokens` triggers one retry with the larger limit. A successful retry still counts as one user-requested generation, while usage and developer-cost estimates include both OpenAI attempts. If the retry is also incomplete, the partial text is discarded and is not cached.
 

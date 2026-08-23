@@ -55,6 +55,7 @@ test("quota enforcement defaults off and accepts only a strict device credential
       credential: { kind: "device_profile", token: TOKEN },
       requestId: REQUEST_ID,
       analysisMode: "letter",
+      quotaScope: "normal",
     },
   });
   assert.equal(readAiQuotaRequest(request("Basic abc"), { requestId: REQUEST_ID }, "letter").error, "authentication_required");
@@ -73,6 +74,7 @@ test("quota enforcement defaults off and accepts only a strict device credential
     credential: { kind: "account", token: TOKEN },
     requestId: REQUEST_ID,
     analysisMode: "deep",
+    quotaScope: "normal",
   });
   assert.deepEqual(readAiQuotaRequest(request(), {
     requestId: REQUEST_ID,
@@ -82,7 +84,17 @@ test("quota enforcement defaults off and accepts only a strict device credential
     credential: { kind: "account", token: TOKEN },
     requestId: REQUEST_ID,
     analysisMode: "deep",
+    quotaScope: "normal",
     shareTrialRequestId: SHARE_TRIAL_REQUEST_ID,
+  });
+  assert.deepEqual(readAiQuotaRequest(request(), {
+    requestId: REQUEST_ID,
+    quotaCredentialKind: "account",
+  }, "letter", "share-studio").reserveInput, {
+    credential: { kind: "account", token: TOKEN },
+    requestId: REQUEST_ID,
+    analysisMode: "letter",
+    quotaScope: "share_studio",
   });
   assert.equal(readAiQuotaRequest(request(), {
     requestId: REQUEST_ID,

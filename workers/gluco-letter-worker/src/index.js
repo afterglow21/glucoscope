@@ -3801,7 +3801,12 @@ async function handleApiRequest(request, env = {}, adminBridge = null) {
           retryable: true
         }, summary);
       }
-      quotaRequest = readAiQuotaRequest(request, payload, summary.analysisMode);
+      quotaRequest = readAiQuotaRequest(
+        request,
+        payload,
+        summary.analysisMode,
+        getClientMode(payload),
+      );
       if (!quotaRequest.ok) {
         return buildAiQuotaErrorResponse(quotaRequest, summary);
       }

@@ -69,7 +69,7 @@ export function readAiQuotaCorsConfig(env = {}) {
   });
 }
 
-export function readAiQuotaRequest(request, payload, analysisMode) {
+export function readAiQuotaRequest(request, payload, analysisMode, clientMode = "unknown") {
   const authorization = String(request?.headers?.get?.("Authorization") || "");
   const bearerMatch = /^Bearer ([A-Za-z0-9_-]{43})$/iu.exec(authorization);
   const token = bearerMatch?.[1] || "";
@@ -81,6 +81,7 @@ export function readAiQuotaRequest(request, payload, analysisMode) {
     ? payload.quotaCredentialKind
     : "device_profile";
   const normalizedMode = String(analysisMode || "");
+  const quotaScope = clientMode === "share-studio" ? "share_studio" : "normal";
 
   if (!TOKEN_PATTERN.test(token)) {
     return { ok: false, error: "authentication_required", status: 401 };
@@ -101,6 +102,7 @@ export function readAiQuotaRequest(request, payload, analysisMode) {
       credential: Object.freeze({ kind: credentialKind, token }),
       requestId,
       analysisMode: normalizedMode,
+      quotaScope,
       ...(shareTrialRequestId ? { shareTrialRequestId } : {}),
     }),
   };

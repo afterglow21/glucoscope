@@ -138,7 +138,7 @@ test("personal-user AI consent is explicit, versioned, and precedes any request"
 
   assert.match(index, /id="aiLetterUserConsent"[^>]*aria-labelledby="aiLetterUserConsentTitle"[^>]*hidden/);
   assert.match(index, /data-i18n-key="aiLetterUserConsentQuota"/u);
-  assert.match(app, /成功したAI分析の日と回数だけを最大90日保存します。Freeはやさしい分析を1日1回、Plusはやさしい分析としっかり分析を合わせて1日5回まで/u);
+  assert.match(app, /成功したAI分析の日と回数だけを最大90日保存します。Freeはやさしい分析を1日1回。Plusは通常AIを1日5回、Share Studioも別枠で1日5回まで/u);
   assert.match(index, /href="pages\/trust\/privacy-notes\.html#ai-letters"/);
   assert.match(css, /\.ai-letter-user-consent\[hidden\]\{\s*display:none;/);
   assert.match(css, /\.ai-letter-consent-actions \.letter-primary-button,[\s\S]*min-height:44px;/);
@@ -1067,8 +1067,8 @@ test("local display-name storage remains network-free and server sync is separat
   assert.match(index, /js\/local-profile\.js\?v=20260811-usage-profile-stage-1/);
   assert.match(index, /js\/usage-client\.js\?v=20260815-guardian-confirmation-1/);
   assert.match(index, /js\/plus-feature-access\.js\?v=20260820-plus-guidance-1/);
-  assert.match(index, /style\.css\?v=20260823-plus-quota-reliability-1/);
-  assert.match(index, /js\/app\.js\?v=20260823-plus-quota-reliability-1/);
+  assert.match(index, /style\.css\?v=20260823-separate-ai-allowances-1/);
+  assert.match(index, /js\/app\.js\?v=20260823-separate-ai-allowances-1/);
   assert.match(app, /updateUsageProfileDisplayName\(result\.profile\.displayName\)/);
   assert.doesNotMatch(app, /handleLocalProfileDelete|localProfileDeleteButton/);
   assert.match(app, /if \(!state\.enabled \|\| !state\.registered\) return;/);

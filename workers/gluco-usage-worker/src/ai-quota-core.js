@@ -4,6 +4,7 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0
 const SAFE_ACCOUNT_SUBJECT_PATTERN = /^[A-Za-z0-9_.:-]{8,160}$/u;
 const CONTROL_PATTERN = /[\u0000-\u001f\u007f]/u;
 const ANALYSIS_MODES = new Set(["letter", "deep"]);
+const QUOTA_SCOPES = new Set(["normal", "share_studio"]);
 const SUBJECT_KINDS = new Set(["device_profile", "account"]);
 const RELEASE_REASONS = new Set([
   "provider_error",
@@ -112,14 +113,23 @@ function validateCredential(rawCredential) {
 
 function validateReserveInput(rawInput) {
   const input = requirePlainObject(rawInput);
-  requireAllowedKeys(input, new Set(["credential", "requestId", "analysisMode", "shareTrialRequestId"]));
+  requireAllowedKeys(input, new Set([
+    "credential",
+    "requestId",
+    "analysisMode",
+    "quotaScope",
+    "shareTrialRequestId",
+  ]));
   const requestId = String(input.requestId || "");
   const shareTrialRequestId = String(input.shareTrialRequestId || "");
   const analysisMode = String(input.analysisMode || "");
+  const quotaScope = String(input.quotaScope || "normal");
   if (
     !UUID_PATTERN.test(requestId)
     || (shareTrialRequestId && !UUID_PATTERN.test(shareTrialRequestId))
     || !ANALYSIS_MODES.has(analysisMode)
+    || !QUOTA_SCOPES.has(quotaScope)
+    || (quotaScope === "share_studio" && analysisMode !== "letter")
   ) {
     throw new AiQuotaError("invalid_request");
   }
@@ -131,6 +141,7 @@ function validateReserveInput(rawInput) {
     credential,
     requestId,
     analysisMode,
+    quotaScope,
     ...(shareTrialRequestId ? { shareTrialRequestId } : {}),
   });
 }
@@ -283,10 +294,22 @@ export async function reserveAiGeneration(rawInput, env = {}, services = {}) {
     if (subject.tier !== "plus" && subject.detailedAnalysisAllowed !== true && input.analysisMode === "deep") {
       throw new AiQuotaError("plus_required", 403);
     }
+    if (
+      input.quotaScope === "share_studio"
+      && subject.tier !== "plus"
+      && subject.shareTrialReserved !== true
+    ) {
+      throw new AiQuotaError("plus_required", 403);
+    }
     const quotaTier = subject.shareTrialReserved === true ? "free" : subject.tier;
+    const quotaId = subject.shareTrialReserved === true
+      ? subject.quotaId
+      : input.quotaScope === "share_studio" && subject.tier === "plus"
+        ? `share-studio:${subject.id}`
+        : subject.quotaId || subject.id;
     const subjectKey = await hashQuotaSubject(
       subject.kind,
-      subject.quotaId || subject.id,
+      quotaId,
       services.crypto || crypto,
     );
     const reservationId = String(services.createReservationId());

@@ -120,7 +120,11 @@ let currentLivePeriod = localStorage.getItem(LIVE_PERIOD_STORAGE_KEY) || "today"
 let currentAiLetterMode = localStorage.getItem(AI_LETTER_MODE_STORAGE_KEY) === "deep" ? "deep" : "letter";
 let latestAiLetterSummary = null;
 let latestShareStudioTodayModel = null;
-let latestAuthoritativeAiQuota = null;
+const latestAuthoritativeAiQuotas = {
+  normal: null,
+  share_studio: null,
+  trial: null
+};
 let aiLetterSummaryState = "loading";
 let aiLetterSummaryRangeIdentity = "";
 let latestRuleCommentMetrics = null;
@@ -362,7 +366,7 @@ const translations = {
     plusAccountPrice: "400円・30日間・1回払い・自動更新なし",
     plusAccountLead: "メールで本人確認すると、機種変更やブラウザの保存を消した後もPlusを確認できます。",
     plusAccountBenefitFree: "基本の血糖表示は、Plusを買わなくても使えます。",
-    plusAccountBenefitAi: "Freeでは、やさしい分析を1日1回。Plusでは、しっかり分析を含めて1日最大5回まで使えます。",
+    plusAccountBenefitAi: "Freeでは、やさしい分析を1日1回。Plusでは通常AIを1日5回、Share Studioも別枠で1日5回まで使えます。",
     plusAccountBenefitRange: "7日・30日・カスタム期間のグラフを使えます。",
     plusAccountBenefitShare: "Share Studioを使えます。確認済みアカウントなら、購入前にも1回だけ試せます。",
     plusAccountShareStudioButton: "Share Studioを開く（Plus）",
@@ -586,7 +590,7 @@ const translations = {
     aiLetterUserConsentCancel: "今はしない",
     aiLetterStatusConsentWaiting: "送る内容を確認してから、AI分析を始められます。",
     aiLetterStatusConsentCancelled: "血糖のまとめは送っていません。いつでも後から始められます🍀",
-    aiLetterUserConsentQuota: "利用上限の確認のため、成功したAI分析の日と回数だけを最大90日保存します。Freeはやさしい分析を1日1回、Plusはやさしい分析としっかり分析を合わせて1日5回までです。",
+    aiLetterUserConsentQuota: "利用上限の確認のため、成功したAI分析の日と回数だけを最大90日保存します。Freeはやさしい分析を1日1回。Plusは通常AIを1日5回、Share Studioも別枠で1日5回までです。",
     aiLetterButtonNoData: "この期間はデータなし",
     aiLetterButtonUnavailable: "データを読み込めませんでした",
     aiLetterButtonReady: "AI分析を試す（2回目からPlus）",
@@ -829,7 +833,7 @@ const translations = {
     plusAccountPrice: "JPY 400 · 30 days · one payment · no automatic renewal",
     plusAccountLead: "Email verification lets you recover Plus after changing devices or clearing browser storage.",
     plusAccountBenefitFree: "Basic glucose viewing stays available without buying Plus.",
-    plusAccountBenefitAi: "Free includes one gentle analysis per day. Plus includes detailed analysis and up to five successful analyses per day.",
+    plusAccountBenefitAi: "Free includes one gentle analysis per day. Plus includes five regular AI analyses and a separate five Share Studio analyses per day.",
     plusAccountBenefitRange: "Use 7-day, 30-day, and custom graph ranges.",
     plusAccountBenefitShare: "Use Share Studio, with one trial per verified account before purchase.",
     plusAccountShareStudioButton: "Open Share Studio (Plus)",
@@ -1053,7 +1057,7 @@ const translations = {
     aiLetterUserConsentCancel: "Not now",
     aiLetterStatusConsentWaiting: "Review what is sent before starting AI analysis.",
     aiLetterStatusConsentCancelled: "No glucose summary was sent. You can start later whenever you want 🍀",
-    aiLetterUserConsentQuota: "To enforce the usage limit, only the day and count of successful AI analyses are kept for up to 90 days. Free includes one gentle analysis per day; Plus includes five gentle or detailed analyses in total.",
+    aiLetterUserConsentQuota: "To enforce the usage limit, only the day and count of successful AI analyses are kept for up to 90 days. Free includes one gentle analysis per day. Plus includes five regular AI analyses and a separate five Share Studio analyses per day.",
     aiLetterButtonNoData: "No data for this range",
     aiLetterButtonUnavailable: "Could not load data",
     aiLetterButtonReady: "Try AI analysis (Plus after the first)",
@@ -3580,39 +3584,65 @@ function readAuthoritativeAiQuota(data) {
 }
 
 function renderAuthoritativeAiQuotaStatus() {
-  const quota = latestAuthoritativeAiQuota;
-  const elements = [
-    document.getElementById("aiLetterQuotaStatus"),
-    document.getElementById("shareStudioQuotaStatus"),
-    document.getElementById("plusAccountAiQuotaStatus")
-  ].filter(Boolean);
-  elements.forEach((element) => {
-    if (!quota) {
-      element.hidden = true;
-      element.textContent = "";
-      return;
+  const formatQuota = (quota, scope) => {
+    if (!quota) return "";
+    if (currentLanguage === "en") {
+      if (scope === "trial") {
+        return `Free Share Studio trial: ${quota.successful}/${quota.dailyLimit} used (failures and saved results do not count)`;
+      }
+      if (scope === "share_studio") {
+        return `Today's Share Studio: ${quota.successful}/${quota.dailyLimit} used (separate from regular AI; failures and saved results do not count)`;
+      }
+      return `Today's regular AI analyses: ${quota.successful}/${quota.dailyLimit} used (failures and saved results do not count)`;
     }
-    const trial = quota.scope === "trial";
-    element.textContent = currentLanguage === "en"
-      ? trial
-        ? `Free Share Studio AI trial: ${quota.successful}/${quota.dailyLimit} used (failures and saved results do not count)`
-        : `Today's AI analyses: ${quota.successful}/${quota.dailyLimit} used (shared with Share Studio; failures and saved results do not count)`
-      : trial
-        ? `Share Studio無料体験のAI分析：${quota.successful}/${quota.dailyLimit}回（失敗・保存済み表示は回数外）`
-        : `本日のAI分析：${quota.successful}/${quota.dailyLimit}回（Share Studioと共通・失敗・保存済み表示は回数外）`;
-    element.hidden = false;
-  });
+    if (scope === "trial") {
+      return `Share Studio無料体験：${quota.successful}/${quota.dailyLimit}回（失敗・保存済み表示は回数外）`;
+    }
+    if (scope === "share_studio") {
+      return `本日のShare Studio：${quota.successful}/${quota.dailyLimit}回（通常AIとは別枠・失敗・保存済み表示は回数外）`;
+    }
+    return `本日の通常AI分析：${quota.successful}/${quota.dailyLimit}回（失敗・保存済み表示は回数外）`;
+  };
+  const setElement = (element, text) => {
+    if (!element) return;
+    element.hidden = !text;
+    element.textContent = text;
+  };
+  setElement(
+    document.getElementById("aiLetterQuotaStatus"),
+    formatQuota(latestAuthoritativeAiQuotas.normal, "normal")
+  );
+  const plusActive = plusEntitlementClient?.getState?.()?.plusActive === true;
+  const shareQuota = plusActive
+    ? latestAuthoritativeAiQuotas.share_studio
+    : latestAuthoritativeAiQuotas.trial;
+  setElement(
+    document.getElementById("shareStudioQuotaStatus"),
+    formatQuota(shareQuota, plusActive ? "share_studio" : "trial")
+  );
+  const accountLines = plusActive
+    ? [
+        formatQuota(latestAuthoritativeAiQuotas.normal, "normal"),
+        formatQuota(latestAuthoritativeAiQuotas.share_studio, "share_studio")
+      ].filter(Boolean)
+    : [formatQuota(latestAuthoritativeAiQuotas.trial, "trial")].filter(Boolean);
+  setElement(
+    document.getElementById("plusAccountAiQuotaStatus"),
+    accountLines.join(currentLanguage === "en" ? " / " : "／")
+  );
 }
 
-function captureAuthoritativeAiQuota(data, { shareTrial = false } = {}) {
+function captureAuthoritativeAiQuota(data, { scope = "normal", shareTrial = false } = {}) {
   const quota = readAuthoritativeAiQuota(data);
   if (!quota) return null;
-  latestAuthoritativeAiQuota = Object.freeze({
+  const resolvedScope = shareTrial && quota.tier === "free" ? "trial" : scope;
+  if (!Object.hasOwn(latestAuthoritativeAiQuotas, resolvedScope)) return null;
+  latestAuthoritativeAiQuotas[resolvedScope] = Object.freeze({
     ...quota,
-    scope: shareTrial && quota.tier === "free" ? "trial" : "daily"
+    scope: resolvedScope
   });
   renderAuthoritativeAiQuotaStatus();
-  return latestAuthoritativeAiQuota;
+  return latestAuthoritativeAiQuotas[resolvedScope];
 }
 
 function updatePlusAccountUi() {
@@ -4693,7 +4723,10 @@ async function requestShareStudioGentleReflection(reservation) {
     })
   });
   const data = await response.json().catch(() => ({}));
-  captureAuthoritativeAiQuota(data, { shareTrial: reservation?.grant === "trial" });
+  captureAuthoritativeAiQuota(data, {
+    scope: "share_studio",
+    shareTrial: reservation?.grant === "trial"
+  });
   const letterText = getAiLetterTextFromResponse(data);
   if (!response.ok || data.ok === false || !letterText) {
     const error = new Error(data?.code || data?.error || "gentle_reflection_failed");
@@ -4946,8 +4979,8 @@ function setupShareStudio() {
             : `今日の血糖画面を一度表示してから、もう一度お試しください。${allowanceNotUsed}`)
           : dailyLimitReached
             ? (currentLanguage === "en"
-              ? "Today's shared AI-analysis allowance has been reached. Saved analyses and existing four-image sets remain available."
-              : "通常AIとShare Studioで共通の、本日のAI分析回数に達しました。保存済みの分析や4枚は引き続き利用できます。")
+              ? "Today's Share Studio allowance has been reached. It is separate from regular AI. Existing four-image sets remain available."
+              : "本日のShare Studioの回数に達しました。通常AIとは別枠です。保存済みの4枚は引き続き利用できます。")
           : quotaUnavailable
             ? (currentLanguage === "en"
               ? `The gentle AI reflection could not start. ${allowanceNotUsed} Please try again after refreshing the account status.`

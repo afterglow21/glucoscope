@@ -53,7 +53,7 @@ test("Plus 30-day pass records the approved one-time boundary and live release",
   assert.match(spec, /価格 \| 400円/);
   assert.match(spec, /自動更新 \| なし/);
   assert.match(spec, /成功した「やさしい分析」を1日1回/);
-  assert.match(spec, /やさしい分析、しっかり分析、Share Studioで使うやさしい分析を合わせて、成功した新規分析を1日5回まで/);
+  assert.match(spec, /通常画面のやさしい分析・しっかり分析を合わせて1日5回まで。Share Studioも別枠で1日5回まで/);
   assert.match(spec, /文書・品質チェックで止まった/);
   assert.match(spec, /グラフの7日・30日・カスタム期間/);
   assert.match(spec, /認証済みアカウントごとに1回だけ無料体験/);
@@ -71,10 +71,10 @@ test("canonical current-state records stay aligned with the live small public re
   const [readme, bible] = await Promise.all([read(rootReadmeUrl), read(projectBibleUrl)]);
   for (const source of [readme, bible]) {
     assert.match(source, /7badb3ad0110ca45750bb3d04786d40a5f015285/);
-    assert.match(source, /ef238ad4-7dc7-4b79-bb92-b9c93605c6c3/);
-    assert.match(source, /0e9e39a8-a1be-46c0-8336-f880a2ad147b/);
+    assert.match(source, /d24ac75d-7399-4b2c-a308-35c797f2c998/);
+    assert.match(source, /5b0a2593-ec64-4c7e-9129-60e0deb51762/);
+    assert.match(source, /d8c67ed3-806d-40c5-97d2-fcec58b18749/);
     assert.match(source, /93b5a9ce-b9cc-47ca-9aed-d8d2dc772ab7/);
-    assert.match(source, /e745f53a-aea0-427e-8421-278d3549e30d/);
     assert.match(source, /1f01ed79-f2ac-46c0-aa1f-a45fa2bfe489/);
     assert.match(source, /b584808c-0f63-4d18-8970-964dfec62212/);
   }
