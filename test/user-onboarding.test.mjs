@@ -255,15 +255,51 @@ test("Guardian uses the verified Guardian Monitor to Gluroo route", async () => 
   assert.match(guardianGuide, /Nightscout同期を含むフル機能には、アプリ内の有料サブスクリプション（Full Access）が必要/);
   assert.match(guardianGuide, /GlucoScopeとは別の料金/);
   assert.match(guardianGuide, /apps\.apple\.com\/jp\/app\/guardian-monitor\/id1546989938/);
+  assert.match(guardianGuide, /apps\.apple\.com\/jp\/app\/gluroo-diabetes-logger\/id1560748689/);
+  assert.match(guardianGuide, /アカウント作成またはサインインを終えて、Glurooのホーム画面まで進めます/);
+  assert.match(guardianGuide, /「これは後で行います」が表示される場合/);
+  assert.doesNotMatch(guardianGuide, /初回案内の途中でCGMの選択画面が出た場合も[^。]*ナイトスカウトでDIY/);
   assert.match(guardianGuide, /Guardian Monitorの「Preferences」を開きます/);
+  assert.match(guardianGuide, /Glurooのメニューから「設定」を開きます/);
+  assert.match(guardianGuide, /CGMで「ナイトスカウトでDIY」を選びます/);
+  assert.match(guardianGuide, /「Other \(Stelo, Guardian, etc\.\)」ではありません/);
+  assert.match(guardianGuide, /「グルローグローバルコネクト」を開きます/);
+  assert.match(guardianGuide, /コピー形式の一覧を閉じます/);
+  assert.match(guardianGuide, /まず「Nightscout URL」だけをコピーします/);
+  assert.match(guardianGuide, /Guardian MonitorのURL欄へ貼り付けます/);
+  assert.match(guardianGuide, /Glurooへ戻り、「API Secret Token」をコピーします/);
+  assert.match(guardianGuide, /Guardian MonitorのSecret API Key欄へ貼り付けます/);
+  assert.match(guardianGuide, /「API Secret Header \(SHA1\)」は使いません/);
+  assert.match(guardianGuide, /スクリーンショット、LINE、メール、SNSへ載せず/);
   assert.match(guardianGuide, /画像の料金は撮影時の表示例/);
   assert.match(guardianGuide, /公開用画像では氏名を隠しています/);
   assert.match(guardianGuide, /公開用画像では血糖などの数値を隠しています/);
+  const glurooImages = [
+    "../gluroo-setup/images/steps/26-open-menu.webp",
+    "../gluroo-setup/images/steps/30-global-connect-menu.webp",
+    "../gluroo-setup/images/steps/31-global-connect-wait.webp",
+    "../gluroo-setup/images/steps/32-copy-format-popup.webp",
+    "../gluroo-setup/images/steps/33-copy-url-token.webp",
+  ];
+  let previousImagePosition = -1;
+  for (const imagePath of glurooImages) {
+    const imagePosition = guardianGuide.indexOf(imagePath);
+    assert.ok(imagePosition > previousImagePosition, `${imagePath} should appear in the safe setup order`);
+    previousImagePosition = imagePosition;
+  }
+  const urlCopyPosition = guardianGuide.indexOf("まず「Nightscout URL」だけをコピーします");
+  const urlPastePosition = guardianGuide.indexOf("Guardian MonitorのURL欄へ貼り付けます");
+  const tokenCopyPosition = guardianGuide.indexOf("Glurooへ戻り、「API Secret Token」をコピーします");
+  const tokenPastePosition = guardianGuide.indexOf("Guardian MonitorのSecret API Key欄へ貼り付けます");
+  assert.ok(urlCopyPosition < urlPastePosition);
+  assert.ok(urlPastePosition < tokenCopyPosition);
+  assert.ok(tokenCopyPosition < tokenPastePosition);
   assert.match(nightscoutGuide, /Nightscout同期を含むフル機能にはアプリ内の有料サブスクリプション（Full Access）が必要/);
   assert.doesNotMatch(index, /Guardianは現在のかんたん接続では利用できません/);
 
   const captures = [
     ["01-open-preferences.png", 873, 1801],
+    ["02-select-nightscout-diy.jpg", 1320, 1770],
     ["03-open-nightscout-full-access.png", 877, 1793],
     ["03-enter-nightscout-details.png", 875, 1798],
     ["04-enable-background-update.jpg", 1320, 2717],

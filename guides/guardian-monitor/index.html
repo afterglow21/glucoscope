@@ -36,6 +36,11 @@
       <p>Glurooに表示される<strong>Nightscout URL</strong>と<strong>API Secret Token</strong>だけです。CareLink、Apple、GoogleなどのログインパスワードをGlucoScopeへ入力することはありません。</p>
     </section>
 
+    <section class="guide-callout">
+      <h2>Glurooをまだ入れていない方へ</h2>
+      <p><a href="https://apps.apple.com/jp/app/gluroo-diabetes-logger/id1560748689" target="_blank" rel="noopener noreferrer">App StoreのGluroo Diabetes Logger（外部サイト）</a>をインストールし、アカウント作成またはサインインを終えて、Glurooのホーム画面まで進めます。途中でCGMの接続情報を求められた時は、その場では入力しません。「これは後で行います」が表示される場合は、それを押してホーム画面へ進みます。ホーム画面が開いたら、下のSTEP 2から続けてください。</p>
+    </section>
+
     <section class="guide-simple-steps guide-card">
       <ol>
         <li>
@@ -45,16 +50,68 @@
             <figure class="guide-shot"><div class="guide-shot-image"><img src="images/01-open-preferences.png" width="873" height="1801" alt="Guardian Monitorの画面下にあるPreferencesを赤枠で示した公開用画像。血糖などの数値は非表示" loading="eager" decoding="async"></div><figcaption>赤枠の「Preferences」を押します。公開用画像では血糖などの数値を隠しています。</figcaption></figure>
           </div>
         </li>
-        <li>
-          <h2>Gluroo Global Connectの情報を開きます</h2>
-          <p>Glurooの設定からGlobal ConnectのNightscout情報を開き、Nightscout URLとAPI Secret Tokenをコピーできる状態にします。</p>
+        <li id="gluroo-settings">
+          <h2>Glurooのメニューから「設定」を開きます</h2>
+          <p>Glurooを開き、左上の三本線を押します。メニューが開いたら、歯車の印がある「設定」を押します。</p>
+          <div class="guide-shot-gallery">
+            <figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/26-open-menu.webp" width="760" height="1651" alt="Glurooの左側メニューにある設定ボタン" loading="lazy" decoding="async"></div><figcaption>左上のメニューを開き、赤枠の「設定」を押します。</figcaption></figure>
+          </div>
         </li>
         <li>
-          <h2>Guardian MonitorのNightscout同期先へ貼り付けます</h2>
-          <p>Preferencesの「Nightscout」を開き、Gluroo Global ConnectのURLとAPI Secret Tokenを入力します。余分な空白が入らないよう、そのままコピーして貼り付け、「Turn on sync」を押します。</p>
+          <h2>CGMで「ナイトスカウトでDIY」を選びます</h2>
+          <p>設定画面の「CGM」を押し、一覧を下へ進めて<strong>「ナイトスカウトでDIY」</strong>を選びます。名前にGuardianと書かれた「Other (Stelo, Guardian, etc.)」ではありません。</p>
+          <div class="guide-shot-gallery">
+            <figure class="guide-shot"><div class="guide-shot-image"><img src="images/02-select-nightscout-diy.jpg" width="1320" height="1770" alt="GlurooのCGM設定でナイトスカウトでDIYが選択されている画面" loading="lazy" decoding="async"></div><figcaption>緑の丸が付いた「ナイトスカウトでDIY」を選びます。公開用画像では上部の個人表示を取り除いています。</figcaption></figure>
+          </div>
+        </li>
+        <li>
+          <h2>「グルローグローバルコネクト」を開きます</h2>
+          <p>設定画面へ戻って下へスクロールし、「グルローグローバルコネクト ナイトスカウト」を押します。</p>
+          <div class="guide-shot-gallery">
+            <figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/30-global-connect-menu.webp" width="760" height="1651" alt="Gluroo設定画面下部のグルローグローバルコネクトナイトスカウト" loading="lazy" decoding="async"></div><figcaption>赤枠の「グルローグローバルコネクト ナイトスカウト」を押します。</figcaption></figure>
+          </div>
+        </li>
+        <li>
+          <h2>上にある「コピー」を押します</h2>
+          <p>Global Connectの画面が開いたら、上にある「コピー」を押します。コピーする形式の一覧が表示されます。</p>
+          <div class="guide-shot-gallery">
+            <figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/31-global-connect-wait.webp" width="760" height="1651" alt="Gluroo Global Connect画面上部のコピーボタン" loading="lazy" decoding="async"></div><figcaption>赤枠の「コピー」を押し、次の画面へ進みます。</figcaption></figure>
+          </div>
+        </li>
+        <li>
+          <h2>コピー形式の一覧を閉じます</h2>
+          <p>「JSON」「XDrip+」「Nightguard (iOS)」「Notes」の一覧が出ますが、Guardian Monitorではこの一覧を使いません。白い枠の外側を押して、元の画面へ戻ります。</p>
+          <div class="guide-shot-gallery">
+            <figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/32-copy-format-popup.webp" width="760" height="1651" alt="Glurooのコピー形式一覧と、閉じるために押す枠外" loading="lazy" decoding="async"></div><figcaption>赤枠で示した白い枠の外側を押して閉じます。</figcaption></figure>
+          </div>
+        </li>
+        <li>
+          <h2>まず「Nightscout URL」だけをコピーします</h2>
+          <p>「Nightscout URL」の右端にある、重なった四角を押します。まだ「API Secret Token」はコピーしません。iPhoneでは次にコピーした内容へ入れ替わるため、1項目ずつGuardian Monitorへ貼り付けます。</p>
+          <div class="guide-callout guide-warning"><strong>この2つは秘密の接続情報です</strong><p>スクリーンショット、LINE、メール、SNSへ載せず、ご自身のGuardian MonitorとGlucoScopeへだけ貼り付けてください。</p></div>
+          <div class="guide-shot-gallery">
+            <figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/33-copy-url-token.webp" width="942" height="2048" alt="Gluroo Global ConnectのNightscout URLとAPI Secret Token。接続情報は公開用に非表示" loading="lazy" decoding="async"></div><figcaption>最初に、上側の「Nightscout URL」だけをコピーします。公開用画像では秘密の値を隠しています。</figcaption></figure>
+          </div>
+        </li>
+        <li id="guardian-nightscout">
+          <h2>Guardian MonitorのURL欄へ貼り付けます</h2>
+          <p>Guardian Monitorへ戻り、Preferencesの「Nightscout」を開きます。「URL」の欄へ、いまコピーしたNightscout URLをそのまま貼り付けます。まだ「Turn on sync」は押しません。</p>
           <div class="guide-shot-gallery">
             <figure class="guide-shot"><div class="guide-shot-image"><img src="images/03-open-nightscout-full-access.png" width="877" height="1793" alt="Guardian MonitorのPreferencesにあるNightscoutとFull Accessの表示" loading="lazy" decoding="async"></div><figcaption>「Nightscout」を押します。画像の料金は撮影時の表示例です。最新の料金と条件はアプリ内で確認してください。</figcaption></figure>
-            <figure class="guide-shot"><div class="guide-shot-image"><img src="images/03-enter-nightscout-details.png" width="875" height="1798" alt="Guardian MonitorのNightscout設定にあるURL、Secret API Key、Turn on sync" loading="lazy" decoding="async"></div><figcaption>URLとSecret API Keyへ貼り付け、「Turn on sync」を押します。公開用画像では氏名を隠しています。</figcaption></figure>
+          </div>
+        </li>
+        <li>
+          <h2>Glurooへ戻り、「API Secret Token」をコピーします</h2>
+          <p>GlurooのGlobal Connect画面へ戻り、今度は「API Secret Token」の右端にある、重なった四角を押します。<strong>「API Secret Header (SHA1)」は使いません。</strong></p>
+          <div class="guide-shot-gallery">
+            <figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/33-copy-url-token.webp" width="942" height="2048" alt="Gluroo Global ConnectのNightscout URLとAPI Secret Token。接続情報は公開用に非表示" loading="lazy" decoding="async"></div><figcaption>次に、下側の「API Secret Token」だけをコピーします。</figcaption></figure>
+          </div>
+        </li>
+        <li>
+          <h2>Guardian MonitorのSecret API Key欄へ貼り付けます</h2>
+          <p>Guardian Monitorへ戻り、「Secret API Key」の欄へAPI Secret Tokenをそのまま貼り付けます。URLとSecret API Keyの両方が入ったことを確認してから、「Turn on sync」を押します。</p>
+          <div class="guide-shot-gallery">
+            <figure class="guide-shot"><div class="guide-shot-image"><img src="images/03-enter-nightscout-details.png" width="875" height="1798" alt="Guardian MonitorのNightscout設定にあるURL、Secret API Key、Turn on sync" loading="lazy" decoding="async"></div><figcaption>2項目がそろったら「Turn on sync」を押します。公開用画像では氏名を隠しています。</figcaption></figure>
           </div>
         </li>
         <li>
