@@ -256,9 +256,27 @@ test("Guardian uses the verified Guardian Monitor to Gluroo route", async () => 
   assert.match(guardianGuide, /GlucoScopeとは別の料金/);
   assert.match(guardianGuide, /apps\.apple\.com\/jp\/app\/guardian-monitor\/id1546989938/);
   assert.match(guardianGuide, /apps\.apple\.com\/jp\/app\/gluroo-diabetes-logger\/id1560748689/);
-  assert.match(guardianGuide, /アカウント作成またはサインインを終えて、Glurooのホーム画面まで進めます/);
-  assert.match(guardianGuide, /「これは後で行います」が表示される場合/);
+  assert.match(guardianGuide, /App StoreからGlurooのホーム画面まで進めます/);
+  assert.match(guardianGuide, /Guardian MonitorからGlurooへ血糖データが続けて表示される同期経路を実機確認/);
+  assert.match(guardianGuide, /Guardian固有の初回質問は確認中/);
+  assert.match(guardianGuide, /Gluroo初回設定 1 \/ 25/);
+  assert.match(guardianGuide, /Gluroo初回設定 25 \/ 25/);
+  for (let step = 1; step <= 25; step += 1) {
+    assert.equal((guardianGuide.match(new RegExp(`Gluroo初回設定 ${step} \\/ 25`, "g")) || []).length, 1);
+  }
+  assert.match(guardianGuide, /Guardian MonitorとつなぐSTEP 1へ進む/);
+  assert.match(guardianGuide, /Guardian MonitorとGlurooの接続/);
+  assert.match(guardianGuide, /初回のCGM質問では、接続情報を入力しません/);
+  assert.match(guardianGuide, /この画面はGlurooのバージョンで表示が異なります/);
+  assert.match(guardianGuide, /選べない・迷う場合はいったん止めてください/);
+  assert.match(guardianGuide, /血糖データを表示する本人について/);
+  assert.match(guardianGuide, /分からない項目は推測せず/);
+  assert.match(guardianGuide, /実際にMiniMed 780Gを使っている場合だけ/);
+  assert.match(guardianGuide, /「これは後で行います」を押します/);
   assert.doesNotMatch(guardianGuide, /初回案内の途中でCGMの選択画面が出た場合も[^。]*ナイトスカウトでDIY/);
+  assert.doesNotMatch(guardianGuide, /11-choose-cgm\.webp|13-pump-question-bottom\.webp|22-connect-cgm-later\.webp/);
+  assert.doesNotMatch(guardianGuide, /Medtronic Guardian Connect[^。]*選びます/);
+  assert.doesNotMatch(guardianGuide, /「Other \(Stelo, Guardian, etc\.\)」を選びます/);
   assert.match(guardianGuide, /Guardian Monitorの「Preferences」を開きます/);
   assert.match(guardianGuide, /Glurooのメニューから「設定」を開きます/);
   assert.match(guardianGuide, /CGMで「ナイトスカウトでDIY」を選びます/);
@@ -274,6 +292,59 @@ test("Guardian uses the verified Guardian Monitor to Gluroo route", async () => 
   assert.match(guardianGuide, /画像の料金は撮影時の表示例/);
   assert.match(guardianGuide, /公開用画像では氏名を隠しています/);
   assert.match(guardianGuide, /公開用画像では血糖などの数値を隠しています/);
+  const firstTimeEnd = guardianGuide.indexOf('id="guardian-connection"');
+  const firstTimeGuide = guardianGuide.slice(guardianGuide.indexOf('id="gluroo-first-time"'), firstTimeEnd);
+  assert.ok(firstTimeEnd > 0);
+  assert.match(firstTimeGuide, /Gluroo初回設定 25 \/ 25[\s\S]*<\/ol>[\s\S]*Guardian MonitorとGlurooの接続/);
+  assert.equal((guardianGuide.match(/class="guide-simple-steps guide-card guardian-full-steps"/g) || []).length, 2);
+  assert.doesNotMatch(firstTimeGuide, /CGMで「ナイトスカウトでDIY」を選びます/);
+  const firstTimeImages = [
+    "01-app-store-search.webp",
+    "02-search-results.webp",
+    "03-app-store-detail.webp",
+    "04-welcome.webp",
+    "05-who-for.webp",
+    "06-profile-details.webp",
+    "07-goals.webp",
+    "08-continue-gluroo.webp",
+    "09-notification-intro.webp",
+    "10-notification-permission.webp",
+    "12-pump-question-top.webp",
+    "14-insulin-settings-later.webp",
+    "15-basal-reminder-skip.webp",
+    "16-medication-reminder-skip.webp",
+    "17-sign-in.webp",
+    "18-access-confirmed.webp",
+    "19-terms-review.webp",
+    "20-terms-agree.webp",
+    "21-nickname.webp",
+    "23-apple-health-skip.webp",
+    "24-ready.webp",
+    "25-update-notice.webp",
+  ];
+  let previousFirstTimeImagePosition = -1;
+  for (const imageName of firstTimeImages) {
+    const imagePath = `../gluroo-setup/images/steps/${imageName}`;
+    const imagePosition = guardianGuide.indexOf(imagePath);
+    assert.ok(imagePosition > previousFirstTimeImagePosition, `${imagePath} should appear in onboarding order`);
+    await access(new URL(`../guides/gluroo-setup/images/steps/${imageName}`, import.meta.url));
+    previousFirstTimeImagePosition = imagePosition;
+  }
+  for (const anchor of ["gluroo-first-time", "guardian-connection", "gluroo-settings", "guardian-nightscout"]) {
+    assert.match(guardianGuide, new RegExp(`id="${anchor}"`));
+    if (anchor !== "gluroo-first-time") assert.match(guardianGuide, new RegExp(`href="#${anchor}"`));
+  }
+  const guardianIds = [...guardianGuide.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
+  assert.equal(new Set(guardianIds).size, guardianIds.length);
+  for (const imageTag of guardianGuide.matchAll(/<img\b[^>]*>/g)) {
+    assert.match(imageTag[0], /\bwidth="\d+"/);
+    assert.match(imageTag[0], /\bheight="\d+"/);
+    assert.match(imageTag[0], /\balt="[^"]+"/);
+    assert.match(imageTag[0], /\bloading="(?:eager|lazy)"/);
+    assert.match(imageTag[0], /\bdecoding="async"/);
+  }
+  assert.match(guideCss, /\.guardian-full-steps>ol>li\{scroll-margin-top:18px\}/);
+  assert.match(guideCss, /\.guardian-full-steps>ol>li\{padding-left:0;padding-top:54px\}/);
   const glurooImages = [
     "../gluroo-setup/images/steps/26-open-menu.webp",
     "../gluroo-setup/images/steps/30-global-connect-menu.webp",

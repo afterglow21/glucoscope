@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex">
   <title>Guardian MonitorからGlurooへつなぐ | GlucoScope</title>
-  <link rel="stylesheet" href="../guide.css?v=20260817-manual-captures-1">
+  <link rel="stylesheet" href="../guide.css?v=20260824-guardian-full-setup-1">
 </head>
 <body>
   <main class="guide-wrap guide-narrow">
@@ -17,9 +17,9 @@
     <header class="guide-hero">
       <p class="guide-kicker">Guardian（MiniMed 780G） · iPhone</p>
       <h1>Guardian Monitorから<br>Glurooへつなぐ</h1>
-      <p class="guide-lead">Guardian MonitorのNightscout同期先に、Gluroo Global Connectを設定する方法です。kazumaのGuardian（MiniMed 780G）環境で、血糖データがGlurooへ続けて表示されることを実機確認しています。</p>
+      <p class="guide-lead">Guardian MonitorのNightscout同期先に、Gluroo Global Connectを設定する方法です。kazumaのGuardian（MiniMed 780G）環境で、Guardian MonitorからGlurooへ血糖データが続けて表示される同期経路を実機確認しています。</p>
       <div class="guide-meta">
-        <span class="guide-chip">実機確認済み</span>
+        <span class="guide-chip">同期経路を実機確認済み</span>
         <span class="guide-chip">iPhone</span>
         <span class="guide-chip">Guardian Monitor</span>
       </div>
@@ -36,18 +36,185 @@
       <p>Glurooに表示される<strong>Nightscout URL</strong>と<strong>API Secret Token</strong>だけです。CareLink、Apple、GoogleなどのログインパスワードをGlucoScopeへ入力することはありません。</p>
     </section>
 
-    <section class="guide-callout">
-      <h2>Glurooをまだ入れていない方へ</h2>
-      <p><a href="https://apps.apple.com/jp/app/gluroo-diabetes-logger/id1560748689" target="_blank" rel="noopener noreferrer">App StoreのGluroo Diabetes Logger（外部サイト）</a>をインストールし、アカウント作成またはサインインを終えて、Glurooのホーム画面まで進めます。途中でCGMの接続情報を求められた時は、その場では入力しません。「これは後で行います」が表示される場合は、それを押してホーム画面へ進みます。ホーム画面が開いたら、下のSTEP 2から続けてください。</p>
+    <section class="guide-callout guide-existing-user">
+      <h2>すでにGlurooのホーム画面まで進んでいる方</h2>
+      <p>初回設定は繰り返さなくて大丈夫です。Guardian MonitorとGlurooをつなぐSTEPから始めてください。</p>
+      <a class="guide-primary-link" href="#guardian-connection">Guardian MonitorとつなぐSTEP 1へ進む</a>
+      <div class="guide-secondary-links"><a href="#gluroo-settings">Glurooの設定画面から再開</a><a href="#guardian-nightscout">URLの入力から再開</a></div>
     </section>
 
-    <section class="guide-simple-steps guide-card">
+    <section class="guide-callout guide-version-warning" id="gluroo-first-time">
+      <h2>Glurooをまだ入れていない方へ</h2>
+      <p><a href="https://apps.apple.com/jp/app/gluroo-diabetes-logger/id1560748689" target="_blank" rel="noopener noreferrer">App StoreのGluroo Diabetes Logger（外部サイト）</a>を入れるところから、下の画面を順番に進めます。</p>
+      <p>画像はGluroo 2.0.5で確認した共通画面の例です。Guardian固有の初回質問は確認中で、アプリの更新や選んだ内容により、表示や順番が少し変わることがあります。治療に関わる数値は、このガイドを見て入力・変更しません。</p>
+      <p>画面が違う・選択肢が見つからない時は推測で進めず、いったん止めてください。家族や支援する人と画面を確認しても構いませんが、Nightscout URL、API Secret Token、血糖が写った画面は送らないでください。</p>
+    </section>
+
+    <section class="guide-chapter"><p>Glurooの初回設定</p><h2>App StoreからGlurooのホーム画面まで進めます</h2></section>
+    <section class="guide-simple-steps guide-card guardian-full-steps">
       <ol>
-        <li>
+        <li id="guardian-gluroo-screen-01">
+          <p class="guide-progress">Gluroo初回設定 1 / 25</p>
+          <h2>App StoreでGlurooを探します</h2>
+          <p>iPhoneでApp Storeを開き、右下の「検索」を押します。検索欄が見えたら次へ進みます。</p>
+          <div class="guide-shot-gallery"><figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/01-app-store-search.webp" width="760" height="1651" alt="App Storeの検索画面。右下の検索タブが選ばれている" loading="eager" decoding="async"></div><figcaption>赤枠の「検索」を押します。</figcaption></figure></div>
+        </li>
+        <li id="guardian-gluroo-screen-02">
+          <p class="guide-progress">Gluroo初回設定 2 / 25</p>
+          <h2>「gluroo」と検索します</h2>
+          <p>検索欄へ「gluroo」と入力します。カンガルーの絵がある「Gluroo Diabetes Logger」を押します。</p>
+          <div class="guide-shot-gallery"><figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/02-search-results.webp" width="760" height="1651" alt="App Storeでglurooを検索し、Gluroo Diabetes Loggerが表示された結果画面" loading="lazy" decoding="async"></div><figcaption>赤枠のアプリを押します。</figcaption></figure></div>
+        </li>
+        <li id="guardian-gluroo-screen-03">
+          <p class="guide-progress">Gluroo初回設定 3 / 25</p>
+          <h2>正しいGlurooを入れます</h2>
+          <p>アプリ名が「Gluroo Diabetes Logger」、開発元が「Gluroo Imaginations Inc.」であることを確認し、雲の印・「入手」・「開く」のいずれかを押します。</p>
+          <div class="guide-shot-gallery"><figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/03-app-store-detail.webp" width="760" height="1651" alt="Gluroo Diabetes LoggerのApp Store詳細画面" loading="lazy" decoding="async"></div><figcaption>アプリ名と開発元を確認して入れます。</figcaption></figure></div>
+        </li>
+        <li id="guardian-gluroo-screen-04">
+          <p class="guide-progress">Gluroo初回設定 4 / 25</p>
+          <h2>「始めましょう」を押します</h2>
+          <p>初めて設定する場合は緑の「始めましょう」を押します。「I already have an account」は、以前作ったGlurooアカウントへ戻る方の入口です。</p>
+          <div class="guide-shot-gallery"><figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/04-welcome.webp" width="760" height="1651" alt="Glurooのようこそ画面にある始めましょうボタン" loading="lazy" decoding="async"></div><figcaption>初めての方は「始めましょう」を押します。</figcaption></figure></div>
+        </li>
+        <li id="guardian-gluroo-screen-05">
+          <p class="guide-progress">Gluroo初回設定 5 / 25</p>
+          <h2>誰のために使うか選びます</h2>
+          <p>自分のデータを見る場合は「自分」を選びます。家族などを支えるために設定する場合は、実際の関係に合う項目を選びます。この先のプロフィールには、血糖データを表示する本人について入力し、「継続する」を押します。</p>
+          <div class="guide-shot-gallery"><figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/05-who-for.webp" width="760" height="1651" alt="Glurooへようこそ画面で利用者との関係を選ぶ" loading="lazy" decoding="async"></div><figcaption>実際の使い方に合う項目を選びます。</figcaption></figure></div>
+        </li>
+        <li id="guardian-gluroo-screen-06">
+          <p class="guide-progress">Gluroo初回設定 6 / 25</p>
+          <h2>プロフィールの必須項目を入力します</h2>
+          <p>血糖データを表示する本人について、分かっている内容だけを入力します。分からない項目は推測せず、必須項目のため進めない時はいったん止めて、本人・家族・支援する人と確認してください。</p>
+          <div class="guide-shot-gallery"><figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/06-profile-details.webp" width="760" height="1651" alt="Glurooのプロフィール入力画面" loading="lazy" decoding="async"></div><figcaption>必須項目を確認して進みます。</figcaption></figure></div>
+        </li>
+        <li id="guardian-gluroo-screen-07">
+          <p class="guide-progress">Gluroo初回設定 7 / 25</p>
+          <h2>利用目的を1つ以上選びます</h2>
+          <p>当てはまる目的を1つ以上選びます。GlucoScopeへつなぐ準備では「データをすべて1か所で確認する」が近い選択肢です。選んだら「継続する」を押します。</p>
+          <div class="guide-shot-gallery"><figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/07-goals.webp" width="760" height="1651" alt="Glurooで利用目的を選ぶ私の目標画面" loading="lazy" decoding="async"></div><figcaption>当てはまる目的を選びます。</figcaption></figure></div>
+        </li>
+        <li id="guardian-gluroo-screen-08">
+          <p class="guide-progress">Gluroo初回設定 8 / 25</p>
+          <h2>連携サービスの案内を進みます</h2>
+          <p>中央の別サービスを試す必要はありません。下の緑色の「Glurooの設定を続ける」を押します。</p>
+          <div class="guide-shot-gallery"><figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/08-continue-gluroo.webp" width="760" height="1651" alt="CGMデータをどこでも表示する連携案内画面" loading="lazy" decoding="async"></div><figcaption>「Glurooの設定を続ける」を押します。</figcaption></figure></div>
+        </li>
+        <li id="guardian-gluroo-screen-09">
+          <p class="guide-progress">Gluroo初回設定 9 / 25</p>
+          <h2>通知の案内を進みます</h2>
+          <p>この画面では「通知をオンにする」を押すと、次にiPhoneの確認画面が出ます。通知設定はあとからiPhoneの設定で変更できます。</p>
+          <div class="guide-shot-gallery"><figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/09-notification-intro.webp" width="760" height="1651" alt="Glurooの通知機能を説明する画面" loading="lazy" decoding="async"></div><figcaption>通知の案内を確認して進みます。</figcaption></figure></div>
+        </li>
+        <li id="guardian-gluroo-screen-10">
+          <p class="guide-progress">Gluroo初回設定 10 / 25</p>
+          <h2>iPhoneの通知許可を選びます</h2>
+          <p>通知を受け取る場合は「許可」を押します。受け取らない場合は「許可しない」でも初期設定は続けられます。どちらを選んでも、あとでiPhoneの設定から変更できます。</p>
+          <div class="guide-shot-gallery"><figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/10-notification-permission.webp" width="760" height="1651" alt="iPhoneがGlurooの通知許可を尋ねる画面" loading="lazy" decoding="async"></div><figcaption>使い方に合う通知設定を選びます。</figcaption></figure></div>
+        </li>
+        <li id="guardian-gluroo-screen-11">
+          <p class="guide-progress">Gluroo初回設定 11 / 25</p>
+          <h2>初回のCGM質問では、接続情報を入力しません</h2>
+          <p>この画面はGlurooのバージョンで表示が異なります。この段階では「ナイトスカウトでDIY」を探さず、CGMのメールアドレスやパスワードも入力しません。「まだ決定中」など、あとから設定できる選択肢が表示された場合はそれを使って進みます。選べない・迷う場合はいったん止めてください。</p>
+          <div class="guide-no-shot"><strong>Guardian用の初回画面は確認中です</strong><span>G7・Libre用の赤枠画像は、誤案内を防ぐため表示していません。</span></div>
+        </li>
+        <li id="guardian-gluroo-screen-12">
+          <p class="guide-progress">Gluroo初回設定 12 / 25</p>
+          <h2>MiniMed 780Gを実際に使っている場合だけ選びます</h2>
+          <p>ポンプの質問が表示され、実際にMiniMed 780Gを使っている場合だけ、一覧の「Medtronic 780 G」を選びます。これはGlurooの初期プロフィール用の質問で、ポンプデータの接続や治療設定を変更する操作ではありません。</p>
+          <div class="guide-shot-gallery"><figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/12-pump-question-top.webp" width="760" height="1651" alt="Glurooのポンプ選択画面にあるMedtronic 780 G" loading="lazy" decoding="async"></div><figcaption>「Medtronic 780 G」が表示されている例です。画面が出ない場合は、そのまま次へ進みます。</figcaption></figure></div>
+        </li>
+        <li id="guardian-gluroo-screen-13">
+          <p class="guide-progress">Gluroo初回設定 13 / 25</p>
+          <h2>ポンプの質問が出た方だけ、選んだ内容を確認します</h2>
+          <p>実際に使っている機器と一致していることを確認し、「継続する」を押します。質問が表示されなかった場合は、このSTEPは飛ばします。G7・LibreガイドにあるInPenの画像はGuardianでは使いません。</p>
+          <div class="guide-no-shot"><strong>使っていない機器は選びません</strong><span>「Medtronic 780 G」以外の機器を推測で選ばないでください。</span></div>
+        </li>
+        <li id="guardian-gluroo-screen-14">
+          <p class="guide-progress">Gluroo初回設定 14 / 25</p>
+          <h2>インスリン設定は「Set up later」で進みます</h2>
+          <p>この画面が表示された場合、炭水化物比率やISFなどの治療に関わる値はGlucoScopeとの接続には必要ありません。下の「Set up later」を押します。</p>
+          <div class="guide-shot-gallery"><figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/14-insulin-settings-later.webp" width="760" height="1651" alt="インスリン処方などの設定画面にあるSet up later" loading="lazy" decoding="async"></div><figcaption>同じ画面が出た場合だけ「Set up later」を押します。</figcaption></figure></div>
+        </li>
+        <li id="guardian-gluroo-screen-15">
+          <p class="guide-progress">Gluroo初回設定 15 / 25</p>
+          <h2>基礎インスリンのリマインダーをスキップします</h2>
+          <p>この画面が表示された場合、GlucoScopeとの接続には必要ありません。「基礎リマインダーをスキップ」を押します。治療内容は変更しません。</p>
+          <div class="guide-shot-gallery"><figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/15-basal-reminder-skip.webp" width="760" height="1651" alt="基礎インスリンのリマインダー設定画面にあるスキップ" loading="lazy" decoding="async"></div><figcaption>同じ画面が出た場合だけスキップします。</figcaption></figure></div>
+        </li>
+        <li id="guardian-gluroo-screen-16">
+          <p class="guide-progress">Gluroo初回設定 16 / 25</p>
+          <h2>服薬リマインダーをスキップします</h2>
+          <p>この画面が表示された場合、GlucoScopeとの接続には必要ありません。「スキップして後でやる」を押します。</p>
+          <div class="guide-shot-gallery"><figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/16-medication-reminder-skip.webp" width="760" height="1651" alt="服薬リマインダー画面にあるスキップして後でやる" loading="lazy" decoding="async"></div><figcaption>同じ画面が出た場合だけスキップします。</figcaption></figure></div>
+        </li>
+        <li id="guardian-gluroo-screen-17">
+          <p class="guide-progress">Gluroo初回設定 17 / 25</p>
+          <h2>AppleまたはGoogleでログインします</h2>
+          <p>次回も使えるログイン方法を選びます。AppleまたはGoogleのどちらでも構いません。</p>
+          <div class="guide-shot-gallery"><figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/17-sign-in.webp" width="760" height="1651" alt="GlurooのGoogleログインとAppleサインイン画面" loading="lazy" decoding="async"></div><figcaption>使うログイン方法を選びます。</figcaption></figure></div>
+        </li>
+        <li id="guardian-gluroo-screen-18">
+          <p class="guide-progress">Gluroo初回設定 18 / 25</p>
+          <h2>「継続する」を押します</h2>
+          <p>「アクセス確認済みです！」と表示されたら、緑の「継続する」を押します。</p>
+          <div class="guide-shot-gallery"><figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/18-access-confirmed.webp" width="760" height="1651" alt="Glurooのアクセス確認済み画面" loading="lazy" decoding="async"></div><figcaption>アクセス確認後に「継続する」を押します。</figcaption></figure></div>
+        </li>
+        <li id="guardian-gluroo-screen-19">
+          <p class="guide-progress">Gluroo初回設定 19 / 25</p>
+          <h2>利用規約などを読みます</h2>
+          <p>利用規約、プライバシーポリシー、医学的警告、健康データ処理の各項目を読みます。内容に同意できない場合はチェックせず、ここで設定を止めます。</p>
+          <div class="guide-shot-gallery"><figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/19-terms-review.webp" width="760" height="1651" alt="Glurooの利用規約とプライバシー確認画面。チェック前" loading="lazy" decoding="async"></div><figcaption>内容を読んでから次へ進みます。</figcaption></figure></div>
+        </li>
+        <li id="guardian-gluroo-screen-20">
+          <p class="guide-progress">Gluroo初回設定 20 / 25</p>
+          <h2>同意できる項目にチェックして続けます</h2>
+          <p>内容を確認して同意できる場合だけ各チェック欄をオンにし、「同意して続行」を押します。</p>
+          <div class="guide-shot-gallery"><figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/20-terms-agree.webp" width="760" height="1651" alt="Glurooの利用規約などへチェックし同意して続行する画面" loading="lazy" decoding="async"></div><figcaption>同意できる内容だけチェックします。</figcaption></figure></div>
+        </li>
+        <li id="guardian-gluroo-screen-21">
+          <p class="guide-progress">Gluroo初回設定 21 / 25</p>
+          <h2>表示用のニックネームを確認します</h2>
+          <p>必要に応じてプロフィール写真とニックネームを設定し、「継続する」を押します。</p>
+          <div class="guide-shot-gallery"><figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/21-nickname.webp" width="760" height="1651" alt="Glurooのプロフィール画面。ニックネームは公開用に非表示" loading="lazy" decoding="async"></div><figcaption>表示用のプロフィールを確認して進みます。</figcaption></figure></div>
+        </li>
+        <li id="guardian-gluroo-screen-22">
+          <p class="guide-progress">Gluroo初回設定 22 / 25</p>
+          <h2>CGMの接続入力が出たら「これは後で行います」を押します</h2>
+          <p>この画面が表示された場合、メールアドレスやパスワードは入力しません。「これは後で行います」を押します。Guardian MonitorからGlurooへの接続は、Glurooのホーム画面に着いたあとで設定します。</p>
+          <div class="guide-no-shot"><strong>接続情報はまだ入力しません</strong><span>G7・Libre用のログイン欄が写る画像は、誤案内を防ぐため表示していません。</span></div>
+        </li>
+        <li id="guardian-gluroo-screen-23">
+          <p class="guide-progress">Gluroo初回設定 23 / 25</p>
+          <h2>Apple Healthは「今はスキップ」で進みます</h2>
+          <p>この画面が表示された場合、GlucoScopeとの接続には必要ありません。「今はスキップ」を押します。あとからGlurooの設定で変更できます。</p>
+          <div class="guide-shot-gallery"><figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/23-apple-health-skip.webp" width="942" height="2048" alt="GlurooのApple Health設定画面にある今はスキップ" loading="lazy" decoding="async"></div><figcaption>同じ画面が出た場合だけ「今はスキップ」を押します。</figcaption></figure></div>
+        </li>
+        <li id="guardian-gluroo-screen-24">
+          <p class="guide-progress">Gluroo初回設定 24 / 25</p>
+          <h2>「準備完了！」で継続します</h2>
+          <p>初回案内の最後です。緑の「継続する」を押してGlurooのホーム画面へ進みます。</p>
+          <div class="guide-shot-gallery"><figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/24-ready.webp" width="760" height="1651" alt="Glurooの準備完了画面" loading="lazy" decoding="async"></div><figcaption>「継続する」を押してホーム画面へ進みます。</figcaption></figure></div>
+        </li>
+        <li id="guardian-gluroo-screen-25">
+          <p class="guide-progress">Gluroo初回設定 25 / 25</p>
+          <h2>更新のお知らせを閉じます</h2>
+          <p>「Glurooが新しくなりました！」と表示されたら「わかりました」を押します。この案内はアプリ更新後だけ表示されることがあります。</p>
+          <div class="guide-shot-gallery"><figure class="guide-shot"><div class="guide-shot-image"><img src="../gluroo-setup/images/steps/25-update-notice.webp" width="760" height="1651" alt="Glurooが新しくなりましたという更新案内" loading="lazy" decoding="async"></div><figcaption>表示された場合だけ「わかりました」を押します。</figcaption></figure></div>
+          <div class="guide-step-action"><strong>ここを確認</strong><span>Glurooのホーム画面が開いたら、初回設定は完了です。</span></div>
+        </li>
+      </ol>
+    </section>
+
+    <section class="guide-chapter"><p>Guardian MonitorとGlurooの接続</p><h2>2つのアプリをつなぎます</h2></section>
+    <section class="guide-simple-steps guide-card guardian-full-steps">
+      <ol>
+        <li id="guardian-connection">
           <h2>Guardian Monitorの「Preferences」を開きます</h2>
           <p>Guardian MonitorをCareLinkへ接続し、アプリ内に現在の血糖値が表示されていることを確認してから、画面下の「Preferences」を押します。表示名や画面の位置は、アプリ更新で変わる場合があります。</p>
           <div class="guide-shot-gallery">
-            <figure class="guide-shot"><div class="guide-shot-image"><img src="images/01-open-preferences.png" width="873" height="1801" alt="Guardian Monitorの画面下にあるPreferencesを赤枠で示した公開用画像。血糖などの数値は非表示" loading="eager" decoding="async"></div><figcaption>赤枠の「Preferences」を押します。公開用画像では血糖などの数値を隠しています。</figcaption></figure>
+            <figure class="guide-shot"><div class="guide-shot-image"><img src="images/01-open-preferences.png" width="873" height="1801" alt="Guardian Monitorの画面下にあるPreferencesを赤枠で示した公開用画像。血糖などの数値は非表示" loading="lazy" decoding="async"></div><figcaption>赤枠の「Preferences」を押します。公開用画像では血糖などの数値を隠しています。</figcaption></figure>
           </div>
         </li>
         <li id="gluroo-settings">
@@ -137,7 +304,7 @@
       <h2>Glurooに表示できたら準備完了です🍀</h2>
       <p>GlucoScopeへ戻り、GlurooのNightscout URLとAPI Secret Tokenを使って「つながるか確認する」を押します。</p>
       <a class="guide-primary-link guide-footer-return" href="../../?mode=user&source=gluroo#glucose">GlucoScopeの接続画面へ戻る</a>
-      <p class="guide-note">GlucoScopeとGuardian Monitorは、日々の振り返りを支える補助的なツールです。治療判断、アラート、現在の機器状態は、元のCGM・ポンプアプリを確認してください。</p>
+      <p class="guide-note">GlucoScopeとGuardian Monitorは、日々の振り返りを支える補助的なツールです。治療判断、アラート、現在の機器状態は、ふだん使っているメドトロニック公式アプリやポンプ本体を確認してください。</p>
     </footer>
   </main>
 </body>
