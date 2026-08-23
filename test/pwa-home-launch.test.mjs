@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { access, readFile } from "node:fs/promises";
+import { access, readFile, readdir } from "node:fs/promises";
 import vm from "node:vm";
 
 const projectRoot = new URL("../", import.meta.url);
@@ -105,10 +105,30 @@ test("early launch detection marks only an installed Home Screen app", () => {
   assert.equal(iosClasses.has("ios-home-screen-app"), true);
 });
 
-test("portrait Home Screen layout reserves a WebKit-safe top inset with iPhone fallbacks", () => {
+test("portrait iPhone layouts reserve a WebKit-safe top inset with Home Screen fallbacks", () => {
   assert.match(css, /@media \(orientation:portrait\) and \(hover:none\) and \(pointer:coarse\)/u);
-  assert.match(css, /html\.ios-home-screen-app:not\(\.force-desktop-view\) \.dashboard,\s*html\.ios-home-screen-app:not\(\.force-desktop-view\) \.about-detail-wrap\{\s*padding-top:max\(6px,env\(safe-area-inset-top,0px\)\);/u);
+  assert.match(css, /html:not\(\.force-desktop-view\) \.about-detail-wrap,\s*html\.ios-home-screen-app:not\(\.force-desktop-view\) \.dashboard\{\s*padding-top:max\(6px,env\(safe-area-inset-top,0px\)\);/u);
   assert.match(css, /\(min-aspect-ratio:27\/50\)[^{]*\(max-aspect-ratio:57\/100\)[^{]*\{\s*html\.ios-home-screen-app:not\(\.force-desktop-view\) \.dashboard,\s*html\.ios-home-screen-app:not\(\.force-desktop-view\) \.about-detail-wrap,\s*html\.ios-home-screen-app:not\(\.force-desktop-view\) \.share-studio-dialog\{\s*padding-top:max\(20px,env\(safe-area-inset-top,0px\)\);/u);
   assert.match(css, /\(max-aspect-ratio:10\/21\)[^{]*\{\s*html\.ios-home-screen-app:not\(\.force-desktop-view\) \.dashboard,\s*html\.ios-home-screen-app:not\(\.force-desktop-view\) \.about-detail-wrap,\s*html\.ios-home-screen-app:not\(\.force-desktop-view\) \.share-studio-dialog\{\s*padding-top:max\(59px,env\(safe-area-inset-top,0px\)\);/u);
   assert.doesNotMatch(css, /@media[^{}]*\(orientation:landscape\)[^{]*\{[^{}]*html\.ios-home-screen-app/u);
+});
+
+test("every About, Trust, and Plus detail page receives the iPhone safe-area stylesheet", async () => {
+  const detailDirectories = ["pages/about/", "pages/trust/"];
+  const detailPages = [];
+
+  for (const directory of detailDirectories) {
+    const directoryUrl = new URL(directory, projectRoot);
+    for (const name of await readdir(directoryUrl)) {
+      if (!name.endsWith(".html")) continue;
+      const page = await readFile(new URL(name, directoryUrl), "utf8");
+      if (page.includes('class="about-detail-topbar"')) detailPages.push(page);
+    }
+  }
+
+  assert.equal(detailPages.length, 26);
+  for (const page of detailPages) {
+    assert.match(page, /<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">/u);
+    assert.match(page, /\.\.\/\.\.\/style\.css\?v=20260823-ios-detail-safe-area-1/u);
+  }
 });

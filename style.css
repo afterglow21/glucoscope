@@ -8937,12 +8937,13 @@ body.local-profile-dialog-open {
 .data-source-relay-turnstile.is-visible{display:block}
 @media (max-width:640px){.data-source-device-guide-grid{grid-template-columns:1fr}.data-source-device-guide-link{min-height:78px;padding:13px 14px}.data-source-relay-check{padding:13px}.data-source-relay-check p{font-size:12.5px}}
 
-/* The tested iPhone Home Screen launch placed the header under the status bar.
-   Reserve WebKit's reported top inset only inside that installed iOS app;
-   Safari, other platforms, and the landscape Graph desk mode are unchanged. */
+/* About, Trust, and Plus detail pages use viewport-fit=cover, so ordinary
+   iPhone Safari as well as the installed Home Screen app must reserve the
+   reported top inset. Keep the dashboard rule limited to the installed app;
+   other platforms and the landscape Graph desk mode remain unchanged. */
 @media (orientation:portrait) and (hover:none) and (pointer:coarse){
-  html.ios-home-screen-app:not(.force-desktop-view) .dashboard,
-  html.ios-home-screen-app:not(.force-desktop-view) .about-detail-wrap{
+  html:not(.force-desktop-view) .about-detail-wrap,
+  html.ios-home-screen-app:not(.force-desktop-view) .dashboard{
     padding-top:max(6px,env(safe-area-inset-top,0px));
   }
 }

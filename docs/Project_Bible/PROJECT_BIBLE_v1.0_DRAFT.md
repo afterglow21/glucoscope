@@ -1810,6 +1810,8 @@ The coordinated release is published through GitHub Pages commit `64a92932a592dd
 
 After the iOS safe-area correction was published, the same iPhone fully closed the existing Home Screen app from the app switcher and reopened the same icon. The G7 connection remained available without reconnecting, and the system status bar no longer overlapped the GlucoScope header. This completes the Home Screen relaunch and top-layout acceptance. The existing icon and its locally saved connection were kept throughout; deleting or re-adding the icon was not required.
 
+On 2026-08-23, ordinary iPhone Safari exposed the same missing top-inset boundary on the shared About, Trust, and Plus detail-page header. The shared detail layout now reserves WebKit's reported top safe area in both Safari and the installed Home Screen app, and all 26 pages that use this header carry the same cache-busted stylesheet reference. Automated layout-contract and full repository tests pass; final ordinary-Safari visual confirmation on the reported iPhone remains the acceptance gate.
+
 Guardian (MiniMed 780G) is now a verified Gluroo input route on iPhone:
 
 ```text
@@ -1864,6 +1866,8 @@ The general-user Limited Data Relay Dexcom G7 route also passed a supervised nor
 同時切替はGitHub Pages commit `64a92932a592dda1b6eb9d6dd7700279b1c7a47a`として公開し、custom domainの確認とHTTPS強制を完了しました。リレーcustom domainは有効で、以前の公開`workers.dev`接続先は閉じています。既存の先行利用者は公開後の1回だけの安全確認を完了しました。実機Dexcom G7では、その後iPhoneのホーム画面アイコンから開き直しても、接続し直さず表示できました。受入はリレーVersion 21（`91a36e38-1fa4-4fe2-80cf-a74327ccef90`）で行い、その時点の確認済み停止rollbackはVersion 20（`7e356782-976a-4e46-9692-70ea1689462a`）でした。不要Secret整理後の現在は、live Version 22（`b4b2064d-6dd4-4de6-8a68-3d0d39aea2ec`）へ100%を向け、未配信の停止rollbackとして両flagが`false`のVersion 23（`10d0a825-c098-462e-89fd-a69937c47a9b`）を保持します。現在の2Versionは同じ2つのDurable Object、custom domain、正確なOriginと、端末session用・Turnstile用の必須Secret 2件だけを維持します。Version 20以前へ直接rollbackしてはいけません。iPhoneでは、WebKitがcookieをホーム画面Webアプリへ引き継げる一方でlocal storageは引き継がないため、最初にGlucoScopeをホーム画面へ追加し、新しいアイコンの中で初回接続を完了する案内を標準にします。実装根拠は[WebKitのホーム画面Webアプリのstorage説明](https://webkit.org/blog/14787/webkit-features-in-safari-17-2/)です。
 
 iOSホーム画面用のsafe area修正を公開したあと、同じiPhoneで既存のホーム画面アプリをアプリ切り替え画面から完全に終了し、同じアイコンから開き直しました。G7接続は再接続なしで維持され、iOSステータスバーとGlucoScopeヘッダーの重なりも解消しました。これでホーム画面からの再起動と上部表示の実機受入は完了です。確認中は既存アイコンとアプリ内に保存した接続を維持し、アイコンの削除や再追加は必要ありませんでした。
+
+2026年8月23日、通常のiPhone Safariでも、About、Trust、Plusの詳細ページで共通ヘッダーが上部の安全領域を確保できていないことを確認しました。共通レイアウトを修正し、Safariとホーム画面アプリの両方でWebKitが示す上部safe areaを確保します。このヘッダーを使う26ページは、すべて同じ更新済みCSSを読み込みます。自動のレイアウト契約テストと全体テストは合格しており、報告のあったiPhone Safariでの最終目視確認を受入条件として残します。
 
 Guardian（MiniMed 780G）は、iPhoneで次のGluroo入力ルートを実機確認済みです。
 
