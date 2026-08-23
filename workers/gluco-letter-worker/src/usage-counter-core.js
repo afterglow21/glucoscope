@@ -511,16 +511,20 @@ export function estimateMaximumOpenAiCostJpy({
   inputPriceJpyPerMillionTokens = 0,
   outputPriceJpyPerMillionTokens = 0,
   framingInputTokensPerCall = 4096,
-  transportAttemptsPerStage = 2
+  transportAttemptsPerStage = 2,
+  additionalRetryStages = 0
 } = {}) {
   const attempts = Math.max(1, nonNegativeInteger(transportAttemptsPerStage));
+  const extraRetryStages = nonNegativeInteger(additionalRetryStages);
   const instructions = nonNegativeInteger(instructionsUtf8Bytes);
   const framing = nonNegativeInteger(framingInputTokensPerCall);
   const initialInputTokens = instructions + nonNegativeInteger(initialPromptUtf8Bytes) + framing;
   const retryInputTokens = instructions + nonNegativeInteger(retryPromptUtf8Bytes) + framing;
-  const inputTokens = attempts * (initialInputTokens + retryInputTokens);
+  const retryStageCount = 1 + extraRetryStages;
+  const inputTokens = attempts * (initialInputTokens + retryInputTokens * retryStageCount);
   const outputTokens = attempts * (
-    nonNegativeInteger(initialMaxOutputTokens) + nonNegativeInteger(retryMaxOutputTokens)
+    nonNegativeInteger(initialMaxOutputTokens)
+    + nonNegativeInteger(retryMaxOutputTokens) * retryStageCount
   );
   const costJpy = inputTokens * nonNegativeCost(inputPriceJpyPerMillionTokens) / 1_000_000
     + outputTokens * nonNegativeCost(outputPriceJpyPerMillionTokens) / 1_000_000;

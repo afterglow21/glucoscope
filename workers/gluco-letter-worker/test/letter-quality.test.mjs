@@ -103,6 +103,15 @@ test("Share Studio fit quality is enabled only for exact user mode or verified a
   assert.match(workerSource, /within 900 characters and at most 9 short paragraphs/u);
 });
 
+test("Share Studio gets one final bounded rewrite without charging an extra successful analysis", () => {
+  assert.match(workerSource, /retryKind === "share-studio-final"/u);
+  assert.match(workerSource, /async function runFinalShareStudioRewrite/u);
+  assert.match(workerSource, /attempts: 3/u);
+  assert.match(workerSource, /additionalRetryStages: shareStudio \? 1 : 0/u);
+  assert.match(workerSource, /Share Studio用の最終書き直し: 完成したやさしい分析の本文だけを返す/u);
+  assert.match(workerSource, /return runFinalShareStudioRewrite\(\{/u);
+});
+
 test("conservative Japanese and English Share Studio letters fit the common renderer boundary", () => {
   const japanese = [
     "グルコだよ🍀",

@@ -16,8 +16,8 @@ GlucoScopeとともに成長し、更新され続けます。
 
 ---
 
-## Current operational snapshot — 2026-08-22 JST
-## 現在の運用スナップショット — 2026-08-22 JST
+## Current operational snapshot — 2026-08-23 JST
+## 現在の運用スナップショット — 2026-08-23 JST
 
 This list is the canonical current-state record. Dated rollout passages elsewhere in this
 document are historical evidence unless they explicitly say that they remain current.
@@ -26,10 +26,10 @@ document are historical evidence unless they explicitly say that they remain cur
   `7badb3ad0110ca45750bb3d04786d40a5f015285` is the accepted checkpoint for the full gentle-letter
   Share Studio and retained one-trial-AI release. Atomic usage-counter, long-lived-session,
   and iPhone Home Screen acceptance remain recorded by their earlier dated checkpoints.
-- AI Worker Version `ef238ad4-7dc7-4b79-bb92-b9c93605c6c3` receives 100% of AI traffic with
+- AI Worker Version `5b0a2593-ec64-4c7e-9129-60e0deb51762` receives 100% of AI traffic with
   atomic personal quota, the signed administrator bridge, no separate administrator daily cap,
-  and exact-reservation Share Studio gentle analysis. Version
-  `0e9e39a8-a1be-46c0-8336-f880a2ad147b` is the direct behavior
+  exact-reservation Share Studio gentle analysis, and one bounded final Share Studio rewrite. Version
+  `ef238ad4-7dc7-4b79-bb92-b9c93605c6c3` is the direct behavior
   rollback. Atomic stopped Version
   `46f44888-002b-4847-8553-5cd12e3d7ac5` is the emergency AI-off target. Version 28, Version 29,
   the old new-origin Version, Phase A, and pre-atomic Versions must not receive rollback traffic.
@@ -68,6 +68,13 @@ document are historical evidence unless they explicitly say that they remain cur
   `b584808c-0f63-4d18-8970-964dfec62212` is the direct behavior rollback. Unserved stopped Version
   `6faa0065-8fdd-4563-985e-9e775999717b` remains the emergency Plus-off target. The approved hourly cleanup
   runs at `0 * * * *` and is limited to the documented expired temporary records.
+- On 2026-08-23, one real JPY 400 one-time purchase passed entitlement start, reload persistence,
+  the three extended graph ranges, detailed analysis, and receipt delivery. Share Studio produced
+  a valid four-image set but failed twice in the first five-attempt reliability sample, so the
+  first announcement remains held. The AI Worker reliability correction is live; the matching Pages
+  candidate emphasizes the expiry/no-renewal date and shows the authoritative shared `used / 5`
+  successful-analysis count. Normal AI and Share Studio share the same five successful new
+  analyses per JST day; failed work and saved local displays do not consume the count.
 
 この一覧を、現在状態の正本とします。この文書内に残す日付付きの公開・受入記録は、
 「現在も有効」と明記したものを除き、その時点の履歴証拠です。
@@ -76,10 +83,10 @@ document are historical evidence unless they explicitly say that they remain cur
   `7badb3ad0110ca45750bb3d04786d40a5f015285`は、Share StudioのやさしいAI全文表示と、
   確認済みメールに結び付く体験専用1回枠を受け入れたcheckpointです。atomic利用カウンター、長期端末session、iPhoneホーム画面の受入は、
   それぞれの過去checkpointへ履歴として残します。
-- AI WorkerはVersion `ef238ad4-7dc7-4b79-bb92-b9c93605c6c3`へ通信の100%を向け、atomic個人上限、
+- AI WorkerはVersion `5b0a2593-ec64-4c7e-9129-60e0deb51762`へ通信の100%を向け、atomic個人上限、
   署名付き管理者bridge、管理者用の独立した1日上限を設けない運用、Share Studioの正確な予約単位の
-  やさしい分析を使っています。直接rollbackはVersion
-  `0e9e39a8-a1be-46c0-8336-f880a2ad147b`です。緊急にAIを止める時だけatomic停止Version
+  やさしい分析と、最終の文章書き直し1回を使っています。直接rollbackはVersion
+  `ef238ad4-7dc7-4b79-bb92-b9c93605c6c3`です。緊急にAIを止める時だけatomic停止Version
   `46f44888-002b-4847-8553-5cd12e3d7ac5`を使います。Version 28、Version 29、旧new-origin、
   Phase A、pre-atomic Versionへは戻しません。
 - Usage WorkerはVersion `93b5a9ce-b9cc-47ca-9aed-d8d2dc772ab7`へ通信の100%を向け、確認済みの
@@ -110,6 +117,12 @@ document are historical evidence unless they explicitly say that they remain cur
   `b584808c-0f63-4d18-8970-964dfec62212`、緊急停止は未配信の停止Version
   `6faa0065-8fdd-4563-985e-9e775999717b`を使います。承認済みの毎時cleanupは
   `0 * * * *`で動き、正本に定めた期限切れ一時記録だけを対象にします。
+- 2026年8月23日、実際の400円1回払いで、Plus開始、再読込後の維持、7日・30日・カスタム、
+  しっかり分析、領収書受信まで合格しました。Share Studioは4枚生成に成功した一方、最初の5回の
+  信頼性確認で2回失敗したため、最初のお知らせは保留します。AI Workerの信頼性修正は本番反映済みで、
+  対応するPages候補では終了日時と自動更新なしを強調し、通常AIとShare Studioで共有する成功回数を
+  `使用済み / 5`で表示します。成功した新規分析だけを1回とし、失敗と端末内の保存済み表示は
+  回数に含めません。
 
 ---
 

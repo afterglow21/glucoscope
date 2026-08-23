@@ -241,6 +241,25 @@ test("maximum-cost estimator includes two transport attempts for both prompt sta
   assert.equal(estimate.reservedCostJpy, 0.9376);
 });
 
+test("maximum-cost estimator reserves one additional Share Studio content rewrite", () => {
+  const estimate = estimateMaximumOpenAiCostJpy({
+    instructionsUtf8Bytes: 1000,
+    initialPromptUtf8Bytes: 500,
+    retryPromptUtf8Bytes: 700,
+    initialMaxOutputTokens: 700,
+    retryMaxOutputTokens: 1100,
+    inputPriceJpyPerMillionTokens: 32,
+    outputPriceJpyPerMillionTokens: 200,
+    framingInputTokensPerCall: 100,
+    transportAttemptsPerStage: 2,
+    additionalRetryStages: 1
+  });
+
+  assert.equal(estimate.inputTokens, 10400);
+  assert.equal(estimate.outputTokens, 5800);
+  assert.equal(estimate.reservedCostJpy, 1.4928);
+});
+
 test("late Phase A legacy save cannot overwrite state after atomic activation", () => {
   const atomicState = markAtomicUsageState(state({
     dailyGenerationCount: 1,

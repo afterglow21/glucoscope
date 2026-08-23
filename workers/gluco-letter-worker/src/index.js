@@ -1074,7 +1074,11 @@ function getUtf8ByteLength(value) {
   return new TextEncoder().encode(String(value ?? "")).byteLength;
 }
 
-function estimateReservedGenerationCostJpy({ summary = {}, config = DEFAULT_GUARD_CONFIG }) {
+function estimateReservedGenerationCostJpy({
+  summary = {},
+  payload = {},
+  config = DEFAULT_GUARD_CONFIG
+}) {
   const analysisMode = normalizeAnalysisMode(summary.analysisMode);
   if (config.provider !== "openai") {
     const prototypeText = buildPrototypeLetter(summary, analysisMode);
@@ -1090,9 +1094,17 @@ function estimateReservedGenerationCostJpy({ summary = {}, config = DEFAULT_GUAR
   const initialPrompt = buildOpenAiPrompt(summary, analysisMode);
   const incompleteRetryPrompt = buildOpenAiRetryPrompt(summary, analysisMode, "incomplete");
   const qualityRetryPrompt = buildOpenAiRetryPrompt(summary, analysisMode, "quality");
+  const shareStudio = analysisMode === "letter" && (
+    getClientMode(payload) === "share-studio"
+    || summary.pageMode === ADMIN_SHARE_STUDIO_PAGE_MODE
+  );
+  const finalShareStudioRetryPrompt = shareStudio
+    ? buildOpenAiRetryPrompt(summary, analysisMode, "share-studio-final")
+    : "";
   const retryPromptBytes = Math.max(
     getUtf8ByteLength(incompleteRetryPrompt),
-    getUtf8ByteLength(qualityRetryPrompt)
+    getUtf8ByteLength(qualityRetryPrompt),
+    getUtf8ByteLength(finalShareStudioRetryPrompt)
   );
   const limits = getOpenAiTokenLimits(config, analysisMode);
   return estimateMaximumOpenAiCostJpy({
@@ -1104,7 +1116,8 @@ function estimateReservedGenerationCostJpy({ summary = {}, config = DEFAULT_GUAR
     inputPriceJpyPerMillionTokens: config.inputPriceJpyPerMillionTokens,
     outputPriceJpyPerMillionTokens: config.outputPriceJpyPerMillionTokens,
     framingInputTokensPerCall: 4096,
-    transportAttemptsPerStage: 2
+    transportAttemptsPerStage: 2,
+    additionalRetryStages: shareStudio ? 1 : 0
   }).reservedCostJpy;
 }
 
@@ -1623,6 +1636,18 @@ function buildOpenAiRetryPrompt(summary, mode, retryKind = "incomplete") {
   const language = summary.language === "en" ? "en" : "ja";
   const basePrompt = buildOpenAiPrompt(summary, mode);
 
+  if (retryKind === "share-studio-final") {
+    if (language === "en") {
+      return `${basePrompt}
+
+Final Share Studio rewrite: return only one complete gentle reflection. Keep it under 760 characters in no more than 8 short paragraphs. Use short sentences, mention each metric at most once, and do not include drafting commentary, labels, or internal instructions.`;
+    }
+
+    return `${basePrompt}
+
+Share Studio用の最終書き直し: 完成したやさしい分析の本文だけを返す。520文字以内、短い段落は8個以内にする。短い文で、同じ指標は1回だけ触れ、内部処理・判定名・書き直しの説明は出さない。文の途中で終えず、最後まで自然に書き切る。`;
+  }
+
   if (retryKind === "quality") {
     if (language === "en") {
       return `${basePrompt}
@@ -1877,6 +1902,79 @@ function buildAcceptedOpenAiResult({
   };
 }
 
+async function runFinalShareStudioRewrite({
+  summary,
+  env,
+  config,
+  signal,
+  analysisMode,
+  language,
+  qualityOptions,
+  limits,
+  priorUsage,
+  retriedAfterIncomplete = false,
+  initialIncompleteReason = null
+}) {
+  let finalAttempt;
+  try {
+    finalAttempt = await callOpenAiAttempt({
+      summary,
+      env,
+      config,
+      signal,
+      mode: analysisMode,
+      shareStudio: true,
+      maxOutputTokens: limits.retry,
+      retryKind: "share-studio-final"
+    });
+  } catch (error) {
+    error.usage = addRequestUsage(priorUsage, error.usage);
+    error.retryAttempted = true;
+    error.analysisMode = analysisMode;
+    error.attempts = 3;
+    error.maxOutputTokens = limits.retry;
+    error.initialIncompleteReason = initialIncompleteReason;
+    throw error;
+  }
+
+  const combinedUsage = addRequestUsage(priorUsage, finalAttempt.usage);
+  if (finalAttempt.incompleteReason || !finalAttempt.text) {
+    throw createIncompleteOutputError({
+      mode: analysisMode,
+      incompleteReason: finalAttempt.incompleteReason || "empty_output",
+      attempts: 3,
+      maxOutputTokens: limits.retry,
+      usage: combinedUsage
+    });
+  }
+
+  const finalQualityIssues = getGeneratedLetterQualityIssues(
+    finalAttempt.text,
+    language,
+    qualityOptions
+  );
+  const finalQualityAssessment = partitionGeneratedLetterQualityIssues(finalQualityIssues);
+  if (finalQualityAssessment.blockingIssues.length) {
+    throw createOutputQualityError({
+      mode: analysisMode,
+      issues: finalQualityIssues,
+      attempts: 3,
+      maxOutputTokens: limits.retry,
+      usage: combinedUsage
+    });
+  }
+
+  return buildAcceptedOpenAiResult({
+    text: finalAttempt.text,
+    model: config.openAiModel,
+    attempts: 3,
+    retriedAfterIncomplete,
+    initialIncompleteReason,
+    maxOutputTokens: limits.retry,
+    usage: combinedUsage
+  });
+}
+
 async function callOpenAiLetter({
   summary,
   env,
@@ -1957,6 +2055,21 @@ async function callOpenAiLetter({
 
     const combinedUsage = addRequestUsage(firstAttempt.usage, retryAttempt.usage);
     if (retryAttempt.incompleteReason || !retryAttempt.text) {
+      if (shareStudio) {
+        return runFinalShareStudioRewrite({
+          summary,
+          env,
+          config,
+          signal,
+          analysisMode,
+          language,
+          qualityOptions,
+          limits,
+          priorUsage: combinedUsage,
+          retriedAfterIncomplete: true,
+          initialIncompleteReason: firstAttempt.incompleteReason
+        });
+      }
       throw createIncompleteOutputError({
         mode: analysisMode,
         incompleteReason: retryAttempt.incompleteReason || "empty_output",
@@ -1969,6 +2082,21 @@ async function callOpenAiLetter({
     const retryQualityIssues = getGeneratedLetterQualityIssues(retryAttempt.text, language, qualityOptions);
     const retryQualityAssessment = partitionGeneratedLetterQualityIssues(retryQualityIssues);
     if (retryQualityAssessment.blockingIssues.length) {
+      if (shareStudio) {
+        return runFinalShareStudioRewrite({
+          summary,
+          env,
+          config,
+          signal,
+          analysisMode,
+          language,
+          qualityOptions,
+          limits,
+          priorUsage: combinedUsage,
+          retriedAfterIncomplete: true,
+          initialIncompleteReason: firstAttempt.incompleteReason
+        });
+      }
       throw createOutputQualityError({
         mode: analysisMode,
         issues: retryQualityIssues,
@@ -2013,6 +2141,19 @@ async function callOpenAiLetter({
 
     const combinedUsage = addRequestUsage(firstAttempt.usage, emptyRetry.usage);
     if (emptyRetry.incompleteReason || !emptyRetry.text) {
+      if (shareStudio) {
+        return runFinalShareStudioRewrite({
+          summary,
+          env,
+          config,
+          signal,
+          analysisMode,
+          language,
+          qualityOptions,
+          limits,
+          priorUsage: combinedUsage
+        });
+      }
       throw createIncompleteOutputError({
         mode: analysisMode,
         incompleteReason: emptyRetry.incompleteReason || "empty_output",
@@ -2025,6 +2166,19 @@ async function callOpenAiLetter({
     const emptyRetryQualityIssues = getGeneratedLetterQualityIssues(emptyRetry.text, language, qualityOptions);
     const emptyRetryQualityAssessment = partitionGeneratedLetterQualityIssues(emptyRetryQualityIssues);
     if (emptyRetryQualityAssessment.blockingIssues.length) {
+      if (shareStudio) {
+        return runFinalShareStudioRewrite({
+          summary,
+          env,
+          config,
+          signal,
+          analysisMode,
+          language,
+          qualityOptions,
+          limits,
+          priorUsage: combinedUsage
+        });
+      }
       throw createOutputQualityError({
         mode: analysisMode,
         issues: emptyRetryQualityIssues,
@@ -2112,6 +2266,20 @@ async function callOpenAiLetter({
       });
     }
 
+    if (shareStudio) {
+      return runFinalShareStudioRewrite({
+        summary,
+        env,
+        config,
+        signal,
+        analysisMode,
+        language,
+        qualityOptions,
+        limits,
+        priorUsage: combinedUsage
+      });
+    }
+
     throw createIncompleteOutputError({
       mode: analysisMode,
       incompleteReason: qualityRetry.incompleteReason || "empty_output",
@@ -2133,6 +2301,21 @@ async function callOpenAiLetter({
         initialIncompleteReason: null,
         maxOutputTokens: limits.retry,
         usage: combinedUsage
+      });
+    }
+
+
+    if (shareStudio) {
+      return runFinalShareStudioRewrite({
+        summary,
+        env,
+        config,
+        signal,
+        analysisMode,
+        language,
+        qualityOptions,
+        limits,
+        priorUsage: combinedUsage
       });
     }
 
@@ -3039,7 +3222,8 @@ function buildAtomicProviderErrorResponse({
   usageState,
   failedUsage,
   config,
-  summary
+  summary,
+  quotaPayload = null
 }) {
   const incompleteOutput = error.code === "openai_incomplete_output";
   const qualityOutput = error.code === "openai_output_quality_failed";
@@ -3065,6 +3249,7 @@ function buildAtomicProviderErrorResponse({
     message: error.message || "AI letter provider failed.",
     userMessage,
     retryable: true,
+    quota: quotaPayload,
     details: {
       provider: config.provider,
       model: config.openAiModel,
@@ -3300,7 +3485,7 @@ async function handleAtomicGenerationRequest({
   const requestId = getAtomicUsageRequestId(payload, quotaRequest);
   const reservedCostJpy = preflightGuard
     ? 0
-    : estimateReservedGenerationCostJpy({ summary, config });
+    : estimateReservedGenerationCostJpy({ summary, payload, config });
   const reservationOutcome = await invokeRequiredAtomicUsageCounter({
     env,
     config,
@@ -3419,7 +3604,10 @@ async function handleAtomicGenerationRequest({
       usageState: currentUsageState,
       failedUsage,
       config,
-      summary
+      summary,
+      quotaPayload: quotaConfig.enabled
+        ? buildAuthoritativeQuotaPayload(error.aiQuota, { consumed: false })
+        : null
     });
   }
 
@@ -3837,6 +4025,9 @@ async function handleApiRequest(request, env = {}, adminBridge = null) {
             ? "グルコらしい文章の形に整えきれなかったため、今回の文章は表示も保存もしていないよ。少し時間をおいて、もう一度試してみてね🍀"
             : "AIお手紙の生成中に小さなエラーが起きました。表示中のお手紙やChatGPTコピー機能はそのまま使えます🍀",
         retryable: true,
+        quota: quotaConfig.enabled
+          ? buildAuthoritativeQuotaPayload(error.aiQuota, { consumed: false })
+          : null,
         details: {
           provider: config.provider,
           model: config.openAiModel,

@@ -313,7 +313,9 @@ test("Share Studio never truncates an overlong gentle letter", () => {
     "an unbreakable token must never be drawn past the panel edge"
   );
   assert.doesNotMatch(source, /chosen\.truncated|maximumLines|ellipsized/u);
-  assert.match(app, /全文が安全に収まらなかったため、4枚は作らず、体験回数も使っていません/u);
+  assert.match(app, /全文が安全に収まらなかったため、4枚は作りませんでした/u);
+  assert.match(app, /今回の失敗は、Plusの本日のAI分析回数に含まれていません/u);
+  assert.match(app, /無料体験回数は使っていません/u);
   assert.match(app, /SHARE_STUDIO_AI_CACHE_NAMESPACE = "share-studio-r6"/u);
   assert.match(app, /getFreshCachedAiLetter\([\s\S]*SHARE_STUDIO_AI_CACHE_NAMESPACE/u);
   assert.match(app, /saveAiLetterLocalCache\([\s\S]*SHARE_STUDIO_AI_CACHE_NAMESPACE/u);

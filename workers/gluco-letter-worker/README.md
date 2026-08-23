@@ -2,11 +2,11 @@
 
 Cloudflare Worker for GlucoScope AI Letter.
 
-## Current production target — 2026-08-22 JST
+## Current production target — 2026-08-23 JST
 
-- Version `ef238ad4-7dc7-4b79-bb92-b9c93605c6c3` receives 100% of AI traffic.
-- Direct behavior rollback is Version 44 (`0e9e39a8-a1be-46c0-8336-f880a2ad147b`). Emergency AI-off recovery remains atomic stopped Version `46f44888-002b-4847-8553-5cd12e3d7ac5`.
-- Share Studio places the complete gentle result in one auto-fitted panel. The signed administrator bridge has no separate administrator daily AI cap.
+- Version `5b0a2593-ec64-4c7e-9129-60e0deb51762` receives 100% of AI traffic.
+- Direct behavior rollback is Version 45 (`ef238ad4-7dc7-4b79-bb92-b9c93605c6c3`). Emergency AI-off recovery remains atomic stopped Version `46f44888-002b-4847-8553-5cd12e3d7ac5`.
+- Share Studio places the complete gentle result in one auto-fitted panel and has one additional bounded content rewrite before a failed request is released without consuming the successful-use count. The signed administrator bridge has no separate administrator daily AI cap.
 - The one-time Share Studio trial permits only gentle `letter` analysis. The same verified email address can complete it once within the 90-day protection window; `deep` analysis remains Plus-only.
 - Older Version, traffic, and rollback statements below are dated historical evidence, not current routing instructions.
 

@@ -120,6 +120,7 @@ let currentLivePeriod = localStorage.getItem(LIVE_PERIOD_STORAGE_KEY) || "today"
 let currentAiLetterMode = localStorage.getItem(AI_LETTER_MODE_STORAGE_KEY) === "deep" ? "deep" : "letter";
 let latestAiLetterSummary = null;
 let latestShareStudioTodayModel = null;
+let latestAuthoritativeAiQuota = null;
 let aiLetterSummaryState = "loading";
 let aiLetterSummaryRangeIdentity = "";
 let latestRuleCommentMetrics = null;
@@ -3552,6 +3553,68 @@ function formatPlusEndDate(value) {
   }).format(new Date(timestamp));
 }
 
+function readAuthoritativeAiQuota(data) {
+  const quota = data?.quota?.authoritative === true
+    ? data.quota
+    : data?.details?.quota?.authoritative === true
+      ? data.details.quota
+      : null;
+  if (!quota) return null;
+  const dailyLimit = Number(quota.dailyLimit);
+  const successful = Number(quota.successful);
+  const remaining = Number(quota.remaining);
+  if (
+    ![dailyLimit, successful, remaining].every(Number.isSafeInteger)
+    || dailyLimit < 1
+    || successful < 0
+    || successful > dailyLimit
+    || remaining < 0
+    || remaining > dailyLimit
+  ) return null;
+  return Object.freeze({
+    tier: quota.tier === "plus" ? "plus" : "free",
+    dailyLimit,
+    successful,
+    remaining
+  });
+}
+
+function renderAuthoritativeAiQuotaStatus() {
+  const quota = latestAuthoritativeAiQuota;
+  const elements = [
+    document.getElementById("aiLetterQuotaStatus"),
+    document.getElementById("shareStudioQuotaStatus"),
+    document.getElementById("plusAccountAiQuotaStatus")
+  ].filter(Boolean);
+  elements.forEach((element) => {
+    if (!quota) {
+      element.hidden = true;
+      element.textContent = "";
+      return;
+    }
+    const trial = quota.scope === "trial";
+    element.textContent = currentLanguage === "en"
+      ? trial
+        ? `Free Share Studio AI trial: ${quota.successful}/${quota.dailyLimit} used (failures and saved results do not count)`
+        : `Today's AI analyses: ${quota.successful}/${quota.dailyLimit} used (shared with Share Studio; failures and saved results do not count)`
+      : trial
+        ? `Share Studio無料体験のAI分析：${quota.successful}/${quota.dailyLimit}回（失敗・保存済み表示は回数外）`
+        : `本日のAI分析：${quota.successful}/${quota.dailyLimit}回（Share Studioと共通・失敗・保存済み表示は回数外）`;
+    element.hidden = false;
+  });
+}
+
+function captureAuthoritativeAiQuota(data, { shareTrial = false } = {}) {
+  const quota = readAuthoritativeAiQuota(data);
+  if (!quota) return null;
+  latestAuthoritativeAiQuota = Object.freeze({
+    ...quota,
+    scope: shareTrial && quota.tier === "free" ? "trial" : "daily"
+  });
+  renderAuthoritativeAiQuotaStatus();
+  return latestAuthoritativeAiQuota;
+}
+
 function updatePlusAccountUi() {
   const config = getPlusAccountRolloutConfig();
   const card = document.getElementById("plusAccountCard");
@@ -3573,6 +3636,10 @@ function updatePlusAccountUi() {
   const rolloutBadge = card.querySelector(".plus-account-badge");
   const badge = document.getElementById("plusAccountStateBadge");
   const summary = document.getElementById("plusAccountSummary");
+  const expiry = document.getElementById("plusAccountExpiry");
+  const expiryLabel = document.getElementById("plusAccountExpiryLabel");
+  const expiryValue = document.getElementById("plusAccountExpiryValue");
+  const expiryNote = document.getElementById("plusAccountExpiryNote");
   const purchaseButton = document.getElementById("plusAccountPurchaseButton");
   const purchaseReview = document.getElementById("plusPurchaseReview");
   const cardTitle = document.getElementById("plusAccountCardTitle");
@@ -3664,8 +3731,8 @@ function updatePlusAccountUi() {
     if (accountState.plusActive) {
       const endsAt = formatPlusEndDate(accountState.endsAt);
       summary.textContent = currentLanguage === "en"
-        ? `Plus is active until ${endsAt}. It will not renew automatically.`
-        : `Plusは${endsAt}まで利用できます。自動更新はありません。`;
+        ? "Payment is confirmed. Plus is ready to use."
+        : "支払いを確認できました。Plusを利用できます。";
     } else if (accountState.status === "ready" && shareTrialEntry) {
       summary.textContent = accountState.shareStudioTrialAvailable
         ? (currentLanguage === "en"
@@ -3688,6 +3755,19 @@ function updatePlusAccountUi() {
         : "保存した確認状態を取得できませんでした。状態を更新するか、この端末からログアウトしてください。";
     }
   }
+
+  if (expiry) {
+    const endsAt = accountState.plusActive ? formatPlusEndDate(accountState.endsAt) : "";
+    expiry.hidden = !endsAt;
+    if (endsAt) {
+      if (expiryLabel) expiryLabel.textContent = currentLanguage === "en" ? "Plus ends" : "Plus終了日時";
+      if (expiryValue) expiryValue.textContent = endsAt;
+      if (expiryNote) expiryNote.textContent = currentLanguage === "en"
+        ? "No automatic renewal or recurring charge"
+        : "自動更新・継続課金はありません";
+    }
+  }
+  renderAuthoritativeAiQuotaStatus();
 
   if (purchaseButton) {
     const canOpenFreshCheckout = !accountState.purchasePending
@@ -4613,6 +4693,7 @@ async function requestShareStudioGentleReflection(reservation) {
     })
   });
   const data = await response.json().catch(() => ({}));
+  captureAuthoritativeAiQuota(data, { shareTrial: reservation?.grant === "trial" });
   const letterText = getAiLetterTextFromResponse(data);
   if (!response.ok || data.ok === false || !letterText) {
     const error = new Error(data?.code || data?.error || "gentle_reflection_failed");
@@ -4832,8 +4913,8 @@ function setupShareStudio() {
       const savedAfterError = await window.GlucoScopeShareStudio?.loadCarousel?.().catch(() => null);
       if (savedAfterError) renderShareStudioRecord(savedAfterError);
       const unavailableToday = error?.message === "today_data_unavailable" || error?.message === "daily_gluco_unavailable";
+      const dailyLimitReached = error?.message === "daily_limit_reached";
       const quotaUnavailable = [
-        "daily_limit_reached",
         "quota_reservation_failed",
         "quota_service_unavailable",
         "entitlement_unavailable",
@@ -4841,6 +4922,16 @@ function setupShareStudio() {
       ].includes(error?.message);
       const localStorageFailed = ["storage_failed", "storage_unavailable", "storage_invalid"].includes(error?.message);
       const letterTooLong = error?.message === "share_studio_letter_too_long";
+      const allowanceNotUsed = reservation?.grant === "plus"
+        ? (currentLanguage === "en"
+          ? "This attempt did not count toward today's Plus AI allowance."
+          : "今回の失敗は、Plusの本日のAI分析回数に含まれていません。")
+        : (currentLanguage === "en"
+          ? "The free trial was not used."
+          : "無料体験回数は使っていません。");
+      const workerUserMessage = typeof error?.aiLetterData?.userMessage === "string"
+        ? error.aiLetterData.userMessage.trim()
+        : "";
       setShareStudioStatus(trialAlreadyUsed
         ? (savedAfterError
           ? (currentLanguage === "en" ? "The four images kept on this screen are still available here." : "この画面に保管した4枚は、引き続きここから利用できます。")
@@ -4851,23 +4942,29 @@ function setupShareStudio() {
           : "4枚はこの画面に保管されています。体験状態を確認できなかったため、新しく作る前にアカウント状態を更新してください。")
         : unavailableToday
           ? (currentLanguage === "en"
-            ? "Open today’s glucose screen once, then try again. No trial was used."
-            : "今日の血糖画面を一度表示してから、もう一度お試しください。体験回数は使っていません。")
+            ? `Open today’s glucose screen once, then try again. ${allowanceNotUsed}`
+            : `今日の血糖画面を一度表示してから、もう一度お試しください。${allowanceNotUsed}`)
+          : dailyLimitReached
+            ? (currentLanguage === "en"
+              ? "Today's shared AI-analysis allowance has been reached. Saved analyses and existing four-image sets remain available."
+              : "通常AIとShare Studioで共通の、本日のAI分析回数に達しました。保存済みの分析や4枚は引き続き利用できます。")
           : quotaUnavailable
             ? (currentLanguage === "en"
-              ? "The gentle AI reflection could not start. The trial was not used. Please try again after refreshing the account status."
-              : "やさしいAIふりかえりを開始できませんでした。体験回数は使っていません。アカウント状態を更新して、もう一度お試しください。")
+              ? `The gentle AI reflection could not start. ${allowanceNotUsed} Please try again after refreshing the account status.`
+              : `やさしいAIふりかえりを開始できませんでした。${allowanceNotUsed} アカウント状態を更新して、もう一度お試しください。`)
           : letterTooLong
             ? (currentLanguage === "en"
-              ? "The complete gentle AI reflection did not fit safely, so no images were created and the trial was not used. Please try again."
-              : "やさしいAIふりかえりの全文が安全に収まらなかったため、4枚は作らず、体験回数も使っていません。もう一度お試しください。")
+              ? `The complete gentle AI reflection did not fit safely, so no images were created. ${allowanceNotUsed} Please try again.`
+              : `やさしいAIふりかえりの全文が安全に収まらなかったため、4枚は作りませんでした。${allowanceNotUsed} もう一度お試しください。`)
           : localStorageFailed
             ? (currentLanguage === "en"
-              ? "The four images were created, but could not be kept on this screen. The trial was not used."
-              : "4枚は作成できましたが、この画面に保管できませんでした。体験回数は使っていません。")
+              ? `The four images were created, but could not be kept on this screen. ${allowanceNotUsed}`
+              : `4枚は作成できましたが、この画面に保管できませんでした。${allowanceNotUsed}`)
+          : workerUserMessage
+            ? `${workerUserMessage} ${allowanceNotUsed}`
           : (currentLanguage === "en"
-            ? "The four images could not be created. The trial was not used. Please try again."
-            : "4枚を作成できませんでした。体験回数は使っていません。もう一度お試しください。"));
+            ? `The four images could not be created. ${allowanceNotUsed} Please try again.`
+            : `4枚を作成できませんでした。${allowanceNotUsed} もう一度お試しください。`));
       if (trialAlreadyUsed) {
         setInlinePlusNotice("shareStudioAccessNotice");
         setInlinePlusNotice("plusAccountShareStudioNotice");
@@ -7680,6 +7777,7 @@ async function handleAiLetterRequest(mode = currentAiLetterMode, options = {}) {
 
     const data = await response.json().catch(() => ({}));
     if (!isCurrentAiLetterRequest(requestState)) return;
+    captureAuthoritativeAiQuota(data);
     const letterText = getAiLetterTextFromResponse(data);
 
     if (!response.ok || data.ok === false || !letterText) {
@@ -7699,6 +7797,7 @@ async function handleAiLetterRequest(mode = currentAiLetterMode, options = {}) {
   } catch (error) {
     if (error?.name === "AbortError" || !isCurrentAiLetterRequest(requestState)) return;
     console.error("AI letter prototype call failed", error);
+    captureAuthoritativeAiQuota(error.aiLetterData);
     const workerMessage = error.aiLetterData?.userMessage;
     const errorStatusKey = getAiLetterErrorStatusKey(error.aiLetterData);
     const restoredFromCache = showCachedAiLetter(

@@ -53,7 +53,7 @@ test("Plus 30-day pass records the approved one-time boundary and live release",
   assert.match(spec, /価格 \| 400円/);
   assert.match(spec, /自動更新 \| なし/);
   assert.match(spec, /成功した「やさしい分析」を1日1回/);
-  assert.match(spec, /やさしい分析としっかり分析を合わせて成功した新規分析を1日5回まで/);
+  assert.match(spec, /やさしい分析、しっかり分析、Share Studioで使うやさしい分析を合わせて、成功した新規分析を1日5回まで/);
   assert.match(spec, /文書・品質チェックで止まった/);
   assert.match(spec, /グラフの7日・30日・カスタム期間/);
   assert.match(spec, /認証済みアカウントごとに1回だけ無料体験/);

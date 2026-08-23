@@ -1,10 +1,14 @@
 # GlucoScope Plus 確認メール不達・遅延対応手順
 
+Status: 小規模な一般提供中 / 日常監視と異常時停止の運用手順
+
+Last reviewed: 2026-08-23 JST
+
 ## 1. 目的と停止境界
 
 この手順は、Plusの確認コードがすぐ届かない、遅れて届く、bounce・suppressionになる場合に、利用する人を急かさず、安全に再送し、必要なら送信を停止するための運営者用手順である。
 
-- Plusの公開アカウント、販売、Checkoutは、追加の少人数受信箱と本手順の異常系受け入れが終わるまで有効にしない。
+- Plusは小規模な一般提供中である。確認メールの失敗や異常な増加が続く時は、新しい確認メールとCheckoutを止め、原因を解決して必要最小限の再確認が終わるまで再開しない。
 - 確認メールが失敗しても、現在血糖やFreeの基本機能を止めない。
 - 運営者は6桁コード、メールのパスワード、カード情報、血糖値、CGM接続情報を尋ねない。
 - 問い合わせ窓口は `support@glucoscope.app`。平日受付、原則5営業日以内に返信する。緊急・医療相談は受け付けない。
@@ -31,7 +35,7 @@ GlucoScope側は同一メールへの再送を60秒に1回、1時間5回まで�
    - `bounced`: 受信側が拒否。入力間違い、存在しない宛先、受信箱満杯、一時障害など、表示された種別と理由を確認する。
    - `complained`: 迷惑メール報告。対象宛先へ再送せず、原因と送信文面を確認する。
    - `suppressed`: 過去のhard bounceまたは迷惑メール報告等によりResendが送信を止めた状態。原因を解決し、本人が宛先と受信意思を確認するまでSuppression Listから削除しない。
-4. `failed`、`bounced`、`complained`、`suppressed`が続く、または通常と異なる増加がある場合は、Plusのアカウント送信flagをOFFのまま維持し、公開販売へ進まない。
+4. `failed`、`bounced`、`complained`、`suppressed`が続く、または通常と異なる増加がある場合は、新しい確認メールとCheckoutを停止し、公開中のFree機能を止めずに原因を調べる。
 5. 原因を直した後は、公式テスト宛先、運営者本人、追加の少人数受信箱の順で、必要最小限の1通だけを再確認する。
 
 Resendの`delivered`は受信側メールサーバーの受理であり、その後の受信箱・迷惑メール・保留・破棄までは示さない。状態の意味は[Managing Emails](https://resend.com/docs/dashboard/emails/introduction)、受信箱に見えない場合は[Delivered but not received](https://resend.com/docs/knowledge-base/what-if-an-email-says-delivered-but-the-recipient-has-not-received-it)、suppressionは[Email Suppressions](https://resend.com/docs/dashboard/emails/email-suppressions)を正とする。
@@ -51,7 +55,7 @@ Resendの`delivered`は受信側メールサーバーの受理であり、その
 
 Resend公式の安全なテスト宛先だけを使い、`bounced`、`complained`、`suppressed`がDashboardでそれぞれ区別して表示されることを確認した。試験後も実際のSuppression Listは空で、実在する宛先を抑止対象にしていない。`delivery_delayed`には公式の決定的なテスト宛先がないため、発生時に本手順どおり待機・状態再確認・連続再送停止を行う実運用確認を残す。安全なテスト方法は[Send Test Emails](https://resend.com/docs/dashboard/emails/send-test-emails)、抑止の扱いは[Email Suppressions](https://resend.com/docs/dashboard/emails/email-suppressions)、状態名は[Webhook Event Types](https://resend.com/docs/webhooks/event-types)を正とする。
 
-受け入れは通信0%の隔離候補だけに到達する一時localhost経路で行い、3通の試験後に経路を停止した。候補を配信から外し、今回作成した匿名のchallenge・送信予約だけを削除し、staging D1の全12表が0件へ戻ったことを確認した。公開アカウント、Checkout、販売、route、preview、Cronは停止したままである。
+受け入れは通信0%の隔離候補だけに到達する一時localhost経路で行い、3通の試験後に経路を停止した。候補を配信から外し、今回作成した匿名のchallenge・送信予約だけを削除し、staging D1の全12表が0件へ戻ったことを確認した。この段階では公開アカウント、Checkout、販売、route、preview、Cronは停止したままだった。その後、本人受信箱、復旧、古いsessionの失効、実決済・返金・自動メールまで別々に受け入れ、2026年8月20日に小規模な一般提供を開始した。
 
 ## 5. 記録しないもの
 

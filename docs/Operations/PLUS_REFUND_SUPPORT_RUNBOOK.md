@@ -2,13 +2,13 @@
 
 Status: operator runbook accepted / public contact and live payment-refund receipt accepted / retention review remains an operating duty
 
-Last reviewed: 2026-08-17 JST
+Last reviewed: 2026-08-23 JST
 
 ## 1. 目的と停止条件
 
-この手順は、少人数向けのGlucoScope Plus 30日パスについて、問い合わせを安全に受け、二重決済やPlus未付与をまず訂正し、必要な場合だけStripeで全額返金し、対応するPlusを終了して結果を返信するための運営者用手順である。
+この手順は、小規模な一般提供中のGlucoScope Plus 30日パスについて、問い合わせを安全に受け、二重決済やPlus未付与をまず訂正し、必要な場合だけStripeで全額返金し、対応するPlusを終了して結果を返信するための運営者用手順である。
 
-販売開始の承認ではない。Stripe test modeでこの手順を最初から最後まで実行し、Webhook、Plus終了、失敗時の説明、異議申立て境界を確認するまでは、購入・Checkout・Webhook・販売準備の全switchを停止したままにする。
+Stripe test modeと閉じたlive受け入れで、決済、署名済みWebhook、全額返金、Plus終了、自動メールまで確認し、2026年8月20日に小規模な一般提供を開始した。WebhookやPlus終了を安全に確認できない、返金失敗が解決できない、または異常な決済が続く時は、新しいCheckoutを止め、D1を直接書き換えずに原因を直す。
 
 ## 2. 公開窓口と返信目安
 
@@ -117,7 +117,7 @@ Stripe DashboardはMFAを有効にした運営者アカウントで開く。API 
 - 利用者がPlusアカウントを削除すると、処理中の支払い・返金がない限り、メール照合情報、本人・保護者確認、sessionを直ちに切り離す。確定済み購入の最小会計記録は残り、削除だけで返金にはならない。
 - 会計記録は、商品、金額、通貨、支払い・返金状態と日時、Plus対象期間、Stripe照合番号だけに限定し、取引または最終返金から7年保持する。毎年、事業形態と適用ルールに変更がないか確認する。
 
-## 11. 販売前の実行型受入
+## 11. 実行型受入と公開後確認
 
 - Stripe test modeと閉じたlive受入でJPY 400の単発決済を確認済み
 - 二重決済の候補、Plus未付与、全額返金、refund pending、refund failed、Webhook再送の処理を確認済み

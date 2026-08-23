@@ -7442,6 +7442,56 @@ body.local-profile-dialog-open {
   gap:12px;
 }
 
+.plus-account-expiry {
+  display:grid;
+  gap:4px;
+  padding:14px 16px;
+  border:1px solid rgba(250,204,21,.58);
+  border-radius:14px;
+  background:linear-gradient(135deg,rgba(120,53,15,.34),rgba(22,101,52,.24));
+  box-shadow:0 0 0 1px rgba(250,204,21,.08) inset;
+}
+
+.plus-account-expiry[hidden] {
+  display:none !important;
+}
+
+.plus-account-expiry-label {
+  color:#fde68a;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.04em;
+}
+
+.plus-account-expiry-value {
+  color:#fff7cc;
+  font-size:clamp(22px,5.8vw,28px);
+  font-weight:1000;
+  line-height:1.25;
+}
+
+.plus-account-expiry-note {
+  color:#fef3c7;
+  font-size:12px;
+  font-weight:800;
+}
+
+.ai-quota-status {
+  margin:0;
+  padding:9px 12px;
+  border:1px solid rgba(74,222,128,.28);
+  border-radius:12px;
+  background:rgba(6,78,59,.2);
+  color:#bbf7d0;
+  font-size:13px;
+  font-weight:900;
+  line-height:1.55;
+}
+
+.ai-quota-status[hidden] {
+  display:none !important;
+}
+
 .plus-purchase-review {
   display:grid;
   gap:13px;
