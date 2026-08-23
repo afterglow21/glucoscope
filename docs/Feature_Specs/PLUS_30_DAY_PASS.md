@@ -1,6 +1,6 @@
 # GlucoScope Plus 30日パス
 
-Status: live small public release / JPY 400 one-time product / 30 days / no automatic renewal / adult-or-guardian buyer / Japan-only sale / tax-exempt seller status / public support and conditional full-refund policy / live payment, refund, receipt, account recovery, deletion, retention, and Share Studio acceptance passed
+Status: live public beta release / JPY 400 one-time product / 30 days / no automatic renewal / adult-or-guardian buyer / Japan-only sale / tax-exempt seller status / public support and conditional full-refund policy / live payment, refund, receipt, account recovery, deletion, retention, and Share Studio acceptance passed
 
 Last reviewed: 2026-08-23
 
@@ -12,7 +12,7 @@ Plus 30日パスは、GlucoScopeを長く育てるために、追加の便利機
 
 Plusは医療サービスではない。診断、治療判断、インスリン量、薬、機器設定、緊急時の判断を提供しない。購入により、より正しい医療判断、より良い血糖値、健康上の効果が得られるとは案内しない。
 
-価格と主な機能、販売地域、税務状態、公開問い合わせ先、返金方針、保持・削除方針と運営手順は決定済みである。Stripe test modeの異常系に加え、本番の400円決済、全額返金、支払・返金メール、同じメールへの復旧、古いsessionの失効、アカウント削除、Share Studioの1回体験と再利用拒否まで受け入れを完了した。2026年8月20日、Plus Worker、Usage、管理画面、Pagesを順に切り替え、小規模な一般提供を開始した。追加の支払方法は初期販売で有効にしない。専門家確認と法令・税務条件の見直しは公開後も続け、条件が変わった時は販売を止めて表示と運用を更新する。
+価格と主な機能、販売地域、税務状態、公開問い合わせ先、返金方針、保持・削除方針と運営手順は決定済みである。Stripe test modeの異常系に加え、本番の400円決済、全額返金、支払・返金メール、同じメールへの復旧、古いsessionの失効、アカウント削除、Share Studioの1回体験と再利用拒否まで受け入れを完了した。2026年8月20日に小規模な一般提供を開始し、2026年8月23日に実決済と主要特典の最終受入後、GlucoScope公開ベータと同時に最初のお知らせを開始した。追加の支払方法は初期販売で有効にしない。専門家確認と法令・税務条件の見直しは公開後も続け、条件が変わった時は販売を止めて表示と運用を更新する。
 
 2026年8月17日の2回目の非公開ドリルでは、同時に2回購入操作を行ってもHosted Checkoutが1件だけ作られ、後続操作は同じCheckoutを再利用することを確認した。署名済み`checkout.session.expired`通知はD1の状態を`open`から`expired`へ1回だけ変え、その後は別のCheckoutを作成し、さらにその次の操作が新しいCheckoutを再利用した。Stripeの拒否用テストカードはHosted Checkout上で明確に拒否され、利用権は作成されなかった。未使用だったフルアクセスの標準sandbox Secretは直ちにローテーションし、連携は権限を絞ったrestricted test keyだけを使い続ける。試験後は合成Sessionと合成アカウントを削除し、D1全12表を0件へ戻し、停止Versionだけを100%へ復帰させ、Webhook送信先を無効化し、一時Custom Domainとlocalhost harnessを削除した。Secret値、Hosted Checkout URL、カード情報、実メール、健康情報は記録しない。
 

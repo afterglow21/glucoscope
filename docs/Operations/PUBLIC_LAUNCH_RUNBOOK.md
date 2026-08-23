@@ -1,6 +1,6 @@
 # GlucoScope 最初のお知らせ・Plus同時公開手順
 
-Status: paid core accepted / reliability fix deployed / iPhone Share Studio retest pending / first announcement held
+Status: public beta launch approved / paid core and iPhone Share Studio accepted / first announcement ready to release
 
 Last reviewed: 2026-08-23 JST
 
@@ -10,7 +10,7 @@ Last reviewed: 2026-08-23 JST
 
 - Plusは400円の1回払い、支払い確認から連続30日間、自動更新なし。
 - Freeの現在血糖、今日・昨日のグラフ、1日1回のやさしい分析は維持する。
-- Plusは7日・30日・カスタム、しっかり分析、通常画面とShare Studioで共有する1日合計5回までの成功AI分析、Share Studioの継続利用を提供する。失敗と保存済み表示は回数に含めない。
+- Plusは7日・30日・カスタム、しっかり分析、通常画面で1日5回までの成功AI分析、別枠のShare Studioで1日5回までの成功AI分析、Share Studioの継続利用を提供する。失敗と保存済み表示は回数に含めない。
 - Glurooの限定中継を、承認済みの少人数より広げない。
 - 管理者Dashboardと管理者Share Studioを公開しない。
 - 公開デモ、Nightscout直接接続、Free表示は、Plus障害から独立して使える状態を維持する。
@@ -27,7 +27,7 @@ Last reviewed: 2026-08-23 JST
 6. 再読込後も、残り期間を重ねず同じPlusを確認できる。同じメールでの復旧は既に本番受入済みのため、この最終テストで繰り返さない。
 7. Stripeの支払確認メールまたは領収書が届き、400円、現在の商品名、公開問い合わせ先が一致する。
 
-2026年8月23日、支払い、Plus開始、終了日時、自動更新なし、再読込後の維持、7日・30日・カスタム、しっかり分析、Stripe領収書は実機で合格した。Share Studioは4枚生成には成功したが、5回中2回で失敗表示が出たため、最初のお知らせは保留する。AI Worker Version `5b0a2593-ec64-4c7e-9129-60e0deb51762`へ最終書き直しを100%反映し、bindings、runtime、handlersが直前Versionと一致すること、usage `200`、正しいpreflight `204`、不正OriginとOriginなしPOST `403`を確認した。終了日時の強調に加え、Plusの通常AIとShare Studioを別々の成功5回枠として表示・強制し、同じiPhoneで連続生成を再確認してから合格とする。個人の終了日時、メール、決済参照、血糖値はこの記録へ残さない。
+2026年8月23日、支払い、Plus開始、終了日時、自動更新なし、再読込後の維持、7日・30日・カスタム、しっかり分析、Share Studio、Stripe領収書は実機で合格した。最初のShare Studio試験で見つかった不安定さを修正し、Plusの通常AIとShare Studioを別々の成功5回枠として表示・強制した後、同じiPhoneで最終再確認に合格した。運営者は公開ベータの最初のお知らせを承認した。現在のAI WorkerはVersion `d24ac75d-7399-4b2c-a308-35c797f2c998`、Usage WorkerはVersion `d8c67ed3-806d-40c5-97d2-fcec58b18749`へ100%を向ける。個人の終了日時、メール、決済参照、血糖値はこの記録へ残さない。
 
 途中で二重購入を促す、支払い済みなのにPlusが始まらない、期限が30日より不自然に長い、基本の血糖表示が止まる、または上の特典のどれかが使えない場合は公開を止める。
 
@@ -46,7 +46,7 @@ Secret値、メールアドレス、確認コード、Stripe ID、カード情�
 
 Share Studioの再確認前に必要な不具合修正だけは、AI Workerをlive-compatibleな新Versionへ段階反映してよい。公開中Versionとの差分がコードだけで、plain vars、Secret名、Durable Object、KV、service binding、compatibility date、migrationが一致することを配信前に機械確認する。失敗時は直前の通常動作Versionへ100%を戻す。Pagesは同じ修正commitを公開し、最初のお知らせの文面変更は実機再確認後まで行わない。
 
-1. Roadmapの「最初のお知らせへ進みます」を、最初のお知らせを開始した現在形へ更新する。
+1. 完了: Roadmapを、公開ベータと最初のお知らせを開始した現在形へ更新する。
 2. README、PROJECT_BIBLE、Plus仕様へ、合格日、確認範囲、Pages commit、当日のcurrent Versionと直接rollbackを記録する。
 3. データ接続の「先行体験」表記は維持する。限定中継を広げたとは案内しない。
 4. 特定商取引法に基づく表記、Plus利用条件、Plus問い合わせは購入画面から誰でも開ける状態を維持する。現在の`noindex,nofollow`方針は、別の検索公開判断を行うまで変更しない。
@@ -59,8 +59,8 @@ Share Studioの再確認前に必要な不具合修正だけは、AI Workerをli
 
 - Plusの通常動作rollback: `b584808c-0f63-4d18-8970-964dfec62212`
 - Plusの緊急停止: `6faa0065-8fdd-4563-985e-9e775999717b`
-- Usageの直接rollback: `e745f53a-aea0-427e-8421-278d3549e30d`
-- AIの通常動作rollback: `ef238ad4-7dc7-4b79-bb92-b9c93605c6c3`
+- Usageの直接rollback: `93b5a9ce-b9cc-47ca-9aed-d8d2dc772ab7`
+- AIの通常動作rollback: `5b0a2593-ec64-4c7e-9129-60e0deb51762`
 - AIの緊急停止: `46f44888-002b-4847-8553-5cd12e3d7ac5`
 
 公開文面だけの問題は、Workerを動かさずPagesの直前commitへ戻す。決済・Webhook・利用権の問題は新しいCheckoutを停止し、Free表示を維持する。D1を直接編集して帳尻を合わせず、返金は返金・問い合わせ運用手順に従う。限定中継は今回の公開で変更しない。

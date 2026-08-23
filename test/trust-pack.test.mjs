@@ -48,7 +48,7 @@ test("Usage Dashboard separates AI operations from privacy-protected personal-us
 
 test("Plus 30-day pass records the approved one-time boundary and live release", async () => {
   const spec = await read(plusSpecUrl);
-  assert.match(spec, /Status: live small public release/);
+  assert.match(spec, /Status: live public beta release/);
   assert.match(spec, /販売開始 \| 2026年8月20日。小規模な一般提供として開始/);
   assert.match(spec, /価格 \| 400円/);
   assert.match(spec, /自動更新 \| なし/);
@@ -67,10 +67,10 @@ test("Plus 30-day pass records the approved one-time boundary and live release",
   assert.match(spec, /Subscriptionや自動更新を使わない/);
 });
 
-test("canonical current-state records stay aligned with the live small public release", async () => {
+test("canonical current-state records stay aligned with the live public beta release", async () => {
   const [readme, bible] = await Promise.all([read(rootReadmeUrl), read(projectBibleUrl)]);
   for (const source of [readme, bible]) {
-    assert.match(source, /7badb3ad0110ca45750bb3d04786d40a5f015285/);
+    assert.match(source, /8a4bd1f3e3339e07e2bc9d81f40a00119bdbff8d/);
     assert.match(source, /d24ac75d-7399-4b2c-a308-35c797f2c998/);
     assert.match(source, /5b0a2593-ec64-4c7e-9129-60e0deb51762/);
     assert.match(source, /d8c67ed3-806d-40c5-97d2-fcec58b18749/);
@@ -152,7 +152,7 @@ test("Roadmap stays simple for users while technical evidence stays internal", a
   assert.match(roadmap, /400円の1回払いで30日間使えます。自動更新はありません/);
   assert.match(roadmap, /Freeでは、成功した新しい「やさしい分析」を端末プロフィールごとに1日1回/);
   assert.match(roadmap, /公開デモは内容を確認した固定サンプルを表示し、新しいAI生成を使いません/);
-  assert.match(roadmap, /文書の確認などで失敗した回は数えません/);
+  assert.match(roadmap, /文書の確認などで失敗した回と保存済み表示は数えません/);
   assert.match(roadmap, /グラフの7日・30日・カスタム期間とShare StudioはPlus特典/);
   assert.match(roadmap, /確認済みの利用者ごとに1回だけ無料で試せます/);
   assert.match(roadmap, /この保護者確認のために、子どもの名前や血糖値は集めません/);

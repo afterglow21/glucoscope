@@ -23,9 +23,10 @@ This list is the canonical current-state record. Dated rollout passages elsewher
 document are historical evidence unless they explicitly say that they remain current.
 
 - GitHub Pages serves `https://glucoscope.app/` from `main`. Commit
-  `7badb3ad0110ca45750bb3d04786d40a5f015285` is the accepted checkpoint for the full gentle-letter
-  Share Studio and retained one-trial-AI release. Atomic usage-counter, long-lived-session,
-  and iPhone Home Screen acceptance remain recorded by their earlier dated checkpoints.
+  `8a4bd1f3e3339e07e2bc9d81f40a00119bdbff8d` is the accepted pre-announcement checkpoint for the
+  full gentle-letter Share Studio, retained one-trial-AI boundary, iPhone detail-page safe area,
+  and separate Plus regular-AI and Share Studio allowances. Atomic usage-counter, long-lived-session,
+  and base iPhone Home Screen acceptance remain recorded by their earlier dated checkpoints.
 - AI Worker Version `d24ac75d-7399-4b2c-a308-35c797f2c998` receives 100% of AI traffic with
   atomic personal quota, the signed administrator bridge, no separate administrator daily cap,
   exact-reservation Share Studio gentle analysis, and one bounded final Share Studio rewrite. Version
@@ -69,20 +70,21 @@ document are historical evidence unless they explicitly say that they remain cur
   `6faa0065-8fdd-4563-985e-9e775999717b` remains the emergency Plus-off target. The approved hourly cleanup
   runs at `0 * * * *` and is limited to the documented expired temporary records.
 - On 2026-08-23, one real JPY 400 one-time purchase passed entitlement start, reload persistence,
-  the three extended graph ranges, detailed analysis, and receipt delivery. Share Studio produced
-  a valid four-image set but failed twice in the first five-attempt reliability sample, so the
-  first announcement remains held. The AI Worker reliability correction is live; the matching Pages
-  release emphasizes the expiry/no-renewal date. Plus regular AI and Plus Share Studio now use
-  separate authoritative `used / 5` allowances. Each permits five successful new analyses per
-  JST day; failed work and saved local displays do not consume either count.
+  the three extended graph ranges, detailed analysis, Share Studio, and receipt delivery. After the
+  reliability correction and separate-allowance release, the same iPhone passed the final Share Studio
+  retest and the operator approved the public-beta announcement. Plus regular AI and Plus Share Studio
+  use separate authoritative `used / 5` allowances. Each permits five successful new analyses per
+  JST day; failed work and saved local displays do not consume either count. The limited Gluroo relay
+  remains restricted to the approved early-access group.
 
 この一覧を、現在状態の正本とします。この文書内に残す日付付きの公開・受入記録は、
 「現在も有効」と明記したものを除き、その時点の履歴証拠です。
 
 - GitHub Pagesは`main`から `https://glucoscope.app/` を公開しています。commit
-  `7badb3ad0110ca45750bb3d04786d40a5f015285`は、Share StudioのやさしいAI全文表示と、
-  確認済みメールに結び付く体験専用1回枠を受け入れたcheckpointです。atomic利用カウンター、長期端末session、iPhoneホーム画面の受入は、
-  それぞれの過去checkpointへ履歴として残します。
+  `8a4bd1f3e3339e07e2bc9d81f40a00119bdbff8d`は、最初のお知らせ前に、Share Studioの
+  やさしいAI全文表示、確認済みメールに結び付く体験専用1回枠、iPhone詳細ページのsafe area、
+  Plusの通常AIとShare Studioの別々の枠を受け入れたcheckpointです。atomic利用カウンター、
+  長期端末session、基本のiPhoneホーム画面受入は、それぞれの過去checkpointへ履歴として残します。
 - AI WorkerはVersion `d24ac75d-7399-4b2c-a308-35c797f2c998`へ通信の100%を向け、atomic個人上限、
   署名付き管理者bridge、管理者用の独立した1日上限を設けない運用、Share Studioの正確な予約単位の
   やさしい分析と、最終の文章書き直し1回を使っています。直接rollbackはVersion
@@ -113,16 +115,15 @@ document are historical evidence unless they explicitly say that they remain cur
   引き続きCloudflare Accessへ転送されます。3枚目はやさしいAI分析の全文を1つの自動調整パネルへ表示し、
   管理者専用の別枠1日上限は設けません。
 - PlusはVersion `1f01ed79-f2ac-46c0-aa1f-a45fa2bfe489`へ本番通信の100%を向け、400円の1回払いで
-  30日間使える小規模な一般提供と、正確な予約に限るShare Studio体験を提供しています。直接rollbackはVersion
+  30日間使える公開ベータと、正確な予約に限るShare Studio体験を提供しています。直接rollbackはVersion
   `b584808c-0f63-4d18-8970-964dfec62212`、緊急停止は未配信の停止Version
   `6faa0065-8fdd-4563-985e-9e775999717b`を使います。承認済みの毎時cleanupは
   `0 * * * *`で動き、正本に定めた期限切れ一時記録だけを対象にします。
 - 2026年8月23日、実際の400円1回払いで、Plus開始、再読込後の維持、7日・30日・カスタム、
-  しっかり分析、領収書受信まで合格しました。Share Studioは4枚生成に成功した一方、最初の5回の
-  信頼性確認で2回失敗したため、最初のお知らせは保留します。AI Workerの信頼性修正は本番反映済みで、
-  対応するPagesでは終了日時と自動更新なしを強調します。Plusの通常AIとShare Studioは別々の枠とし、
-  それぞれの成功回数を`使用済み / 5`で表示します。成功した新規分析だけを1回とし、失敗と端末内の保存済み表示は
-  回数に含めません。
+  しっかり分析、Share Studio、領収書受信まで合格しました。信頼性修正と別枠化の反映後、同じiPhoneで
+  Share Studioの最終再確認に合格し、運営者が公開ベータの最初のお知らせを承認しました。Plusの通常AIと
+  Share Studioは別々の枠とし、それぞれの成功回数を`使用済み / 5`で表示します。成功した新規分析だけを
+  1回とし、失敗と端末内の保存済み表示は回数に含めません。Glurooの限定中継は承認済みの先行体験範囲を維持します。
 
 ---
 
