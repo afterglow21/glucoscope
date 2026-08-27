@@ -70,3 +70,19 @@ test("all reorganized uploads are published only as renamed metadata-stripped as
   ]);
   assert.doesNotMatch(guide, /\.\.\/gluroo-setup\/images/);
 });
+
+test("fixed-choice onboarding steps use the exact buttons shown in the screenshots", () => {
+  assert.doesNotMatch(guide, /小さなお子さんやご年配の方とも、1画面ずつ/);
+  assert.match(guide, /URLとTokenは、メモ、メール、LINE、スクリーンショット、SNSへ保存・共有しないでください。/);
+
+  const step12 = guide.match(/<section class="guide-card guide-step" id="android-step-12">([\s\S]*?)<\/section>/)?.[1] ?? "";
+  const step13 = guide.match(/<section class="guide-card guide-step" id="android-step-13">([\s\S]*?)<\/section>/)?.[1] ?? "";
+  const step22 = guide.match(/<section class="guide-card guide-step" id="android-step-22">([\s\S]*?)<\/section>/)?.[1] ?? "";
+
+  assert.match(step12, /「後で設定する」を押します/);
+  assert.doesNotMatch(step12, /分からない場合/);
+  assert.match(step13, /「スキップして後でやる」を押します/);
+  assert.doesNotMatch(step13, /今は設定しない場合/);
+  assert.match(step22, /「これは後で行います」を押します/);
+  assert.doesNotMatch(step22, /分からなければ|手元になければ/);
+});
