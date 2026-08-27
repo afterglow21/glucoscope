@@ -1,0 +1,43 @@
+.android-review-banner{
+  margin:0 0 18px;
+  padding:14px 18px;
+  border:2px solid #d99a3f;
+  border-radius:16px;
+  background:#fff8e6;
+  color:#704b12;
+  font-weight:800;
+}
+.android-review-banner small{display:block;margin-top:4px;color:#806530;font-weight:600}
+.guide-help-links{display:grid;gap:12px;margin:16px 0}
+.guide-help-link{
+  display:grid;
+  gap:4px;
+  padding:15px 17px;
+  border:2px solid #248c70;
+  border-radius:15px;
+  background:#f4fffb;
+  color:#11644f;
+  text-decoration:none;
+}
+.guide-help-link strong{font-size:1rem}
+.guide-help-link span{color:#47655e;font-size:.86rem;line-height:1.6}
+.guide-secret-map{display:grid;gap:12px;margin:16px 0}
+.guide-secret-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 42px minmax(0,1fr);
+  align-items:center;
+  gap:10px;
+  padding:14px;
+  border:1px solid var(--guide-border);
+  border-radius:15px;
+  background:#fff;
+}
+.guide-secret-field{display:grid;gap:3px;min-width:0}
+.guide-secret-field strong{color:var(--guide-green-deep)}
+.guide-secret-field span{font-size:.82rem;color:var(--guide-muted)}
+.guide-secret-arrow{color:var(--guide-green-deep);font-size:1.55rem;font-weight:900;text-align:center}
+.guide-safe-summary{margin-top:14px;padding:14px 16px;border-radius:14px;background:#f4f7fb;color:var(--guide-muted);font-size:.9rem}
+@media(max-width:620px){
+  .guide-secret-row{grid-template-columns:1fr;justify-items:stretch}
+  .guide-secret-arrow{transform:rotate(90deg)}
+}
