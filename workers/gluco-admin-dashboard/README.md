@@ -1,6 +1,6 @@
 # GlucoScope administrator dashboard Worker
 
-Status: production deployed on 2026-08-14 JST and updated on 2026-08-16 JST / one-administrator browser acceptance completed on 2026-08-15 JST / local Plus aggregate receiver prepared but not deployed / not linked from the public site
+Status: production deployed on 2026-08-14 JST and updated through Version `64ff2913-846d-4682-a5ad-2b43c05b78c1` on 2026-08-25 JST / one-administrator browser acceptance completed on 2026-08-15 JST / internal-versus-external display grouping and Plus aggregate receiver deployed / not linked from the public site
 
 This dedicated Cloudflare Worker renders the first read-only administrator view for the minimal device-profile usage foundation. It is deliberately separate from the public GitHub Pages site, the existing public AI Usage Dashboard, and the public Usage Worker API.
 
@@ -25,6 +25,9 @@ On 2026-08-16 JST, Version `b7c8c8d8-5fdf-4c94-9b9a-817c99f65c9a` was deployed a
 - Device profiles are presented as responsive cards that remain readable in one column at 320px. The page has a manual refresh link and shows only the server-render time in JST; no profile timestamp is selected or returned.
 - Every result row remains one separate device-profile card. Cards with the same normalized display name receive visible `同じ表示名 1 / 3`-style position labels; they are never merged and their counts are never summed.
 - A repeated display name is not evidence that the cards belong to the same person. Connection URLs and passphrases are not stored in Usage records, so the dashboard cannot and does not compare whether two cards use the same connection.
+- Version `64ff2913-846d-4682-a5ad-2b43c05b78c1`, deployed at 100% on 2026-08-25 JST, replaces the repeated-name card list with two display-only sections: external use and internal/test use. A required `INTERNAL_PROFILE_DISPLAY_NAMES` Secret contains a bounded JSON array of normalized display names that the operator has explicitly classified as internal. Missing, malformed, duplicate, or empty configuration fails before D1 or the Plus service is read. The post-deployment unauthenticated check still stopped at Cloudflare Access with `302`; authenticated visual confirmation remains an operator browser check.
+- Profiles with the same display name are folded under one display-name heading for readability, while every original device-profile row and every per-profile count stays separate inside the heading. External summary numbers are explicitly labeled as display-name groups and device profiles, not verified people.
+- The internal-name Secret is classification metadata only. It is not logged, returned, written to D1, copied into source, or used to delete or mutate a profile. The Plus count remains one unrelated aggregate and is not divided into internal and external users.
 - Application and invocation logging remain disabled. Do not add display names or production rows to logs, screenshots, fixtures, Git, or support messages.
 
 The D1 binding itself does not expose a read-only permission setting. Least privilege is therefore enforced by using a separate Worker, omitting every mutation route, keeping exactly one fixed `SELECT`, and testing that no write SQL exists. The existing Usage Worker, D1 schema, collection switch, and public frontend do not need to change for this initial dashboard.
@@ -48,13 +51,14 @@ There is intentionally no `deploy` script.
 The accepted initial deployment uses the following baseline. Keep every item in place unless a separately reviewed replacement provides an equal or stronger boundary.
 
 1. One exact administrator email is registered interactively as the `ADMIN_ALLOWED_EMAIL` Worker Secret. Never put the address in Git or a command argument.
-2. The initial single-administrator rollout uses email one-time PIN and a 15-minute Access session. Email one-time PIN is not MFA; keep MFA enabled on the administrator's email account and prefer an MFA-capable identity provider before adding administrators or broadening operational use.
-3. A self-hosted Access application protects the entire dedicated Worker hostname. Its deny-by-default Allow policy contains only the same exact email. Do not add `Everyone`, a whole email domain, `Login Methods: One-time PIN`, or a Bypass policy as an Allow selector.
-4. The Access issuer and immutable application audience are set in Worker configuration. They are configuration values, not credentials, but their live values and Access identifiers are not copied into documentation or operational records.
-5. Keep `preview_urls=false`. The initial deployment uses the protected dedicated Worker production URL; prefer a dedicated custom domain before broader operational use.
-6. The existing `glucoscope-usage` D1 database is bound as `USAGE_DB`. Do not create or apply a migration from this Worker.
-7. The planned `PLUS_ADMIN_SUMMARY` Service Binding targets `glucoscope-plus-entitlement` and its named `AdminPlusAggregateEntrypoint`. The entitlement Worker must be deployed first. This administrator Worker must not receive a direct Plus D1 binding.
-8. Keep Cloudflare Access enabled. Because the Worker also validates the JWT, an unprotected or misrouted request still receives `403` and no data.
+2. The exact internal display-name allowlist is registered interactively as the `INTERNAL_PROFILE_DISPLAY_NAMES` Worker Secret using a JSON array. Never put its production value in Git, a command argument, a deployment record, or test output.
+3. The initial single-administrator rollout uses email one-time PIN and a 15-minute Access session. Email one-time PIN is not MFA; keep MFA enabled on the administrator's email account and prefer an MFA-capable identity provider before adding administrators or broadening operational use.
+4. A self-hosted Access application protects the entire dedicated Worker hostname. Its deny-by-default Allow policy contains only the same exact email. Do not add `Everyone`, a whole email domain, `Login Methods: One-time PIN`, or a Bypass policy as an Allow selector.
+5. The Access issuer and immutable application audience are set in Worker configuration. They are configuration values, not credentials, but their live values and Access identifiers are not copied into documentation or operational records.
+6. Keep `preview_urls=false`. The initial deployment uses the protected dedicated Worker production URL; prefer a dedicated custom domain before broader operational use.
+7. The existing `glucoscope-usage` D1 database is bound as `USAGE_DB`. Do not create or apply a migration from this Worker.
+8. The planned `PLUS_ADMIN_SUMMARY` Service Binding targets `glucoscope-plus-entitlement` and its named `AdminPlusAggregateEntrypoint`. The entitlement Worker must be deployed first. This administrator Worker must not receive a direct Plus D1 binding.
+9. Keep Cloudflare Access enabled. Because the Worker also validates the JWT, an unprotected or misrouted request still receives `403` and no data.
 
 The current Access session duration is 15 minutes. Retain browser-only cookie hardening and consider the optional Access binding cookie only if no incompatible product is enabled on the dedicated hostname.
 
@@ -71,7 +75,9 @@ The current Access session duration is 15 minutes. Retain browser-only cookie ha
 - Before and after the smoke check, the counts in `profiles`, `usage_daily`, and `event_receipts` are unchanged.
 - No Secret value, Access token, email address, display name, profile row, or database content is copied into the deployment record.
 - No Plus account row, purchaser email, Stripe identifier, payment history, or device-profile-to-Plus relationship appears in HTML, logs, fixtures, screenshots, or deployment records.
-- Repeated normalized display names stay as separate cards, each receives the correct occurrence label, and no per-card count is merged or summed.
+- External and internal/test sections contain the expected display-name groups; every original device-profile row remains separately visible in its group, and no per-profile count is merged or summed.
+- The production internal-name Secret is set interactively before deployment, is never printed, and invalid or missing configuration stops before D1 and Plus reads.
+- Plus remains an aggregate total with no internal/external split or profile relationship.
 
 The 2026-08-15 browser acceptance directly confirmed the unauthenticated Access redirect, the allowed administrator's read-only empty state, `404` handling for a query string and an unknown path, and the absence of scripts, images, and external links. JWT signature, issuer, audience, expiry, required issued-at claim, email, method, header, escaping, and no-write boundaries remain covered by the local acceptance suite. Record the production D1 check only as “row counts unchanged”; never copy the counts or row contents into Git.
 

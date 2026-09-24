@@ -112,6 +112,9 @@ const PLUS_ACCOUNT_UI_ENABLED = document
 const PLUS_PURCHASE_UI_ENABLED = document
   .querySelector('meta[name="glucoscope-plus-purchases-enabled"]')
   ?.getAttribute("content") === "true";
+const NEW_USER_STARTS_ENABLED = document
+  .querySelector('meta[name="glucoscope-new-user-starts-enabled"]')
+  ?.getAttribute("content") === "true";
 const PLUS_ACCOUNT_RESEND_WAIT_SECONDS = 60;
 const PRODUCTION_AI_LETTER_WORKER_ENDPOINT = "https://gluco-letter-worker.afterglow21.workers.dev/api/gluco-letter";
 const LOCAL_AI_LETTER_WORKER_ENDPOINT = "http://127.0.0.1:8787/api/gluco-letter";
@@ -318,10 +321,10 @@ const translations = {
     mobileMoreDeveloperStatus: "Developer Status",
     mobileMoreUsageDashboard: "Usage Dashboard",
     mobileMoreCgmComparison: "3種類のCGMの比較デモ",
-    dataSourceButtonDemo: "データ接続（先行体験）",
-    dataSourceButtonUser: "データ接続（先行体験）",
-    mobileMoreDataSource: "データ接続（先行体験）",
-    mobileMoreDataSourceNote: "先行体験 · Gluroo / Nightscout",
+    dataSourceButtonDemo: "データ接続",
+    dataSourceButtonUser: "データ接続",
+    mobileMoreDataSource: "データ接続",
+    mobileMoreDataSourceNote: "新規利用開始を停止中",
     localProfileButton: "Plus・あなたの設定",
     localProfileButtonNote: "Plus購入・表示名・利用記録",
     localProfileButtonSavedNote: "Plus購入・設定・保存済み情報",
@@ -446,8 +449,12 @@ const translations = {
     plusAccountDeleteLead: "Plusアカウントを削除しても、血糖の接続や利用記録は別に残ります。ログイン、Plusの利用と復旧はできなくなります。確定済みの購入がある場合は、メールとの結び付きをすぐ外し、会計・返金確認に必要な最小記録だけを残します。処理中の支払いや返金がある時だけ、安全のため問い合わせをご案内します。削除だけで返金にはなりません。Share Studioの無料体験を使っていた場合は、二重体験を防ぐ印と期限だけを体験成功日から90日間残します。",
     plusAccountDeleteButton: "Plusアカウントを削除する",
     plusAccountSafety: "カード番号はStripeの画面だけで入力します。Stripeへ血糖値や接続情報を送ることはありません。",
-    dataSourceDialogTitle: "データ接続（先行体験）",
-    dataSourceDialogLead: "自分の血糖データをGlucoScopeで表示できます。Gluroo接続は少人数で確認しながら提供しています。",
+    newUserStartsEyebrow: "現在のご案内",
+    newUserStartsTitle: "新規利用開始を停止中です。",
+    newUserStartsBannerBody: "すでに接続済みの方は引き続き利用できます。新しい接続・再接続と、Plus 30日パスの新規購入は現在受け付けていません。",
+    newUserStartsDialogBody: "すでにこの端末で接続済みの方は、そのまま利用できます。新しい端末での接続や、接続を削除した後の再接続は現在受け付けていません。",
+    dataSourceDialogTitle: "データ接続",
+    dataSourceDialogLead: "すでにこの端末で接続済みの方は、引き続き血糖データを表示できます。",
     dataSourceBeforeStart: "はじめる前に",
     dataSourceInAppBrowserTitle: "Safariで開いてください",
     dataSourceInAppBrowserLead: "Instagramなどのアプリ内画面や、Safari以外のiPhoneブラウザでは、安全なデータ接続を始められません。",
@@ -516,6 +523,7 @@ const translations = {
     dataSourceRelayCheckFailedWithCode: "安全確認を完了できませんでした。確認コード：{code}。この6桁の数字だけを教えてください。",
     dataSourceRelaySessionRequired: "この端末で、もう一度だけ安全確認が必要です。保存済みの接続情報を確認して、「接続してGlucoScopeを始める」を押してね。",
     dataSourceRelayPaused: "Glurooのかんたん接続は、現在一時停止しています。接続情報や血糖データは保存していません。",
+    dataSourceNewConnectionsPaused: "新規利用開始を停止中です。すでに接続済みの方は、そのまま利用できます。",
     dataSourceRelayLimited: "この端末からの今日の接続回数が上限に達しました。時間をおいてから、また確認してみてね。",
     dataSourceUrlLabel: "接続先URL",
     dataSourceUrlHelp: "Glurooでは「Nightscout URL」と表示されています。",
@@ -785,10 +793,10 @@ const translations = {
     mobileMoreDeveloperStatus: "Developer Status",
     mobileMoreUsageDashboard: "Usage Dashboard",
     mobileMoreCgmComparison: "CGM Comparison Demo",
-    dataSourceButtonDemo: "Data connection (early access)",
-    dataSourceButtonUser: "Data connection (early access)",
-    mobileMoreDataSource: "Data connection (early access)",
-    mobileMoreDataSourceNote: "Early access · Gluroo / Nightscout",
+    dataSourceButtonDemo: "Data connection",
+    dataSourceButtonUser: "Data connection",
+    mobileMoreDataSource: "Data connection",
+    mobileMoreDataSourceNote: "New user starts paused",
     localProfileButton: "Plus & your settings",
     localProfileButtonNote: "Plus purchase, display name, and usage",
     localProfileButtonSavedNote: "Plus purchase, settings, and saved info",
@@ -913,8 +921,12 @@ const translations = {
     plusAccountDeleteLead: "Deleting the Plus account does not remove the glucose connection or the separate usage record. Sign-in and Plus recovery will end. For a settled purchase, GlucoScope immediately detaches the email identity and keeps only the minimum transaction record needed for accounting and refund checks. Only a payment or refund still in progress requires support before deletion. Deletion does not itself issue a refund. If the one-time Share Studio trial was completed, its reuse-prevention marker and expiry remain for 90 days from completion.",
     plusAccountDeleteButton: "Delete Plus account",
     plusAccountSafety: "Card details are entered only on Stripe’s page. GlucoScope does not send glucose values or connection details to Stripe.",
-    dataSourceDialogTitle: "Data connection (early access)",
-    dataSourceDialogLead: "You can display your own glucose data in GlucoScope. Gluroo connections are available to a small group while we confirm everything works.",
+    newUserStartsEyebrow: "Current availability",
+    newUserStartsTitle: "New user starts are currently paused.",
+    newUserStartsBannerBody: "People already connected can continue using GlucoScope. New connections, reconnections, and new Plus 30-day pass purchases are not currently accepted.",
+    newUserStartsDialogBody: "If this device is already connected, you can keep using it. New-device connections and reconnections after deleting a connection are not currently accepted.",
+    dataSourceDialogTitle: "Data connection",
+    dataSourceDialogLead: "If this device is already connected, you can continue displaying your glucose data.",
     dataSourceBeforeStart: "Before you begin",
     dataSourceInAppBrowserTitle: "Open this page in Safari",
     dataSourceInAppBrowserLead: "A secure data connection cannot be started inside Instagram, another in-app browser, or a non-Safari iPhone browser.",
@@ -983,6 +995,7 @@ const translations = {
     dataSourceRelayCheckFailedWithCode: "The safety check could not be completed. Confirmation code: {code}. Please share only this six-digit code.",
     dataSourceRelaySessionRequired: "This device needs one more safety check. Review the saved connection details, then select Connect and start GlucoScope.",
     dataSourceRelayPaused: "The Gluroo easy connection is temporarily paused. Connection details and glucose data have not been stored.",
+    dataSourceNewConnectionsPaused: "New user starts are currently paused. People already connected can continue using GlucoScope.",
     dataSourceRelayLimited: "This device has reached today’s connection limit. Please try again later.",
     dataSourceUrlLabel: "Connection URL",
     dataSourceUrlHelp: "Gluroo labels this Nightscout URL.",
@@ -1267,6 +1280,7 @@ function setVisibleDataSourceEntryPanel(panelId) {
   [
     "dataSourceInAppBrowserPanel",
     "dataSourceHomeScreenPanel",
+    "dataSourcePausedPanel",
     "dataSourceChoosePanel",
     "dataSourceGlurooPrepPanel",
     "dataSourceConnectPanel"
@@ -1430,6 +1444,7 @@ function getDataSourceErrorMessage(error) {
     device_session_invalid: "dataSourceRelaySessionRequired",
     device_session_source_mismatch: "dataSourceRelaySessionRequired",
     relay_temporarily_paused: "dataSourceRelayPaused",
+    new_connections_paused: "dataSourceNewConnectionsPaused",
     rate_limited: "dataSourceRelayLimited"
   };
   return t(messages[error?.code] || "dataSourceTestGenericError");
@@ -1477,6 +1492,7 @@ function getDataSourceDialogFocusableElements() {
 function focusCurrentDataSourceStep() {
   const inAppBrowserPanel = document.getElementById("dataSourceInAppBrowserPanel");
   const homeScreenPanel = document.getElementById("dataSourceHomeScreenPanel");
+  const pausedPanel = document.getElementById("dataSourcePausedPanel");
   const choosePanel = document.getElementById("dataSourceChoosePanel");
   const prepPanel = document.getElementById("dataSourceGlurooPrepPanel");
   const connectPanel = document.getElementById("dataSourceConnectPanel");
@@ -1488,6 +1504,12 @@ function focusCurrentDataSourceStep() {
   }
   if (homeScreenPanel && !homeScreenPanel.hidden) {
     const heading = document.getElementById("dataSourceHomeScreenTitle");
+    if (heading) heading.tabIndex = -1;
+    queueDataSourceFocus(heading);
+    return;
+  }
+  if (pausedPanel && !pausedPanel.hidden) {
+    const heading = document.getElementById("dataSourcePausedTitle");
     if (heading) heading.tabIndex = -1;
     queueDataSourceFocus(heading);
     return;
@@ -1593,6 +1615,9 @@ function populateDataSourceForm(config = null) {
   if (saveButton) saveButton.disabled = false;
   if (resolved?.mode === "user") {
     showDataSourceConnectStep();
+  } else if (!NEW_USER_STARTS_ENABLED) {
+    setVisibleDataSourceEntryPanel("dataSourcePausedPanel");
+    focusCurrentDataSourceStep();
   } else if (showInitialDataSourceEntryGuidance()) {
     // The in-app browser stop or iPhone install-first guidance owns the first
     // step. Connection fields remain hidden until the person reaches Safari
@@ -2121,6 +2146,12 @@ async function handleDataSourceSave(event) {
   if (!dataSourceManager) return;
 
   const firstConnection = !hasActiveDataSource() && !dataSourceManager.readUserConfig?.();
+  if (firstConnection && !NEW_USER_STARTS_ENABLED) {
+    setVisibleDataSourceEntryPanel("dataSourcePausedPanel");
+    setDataSourceTestStatus(t("newUserStartsTitle"), "error");
+    focusCurrentDataSourceStep();
+    return;
+  }
   const connectionVerified = await handleDataSourceTest();
   if (!connectionVerified || dataSourceSaveInFlight || pendingDataSourceSave) return;
   if (!testedDataSourceConfig) return;
@@ -3728,7 +3759,7 @@ function updatePlusAccountUi() {
       ? t("shareStudioTrialVerificationBadge")
       : config.purchasesEnabled
       ? (currentLanguage === "en" ? "Available" : "利用できます")
-      : (currentLanguage === "en" ? "In preparation" : "準備中");
+      : (currentLanguage === "en" ? "New purchases paused" : "新規購入停止中");
   }
 
   if (badge) {
@@ -3777,8 +3808,8 @@ function updatePlusAccountUi() {
           ? "Your email is verified. You can continue to Stripe when you are ready."
           : "メール確認ができました。準備ができたらStripeの購入画面へ進めます。")
         : (currentLanguage === "en"
-          ? "Your email is verified. Plus sales are still being prepared."
-          : "メール確認ができました。Plusの販売はまだ準備中です。");
+          ? "Your email is verified. New Plus purchases are currently paused."
+          : "メール確認ができました。Plusの新規購入を停止中です。");
     } else {
       summary.textContent = currentLanguage === "en"
         ? "Your saved session could not be checked. Refresh the status or sign out on this device."

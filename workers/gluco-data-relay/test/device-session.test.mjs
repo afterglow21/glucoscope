@@ -152,6 +152,7 @@ function deviceEnv(overrides = {}) {
   return {
     RELAY_ENABLED: "true",
     RELAY_DEVICE_SESSIONS_ENABLED: "true",
+    RELAY_NEW_DEVICE_SESSIONS_ENABLED: "true",
     CORS_ALLOWED_ORIGINS: ORIGIN,
     CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN: "false",
     GLUROO_HOST_SUFFIX: ".ns.gluroo.com",
@@ -569,6 +570,49 @@ test("device session HTTP flow creates, probes, binds, rotates, and deletes", as
   assert.equal(deletedStatus.status, 401);
 });
 
+test("pauses only new connections while existing device sessions continue", async () => {
+  const localEnv = deviceEnv();
+  const created = await createSession(localEnv, 11);
+  assert.equal(created.response.status, 201);
+  const cookie = created.cookie.split(";")[0];
+  const pausedEnv = {
+    ...localEnv,
+    RELAY_NEW_DEVICE_SESSIONS_ENABLED: "false",
+  };
+
+  let turnstileChecked = false;
+  const refused = await handleRelayRequest(
+    apiRequest("/v1/device-session", {
+      turnstileToken: "test-turnstile-token",
+      sourceUrl: SOURCE_URL,
+      credential: CREDENTIAL,
+    }),
+    pausedEnv,
+    { verifyTurnstile: async () => { turnstileChecked = true; } },
+  );
+  assert.equal(refused.status, 503);
+  assert.deepEqual(await refused.json(), { ok: false, error: "new_connections_paused" });
+  assert.equal(turnstileChecked, false);
+
+  const status = await handleRelayRequest(
+    apiRequest("/v1/device-session/status", {}, { cookie }),
+    pausedEnv,
+    { now: () => NOW_MS + 1_000 },
+  );
+  assert.equal(status.status, 200);
+
+  const entries = await handleRelayRequest(
+    apiRequest("/v1/entries", entryPayload(), { cookie }),
+    pausedEnv,
+    {
+      now: () => NOW_MS + 2_000,
+      upstreamFetch: async () => Response.json([{ sgv: 112, date: 1785000000000 }]),
+    },
+  );
+  assert.equal(entries.status, 200);
+  assert.equal((await entries.json()).entries[0].sgv, 112);
+});
+
 test("a failed replacement keeps the previous working device session", async () => {
   const localEnv = deviceEnv();
   const created = await createSession(localEnv, 6);
@@ -715,8 +759,10 @@ test("wrong origins, disabled flags, absent secrets, and the removed session rou
 
   const flags = readConfig(deviceEnv({
     RELAY_DEVICE_SESSIONS_ENABLED: "false",
+    RELAY_NEW_DEVICE_SESSIONS_ENABLED: "false",
   }));
   assert.equal(flags.deviceSessionsEnabled, false);
+  assert.equal(flags.newDeviceSessionsEnabled, false);
 
   let verified = false;
   const removedSessionRoute = await handleRelayRequest(

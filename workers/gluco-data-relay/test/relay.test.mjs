@@ -32,6 +32,7 @@ function env(overrides = {}) {
   return {
     RELAY_ENABLED: "true",
     RELAY_DEVICE_SESSIONS_ENABLED: "true",
+    RELAY_NEW_DEVICE_SESSIONS_ENABLED: "true",
     CORS_ALLOWED_ORIGINS: ORIGIN,
     CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN: "false",
     GLUROO_HOST_SUFFIX: ".ns.gluroo.com",
@@ -686,6 +687,7 @@ test("checked-in Wrangler config remains paused on the reviewed custom domain wi
   assert.match(configText, /"observability"\s*:\s*\{\s*"enabled"\s*:\s*false/s);
   assert.match(configText, /"RELAY_ENABLED"\s*:\s*"false"/);
   assert.match(configText, /"RELAY_DEVICE_SESSIONS_ENABLED"\s*:\s*"false"/);
+  assert.match(configText, /"RELAY_NEW_DEVICE_SESSIONS_ENABLED"\s*:\s*"false"/);
   assert.match(configText, /"workers_dev"\s*:\s*false/);
   assert.match(configText, /"preview_urls"\s*:\s*false/);
   assert.deepEqual(config.routes, [{ pattern: "relay.glucoscope.app", custom_domain: true }]);

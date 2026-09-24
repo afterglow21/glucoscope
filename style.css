@@ -7167,6 +7167,39 @@ body.data-source-dialog-open {
   overflow:hidden;
 }
 
+.service-pause-banner {
+  display:flex;
+  align-items:baseline;
+  justify-content:center;
+  gap:.7rem;
+  margin:0;
+  padding:.65rem 1rem;
+  border-top:1px solid rgba(31,123,86,.2);
+  border-bottom:1px solid rgba(31,123,86,.2);
+  background:#eff9f3;
+  color:#24543d;
+  font-size:.82rem;
+  line-height:1.55;
+  text-align:center;
+}
+
+.service-pause-banner strong {
+  color:#126d49;
+  white-space:nowrap;
+}
+
+@media (max-width:700px) {
+  .service-pause-banner {
+    display:block;
+    padding:.7rem 1rem;
+    font-size:.78rem;
+  }
+
+  .service-pause-banner strong,.service-pause-banner span {
+    display:block;
+  }
+}
+
 body.local-profile-dialog-open {
   overflow:hidden;
 }
@@ -7954,6 +7987,15 @@ body.local-profile-dialog-open {
 
 .data-source-dialog[hidden],.data-source-entry-guide[hidden],.data-source-choose-panel[hidden],.data-source-gluroo-prep-panel[hidden],.data-source-connect-panel[hidden],.data-source-help[hidden],.data-source-welcome[hidden] {
   display:none;
+}
+
+.data-source-paused-panel {
+  border-color:#bcdcca;
+  background:#f3fbf6;
+}
+
+.data-source-paused-panel h3 {
+  color:#13734c;
 }
 
 .data-source-dialog-card {

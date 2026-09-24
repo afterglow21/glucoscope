@@ -12,6 +12,7 @@ const DEFAULTS = Object.freeze({
   turnstileExpectedAction: "glucoscope-data-relay",
   turnstileTimeoutMs: 10_000,
   deviceSessionsEnabled: false,
+  newDeviceSessionsEnabled: false,
   deviceSessionIdleTtlSeconds: 180 * 24 * 60 * 60,
   deviceSessionDailyLimit: 3_000,
   globalWarningDaily: 20_000,
@@ -153,6 +154,10 @@ export function readConfig(env = {}) {
     deviceSessionsEnabled: parseBoolean(
       env.RELAY_DEVICE_SESSIONS_ENABLED,
       DEFAULTS.deviceSessionsEnabled,
+    ),
+    newDeviceSessionsEnabled: parseBoolean(
+      env.RELAY_NEW_DEVICE_SESSIONS_ENABLED,
+      DEFAULTS.newDeviceSessionsEnabled,
     ),
     deviceSessionIdleTtlSeconds: parsePositiveInteger(
       env.RELAY_DEVICE_SESSION_IDLE_TTL_SECONDS,
@@ -910,6 +915,7 @@ export async function handleRelayRequest(request, env = {}, services = {}) {
 
     if (url.pathname === "/v1/device-session") {
       if (!config.deviceSessionsEnabled) throw new RelayError("relay_temporarily_paused", 503);
+      if (!config.newDeviceSessionsEnabled) throw new RelayError("new_connections_paused", 503);
       const session = validateDeviceSessionCreationPayload(payload, config);
       await verifyTurnstile(session.turnstileToken, env, config, turnstileFetch);
       assertDeviceSessionInfrastructure(env);

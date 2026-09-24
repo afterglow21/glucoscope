@@ -216,7 +216,7 @@ test("long-lived relay session is documented consistently without exposing techn
   assert.doesNotMatch(relayReadme.match(/## Required Secret bindings[\s\S]*?## Local verification/)?.[0] || "", /RELAY_TICKET_SECRET/);
 
   assert.match(privacy, /次からもつながるための安全確認/);
-  assert.match(privacy, /少人数の先行体験で使っています/);
+  assert.match(privacy, /新規利用開始は現在停止中/);
   assert.match(privacy, /Dexcom G7では、最初の安全確認後にiPhoneのホーム画面のアイコンから開き直しても、接続し直さず表示できることを確認しました/);
   assert.match(privacy, /180日使わなければ、その印は使えなくなります/);
   assert.match(privacy, /元の接続先URL、合言葉、血糖データ、氏名、メールアドレス、IPアドレス、端末やブラウザの名前は保存しません/);
@@ -224,7 +224,7 @@ test("long-lived relay session is documented consistently without exposing techn
   assert.match(privacy, /接続先URLと合言葉を先に消し/);
   assert.match(privacy, /削除が終わる正確な時刻は約束しません/);
   assert.match(privacy, /まずSafariでGlucoScopeを開いて「ホーム画面に追加」し、追加したアイコンから開いて初回接続/);
-  assert.match(privacy, /This design is live for the small early-access group/);
+  assert.match(privacy, /New user starts are currently paused, while already-connected devices can continue/);
   assert.match(privacy, /The relay keeps only a one-way form of the device marker/);
   assert.match(privacy, /not joined to optional usage recording or Plus identity/);
   assert.match(privacy, /removes the URL and passphrase from the device first/);
@@ -233,10 +233,10 @@ test("long-lived relay session is documented consistently without exposing techn
   assert.doesNotMatch(privacy, /180日後までに消えます|disappears no later than 180 days/);
   assert.doesNotMatch(privacy, /__Host-glucoscope|HttpOnly|SameSite|HMAC|Durable Object/);
 
-  assert.match(roadmap, /少人数の先行体験で使っています/);
+  assert.match(roadmap, /新規利用開始は現在停止中/);
   assert.match(roadmap, /180日使わなければ接続は切れ/);
   assert.match(roadmap, /まずSafariからホーム画面に追加し、そのアイコンを開いてから初回接続/);
-  assert.match(roadmap, /is now live for the small early-access group/);
+  assert.match(roadmap, /New user starts are currently paused/);
   assert.match(roadmap, /add GlucoScope to the Home Screen from Safari, open the new icon, and then make the first connection/);
   assert.doesNotMatch(privacy, /準備中|not been published to the live site yet/);
   assert.doesNotMatch(roadmap, /この変更はまだ公開していません|This change is not live yet/);
@@ -286,10 +286,10 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(data, /GuardianとLibre 2は、アプリからGluroo、限定中継、GlucoScopeまでの基本経路を実機で確認しました/);
   assert.match(data, /Dexcom G7は、接続、現在血糖、今日・昨日・7日・30日のグラフ、再読み込み、接続削除/);
   assert.match(data, /現在の端末セッション方式でiPhoneのホーム画面から開き直しても再接続せず表示できることを確認しています/);
-  assert.match(data, /現在は、最初に1回安全確認をした後、ふだんは同じ端末でつながり続ける方式を少人数の先行体験で使っています/);
+  assert.match(data, /新規利用開始は現在停止中/);
   assert.match(data, /入力ミスや一時的な障害では今までの接続を壊さない設計です/);
   assert.match(data, /Dexcom G7で最初の安全確認を行い、その後iPhoneのホーム画面のアイコンから開き直しても、接続し直さず表示できることを実機で確認しました/);
-  assert.match(data, /The small early-access group now uses a replacement that performs one safety check and then normally keeps the same device connected/);
+  assert.match(data, /New user starts are currently paused/);
   assert.match(data, /Connection deletion and reconnection after deletion were not tested in that run/);
   assert.match(data, /2026年8月6日、Glurooから/);
   assert.match(data, /医療相談や医療判断には使えません/);
@@ -366,7 +366,7 @@ test("public relay wording preserves the current verification and privacy bounda
   assert.match(privacy, /up to 7 days on the Free plan or up to 30 days on a Paid plan/);
   assert.match(privacy, /血糖値、接続情報、GlucoScore、AIお手紙の本文はアクセス分析へ送りません/);
   assert.match(privacy, /GlucoScopeは医療機器ではなく、診断や治療、インスリン量の判断はしません/);
-  assert.match(privacy, /neither public-demo nor personal-user letters are placed in a shared temporary cache/);
+  assert.match(privacy, /neither public-demo nor personal-user letters are placed in a shared temporary cache/i);
   assert.match(privacy, /abuse-monitoring logs for up to 30 days/);
   assert.doesNotMatch(privacy, /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
   assert.doesNotMatch(privacy, /<code>|\b(?:D1|deployment|Version|CORS|Cron|sessionStorage|adapter|RELAY_ENABLED)\b|\b(?:200|204|401|403|503)\b/i);

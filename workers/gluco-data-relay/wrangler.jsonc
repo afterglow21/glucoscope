@@ -45,6 +45,7 @@
   "vars": {
     "RELAY_ENABLED": "false",
     "RELAY_DEVICE_SESSIONS_ENABLED": "false",
+    "RELAY_NEW_DEVICE_SESSIONS_ENABLED": "false",
     "CORS_ALLOWED_ORIGINS": "https://glucoscope.app",
     "CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN": "false",
     "GLUROO_HOST_SUFFIX": ".ns.gluroo.com",

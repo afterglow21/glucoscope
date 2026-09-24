@@ -16,7 +16,8 @@
   },
   "secrets": {
     "required": [
-      "ADMIN_ALLOWED_EMAIL"
+      "ADMIN_ALLOWED_EMAIL",
+      "INTERNAL_PROFILE_DISPLAY_NAMES"
     ]
   },
   "d1_databases": [

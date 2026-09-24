@@ -113,13 +113,13 @@ test("GlucoScore is omitted from reflections unless it rises by at least two", (
 });
 
 // Existing user-foundation coverage.
-test("public data connection remains clickable and clearly marked as early access", () => {
-  assert.match(index, /データ接続（先行体験）/);
-  assert.match(index, /Gluroo接続は少人数で確認しながら提供しています/);
-  assert.match(index, /style\.css\?v=20260823-separate-ai-allowances-1/);
-  assert.match(index, /js\/app\.js\?v=20260823-separate-ai-allowances-1/);
-  assert.match(app, /dataSourceButtonDemo: "データ接続（先行体験）"/);
-  assert.match(app, /dataSourceDialogTitle: "Data connection \(early access\)"/);
+test("public data connection remains clickable and clearly shows the new-start pause", () => {
+  assert.match(index, /新規利用開始を停止中です。/);
+  assert.match(index, /すでに接続済みの方は引き続き利用できます/);
+  assert.match(index, /style\.css\?v=20260924-registration-pause-1/);
+  assert.match(index, /js\/app\.js\?v=20260924-registration-pause-1/);
+  assert.match(app, /dataSourceButtonDemo: "データ接続"/);
+  assert.match(app, /dataSourceDialogTitle: "Data connection"/);
   assert.doesNotMatch(index, /id="dataSourceButton"[^>]+disabled/);
 });
 
@@ -774,7 +774,7 @@ test("field feedback copy and red-frame navigation are reflected", () => {
 test("current cache and CSS markers are present", () => {
   assert.match(index, /js\/data-source\.js\?v=20260816-device-session-1/);
   assert.match(index, /js\/data-relay-client\.js\?v=20260816-device-session-1/);
-  assert.match(index, /js\/app\.js\?v=20260823-separate-ai-allowances-1/);
+  assert.match(index, /js\/app\.js\?v=20260924-registration-pause-1/);
   assert.match(guideCss, /User Foundation 0\.3\.3/);
   assert.match(css, /Limited Data Relay Paused Acceptance/);
 });

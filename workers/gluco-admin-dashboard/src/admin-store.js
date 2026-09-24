@@ -1,14 +1,15 @@
 const MAX_VISIBLE_PROFILES = 100;
 
 // This is intentionally the only production SQL statement in the administrator Worker.
-// It reads an existing allowlisted view and never returns identifiers, timestamps, or daily rows.
+// It reads an existing allowlisted view and never returns identifiers or daily rows.
 export const ADMIN_USAGE_SELECT = `
   SELECT
     display_name AS displayName,
     sharing_enabled AS collectionEnabled,
     active_days AS activeDays,
     ai_generation_success_total AS aiGenerationSuccessTotal,
-    ordinary_gluco_memory_count AS ordinaryGlucoMemoryCount
+    ordinary_gluco_memory_count AS ordinaryGlucoMemoryCount,
+    last_seen_at AS lastSeenAt
   FROM admin_device_usage
   ORDER BY last_seen_at DESC, display_name COLLATE NOCASE ASC
   LIMIT 101
@@ -27,7 +28,13 @@ function boundedInteger(value, minimum, maximum) {
   return Math.min(maximum, Math.max(minimum, parsed));
 }
 
-function normalizeDisplayName(value) {
+function normalizeLastSeenAt(value) {
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < 0 || parsed > 9_999_999_999_999) return null;
+  return parsed;
+}
+
+export function normalizeDisplayName(value) {
   const normalized = Array.from(
     String(value || "")
       .replace(/[\u0000-\u001f\u007f-\u009f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/gu, "")
@@ -44,6 +51,7 @@ function toAdminProfile(row) {
     activeDays: boundedInteger(row?.activeDays, 0, 90),
     aiGenerationSuccessTotal: boundedInteger(row?.aiGenerationSuccessTotal, 0, 2700),
     ordinaryGlucoMemoryCount: boundedInteger(row?.ordinaryGlucoMemoryCount, 0, 50),
+    lastSeenAt: normalizeLastSeenAt(row?.lastSeenAt),
   });
 }
 

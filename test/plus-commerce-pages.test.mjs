@@ -15,15 +15,14 @@ function read(relativePath) {
   return readFileSync(path.join(ROOT, relativePath), "utf8");
 }
 
-test("Plus sale pages stay noindex, show the current sale, and keep checked configs fail-safe", () => {
+test("Plus sale pages stay noindex, show the purchase pause, and keep checked configs fail-safe", () => {
   for (const relativePath of PAGE_PATHS) {
     const html = read(relativePath);
     assert.match(html, /<meta name="robots" content="noindex,nofollow">/u);
-    assert.doesNotMatch(html, /現在、Plusは販売していません|まだ販売していません/u);
   }
 
-  assert.match(read(PAGE_PATHS[0]), /Plus 30日パスは現在購入できます/u);
-  assert.match(read(PAGE_PATHS[1]), /現在購入できるGlucoScope Plus 30日パス/u);
+  assert.match(read(PAGE_PATHS[0]), /Plus 30日パスの新規購入を停止中/u);
+  assert.match(read(PAGE_PATHS[1]), /Plus 30日パスの新規購入を停止中/u);
   assert.match(read(PAGE_PATHS[2]), /Plusの購入、復旧、返金について困った時/u);
 
   assert.match(read(PAGE_PATHS[0]), /href="mailto:support@glucoscope\.app"/u);
@@ -85,7 +84,7 @@ test("commercial disclosure contains every approved one-time sale boundary", () 
   ]) assert.match(html, new RegExp(expected, "u"));
 
   assert.doesNotMatch(html, /400円（税込）/u);
-  assert.match(html, /Plus 30日パスは現在購入できます/u);
+  assert.match(html, /Plus 30日パスの新規購入を停止中/u);
   assert.match(html, /お支払い総額は400円、1回払い、自動更新なし/u);
   assert.match(html, /事業者の氏名・住所・電話番号の開示請求/u);
   assert.match(html, /優先して遅滞なく対応/u);

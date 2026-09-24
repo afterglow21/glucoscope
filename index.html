@@ -34,14 +34,15 @@
   <link rel="apple-touch-icon" href="assets/gluco/about/gluco-small-notice.png">
   <!-- GlucoScope Limited Data Relay: the browser client uses an anonymous device session. -->
   <meta name="glucoscope-data-relay-endpoint" content="https://relay.glucoscope.app">
+  <meta name="glucoscope-new-user-starts-enabled" content="false">
   <meta name="glucoscope-usage-profile-enabled" content="true">
   <meta name="glucoscope-ai-per-user-quota-enabled" content="true">
   <meta name="glucoscope-plus-account-enabled" content="true">
   <meta name="glucoscope-plus-feature-gating-enabled" content="true">
-  <meta name="glucoscope-plus-purchases-enabled" content="true">
+  <meta name="glucoscope-plus-purchases-enabled" content="false">
   <meta name="glucoscope-plus-entitlement-endpoint" content="https://plus.glucoscope.app">
   <meta name="glucoscope-plus-turnstile-sitekey" content="0x4AAAAAAEUvQ9ymAJlyrxyC">
-  <link rel="stylesheet" href="style.css?v=20260823-separate-ai-allowances-1">
+  <link rel="stylesheet" href="style.css?v=20260924-registration-pause-1">
 </head>
 <body>
 
@@ -116,10 +117,17 @@
     <div class="data-source-dialog-hero">
       <img src="assets/gluco/about/gluco-data-link.png" alt="" class="data-source-dialog-gluco" width="220" height="220">
       <div>
-        <h2 id="dataSourceDialogTitle" data-i18n-key="dataSourceDialogTitle">データ接続（先行体験）</h2>
-        <p data-i18n-key="dataSourceDialogLead">自分の血糖データをGlucoScopeで表示できます。Gluroo接続は少人数で確認しながら提供しています。</p>
+        <h2 id="dataSourceDialogTitle" data-i18n-key="dataSourceDialogTitle">データ接続</h2>
+        <p data-i18n-key="dataSourceDialogLead">すでにこの端末で接続済みの方は、引き続き血糖データを表示できます。</p>
       </div>
     </div>
+
+    <section id="dataSourcePausedPanel" class="data-source-entry-guide data-source-paused-panel" aria-labelledby="dataSourcePausedTitle" hidden>
+      <p class="data-source-entry-eyebrow" data-i18n-key="newUserStartsEyebrow">現在のご案内</p>
+      <h3 id="dataSourcePausedTitle" data-i18n-key="newUserStartsTitle">新規利用開始を停止中です。</h3>
+      <p data-i18n-key="newUserStartsDialogBody">すでにこの端末で接続済みの方は、そのまま利用できます。新しい端末での接続や、接続を削除した後の再接続は現在受け付けていません。</p>
+      <a class="data-source-demo-link" href="index.html" data-i18n-key="dataSourceDemoLink">まず公開デモを見る</a>
+    </section>
 
     <section id="dataSourceInAppBrowserPanel" class="data-source-entry-guide" aria-labelledby="dataSourceInAppBrowserTitle" hidden>
       <p class="data-source-entry-eyebrow" data-i18n-key="dataSourceBeforeStart">はじめる前に</p>
@@ -550,6 +558,11 @@
     </div>
   </header>
 
+  <aside class="service-pause-banner" role="status" aria-live="polite">
+    <strong data-i18n-key="newUserStartsTitle">新規利用開始を停止中です。</strong>
+    <span data-i18n-key="newUserStartsBannerBody">すでに接続済みの方は引き続き利用できます。新しい接続・再接続と、Plus 30日パスの新規購入は現在受け付けていません。</span>
+  </aside>
+
 <div class="view-toolbar">
   <nav class="view-tabs" aria-label="GlucoScope sections">
     <button class="view-tab active" data-view="live" data-i18n-key="tabLive">🟢 Live</button>
@@ -559,7 +572,7 @@
   </nav>
 
   <div class="view-toolbar-actions">
-    <button id="dataSourceButton" type="button" class="data-source-toolbar-button">🔗 <span data-i18n-key="dataSourceButtonDemo">データ接続（先行体験）</span></button>
+    <button id="dataSourceButton" type="button" class="data-source-toolbar-button">🔗 <span data-i18n-key="dataSourceButtonDemo">データ接続</span></button>
     <button id="localProfileButton" type="button" class="local-profile-toolbar-button" hidden>🍀 <span data-i18n-key="localProfileButton">Plus・あなたの設定</span></button>
     <div class="language-switch" aria-label="Language switch">
       <span data-i18n-key="languageLabel">Language</span>
@@ -823,7 +836,7 @@
     <p id="shareStudioAccessNotice" class="plus-inline-action-notice mobile-share-studio-notice" role="status" aria-live="polite" tabindex="-1" hidden></p>
     <button id="mobileDataSourceButton" type="button" class="mobile-data-source-button">
       <span aria-hidden="true">🔗</span>
-      <span><strong data-i18n-key="mobileMoreDataSource">データ接続（先行体験）</strong><small data-i18n-key="mobileMoreDataSourceNote">先行体験 · Gluroo / Nightscout</small></span>
+      <span><strong data-i18n-key="mobileMoreDataSource">データ接続</strong><small data-i18n-key="mobileMoreDataSourceNote">新規利用開始を停止中</small></span>
     </button>
     <button id="mobileLocalProfileButton" type="button" class="mobile-local-profile-button" hidden>
       <span aria-hidden="true">🍀</span>
@@ -1008,7 +1021,7 @@
         <span class="about-panel-icon">🌱</span>
         <div>
           <h3><span class="about-panel-title-en">Current Status</span><span class="about-panel-title-jp">現在の開発状況</span></h3>
-          <p>GlucoScope 公開ベータを提供中です。<br>基本機能は無料で、Plus 30日パスも利用できます。</p>
+          <p>新規利用開始を停止中です。<br>すでに接続済みの方は引き続き利用できます。</p>
         </div>
         <span class="about-panel-arrow">詳しく見る →</span>
       </a>
@@ -1095,7 +1108,7 @@
 <script src="js/stats.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/ui.js?v=20260721-user-foundation-3"></script>
-<script src="js/app.js?v=20260823-separate-ai-allowances-1"></script>
+<script src="js/app.js?v=20260924-registration-pause-1"></script>
 <!-- Cloudflare Web Analytics: aggregate page-view and performance metrics only -->
 <script src="js/analytics-loader.js?v=20260811-usage-profile-stage-1"></script>
 <!-- End Cloudflare Web Analytics -->

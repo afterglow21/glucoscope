@@ -76,10 +76,10 @@ test("defaults to unavailable and rejects unsafe endpoints", async () => {
   assert.equal(api.getState().reason, "not_signed_in");
 });
 
-test("the public release enables the reviewed Plus UI and exact production endpoint", () => {
+test("the public release keeps Plus access while pausing new purchases", () => {
   assert.match(index, /name="glucoscope-plus-account-enabled" content="true"/u);
   assert.match(index, /name="glucoscope-plus-feature-gating-enabled" content="true"/u);
-  assert.match(index, /name="glucoscope-plus-purchases-enabled" content="true"/u);
+  assert.match(index, /name="glucoscope-plus-purchases-enabled" content="false"/u);
   assert.match(index, /name="glucoscope-plus-entitlement-endpoint" content="https:\/\/plus\.glucoscope\.app"/u);
   assert.match(
     index,
@@ -100,6 +100,7 @@ test("the public release enables the reviewed Plus UI and exact production endpo
   assert.match(index, /id="plusAccountDeleteDetails"/u);
   assert.match(index, /基本の血糖表示は、Plusを買わなくても使えます。/u);
   assert.match(index, /400円で30日間使う（支払い画面へ）/u);
+  assert.match(index, /Plus 30日パスの新規購入は現在受け付けていません/u);
   assert.match(index, /id="plusAccountRoleGuardian"/u);
   assert.match(index, /id="plusAccountAdultConfirmed"[^>]*required/u);
   assert.match(index, /子どもの名前・生年月日・血糖値は入力しません。/u);
