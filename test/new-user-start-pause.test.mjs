@@ -10,11 +10,22 @@ const read = (file) => readFileSync(path.join(ROOT, file), "utf8");
 test("public UI clearly pauses new starts while preserving existing use", () => {
   const html = read("index.html");
   const app = read("js/app.js");
+  const style = read("style.css");
 
   assert.match(html, /name="glucoscope-new-user-starts-enabled" content="false"/u);
   assert.match(html, /name="glucoscope-plus-purchases-enabled" content="false"/u);
   assert.match(html, /新規利用開始を停止中です。/u);
   assert.match(html, /すでに接続済みの方は引き続き利用できます/u);
+  assert.match(
+    html,
+    /<section id="mobileMorePanel"[\s\S]*?<aside class="service-pause-banner mobile-more-pause-banner"/u,
+  );
+  assert.doesNotMatch(
+    html.slice(0, html.indexOf('<section id="mobileMorePanel"')),
+    /service-pause-banner/u,
+  );
+  assert.match(style, /\.mobile-more-panel,[\s\S]*?display:none;/u);
+  assert.match(style, /body\.mobile-page-more #mobileMorePanel\{[\s\S]*?display:block;/u);
   assert.match(html, /id="dataSourcePausedPanel"/u);
   assert.match(app, /const NEW_USER_STARTS_ENABLED =/u);
   assert.match(app, /else if \(!NEW_USER_STARTS_ENABLED\) \{[\s\S]*?dataSourcePausedPanel/u);

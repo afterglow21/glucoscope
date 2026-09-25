@@ -7188,6 +7188,19 @@ body.data-source-dialog-open {
   white-space:nowrap;
 }
 
+.mobile-more-pause-banner {
+  margin:0 0 18px;
+  border:1px solid rgba(46,204,113,.22);
+  border-radius:16px;
+  background:rgba(46,204,113,.09);
+  color:#d9fbe7;
+  text-align:left;
+}
+
+.mobile-more-pause-banner strong {
+  color:#a7f3d0;
+}
+
 @media (max-width:700px) {
   .service-pause-banner {
     display:block;
